@@ -74,8 +74,11 @@ Return ONLY valid JSON (no markdown):
   return (
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>✦ For You</div>
-        <div onClick={generate} style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 600 }}>↻ Refresh</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span style={{ fontSize: 12 }}>✦</span>
+          <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>For You</span>
+        </div>
+        <div onClick={generate} style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700 }}>↻ Refresh</div>
       </div>
       {loading ? (
         <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', textAlign: 'center' }}>
@@ -199,6 +202,40 @@ function ProgressRing({ confidence = 5, size = 60, label }) {
   );
 }
 
+function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--accent, #00C6E6)' }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        {icon && <span style={{ fontSize: 12 }}>{icon}</span>}
+        <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>{label}</span>
+      </div>
+      {action && actionLabel && (
+        <div onClick={action} style={{ fontSize: 10, color: actionColor, cursor: 'pointer', fontWeight: 700, letterSpacing: 0.2 }}>{actionLabel} →</div>
+      )}
+    </div>
+  );
+}
+
+function SkillBar({ title, confidence = 5 }) {
+  const pct   = Math.round((confidence / 10) * 100);
+  const color = confidence >= 8 ? '#00CC76' : confidence >= 5 ? 'var(--accent, #00C6E6)' : '#ffcc44';
+  const tier  = confidence >= 8 ? 'Expert' : confidence >= 6 ? 'Proficient' : confidence >= 4 ? 'Learning' : 'Beginner';
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>{title}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span style={{ fontSize: 9, color, fontWeight: 700, background: `${color}18`, padding: '1px 6px', borderRadius: 3, border: `1px solid ${color}30` }}>{tier}</span>
+          <span style={{ fontSize: 10, fontWeight: 800, color, minWidth: 28, textAlign: 'right' }}>{pct}%</span>
+        </div>
+      </div>
+      <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}99, ${color})`, borderRadius: 4, transition: 'width 0.6s ease' }} />
+      </div>
+    </div>
+  );
+}
+
 export default function HomeDashboard() {
   const { graph, projects, notes, setActiveModule, isMobile, isTablet, isPhone, isDesktop } = useApp();
 
@@ -260,13 +297,63 @@ Be blunt. No hedging. One decisive line per bullet.`;
     setBriefLoading(false);
   };
 
+  const refreshBrief = () => { setBrief(''); setBriefDone(false); generateBrief(null); };
+
   // ── Right panel (desktop only) ────────────────────────────────────────
   const rightPanel = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-      {ringTopics.length > 0 && (
+      {/* Skill Mastery — horizontal progress bars */}
+      {radarTopics.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Continue Learning</div>
+          <SectionLabel icon="🧠" label="Skill Mastery" action={() => setActiveModule('learn')} actionLabel="View all" />
+          {radarTopics.map((t, i) => (
+            <SkillBar key={i} title={t.title} confidence={t.confidence || 5} />
+          ))}
+          {radarTopics.length >= 3 && (
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>Mastery Overview</div>
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <RadarChart data={radarTopics} size={148} />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Active Projects */}
+      {activeProjects.length > 0 && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
+          <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#ff8844" />
+          {activeProjects.slice(0, 4).map((p, idx) => {
+            const done  = (p.milestones || []).filter(m => m.done).length;
+            const total = (p.milestones || []).length;
+            const pct   = total ? Math.round((done / total) * 100) : 0;
+            const color = p.color || '#ff8844';
+            return (
+              <div key={p.id} onClick={() => setActiveModule('projects')} style={{ cursor: 'pointer', marginBottom: idx < activeProjects.slice(0, 4).length - 1 ? 12 : 0 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginRight: 8 }}>{p.emoji || '🚀'} {p.title}</div>
+                    {total > 0 && (
+                      <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2 }}>{done}/{total} milestones done</div>
+                    )}
+                  </div>
+                  <div style={{ flexShrink: 0, fontSize: 12, fontWeight: 800, color, paddingTop: 1 }}>{pct}%</div>
+                </div>
+                <div style={{ height: 5, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}88, ${color})`, borderRadius: 4, transition: 'width 0.5s ease' }} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Continue Learning rings — only if no skill bars (no topics yet) */}
+      {ringTopics.length > 0 && radarTopics.length === 0 && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
+          <SectionLabel icon="📖" label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Open" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {ringTopics.map((t, i) => (
               <div key={i} onClick={() => setActiveModule('learn')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'center' }}>
@@ -274,51 +361,6 @@ Be blunt. No hedging. One decisive line per bullet.`;
               </div>
             ))}
           </div>
-          <div onClick={() => setActiveModule('learn')}
-            style={{ marginTop: 14, fontSize: 11, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 600, textAlign: 'center' }}>
-            Open Learn Module →
-          </div>
-        </div>
-      )}
-
-      {radarTopics.length >= 3 && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 14 }}>Skill Mastery</div>
-          <div style={{ display: 'flex', justifyContent: 'center' }}>
-            <RadarChart data={radarTopics} size={160} />
-          </div>
-          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center' }}>
-            {radarTopics.map((t, i) => (
-              <div key={i} style={{ fontSize: 9, color: 'var(--text-c)', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 7px' }}>
-                {(t.title || '').slice(0, 14)} · {t.confidence}/10
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {activeProjects.length > 0 && (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase' }}>Active Projects</div>
-            <div onClick={() => setActiveModule('projects')} style={{ fontSize: 10, color: '#ff8844', cursor: 'pointer', fontWeight: 600 }}>All →</div>
-          </div>
-          {activeProjects.slice(0, 3).map(p => {
-            const done  = (p.milestones || []).filter(m => m.done).length;
-            const total = (p.milestones || []).length || 1;
-            const pct   = Math.round((done / total) * 100);
-            return (
-              <div key={p.id} onClick={() => setActiveModule('projects')} style={{ cursor: 'pointer', paddingBottom: 10, marginBottom: 10, borderBottom: '1px solid var(--bord2)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>{p.emoji} {p.title}</div>
-                  <div style={{ fontSize: 11, color: p.color || '#ff8844', fontWeight: 700, flexShrink: 0 }}>{pct}%</div>
-                </div>
-                <div style={{ background: 'var(--border)', borderRadius: 2, height: 3 }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: p.color || '#ff8844', borderRadius: 2 }} />
-                </div>
-              </div>
-            );
-          })}
         </div>
       )}
     </div>
@@ -349,9 +391,8 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Mobile: Continue Learning rings */}
       {isMobile && ringTopics.length > 0 && (
         <div style={{ marginBottom: 20 }}>
-          <div style={{ padding: `0 ${pad}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase' }}>Continue Learning</div>
-            <div onClick={() => setActiveModule('learn')} style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 600 }}>Learn →</div>
+          <div style={{ padding: `0 ${pad}` }}>
+            <SectionLabel icon="📖" label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Learn" />
           </div>
           <div style={{ display: 'flex', gap: 20, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 ${pad} 4px` }}>
             {ringTopics.map((t, i) => (
@@ -390,17 +431,17 @@ Be blunt. No hedging. One decisive line per bullet.`;
           }}>
             <div style={{ padding: isMobile ? '14px 16px 12px' : '16px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bord2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-glow, rgba(0,198,230,0.1))', border: '1px solid rgba(0,198,230,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>⚡</div>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(0,198,230,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(0,198,230,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>⚡</div>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>Daily Intelligence Brief</div>
-                  <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginTop: 1 }}>CB-style · auto-generated</div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.2 }}>Daily Intelligence Brief</div>
+                  <div style={{ fontSize: 9, color: 'var(--accent, #00C6E6)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
                 </div>
               </div>
               {briefDone && (
-                <div onClick={() => { setBrief(''); setBriefDone(false); generateBrief(null); }}
-                  style={{ fontSize: 10, padding: '4px 10px', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', background: 'var(--bg)' }}>
-                  ↻ Refresh
-                </div>
+                <button onClick={refreshBrief}
+                  style={{ fontSize: 10, padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--dim)', cursor: 'pointer', background: 'var(--bg)', fontFamily: 'inherit', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  ↻ <span>Refresh</span>
+                </button>
               )}
             </div>
             <div style={{ padding: isMobile ? '14px 16px 16px' : '16px 20px 18px' }}>
@@ -422,19 +463,18 @@ Be blunt. No hedging. One decisive line per bullet.`;
 
           {/* Blue Ocean Signals */}
           <div style={{ marginBottom: isMobile ? 20 : 24, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
-            <div style={{ padding: isMobile ? '0 14px' : '0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>🌊 Blue Ocean Signals</div>
-              <div onClick={() => setActiveModule('research')} style={{ fontSize: 10, color: '#6366F1', cursor: 'pointer', fontWeight: 600 }}>Research →</div>
+            <div style={{ padding: isMobile ? '0 14px' : '0' }}>
+              <SectionLabel icon="🌊" label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#6366F1" />
             </div>
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ flexShrink: 0, width: isPhone ? 236 : 268, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `2px solid ${s.color}`, borderRadius: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: s.color }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: `${s.color}18`, border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                  <div key={i} style={{ flexShrink: 0, width: isPhone ? 240 : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
+                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 6, lineHeight: 1.35 }}>{s.title}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>
                   </div>
                 ))}
@@ -442,12 +482,14 @@ Be blunt. No hedging. One decisive line per bullet.`;
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `2px solid ${s.color}`, borderRadius: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: s.color }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: `${s.color}18`, border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                  <div key={i} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12, transition: 'border-color 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${s.color}55`; e.currentTarget.style.borderTopColor = s.color; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = `${s.color}22`; e.currentTarget.style.borderTopColor = s.color; }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+                      <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
+                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 6, lineHeight: 1.35 }}>{s.title}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>
                   </div>
                 ))}
@@ -459,7 +501,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {isMobile && (
             <>
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>Quick Access</div>
+                <SectionLabel icon="⚡" label="Quick Access" />
                 <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
                   {QUICK_MODULES.map(m => (
                     <div key={m.id} onClick={() => setActiveModule(m.id)}
@@ -473,10 +515,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
 
               {activeProjects.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>🚀 Active Projects</div>
-                    <div onClick={() => setActiveModule('projects')} style={{ fontSize: 10, color: '#ff8844', cursor: 'pointer', fontWeight: 600 }}>View all →</div>
-                  </div>
+                  <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#ff8844" />
                   {activeProjects.slice(0, 3).map(p => {
                     const done  = (p.milestones || []).filter(m => m.done).length;
                     const total = (p.milestones || []).length || 1;
@@ -524,7 +563,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Quick Module Launch — desktop only, full-width below */}
       {!isMobile && (
         <div style={{ padding: `16px ${pad} 0` }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 12 }}>Quick Access</div>
+          <SectionLabel icon="⚡" label="Quick Access" />
           <div style={{ display: 'grid', gridTemplateColumns: isTablet ? 'repeat(3, 1fr)' : 'repeat(6, 1fr)', gap: 10 }}>
             {QUICK_MODULES.map(m => (
               <div key={m.id} onClick={() => setActiveModule(m.id)}
