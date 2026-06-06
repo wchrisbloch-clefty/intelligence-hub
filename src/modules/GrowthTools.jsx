@@ -30,7 +30,7 @@ const CERTS = [
 ];
 
 export default function GrowthTools() {
-  const { graph, projects, isMobile } = useApp();
+  const { graph, projects, isMobile, isPhone, isTablet } = useApp();
   const [synthesis, setSynthesis] = useState('');
   const [synthLoading, setSynthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('goals');
@@ -69,7 +69,7 @@ export default function GrowthTools() {
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Goals · Skills · Synthesis · Certifications</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
         {[
           { label: 'Avg Confidence', value: avgConf + '/10', color: '#44ffcc', icon: '🎯' },
           { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: '#00FFB2', icon: '✓' },
@@ -79,7 +79,7 @@ export default function GrowthTools() {
           <Card key={s.label} color={s.color} style={{ padding: '14px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "'Fraunces', serif" }}>{s.value}</div>
-            <div style={{ fontSize: 9, color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+            <div style={{ fontSize: isMobile ? 10 : 9, color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
           </Card>
         ))}
       </div>
@@ -118,7 +118,7 @@ export default function GrowthTools() {
       {activeTab === 'skills' && (
         <div>
           <Label>Skill Radar — Self Assessment</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr', gap: 10 }}>
             {SKILLS.map(s => (
               <div key={s.name} style={{ padding: '12px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderRadius: 10 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -203,7 +203,7 @@ export default function GrowthTools() {
               <Badge color={c.color}>{c.status}</Badge>
             </div>
           ))}
-          <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 10, cursor: 'pointer', textAlign: 'center' }}>
+          <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 10, cursor: 'pointer', textAlign: 'center', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div style={{ fontSize: 11, color: 'var(--subtle)' }}>+ Add certification or credential</div>
           </div>
         </div>

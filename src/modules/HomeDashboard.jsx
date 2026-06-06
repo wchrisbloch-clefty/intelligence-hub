@@ -10,13 +10,14 @@ const ONBOARDING_KEY = 'aether_onboarded_v1';
 const RECO_CACHE_KEY = () => `aether_recos_${new Date().toDateString()}`;
 
 function OnboardingBanner({ onDismiss }) {
+  const { isMobile, isPhone } = useApp();
   return (
     <div style={{ margin: '0 0 20px', padding: '14px 18px', background: 'linear-gradient(135deg, rgba(0,198,230,0.06) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid rgba(0,198,230,0.2)', borderRadius: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)' }}>Welcome to your Intelligence Hub, CB.</div>
         <div onClick={onDismiss} style={{ fontSize: 12, color: 'var(--dim)', cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}>✕</div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 8 }}>
         {[
           { icon: '📡', label: 'Daily Brief', desc: 'AI-generated signal intel every morning — refresh anytime.' },
           { icon: '🌊', label: 'Blue Ocean', desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
@@ -34,6 +35,7 @@ function OnboardingBanner({ onDismiss }) {
 }
 
 function RecommendationsSection({ graph, projects, setActiveModule }) {
+  const { isPhone } = useApp();
   const [recos,   setRecos]   = useState(() => { try { return JSON.parse(localStorage.getItem(RECO_CACHE_KEY()) || 'null'); } catch { return null; } });
   const [loading, setLoading] = useState(false);
 
@@ -85,7 +87,7 @@ Return ONLY valid JSON (no markdown):
           <ThinkingDots color="var(--accent, #00C6E6)" />
         </div>
       ) : (recos || []).length === 0 ? null : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : 'repeat(2, 1fr)', gap: 8 }}>
           {(recos || []).map((r, i) => (
             <div key={i} onClick={() => setActiveModule(r.action || 'home')}
               style={{ padding: '12px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.12s' }}
@@ -93,7 +95,7 @@ Return ONLY valid JSON (no markdown):
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
                 <span style={{ fontSize: 14 }}>{r.icon}</span>
-                <span style={{ fontSize: 8, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: (typeColors[r.type] || '#00C6E6') + '18', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: (typeColors[r.type] || '#00C6E6') + '18', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{r.title}</div>
               <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.5 }}>{r.reason}</div>
@@ -469,10 +471,10 @@ Be blunt. No hedging. One decisive line per bullet.`;
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ flexShrink: 0, width: isPhone ? 240 : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
+                  <div key={i} style={{ flexShrink: 0, width: isPhone ? '82vw' : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>
@@ -487,7 +489,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
                     onMouseLeave={e => { e.currentTarget.style.borderColor = `${s.color}22`; e.currentTarget.style.borderTopColor = s.color; }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>

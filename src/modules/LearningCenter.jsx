@@ -25,7 +25,7 @@ const READING_QUICK_PROMPTS = {
 };
 
 export default function LearningCenter() {
-  const { graph, setGraph, isMobile } = useApp();
+  const { graph, setGraph, isMobile, isPhone, isTablet } = useApp();
   const [screen, setScreen] = useState('home');
   const [entryMode, setEntryMode] = useState(null);
   const [sessionMode, setSessionMode] = useState('chat');
@@ -190,7 +190,7 @@ export default function LearningCenter() {
     return qp[entryMode] || qp.topic;
   };
 
-  const pad = isMobile ? '16px 16px 60px' : '24px 28px 60px';
+  const pad = isMobile ? '16px 16px 70px' : '24px 28px 80px';
 
   if (screen === 'home') return (
     <div style={{ padding: pad, maxWidth: 800, margin: '0 auto' }}>
@@ -221,7 +221,7 @@ export default function LearningCenter() {
 
       <div style={{ marginBottom: 12 }}>
         <Label>Knowledge Graph</Label>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
           {[
             ['Topics', Object.keys(graph?.topics || {}).length, '#00FFB2'],
             ['Sessions', (graph?.sessions || []).length, '#6366F1'],
@@ -230,7 +230,7 @@ export default function LearningCenter() {
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: 'var(--surface)', border: `1px solid ${color}20`, borderRadius: 8, padding: '10px 8px', textAlign: 'center' }}>
               <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'Fraunces', serif" }}>{val}</div>
-              <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--dim)', textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
+              <div style={{ fontSize: 9, letterSpacing: 1.5, color: 'var(--dim)', textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
             </div>
           ))}
         </div>
@@ -260,7 +260,7 @@ export default function LearningCenter() {
       <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Title *"
         style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', color: 'var(--text-b)', fontSize: 14, outline: 'none', fontFamily: 'inherit', fontWeight: 700, boxSizing: 'border-box', marginBottom: 10 }} />
       <input value={customAuthor} onChange={e => setCustomAuthor(e.target.value)} placeholder="Author / Source (optional)"
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 20 }} />
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 20 }} />
 
       <Label>Quick-add from reading list</Label>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
@@ -409,7 +409,7 @@ export default function LearningCenter() {
           <input value={webUrl} onChange={e => setWebUrl(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && webUrl.trim() && (setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]), setWebUrl(''))}
             placeholder="https://..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={() => { if (webUrl.trim()) { setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]); setWebUrl(''); } }}
             style={{ padding: '10px 14px', background: '#4488ff', border: 'none', borderRadius: 8, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add</button>
         </div>
@@ -535,7 +535,7 @@ export default function LearningCenter() {
                 <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '85%', fontSize: 13, lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
               ) : (
                 <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: '100%' }}>
-                  <div style={{ fontSize: 8, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 10 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 10 }}>
                     {entryMode === 'reading' ? `${currentContentType.label} · ${DEPTH_LEVELS.find(d => d.id === depthLevel)?.label}` : 'CB Intelligence'}
                     {searchEnabled ? ' · 🔍 Web' : ''}
                   </div>
@@ -552,7 +552,7 @@ export default function LearningCenter() {
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 720, margin: '0 auto 18px' }}>
               <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '12px 16px' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 8 }}>Thinking...</div>
+                <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 8 }}>Thinking...</div>
                 <ThinkingDots color={accentColor} />
               </div>
             </div>
@@ -563,7 +563,7 @@ export default function LearningCenter() {
         {!quizMode && (
           <div style={{ position: 'sticky', bottom: 72, left: 0, right: 0, padding: '0 12px 6px', background: 'linear-gradient(transparent, var(--bg) 30%)', display: 'flex', gap: 5, overflowX: 'auto' }}>
             {prompts.slice(0, isMobile ? 2 : 5).map(p => (
-              <div key={p} onClick={() => send(p)} style={{ fontSize: 10, padding: '5px 11px', background: 'var(--surface)', border: '1px solid var(--bord2)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>{p}</div>
+              <div key={p} onClick={() => send(p)} style={{ fontSize: 10, padding: '5px 11px', background: 'var(--surface)', border: '1px solid var(--bord2)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>{p}</div>
             ))}
           </div>
         )}
@@ -574,7 +574,7 @@ export default function LearningCenter() {
               <div style={{ fontSize: 9, color: accentColor, letterSpacing: 1, marginBottom: 4 }}>📌 PASTE A PASSAGE FROM YOUR TEXT</div>
               <textarea value={annotationText} onChange={e => setAnnotationText(e.target.value)}
                 placeholder="Paste any passage, paragraph, or excerpt you want analyzed..."
-                rows={3} style={{ width: '100%', background: `${accentColor}08`, border: `1px solid ${accentColor}30`, borderRadius: 8, padding: '8px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }} />
+                rows={3} style={{ width: '100%', background: `${accentColor}08`, border: `1px solid ${accentColor}30`, borderRadius: 8, padding: '8px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }} />
             </div>
           )}
           {uploadedFiles.length > 0 && (
@@ -592,7 +592,7 @@ export default function LearningCenter() {
             <textarea value={input} onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); showAnnotation ? sendWithAnnotation() : send(input, uploadedFiles); } }}
               rows={1} placeholder={showAnnotation ? 'Add your question about the passage...' : 'Ask anything...'}
-              style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '9px 13px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 90 }} />
+              style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '9px 13px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 90 }} />
             <button onClick={() => showAnnotation ? sendWithAnnotation() : send(input, uploadedFiles)}
               disabled={(!input.trim() && !annotationText.trim() && uploadedFiles.length === 0) || loading}
               style={{ padding: '9px 14px', background: (input.trim() || annotationText.trim() || uploadedFiles.length > 0) && !loading ? accentColor : 'var(--bord2)', border: 'none', borderRadius: 9, color: (input.trim() || annotationText.trim() || uploadedFiles.length > 0) && !loading ? '#000' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>

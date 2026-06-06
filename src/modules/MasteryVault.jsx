@@ -26,6 +26,7 @@ function saveCards(cards) { localStorage.setItem('aether_flashcards', JSON.strin
 
 // ─── Flash Card Study ────────────────────────────────────────────────────────
 function FlashCards({ onCreateFromNote }) {
+  const { isMobile } = useApp();
   const [cards,     setCards]     = useState(loadCards);
   const [mode,      setMode]      = useState('list'); // list | study | create
   const [revealed,  setRevealed]  = useState(false);
@@ -80,7 +81,7 @@ function FlashCards({ onCreateFromNote }) {
           {revealed ? studyCard?.back : studyCard?.front}
         </div>
         {!revealed && (
-          <div onClick={() => setRevealed(true)} style={{ marginTop: 24, padding: '10px 24px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer', display: 'inline-block', alignSelf: 'center' }}>
+          <div onClick={() => setRevealed(true)} style={{ marginTop: 24, padding: isMobile ? '13px 28px' : '10px 24px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer', display: 'inline-block', alignSelf: 'center', minHeight: 44 }}>
             Reveal Answer
           </div>
         )}
@@ -127,8 +128,8 @@ function FlashCards({ onCreateFromNote }) {
           <div style={{ fontSize: 10, color: 'var(--dim)' }}>Spaced repetition — review at optimal intervals</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setMode('create')} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10` }}>+ New Card</div>
-          {cards.length > 0 && <div onClick={() => { setStudyIdx(0); setRevealed(false); setMode('study'); }} style={{ padding: '7px 14px', fontSize: 11, fontWeight: 700, background: VAULT_ACCENT, borderRadius: 8, color: '#000', cursor: 'pointer' }}>Study {dueNow > 0 ? `(${dueNow} due)` : 'All'} →</div>}
+          <div onClick={() => setMode('create')} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 11, fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>+ New Card</div>
+          {cards.length > 0 && <div onClick={() => { setStudyIdx(0); setRevealed(false); setMode('study'); }} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 11, fontWeight: 700, background: VAULT_ACCENT, borderRadius: 8, color: '#000', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Study {dueNow > 0 ? `(${dueNow} due)` : 'All'} →</div>}
         </div>
       </div>
 
@@ -163,6 +164,7 @@ function FlashCards({ onCreateFromNote }) {
 
 // ─── Expertise Export ────────────────────────────────────────────────────────
 function ExpertiseExport({ notes }) {
+  const { isMobile } = useApp();
   const [selected,  setSelected]  = useState([]);
   const [format,    setFormat]    = useState('linkedin');
   const [result,    setResult]    = useState('');
@@ -256,7 +258,7 @@ function ExpertiseExport({ notes }) {
           {/* Right: result */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Your Content</div>
-            <div style={{ background: 'var(--surface)', border: `1px solid ${result ? VAULT_ACCENT + '40' : 'var(--border)'}`, borderRadius: 12, padding: '16px', minHeight: 320, transition: 'border-color 0.15s' }}>
+            <div style={{ background: 'var(--surface)', border: `1px solid ${result ? VAULT_ACCENT + '40' : 'var(--border)'}`, borderRadius: 12, padding: '16px', minHeight: isMobile ? 200 : 320, transition: 'border-color 0.15s' }}>
               {loading && <ThinkingDots color={VAULT_ACCENT} />}
               {!loading && !result && (
                 <div style={{ color: 'var(--dim)', fontSize: 11, lineHeight: 1.8 }}>
@@ -267,10 +269,10 @@ function ExpertiseExport({ notes }) {
             </div>
             {result && (
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <div onClick={copy} style={{ padding: '7px 16px', fontSize: 11, fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10` }}>
+                <div onClick={copy} style={{ padding: isMobile ? '10px 18px' : '7px 16px', fontSize: 11, fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>
                   {copied ? '✓ Copied!' : 'Copy'}
                 </div>
-                <div onClick={() => setResult('')} style={{ padding: '7px 12px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', cursor: 'pointer' }}>Clear</div>
+                <div onClick={() => setResult('')} style={{ padding: isMobile ? '10px 14px' : '7px 12px', fontSize: 11, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Clear</div>
               </div>
             )}
           </div>
@@ -433,7 +435,7 @@ export default function MasteryVault() {
                 )}
                 {note.tags?.length > 0 && (
                   <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-                    {note.tags.slice(0, 3).map(t => <span key={t} style={{ fontSize: 8, color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{t}</span>)}
+                    {note.tags.slice(0, 3).map(t => <span key={t} style={{ fontSize: isMobile ? 10 : 8, color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{t}</span>)}
                   </div>
                 )}
               </Card>

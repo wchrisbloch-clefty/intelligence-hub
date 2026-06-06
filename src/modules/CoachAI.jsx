@@ -53,7 +53,7 @@ function buildSystem(toneId, topicId) {
 }
 
 export default function CoachAI() {
-  const { isMobile } = useApp();
+  const { isMobile, isPhone, isTablet } = useApp();
   const [tone,         setTone]         = useState('coach');
   const [topic,        setTopic]        = useState('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -131,13 +131,13 @@ export default function CoachAI() {
       {settingsOpen && (
         <div style={{ background: 'var(--surf2)', borderBottom: '1px solid var(--bord2)', padding: '14px 20px', flexShrink: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Choose Your Coach Type</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(5, 1fr)', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 8 }}>
             {TONES.map(t => (
               <div key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); setMessages([]); }}
                 style={{ padding: '12px', background: tone === t.id ? ACCENT_BG : 'var(--surface)', border: `1px solid ${tone === t.id ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s', textAlign: 'center' }}>
                 <div style={{ fontSize: 24, marginBottom: 5 }}>{t.icon}</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
-                <div style={{ fontSize: 9, color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
+                <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
               </div>
             ))}
           </div>
@@ -157,7 +157,7 @@ export default function CoachAI() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left' }}>
               {CHECKIN_PROMPTS.slice(0, 5).map(p => (
                 <div key={p} onClick={() => send(p)}
-                  style={{ fontSize: 11, padding: '10px 14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, color: 'var(--muted)', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.1s' }}>
+                  style={{ fontSize: 11, padding: '10px 14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, color: 'var(--muted)', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.1s', minHeight: 44, display: 'flex', alignItems: 'center' }}>
                   {p}
                 </div>
               ))}
@@ -173,7 +173,7 @@ export default function CoachAI() {
               </div>
             ) : (
               <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
+                <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
                   {currentTone.icon} {currentTone.label} · {currentTopic.label}
                 </div>
                 <MD text={msg.content} color={ACCENT} />
@@ -185,7 +185,7 @@ export default function CoachAI() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 16px' }}>
             <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '12px 16px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
+              <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
               <ThinkingDots color={ACCENT} />
             </div>
           </div>
@@ -209,7 +209,7 @@ export default function CoachAI() {
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
             rows={1} placeholder="Be honest. The AI can handle it."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => send(input)} disabled={!input.trim()}
             style={{ padding: '10px 16px', background: input.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() ? '#fff' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0, minHeight: 42 }}>→</button>
         </div>

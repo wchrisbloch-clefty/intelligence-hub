@@ -5,7 +5,7 @@ import { PROJECT_CATEGORIES, PROJECT_STATUSES } from '../constants.js';
 import { Card, Badge, Label, Btn, Input, Modal } from './shared/Common.jsx';
 
 export default function ProjectsOS() {
-  const { projects, setProjects, isMobile } = useApp();
+  const { projects, setProjects, isMobile, isPhone } = useApp();
   const [activeProject, setActiveProject] = useState(null);
   const [showNew, setShowNew] = useState(false);
   const [newProject, setNewProject] = useState({ title: '', emoji: '🚀', description: '', category: 'business', priority: 'high' });
@@ -97,13 +97,13 @@ export default function ProjectsOS() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
         {[{ id: 'all', label: 'All', color: 'var(--subtle)' }, ...statuses].map(s => (
           <div key={s.id} onClick={() => setStatusFilter(s.id)}
-            style={{ padding: '5px 14px', fontSize: 10, border: `1px solid ${statusFilter === s.id ? s.color : 'var(--bord2)'}`, color: statusFilter === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: statusFilter === s.id ? `${s.color}15` : 'transparent' }}>
+            style={{ padding: isMobile ? '9px 14px' : '5px 14px', fontSize: 10, border: `1px solid ${statusFilter === s.id ? s.color : 'var(--bord2)'}`, color: statusFilter === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: statusFilter === s.id ? `${s.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
             {s.label} {s.id !== 'all' ? `(${projects.filter(p => p.status === s.id).length})` : `(${projects.length})`}
           </div>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, overflowX: isMobile ? 'auto' : 'visible' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16, overflowX: isMobile ? 'auto' : 'visible' }}>
         {statuses.map(status => {
           const cols = projects.filter(p => p.status === status.id);
           return (
@@ -171,7 +171,7 @@ export default function ProjectsOS() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
                 <div key={k} onClick={() => setNewProject(p => ({ ...p, category: k }))}
-                  style={{ padding: '5px 12px', fontSize: 10, border: `1px solid ${newProject.category === k ? v.color : 'var(--bord2)'}`, color: newProject.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: newProject.category === k ? `${v.color}15` : 'transparent' }}>
+                  style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, border: `1px solid ${newProject.category === k ? v.color : 'var(--bord2)'}`, color: newProject.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: newProject.category === k ? `${v.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
                   {v.icon} {v.label}
                 </div>
               ))}
@@ -200,10 +200,11 @@ export default function ProjectsOS() {
 
 function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddMilestone, onChangeStatus, onDelete }) {
   const [newMilestone, setNewMilestone] = useState('');
+  const { isMobile } = useApp();
   const statusConfig = PROJECT_STATUSES.find(s => s.id === proj.status);
 
   return (
-    <div style={{ padding: '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
+    <div style={{ padding: isMobile ? '16px 16px 72px' : '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
       <div onClick={onBack} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 20 }}>← Projects</div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
@@ -218,11 +219,11 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {PROJECT_STATUSES.map(s => (
             <div key={s.id} onClick={() => onChangeStatus(s.id)}
-              style={{ padding: '5px 10px', fontSize: 9, border: `1px solid ${proj.status === s.id ? s.color : 'var(--border)'}`, color: proj.status === s.id ? s.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: proj.status === s.id ? `${s.color}12` : 'transparent' }}>
+              style={{ padding: isMobile ? '9px 14px' : '5px 10px', fontSize: 9, border: `1px solid ${proj.status === s.id ? s.color : 'var(--border)'}`, color: proj.status === s.id ? s.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: proj.status === s.id ? `${s.color}12` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
               {s.label}
             </div>
           ))}
-          <div onClick={onDelete} style={{ padding: '5px 10px', fontSize: 9, border: '1px solid #ff444440', color: '#ff4444', borderRadius: 6, cursor: 'pointer' }}>Delete</div>
+          <div onClick={onDelete} style={{ padding: isMobile ? '9px 14px' : '5px 10px', fontSize: 9, border: '1px solid #ff444440', color: '#ff4444', borderRadius: 6, cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Delete</div>
         </div>
       </div>
 
@@ -258,7 +259,7 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
             placeholder="Add milestone..."
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={() => { if (newMilestone.trim()) { onAddMilestone(newMilestone); setNewMilestone(''); } }}
-            style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            style={{ padding: isMobile ? '11px 16px' : '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer', minHeight: 40 }}>Add</button>
         </div>
       </div>
 
@@ -267,7 +268,7 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
           <Label>Knowledge Connections</Label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #00FFB225', color: '#00FFB2', borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} style={{ fontSize: 10, padding: isMobile ? '9px 14px' : '5px 12px', background: 'var(--surface)', border: '1px solid #00FFB225', color: '#00FFB2', borderRadius: 20, minHeight: isMobile ? 40 : undefined }}>📚 {c}</div>
             ))}
           </div>
         </div>
