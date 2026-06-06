@@ -4,29 +4,62 @@ import { callClaude } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import NavIcon from './shared/NavIcon.jsx';
+import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw } from 'lucide-react';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
+
+const CATEGORY_ICONS = {
+  'Real Estate':  Building2,
+  'Career Edge':  Briefcase,
+  'Finance':      TrendingUp,
+  'Energy/Macro': Zap,
+  'Longevity':    Activity,
+  'Macro':        Globe,
+};
+
+function SignalTag({ category, color }) {
+  const Icon = CATEGORY_ICONS[category];
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+      {Icon && <Icon size={11} strokeWidth={2.2} color={color} style={{ flexShrink: 0 }} />}
+      <span style={{ fontSize: 10, fontWeight: 700, color, letterSpacing: 0.1 }}>{category}</span>
+    </div>
+  );
+}
+
+function UrgencyPill({ urgency, color }) {
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 9, padding: '2px 8px', borderRadius: 20, background: `${color}14`, border: `1px solid ${color}28`, color, fontWeight: 700, letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 0 }}>
+      <span style={{ width: 4, height: 4, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }} />
+      {urgency}
+    </span>
+  );
+}
 
 const RECO_CACHE_KEY = () => `aether_recos_${new Date().toDateString()}`;
 
 function OnboardingBanner({ onDismiss }) {
   const { isMobile, isPhone } = useApp();
+  const items = [
+    { Icon: Radio,      color: '#00C6E6', label: 'Daily Brief',  desc: 'AI-generated signal intel every morning — refresh anytime.' },
+    { Icon: Waves,      color: '#6366F1', label: 'Blue Ocean',   desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
+    { Icon: LayoutGrid, color: '#00CC76', label: '14 Modules',   desc: 'Learn, Research, Coach, TED, Quiz, Projects, Vault and more.' },
+  ];
   return (
-    <div style={{ margin: '0 0 20px', padding: '14px 18px', background: 'linear-gradient(135deg, rgba(0,198,230,0.06) 0%, rgba(99,102,241,0.06) 100%)', border: '1px solid rgba(0,198,230,0.2)', borderRadius: 12 }}>
+    <div style={{ margin: '0 0 20px', padding: '14px 18px', background: 'linear-gradient(135deg, rgba(0,198,230,0.05) 0%, rgba(99,102,241,0.05) 100%)', border: '1px solid rgba(0,198,230,0.18)', borderRadius: 12 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)' }}>Welcome to your Intelligence Hub, CB.</div>
         <div onClick={onDismiss} style={{ fontSize: 12, color: 'var(--dim)', cursor: 'pointer', fontWeight: 700, lineHeight: 1 }}>✕</div>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 8 }}>
-        {[
-          { icon: '📡', label: 'Daily Brief', desc: 'AI-generated signal intel every morning — refresh anytime.' },
-          { icon: '🌊', label: 'Blue Ocean', desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
-          { icon: '📚', label: '14 Modules', desc: 'Learn, Research, Coach, TED, Quiz, Projects, Vault and more.' },
-        ].map(item => (
-          <div key={item.label} style={{ padding: '10px 12px', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--bord2)' }}>
-            <div style={{ fontSize: 16, marginBottom: 4 }}>{item.icon}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{item.label}</div>
-            <div style={{ fontSize: 9, color: 'var(--dim)', lineHeight: 1.4 }}>{item.desc}</div>
+        {items.map(({ Icon, color, label, desc }) => (
+          <div key={label} style={{ padding: '12px 14px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: `${color}14`, border: `1px solid ${color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Icon size={14} strokeWidth={2} color={color} />
+            </div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)' }}>{label}</div>
+            <div style={{ fontSize: 10, color: 'var(--muted)', lineHeight: 1.5 }}>{desc}</div>
           </div>
         ))}
       </div>
@@ -77,10 +110,12 @@ Return ONLY valid JSON (no markdown):
     <div style={{ marginBottom: 20 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-          <span style={{ fontSize: 12 }}>✦</span>
+          <Sparkles size={12} strokeWidth={2} color="var(--dim)" />
           <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>For You</span>
         </div>
-        <div onClick={generate} style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700 }}>↻ Refresh</div>
+        <div onClick={generate} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700 }}>
+          <RefreshCw size={10} strokeWidth={2.5} /> Refresh
+        </div>
       </div>
       {loading ? (
         <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', textAlign: 'center' }}>
@@ -208,7 +243,7 @@ function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--a
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-        {icon && <span style={{ fontSize: 12 }}>{icon}</span>}
+        {icon && <span style={{ display: 'flex', alignItems: 'center', color: 'var(--dim)' }}>{icon}</span>}
         <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>{label}</span>
       </div>
       {action && actionLabel && (
@@ -308,7 +343,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Skill Mastery — horizontal progress bars */}
       {radarTopics.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <SectionLabel icon="🧠" label="Skill Mastery" action={() => setActiveModule('learn')} actionLabel="View all" />
+          <SectionLabel icon={<Brain size={12} strokeWidth={2} />} label="Skill Mastery" action={() => setActiveModule('learn')} actionLabel="View all" />
           {radarTopics.map((t, i) => (
             <SkillBar key={i} title={t.title} confidence={t.confidence || 5} />
           ))}
@@ -326,7 +361,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Active Projects */}
       {activeProjects.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#ff8844" />
+          <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#ff8844" />
           {activeProjects.slice(0, 4).map((p, idx) => {
             const done  = (p.milestones || []).filter(m => m.done).length;
             const total = (p.milestones || []).length;
@@ -355,7 +390,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Continue Learning rings — only if no skill bars (no topics yet) */}
       {ringTopics.length > 0 && radarTopics.length === 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <SectionLabel icon="📖" label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Open" />
+          <SectionLabel icon={<BookOpen size={12} strokeWidth={2} />} label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Open" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {ringTopics.map((t, i) => (
               <div key={i} onClick={() => setActiveModule('learn')} style={{ cursor: 'pointer', display: 'flex', justifyContent: 'center' }}>
@@ -394,7 +429,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {isMobile && ringTopics.length > 0 && (
         <div style={{ marginBottom: 20 }}>
           <div style={{ padding: `0 ${pad}` }}>
-            <SectionLabel icon="📖" label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Learn" />
+            <SectionLabel icon={<BookOpen size={12} strokeWidth={2} />} label="Continue Learning" action={() => setActiveModule('learn')} actionLabel="Learn" />
           </div>
           <div style={{ display: 'flex', gap: 20, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 ${pad} 4px` }}>
             {ringTopics.map((t, i) => (
@@ -433,7 +468,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
           }}>
             <div style={{ padding: isMobile ? '14px 16px 12px' : '16px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bord2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(0,198,230,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(0,198,230,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>⚡</div>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(0,198,230,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(0,198,230,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Zap size={15} strokeWidth={2} color="#00C6E6" /></div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.2 }}>Daily Intelligence Brief</div>
                   <div style={{ fontSize: 9, color: 'var(--accent, #00C6E6)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
@@ -441,8 +476,8 @@ Be blunt. No hedging. One decisive line per bullet.`;
               </div>
               {briefDone && (
                 <button onClick={refreshBrief}
-                  style={{ fontSize: 10, padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--dim)', cursor: 'pointer', background: 'var(--bg)', fontFamily: 'inherit', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
-                  ↻ <span>Refresh</span>
+                  style={{ fontSize: 10, padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--muted)', cursor: 'pointer', background: 'var(--bg)', fontFamily: 'inherit', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <RefreshCw size={10} strokeWidth={2.2} /> <span>Refresh</span>
                 </button>
               )}
             </div>
@@ -466,33 +501,33 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {/* Blue Ocean Signals */}
           <div style={{ marginBottom: isMobile ? 20 : 24, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
             <div style={{ padding: isMobile ? '0 14px' : '0' }}>
-              <SectionLabel icon="🌊" label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#6366F1" />
+              <SectionLabel icon={<Waves size={12} strokeWidth={2} />} label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#6366F1" />
             </div>
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ flexShrink: 0, width: isPhone ? '82vw' : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                  <div key={i} style={{ flexShrink: 0, width: isPhone ? '82vw' : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                      <SignalTag category={s.category} color={s.color} />
+                      <UrgencyPill urgency={s.urgency} color={s.color} />
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.6 }}>{s.insight}</div>
                   </div>
                 ))}
               </div>
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12, transition: 'border-color 0.15s' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = `${s.color}55`; e.currentTarget.style.borderTopColor = s.color; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = `${s.color}22`; e.currentTarget.style.borderTopColor = s.color; }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
-                      <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
-                      <span style={{ fontSize: 9, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
+                  <div key={i} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12, cursor: 'pointer', transition: 'box-shadow 0.15s, border-color 0.15s' }}
+                    onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 20px ${s.color}14`; e.currentTarget.style.borderColor = `${s.color}38`; }}
+                    onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = `${s.color}20`; }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
+                      <SignalTag category={s.category} color={s.color} />
+                      <UrgencyPill urgency={s.urgency} color={s.color} />
                     </div>
                     <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 7, lineHeight: 1.3, letterSpacing: -0.2 }}>{s.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.6 }}>{s.insight}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.6 }}>{s.insight}</div>
                   </div>
                 ))}
               </div>
@@ -503,12 +538,14 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {isMobile && (
             <>
               <div style={{ marginBottom: 20 }}>
-                <SectionLabel icon="⚡" label="Quick Access" />
+                <SectionLabel icon={<Zap size={12} strokeWidth={2} />} label="Quick Access" />
                 <div style={{ display: 'flex', gap: 8, overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
                   {QUICK_MODULES.map(m => (
                     <div key={m.id} onClick={() => setActiveModule(m.id)}
-                      style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${m.color}22`, borderRadius: 12, cursor: 'pointer', minWidth: 72, WebkitTapHighlightColor: 'transparent' }}>
-                      <div style={{ fontSize: 22 }}>{m.icon}</div>
+                      style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${m.color}20`, borderRadius: 12, cursor: 'pointer', minWidth: 74, WebkitTapHighlightColor: 'transparent' }}>
+                      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${m.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: m.color }}>
+                        <NavIcon id={m.id} size={18} strokeWidth={1.8} />
+                      </div>
                       <div style={{ fontSize: 10, fontWeight: 700, color: m.color, whiteSpace: 'nowrap' }}>{m.label}</div>
                     </div>
                   ))}
@@ -517,7 +554,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
 
               {activeProjects.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#ff8844" />
+                  <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#ff8844" />
                   {activeProjects.slice(0, 3).map(p => {
                     const done  = (p.milestones || []).filter(m => m.done).length;
                     const total = (p.milestones || []).length || 1;
