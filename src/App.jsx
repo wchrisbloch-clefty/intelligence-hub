@@ -3,8 +3,8 @@ import { loadGraph, loadProjects, loadNotes, loadResearch } from './utils.js';
 import { NAV_ITEMS, THEME_DARK, THEME_LIGHT } from './constants.js';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
-import Sidebar from './modules/Sidebar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
+import NavIcon from './modules/shared/NavIcon.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
 import BookClub from './modules/BookClub.jsx';
@@ -33,7 +33,6 @@ export default function App() {
   const [chatOpen,         setChatOpen]         = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
   const [chatPrefill,      setChatPrefill]      = useState('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const [graph,    setGraph]    = useState(null);
   const [projects, setProjects] = useState([]);
@@ -90,28 +89,20 @@ export default function App() {
     quiz:      <QuizCenter />,
   };
 
-  // Tablets show icon-only sidebar automatically
-  const collapsed = isTablet || sidebarCollapsed;
-
   return (
     <AppContext.Provider value={ctx}>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
         <TopBar />
 
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-          {!isMobile && (
-            <Sidebar collapsed={collapsed} onToggle={() => setSidebarCollapsed(c => !c)} />
-          )}
-          <main style={{
-            flex: 1,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            paddingRight: (!isMobile && chatOpen) ? 360 : 0,
-            transition: 'padding-right 0.22s ease',
-          }}>
-            {modules[activeModule] || <HomeDashboard />}
-          </main>
-        </div>
+        <main style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          paddingRight: (!isMobile && chatOpen) ? 360 : 0,
+          transition: 'padding-right 0.22s ease',
+        }}>
+          {modules[activeModule] || <HomeDashboard />}
+        </main>
 
         {isMobile && <BottomNav activeModule={activeModule} setActiveModule={setActiveModule} isPhone={isPhone} />}
         <ChatPanel />
@@ -120,11 +111,10 @@ export default function App() {
   );
 }
 
-// Scrollable bottom nav — supports any number of items
 function BottomNav({ activeModule, setActiveModule, isPhone }) {
   return (
     <nav style={{
-      height: isPhone ? 56 : 62,
+      height: isPhone ? 58 : 64,
       background: 'var(--surface)',
       borderTop: '1px solid var(--border)',
       display: 'flex',
@@ -138,13 +128,13 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
         return (
           <button key={item.id} onClick={() => setActiveModule(item.id)}
             style={{
-              minWidth: isPhone ? 52 : 60,
+              minWidth: isPhone ? 52 : 62,
               flex: 'none',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 2,
+              gap: 3,
               border: 'none',
               borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #00C6E6)') : 'transparent'}`,
               background: 'transparent',
@@ -155,8 +145,8 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
               transition: 'color 0.12s',
               padding: '0 2px',
             }}>
-            <span style={{ fontSize: isPhone ? 18 : 16 }}>{item.icon}</span>
-            {!isPhone && <span style={{ fontSize: 7, fontWeight: active ? 700 : 500, letterSpacing: 0.2, whiteSpace: 'nowrap' }}>{item.label}</span>}
+            <NavIcon id={item.id} size={isPhone ? 18 : 16} strokeWidth={active ? 2.2 : 1.8} />
+            {!isPhone && <span style={{ fontSize: 8, fontWeight: active ? 700 : 500, letterSpacing: 0.3, whiteSpace: 'nowrap' }}>{item.label}</span>}
           </button>
         );
       })}
