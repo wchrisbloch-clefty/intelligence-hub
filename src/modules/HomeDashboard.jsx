@@ -5,7 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import NavIcon from './shared/NavIcon.jsx';
-import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw } from 'lucide-react';
+import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
 
@@ -273,14 +273,126 @@ function SkillBar({ title, confidence = 5 }) {
   );
 }
 
-export default function HomeDashboard() {
-  const { graph, projects, notes, setActiveModule, isMobile, isTablet, isPhone, isDesktop } = useApp();
+function SignalModal({ signal, onClose, setActiveModule, setChatPrefill, setChatOpen }) {
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState(false);
+  const { isMobile, isPhone } = useApp();
 
-  const [brief,        setBrief]        = useState('');
-  const [briefLoading, setBriefLoading] = useState(false);
-  const [briefDone,    setBriefDone]    = useState(false);
-  const [briefError,   setBriefError]   = useState(false);
-  const [onboarded,    setOnboarded]    = useState(() => !!localStorage.getItem(ONBOARDING_KEY));
+  useEffect(() => {
+    if (!signal) return;
+    setContent(''); setError(false);
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const prompt = `Tactical briefing for CB on this Blue Ocean signal:
+
+**${signal.title}** (${signal.category})
+Core insight: ${signal.insight}
+
+CB context: Houston TX, BD professional, $10K+/mo passive income goal, real estate, dividends, ERCOT energy, longevity, AI-augmented BD.
+
+Respond with exactly these four sections (use ## headers):
+
+## Why This Matters Now
+2-3 sentences on timing and why this is a Blue Ocean moment.
+
+## How to Learn
+3 specific bullets: books, courses, or frameworks to study.
+
+## How to Develop
+3 specific bullets: skills, assets, or relationships to build.
+
+## CB's Play
+3 concrete action bullets for 30 / 90 / 180 days.
+
+Be direct and specific to CB's context. No vague advice.`;
+      try {
+        const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 700 });
+        if (!cancelled) { setContent(reply); }
+      } catch { if (!cancelled) setError(true); }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [signal]);
+
+  if (!signal) return null;
+  const Icon = CATEGORY_ICONS[signal.category];
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: isPhone ? 'flex-end' : 'center', justifyContent: 'center', padding: isPhone ? 0 : '20px' }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ background: 'var(--surface)', border: `1px solid ${signal.color}30`, borderTop: `3px solid ${signal.color}`, borderRadius: isPhone ? '16px 16px 0 0' : 16, width: '100%', maxWidth: 680, maxHeight: isPhone ? '90vh' : '85vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+        {/* Header */}
+        <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 9, background: `${signal.color}14`, border: `1px solid ${signal.color}25`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                {Icon && <Icon size={15} strokeWidth={2} color={signal.color} />}
+              </div>
+              <SignalTag category={signal.category} color={signal.color} />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <UrgencyPill urgency={signal.urgency} color={signal.color} />
+              <button onClick={onClose} style={{ width: 28, height: 28, borderRadius: 7, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--muted)', outline: 'none' }}>
+                <X size={13} strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+          <div style={{ fontSize: isMobile ? 16 : 18, fontWeight: 800, color: 'var(--text)', lineHeight: 1.3, letterSpacing: -0.3, marginBottom: 8 }}>{signal.title}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-c)', lineHeight: 1.6 }}>{signal.insight}</div>
+        </div>
+
+        {/* Deep dive content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+          {loading && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '28px 0' }}>
+              <ThinkingDots color={signal.color} />
+              <div style={{ fontSize: 11, color: 'var(--dim)' }}>Generating tactical briefing…</div>
+            </div>
+          )}
+          {error && (
+            <div style={{ textAlign: 'center', padding: '24px 0' }}>
+              <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12 }}>Failed to generate — check API connection.</div>
+              <button onClick={() => { setError(false); setContent(''); setLoading(false); }}
+                style={{ fontSize: 10, padding: '6px 14px', background: 'var(--accent-glow, rgba(0,198,230,0.08))', border: '1px solid rgba(0,198,230,0.3)', borderRadius: 7, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontFamily: 'inherit' }}>Retry</button>
+            </div>
+          )}
+          {content && <MD text={content} color={signal.color} />}
+        </div>
+
+        {/* Action buttons */}
+        <div style={{ padding: '14px 20px', borderTop: '1px solid var(--bord2)', display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
+          {[
+            { label: 'Study Topic',  id: 'learn',    color: '#00C6E6' },
+            { label: 'Research',     id: 'research',  color: '#6366F1' },
+            { label: 'Add Project',  id: 'projects',  color: '#ff8844' },
+          ].map(a => (
+            <button key={a.id} onClick={() => { setActiveModule(a.id); onClose(); }}
+              style={{ flex: 1, minWidth: 80, padding: '9px 12px', borderRadius: 8, background: `${a.color}12`, border: `1px solid ${a.color}25`, color: a.color, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 0.2, outline: 'none' }}>
+              {a.label}
+            </button>
+          ))}
+          <button onClick={() => { setChatPrefill(`Deep dive: ${signal.title}. ${signal.insight} How do I take advantage of this given my goals?`); setChatOpen(true); onClose(); }}
+            style={{ flex: 1, minWidth: 80, padding: '9px 12px', borderRadius: 8, background: 'var(--accent-glow, rgba(0,198,230,0.08))', border: '1px solid rgba(0,198,230,0.25)', color: 'var(--accent, #00C6E6)', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 0.2, outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+            Ask AI <ArrowRight size={11} strokeWidth={2.5} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function HomeDashboard() {
+  const { graph, projects, notes, setActiveModule, setChatPrefill, setChatOpen, isMobile, isTablet, isPhone, isDesktop } = useApp();
+
+  const [brief,          setBrief]          = useState('');
+  const [briefLoading,   setBriefLoading]   = useState(false);
+  const [briefDone,      setBriefDone]      = useState(false);
+  const [briefError,     setBriefError]     = useState(false);
+  const [onboarded,      setOnboarded]      = useState(() => !!localStorage.getItem(ONBOARDING_KEY));
+  const [selectedSignal, setSelectedSignal] = useState(null);
 
   const topics         = Object.values(graph?.topics || {});
   const totalMin       = graph?.totalTime || 0;
@@ -506,7 +618,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ flexShrink: 0, width: isPhone ? '82vw' : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
+                  <div key={i} onClick={() => setSelectedSignal(s)} style={{ flexShrink: 0, width: isPhone ? '82vw' : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12, cursor: 'pointer', WebkitTapHighlightColor: 'transparent' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
                       <SignalTag category={s.category} color={s.color} />
                       <UrgencyPill urgency={s.urgency} color={s.color} />
@@ -519,7 +631,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
             ) : (
               <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 1fr' : '1fr 1fr 1fr', gap: 10 }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12, cursor: 'pointer', transition: 'box-shadow 0.15s, border-color 0.15s' }}
+                  <div key={i} onClick={() => setSelectedSignal(s)} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderTop: `3px solid ${s.color}`, borderRadius: 12, cursor: 'pointer', transition: 'box-shadow 0.15s, border-color 0.15s' }}
                     onMouseEnter={e => { e.currentTarget.style.boxShadow = `0 4px 20px ${s.color}14`; e.currentTarget.style.borderColor = `${s.color}38`; }}
                     onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = `${s.color}20`; }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 9 }}>
@@ -602,14 +714,16 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Quick Module Launch — desktop only, full-width below */}
       {!isMobile && (
         <div style={{ padding: `16px ${pad} 0` }}>
-          <SectionLabel icon="⚡" label="Quick Access" />
+          <SectionLabel icon={<Zap size={12} strokeWidth={2} />} label="Quick Access" />
           <div style={{ display: 'grid', gridTemplateColumns: isTablet ? 'repeat(3, 1fr)' : 'repeat(6, 1fr)', gap: 10 }}>
             {QUICK_MODULES.map(m => (
               <div key={m.id} onClick={() => setActiveModule(m.id)}
-                style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${m.color}20`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s' }}
-                onMouseEnter={e => e.currentTarget.style.borderColor = `${m.color}55`}
-                onMouseLeave={e => e.currentTarget.style.borderColor = `${m.color}20`}>
-                <div style={{ fontSize: 22 }}>{m.icon}</div>
+                style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${m.color}20`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s, box-shadow 0.15s' }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = `${m.color}40`; e.currentTarget.style.boxShadow = `0 4px 16px ${m.color}10`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = `${m.color}20`; e.currentTarget.style.boxShadow = 'none'; }}>
+                <div style={{ width: 34, height: 34, borderRadius: 9, background: `${m.color}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: m.color }}>
+                  <NavIcon id={m.id} size={17} strokeWidth={1.8} />
+                </div>
                 <div>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{m.label}</div>
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>{m.desc}</div>
@@ -618,6 +732,17 @@ Be blunt. No hedging. One decisive line per bullet.`;
             ))}
           </div>
         </div>
+      )}
+
+      {/* Signal deep-dive modal */}
+      {selectedSignal && (
+        <SignalModal
+          signal={selectedSignal}
+          onClose={() => setSelectedSignal(null)}
+          setActiveModule={setActiveModule}
+          setChatPrefill={setChatPrefill}
+          setChatOpen={setChatOpen}
+        />
       )}
     </div>
   );
