@@ -1,20 +1,5 @@
-# dependencies
-node_modules/
-
-# build output
-dist/
-
-# lock files (Vercel uses its own install)
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-
-# env / secrets
+node_modules
+dist
 .env
 .env.local
-.env.*.local
-
-# editor / OS
 .DS_Store
-.vscode/
-*.swp
