@@ -53,7 +53,7 @@ function buildSystem(toneId, topicId) {
 }
 
 export default function CoachAI() {
-  const { isMobile, isPhone, isTablet } = useApp();
+  const { isMobile, isPhone, isTablet, setPendingArtifact } = useApp();
   const [tone,         setTone]         = useState('coach');
   const [topic,        setTopic]        = useState('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -173,8 +173,14 @@ export default function CoachAI() {
               </div>
             ) : (
               <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
-                  {currentTone.icon} {currentTone.label} · {currentTopic.label}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                  <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase' }}>
+                    {currentTone.icon} {currentTone.label} · {currentTopic.label}
+                  </div>
+                  <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}
+                    style={{ fontSize: 9, color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                    + Save to Project
+                  </div>
                 </div>
                 <MD text={msg.content} color={ACCENT} />
               </div>

@@ -32,7 +32,7 @@ function shortHost(url) {
 }
 
 export default function ContentInbox() {
-  const { notes, setNotes, isMobile } = useApp();
+  const { notes, setNotes, isMobile, setPendingArtifact } = useApp();
 
   const [items, setItems] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aether_inbox') || '[]'); } catch { return []; }
@@ -258,6 +258,10 @@ export default function ContentInbox() {
                             🏛 Save to Vault
                           </div>
                         )}
+                        <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #6366F140', borderRadius: 7, color: '#6366F1', cursor: 'pointer', background: '#6366F110', minHeight: isMobile ? 40 : undefined }}>
+                          🚀 Save to Project
+                        </div>
                       </div>
                     </div>
                   )}
