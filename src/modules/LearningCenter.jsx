@@ -235,12 +235,17 @@ export default function LearningCenter() {
           ))}
         </div>
         {Object.values(graph?.topics || {}).slice(0, 4).map(t => (
-          <div key={t.title} style={{ padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div key={t.title}
+            onClick={() => { setContext({ topic: t.title }); setEntryMode('topic'); setSessionMode('chat'); setScreen('session'); autoOpen('topic', 'chat', { topic: t.title }); }}
+            style={{ padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
             <div>
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{t.title}</div>
-              <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 1 }}>{t.sessions} sessions · {t.totalMin}min</div>
+              <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 1 }}>{t.sessions} sessions · {t.totalMin}min · tap to continue</div>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.confidence >= 7 ? '#00FFB2' : t.confidence >= 4 ? '#ffcc44' : '#ff6644' }}>{t.confidence}/10</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: t.confidence >= 7 ? '#00FFB2' : t.confidence >= 4 ? '#ffcc44' : '#ff6644' }}>{t.confidence}/10</div>
+              <div style={{ fontSize: 10, color: 'var(--subtle)' }}>→</div>
+            </div>
           </div>
         ))}
       </div>

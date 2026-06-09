@@ -32,7 +32,7 @@ function shortHost(url) {
 }
 
 export default function ContentInbox() {
-  const { notes, setNotes, isMobile } = useApp();
+  const { notes, setNotes, isMobile, setPendingArtifact } = useApp();
 
   const [items, setItems] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aether_inbox') || '[]'); } catch { return []; }
@@ -44,6 +44,8 @@ export default function ContentInbox() {
   const [text,       setText]       = useState('');
   const [title,      setTitle]      = useState('');
   const [analyzing,  setAnalyzing]  = useState(false);
+  const [copiedId,   setCopiedId]   = useState(null);
+  const [reanalyzing,setReanalyzing]= useState(null);
 
   const persist = (updated) => {
     setItems(updated);
@@ -104,6 +106,33 @@ export default function ContentInbox() {
     setNotes(updated);
     await saveNotes(updated);
     persist(items.map(i => i.id === item.id ? { ...i, inVault: true } : i));
+  };
+
+  const copyToClipboard = (id, text) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
+  };
+
+  const reanalyze = async (item) => {
+    if (reanalyzing) return;
+    setReanalyzing(item.id);
+    const type = item.type;
+    const typeLabel = type === 'video' ? 'YouTube/video' : type === 'social' ? 'social post' : 'article/document';
+    const prompt = item.snippet
+      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways with specific CB applications (BD, investing, health, Houston)\n3. Connection to CB's mental model library\n4. Decisive action or insight\n\nContent:\n${item.snippet}`
+      : `The user saved this ${typeLabel} URL for CB: ${item.url}\n\nAnalyze based on URL/domain context. Cover:\n1. What this source likely contains and why CB saved it\n2. 3 insights CB should extract if he reads/watches this\n3. How it connects to CB's goals (BD, passive income, longevity, Houston)\n4. Decisive recommendation`;
+    try {
+      const summary = await callClaude({
+        system: CB_IDENTITY,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 900,
+      });
+      persist(items.map(i => i.id === item.id ? { ...i, summary, inVault: false } : i));
+    } catch {
+      alert('Re-analysis failed — check network and try again.');
+    }
+    setReanalyzing(null);
   };
 
   const filtered = filter === 'all' ? items : items.filter(i => i.type === filter);
@@ -183,14 +212,14 @@ export default function ContentInbox() {
               const expanded = expandedId === item.id;
               return (
                 <div key={item.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
-                  <div style={{ padding: '13px 16px' }}>
+                  <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : item.id)}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <span style={{ fontSize: 18, flexShrink: 0 }}>{TYPE_ICON[item.type] || '📄'}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.3 }}>{item.title}</div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {item.url && (
-                            <span onClick={() => window.open(item.url, '_blank')}
+                            <span onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}
                               style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer' }}>
                               ↗ {shortHost(item.url)}
                             </span>
@@ -201,11 +230,11 @@ export default function ContentInbox() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                        <div onClick={() => setExpandedId(expanded ? null : item.id)}
-                          style={{ fontSize: 10, color: ACCENT, cursor: 'pointer', padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined }}>
-                          {expanded ? 'Hide' : 'View AI'}
+                        <div
+                          style={{ fontSize: 10, color: ACCENT, padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined, display: 'flex', alignItems: 'center' }}>
+                          {expanded ? '▲ Hide' : '▼ View AI'}
                         </div>
-                        <div onClick={() => remove(item.id)} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                        <div onClick={e => { e.stopPropagation(); remove(item.id); }} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                       </div>
                     </div>
                   </div>
@@ -215,9 +244,13 @@ export default function ContentInbox() {
                       <div style={{ fontSize: isMobile ? 10 : 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
                       <MD text={item.summary} color={ACCENT} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                        <div onClick={() => { navigator.clipboard?.writeText(item.summary); }}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, cursor: 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined }}>
-                          Copy
+                        <div onClick={() => copyToClipboard(item.id, item.summary)}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#10b981' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(16,185,129,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          {copiedId === item.id ? '✓ Copied!' : 'Copy'}
+                        </div>
+                        <div onClick={() => reanalyze(item)}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, cursor: reanalyzing ? 'default' : 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined, opacity: reanalyzing === item.id ? 0.6 : 1 }}>
+                          {reanalyzing === item.id ? '⟳ Re-analyzing…' : '⟳ Re-analyze'}
                         </div>
                         {!item.inVault && (
                           <div onClick={() => saveToVault(item)}
@@ -225,6 +258,10 @@ export default function ContentInbox() {
                             🏛 Save to Vault
                           </div>
                         )}
+                        <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #6366F140', borderRadius: 7, color: '#6366F1', cursor: 'pointer', background: '#6366F110', minHeight: isMobile ? 40 : undefined }}>
+                          🚀 Save to Project
+                        </div>
                       </div>
                     </div>
                   )}

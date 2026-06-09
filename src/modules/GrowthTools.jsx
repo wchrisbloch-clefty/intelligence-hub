@@ -30,10 +30,52 @@ const CERTS = [
 ];
 
 export default function GrowthTools() {
-  const { graph, projects, isMobile, isPhone, isTablet } = useApp();
+  const { graph, projects, isMobile, isPhone, isTablet, setChatPrefill, setChatOpen } = useApp();
   const [synthesis, setSynthesis] = useState('');
   const [synthLoading, setSynthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('goals');
+  const [expandedGoal, setExpandedGoal] = useState(null);
+  const [goalAI, setGoalAI] = useState({});
+  const [goalAILoading, setGoalAILoading] = useState(null);
+  const [expandedSkill, setExpandedSkill] = useState(null);
+  const [skillAI, setSkillAI] = useState({});
+  const [skillAILoading, setSkillAILoading] = useState(null);
+  const [certAI, setCertAI] = useState({});
+  const [certAILoading, setCertAILoading] = useState(null);
+
+  const getGoalAI = async (goal) => {
+    if (expandedGoal === goal.id) { setExpandedGoal(null); return; }
+    setExpandedGoal(goal.id);
+    if (goalAI[goal.id]) return;
+    setGoalAILoading(goal.id);
+    try {
+      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's goal: ${goal.label}. Current: ${goal.current}${goal.unit} of ${goal.target}${goal.unit} (${Math.min(100, Math.round((goal.current / goal.target) * 100))}%). Horizon: ${goal.horizon}.\n\nGive CB: (1) the single biggest lever to accelerate progress toward this goal, (2) one common mistake to avoid, (3) a specific 30-day sprint target. Be decisive and CB-specific.` }], maxTokens: 500 });
+      setGoalAI(p => ({ ...p, [goal.id]: r }));
+    } catch { setGoalAI(p => ({ ...p, [goal.id]: 'Network error — try again.' })); }
+    setGoalAILoading(null);
+  };
+
+  const getSkillAI = async (skill) => {
+    if (expandedSkill === skill.name) { setExpandedSkill(null); return; }
+    setExpandedSkill(skill.name);
+    if (skillAI[skill.name]) return;
+    setSkillAILoading(skill.name);
+    try {
+      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's skill: ${skill.name} — self-assessed ${skill.level}/10, growth trend ${skill.growth}.\n\nGive CB: (1) what getting from ${skill.level} to ${Math.min(10, skill.level + 2)} looks like in practice, (2) the highest-leverage resource or method to level up this skill, (3) how this skill connects to CB's BD/investing/Houston goals. Be specific.` }], maxTokens: 450 });
+      setSkillAI(p => ({ ...p, [skill.name]: r }));
+    } catch { setSkillAI(p => ({ ...p, [skill.name]: 'Network error — try again.' })); }
+    setSkillAILoading(null);
+  };
+
+  const getCertAI = async (cert) => {
+    if (certAI[cert.name]) { setCertAI(p => ({ ...p, [cert.name]: '' })); return; }
+    setCertAILoading(cert.name);
+    try {
+      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB is exploring the ${cert.name} certification (status: ${cert.status}). Give CB: (1) honest ROI assessment — is this worth the time and money for a BD professional/investor in Houston? (2) time commitment and difficulty, (3) decisive recommendation: pursue, deprioritize, or find a better alternative.` }], maxTokens: 450 });
+      setCertAI(p => ({ ...p, [cert.name]: r }));
+    } catch { setCertAI(p => ({ ...p, [cert.name]: 'Network error — try again.' })); }
+    setCertAILoading(null);
+  };
 
   const totalMin = graph?.totalTime || 0;
   const streak = graph?.streak || 0;
@@ -97,18 +139,35 @@ export default function GrowthTools() {
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
           {GOALS.map(g => {
             const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+            const isExpanded = expandedGoal === g.id;
             return (
-              <Card key={g.id} color={g.color} style={{ padding: '18px' }}>
+              <Card key={g.id} color={g.color} style={{ padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }} onClick={() => getGoalAI(g)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                   <div style={{ fontSize: 24 }}>{g.icon}</div>
-                  <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                    <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
+                    <div style={{ fontSize: 9, color: isExpanded ? g.color : 'var(--dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</div>
+                  </div>
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{g.label}</div>
                 <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 14 }}>{g.current}{g.unit} / {g.target}{g.unit}</div>
                 <div style={{ background: 'var(--border)', borderRadius: 4, height: 6, marginBottom: 8 }}>
                   <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${g.color}, ${g.color}80)`, borderRadius: 4, transition: 'width 0.5s' }} />
                 </div>
-                <div style={{ fontSize: 10, color: g.color }}>{pct}% to goal</div>
+                <div style={{ fontSize: 10, color: g.color, marginBottom: isExpanded ? 12 : 0 }}>{pct}% to goal · tap for AI insights</div>
+                {isExpanded && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${g.color}20` }} onClick={e => e.stopPropagation()}>
+                    {goalAILoading === g.id
+                      ? <ThinkingDots color={g.color} />
+                      : goalAI[g.id]
+                        ? <MD text={goalAI[g.id]} color={g.color} />
+                        : null}
+                    <div onClick={() => { setChatPrefill(`Help me make progress on my goal: ${g.label}. I'm at ${g.current}${g.unit} out of ${g.target}${g.unit}.`); setChatOpen(true); }}
+                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: `${g.color}10`, border: `1px solid ${g.color}30`, borderRadius: 7, fontSize: 10, fontWeight: 600, color: g.color, cursor: 'pointer' }}>
+                      💬 Ask CB AI about this goal
+                    </div>
+                  </div>
+                )}
               </Card>
             );
           })}
@@ -117,22 +176,36 @@ export default function GrowthTools() {
 
       {activeTab === 'skills' && (
         <div>
-          <Label>Skill Radar — Self Assessment</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr', gap: 10 }}>
-            {SKILLS.map(s => (
-              <div key={s.name} style={{ padding: '12px 16px', background: 'var(--surface)', border: `1px solid ${s.color}20`, borderRadius: 10 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ fontSize: 9, color: s.growth.startsWith('+') ? '#00FFB2' : 'var(--subtle)' }}>{s.growth}</div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{s.level}/10</div>
+          <Label>Skill Radar — Self Assessment · tap any skill for AI coaching</Label>
+          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
+            {SKILLS.map(s => {
+              const isExp = expandedSkill === s.name;
+              return (
+                <div key={s.name} onClick={() => getSkillAI(s)}
+                  style={{ padding: '12px 16px', background: 'var(--surface)', border: `1px solid ${isExp ? s.color + '60' : s.color + '20'}`, borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 9, color: s.growth.startsWith('+') ? '#00FFB2' : 'var(--subtle)' }}>{s.growth}</div>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{s.level}/10</div>
+                      <div style={{ fontSize: 9, color: isExp ? s.color : 'var(--dim)', transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</div>
+                    </div>
                   </div>
+                  <div style={{ background: 'var(--border)', borderRadius: 2, height: 3, marginBottom: isExp ? 12 : 0 }}>
+                    <div style={{ width: `${s.level * 10}%`, height: '100%', background: s.color, borderRadius: 2 }} />
+                  </div>
+                  {isExp && (
+                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.color}20` }} onClick={e => e.stopPropagation()}>
+                      {skillAILoading === s.name
+                        ? <ThinkingDots color={s.color} />
+                        : skillAI[s.name]
+                          ? <MD text={skillAI[s.name]} color={s.color} />
+                          : null}
+                    </div>
+                  )}
                 </div>
-                <div style={{ background: 'var(--border)', borderRadius: 2, height: 3 }}>
-                  <div style={{ width: `${s.level * 10}%`, height: '100%', background: s.color, borderRadius: 2 }} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div style={{ marginTop: 16, padding: '12px 16px', background: '#00FFB208', border: '1px solid #00FFB220', borderRadius: 10 }}>
             <div style={{ fontSize: 10, color: '#00FFB2', marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>

@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import { loadGraph, loadProjects, loadNotes, loadResearch } from './utils.js';
+import { loadGraph, loadProjects, loadNotes, loadResearch, saveProjects, uid } from './utils.js';
 import { NAV_ITEMS, THEME_DARK, THEME_LIGHT } from './constants.js';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
@@ -41,6 +41,7 @@ export default function App() {
   const [loaded,   setLoaded]   = useState(false);
 
   const [theme, setTheme] = useState(() => localStorage.getItem('aether-theme') || 'dark');
+  const [pendingArtifact, setPendingArtifact] = useState(null);
 
   const { isMobile, isTablet, isPhone, isDesktop, isWide } = useViewport();
 
@@ -59,6 +60,17 @@ export default function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
+  const saveArtifactToProject = async (projectId, artifact) => {
+    const updated = projects.map(p => {
+      if (p.id !== projectId) return p;
+      const existing = p.artifacts || [];
+      return { ...p, artifacts: [...existing, { id: uid(), ...artifact, savedAt: Date.now() }], updatedAt: Date.now() };
+    });
+    setProjects(updated);
+    await saveProjects(updated);
+    setPendingArtifact(null);
+  };
+
   const ctx = {
     activeModule, setActiveModule,
     chatOpen,     setChatOpen,
@@ -70,6 +82,7 @@ export default function App() {
     research,     setResearch,
     isMobile, isTablet, isPhone, isDesktop, isWide,
     theme,    toggleTheme,
+    pendingArtifact, setPendingArtifact, saveArtifactToProject,
   };
 
   const modules = {
@@ -106,6 +119,14 @@ export default function App() {
 
         {isMobile && <BottomNav activeModule={activeModule} setActiveModule={setActiveModule} isPhone={isPhone} />}
         <ChatPanel />
+        {pendingArtifact && (
+          <SaveToProjectModal
+            artifact={pendingArtifact}
+            projects={projects}
+            onSave={saveArtifactToProject}
+            onClose={() => setPendingArtifact(null)}
+          />
+        )}
       </div>
     </AppContext.Provider>
   );
@@ -151,6 +172,47 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
         );
       })}
     </nav>
+  );
+}
+
+function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
+  const [selectedId, setSelectedId] = useState(
+    projects.find(p => p.status === 'active')?.id || projects[0]?.id || null
+  );
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
+      onClick={e => e.target === e.currentTarget && onClose()}>
+      <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Save to Project</div>
+          <div onClick={onClose} style={{ fontSize: 14, color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+        </div>
+        <div style={{ padding: 18 }}>
+          <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 14 }}>
+            Saving: <span style={{ color: 'var(--text-b)', fontWeight: 600 }}>{artifact.title || 'AI Output'}</span>
+          </div>
+          <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+            {projects.map(p => (
+              <div key={p.id} onClick={() => setSelectedId(p.id)}
+                style={{ padding: '10px 12px', background: selectedId === p.id ? `${p.color || '#00FFB2'}15` : 'var(--bg)', border: `1px solid ${selectedId === p.id ? (p.color || '#00FFB2') + '50' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
+                <div style={{ fontSize: 16 }}>{p.emoji}</div>
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
+                  <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{p.status}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
+              style={{ flex: 2, padding: '10px', background: selectedId ? '#00FFB2' : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              Save to Project →
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

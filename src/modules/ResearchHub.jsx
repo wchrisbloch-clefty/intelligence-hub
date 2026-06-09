@@ -21,6 +21,8 @@ function ResearchBoard() {
   const [draft, setDraft]         = useState('');
   const [synthesis, setSynthesis] = useState('');
   const [synLoading, setSynLoading] = useState(false);
+  const [analyzingId, setAnalyzingId] = useState(null);
+  const [cardAnalysis, setCardAnalysis] = useState({}); // id -> analysis text
 
   const persist = (updated) => { setCards(updated); saveBoard(updated); };
 
@@ -31,6 +33,26 @@ function ResearchBoard() {
     persist([card, ...cards]);
     setDraft('');
     setAdding(null);
+  };
+
+  const analyzeCard = async (card) => {
+    if (analyzingId === card.id) return;
+    setAnalyzingId(card.id);
+    setCardAnalysis(prev => ({ ...prev, [card.id]: '' }));
+    try {
+      const prompt = card.type === 'url'
+        ? `Analyze this source/URL for CB's research: ${card.content}\n\nWhat is this about? Key signal, relevance, and what CB should take from it.`
+        : `Analyze this research note for CB: "${card.content}"\n\nWhat's the signal here? Key insight, what's true/false, and what CB should do with this.`;
+      const reply = await callClaude({
+        system: CB_IDENTITY + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.',
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 600,
+      });
+      setCardAnalysis(prev => ({ ...prev, [card.id]: reply }));
+    } catch {
+      setCardAnalysis(prev => ({ ...prev, [card.id]: 'Analysis failed — try again.' }));
+    }
+    setAnalyzingId(null);
   };
 
   const moveCard = (id, dir) => {
@@ -103,9 +125,20 @@ function ResearchBoard() {
                         : card.content.slice(0, 120) + (card.content.length > 120 ? '…' : '')
                       }
                     </div>
+                    {cardAnalysis[card.id] && (
+                      <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 6, padding: '6px 8px', background: `${col.color}10`, borderRadius: 6, borderLeft: `2px solid ${col.color}` }}>
+                        <MD text={cardAnalysis[card.id]} color={col.color} />
+                      </div>
+                    )}
+                    {analyzingId === card.id && (
+                      <div style={{ fontSize: 10, color: col.color, marginBottom: 6 }}>
+                        <ThinkingDots color={col.color} />
+                      </div>
+                    )}
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                       {colIdx > 0 && <span onClick={() => moveCard(card.id, -1)} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '1px 5px' }}>←</span>}
                       {colIdx < BOARD_COLS.length - 1 && <span onClick={() => moveCard(card.id, 1)} style={{ fontSize: 11, color: col.color, cursor: 'pointer', padding: '1px 5px' }}>→</span>}
+                      <span onClick={() => analyzeCard(card)} style={{ fontSize: 9, color: col.color, cursor: 'pointer', padding: '1px 6px', border: `1px solid ${col.color}40`, borderRadius: 4, marginLeft: 2 }}>✦ AI</span>
                       <span onClick={() => removeCard(card.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', marginLeft: 'auto', padding: '1px 4px' }}>✕</span>
                     </div>
                   </div>
@@ -300,12 +333,17 @@ export default function ResearchHub() {
         <div>
           <Label color="#6366F1">Source Library</Label>
           {SOURCE_LIBRARY.map(s => (
-            <div key={s.name} style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 7 }}>
+            <div key={s.name}
+              onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}
+              style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 7, cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.name}</div>
-                <Badge color={s.color}>{s.type}</Badge>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <Badge color={s.color}>{s.type}</Badge>
+                  <span style={{ fontSize: 10, color: 'var(--dim)' }}>→</span>
+                </div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4 }}>{s.domain}</div>
+              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4 }}>{s.domain} · click to research</div>
             </div>
           ))}
         </div>

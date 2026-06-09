@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
 import { LANGUAGES, TRANSLATION_MODES } from '../constants.js';
+import MD from './shared/MD.jsx';
+import { ThinkingDots } from './shared/Common.jsx';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 
 const QUICK_PAIRS = [
@@ -149,7 +151,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         maxTokens: 2000,
       });
       setOutput(reply);
-      setHistory(h => [{ from: fromLabel, to: toLabel, mode, input: input.slice(0, 80) + (input.length > 80 ? '…' : ''), output: reply.slice(0, 80) + (reply.length > 80 ? '…' : ''), full: reply, date: Date.now() }, ...h.slice(0, 9)]);
+      setHistory(h => [{ from: fromLabel, to: toLabel, mode, fromCode: fromLang, toCode: toLang, input: input.slice(0, 80) + (input.length > 80 ? '…' : ''), output: reply.slice(0, 80) + (reply.length > 80 ? '…' : ''), fullInput: input, full: reply, date: Date.now() }, ...h.slice(0, 9)]);
     } catch {
       setOutput('Translation failed — check connection and try again.');
     }
@@ -247,8 +249,17 @@ Provide only the translation. No preamble, no explanation unless a cultural note
                 </button>
               )}
             </div>
-            <div style={{ minHeight: 160, padding: '14px', fontSize: 13, color: loading ? 'var(--dim)' : 'var(--text)', lineHeight: 1.7, fontStyle: loading ? 'italic' : 'normal' }}>
-              {loading ? 'Translating…' : output || <span style={{ color: 'var(--dim)' }}>Translation will appear here</span>}
+            <div style={{ minHeight: 160, padding: '14px', fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
+              {loading ? (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 10, fontStyle: 'italic' }}>Translating…</div>
+                  <ThinkingDots />
+                </div>
+              ) : output ? (
+                <MD text={output} />
+              ) : (
+                <span style={{ color: 'var(--dim)' }}>Translation will appear here</span>
+              )}
             </div>
           </div>
         </div>
@@ -265,7 +276,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
             <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Recent Translations</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {history.map((h, i) => (
-                <div key={i} onClick={() => setOutput(h.full)}
+                <div key={i} onClick={() => { setInput(h.fullInput || ''); setOutput(h.full); setFromLang(h.fromCode || fromLang); setToLang(h.toCode || toLang); }}
                   style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer' }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
                     <span style={{ fontSize: 9, color: 'var(--accent,#38bdf8)', fontWeight: 700 }}>{h.from} → {h.to}</span>

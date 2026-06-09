@@ -27,11 +27,13 @@ export default function DecisionLog() {
   const [decisions, setDecisions] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aether_decisions') || '[]'); } catch { return []; }
   });
-  const [tab,        setTab]        = useState('log');
-  const [expandedId, setExpandedId] = useState(null);
-  const [form,       setForm]       = useState(BLANK_FORM);
-  const [patterns,   setPatterns]   = useState('');
-  const [aiLoading,  setAiLoading]  = useState(false);
+  const [tab,          setTab]          = useState('log');
+  const [expandedId,   setExpandedId]   = useState(null);
+  const [form,         setForm]         = useState(BLANK_FORM);
+  const [patterns,     setPatterns]     = useState('');
+  const [aiLoading,    setAiLoading]    = useState(false);
+  const [decisionAI,   setDecisionAI]   = useState({}); // { [id]: string }
+  const [decisionAILoading, setDecisionAILoading] = useState(null);
 
   const persist = (updated) => {
     setDecisions(updated);
@@ -90,6 +92,23 @@ export default function DecisionLog() {
     setAiLoading(false);
   };
 
+  const analyzeDecision = async (d) => {
+    if (decisionAI[d.id] || decisionAILoading === d.id) return;
+    setDecisionAILoading(d.id);
+    const prompt = `Analyze this specific decision for CB and give actionable feedback:\n\nTitle: ${d.title}\nContext: ${d.context || 'Not provided'}\nOptions considered: ${d.options.join(' | ') || 'Not listed'}\nChosen option: ${d.options[d.chosen] || '—'}\nReasoning: ${d.reasoning || 'Not provided'}\nStatus: ${d.status}\n\nProvide:\n1. Quality of reasoning (strengths and blind spots)\n2. What mental models apply here\n3. Risks or second-order effects CB may not have considered\n4. A decisive recommendation or validation`;
+    try {
+      const result = await callClaude({
+        system: CB_IDENTITY,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 800,
+      });
+      setDecisionAI(prev => ({ ...prev, [d.id]: result }));
+    } catch {
+      setDecisionAI(prev => ({ ...prev, [d.id]: 'Analysis failed — try again.' }));
+    }
+    setDecisionAILoading(null);
+  };
+
   const reviewDue = decisions.filter(d =>
     d.status === 'decided' && d.decidedAt && daysAgo(d.decidedAt) >= 28
   );
@@ -136,6 +155,7 @@ export default function DecisionLog() {
       {tab === 'new' && (
         <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '20px 22px' }}>
           <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+            onKeyDown={e => { if (e.key === 'Enter' && form.title.trim()) addDecision(); }}
             placeholder="Decision title (e.g. 'Take on the new contract')"
             style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, fontWeight: 700, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 12, minHeight: isMobile ? 44 : undefined }} />
 
@@ -170,7 +190,7 @@ export default function DecisionLog() {
           </div>
 
           <button onClick={addDecision} disabled={!form.title.trim()}
-            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: form.title.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, color: form.title.trim() ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: form.title.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, color: form.title.trim() ? '#000' : 'var(--dim)', cursor: form.title.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
             Log Decision →
           </button>
         </div>
@@ -263,7 +283,7 @@ export default function DecisionLog() {
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {d.status === 'thinking' && (
                           <div onClick={() => updateStatus(d.id, 'decided')}
                             style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: '#10b98115', border: '1px solid #10b98130', color: '#10b981', minHeight: isMobile ? 44 : 34 }}>
@@ -276,7 +296,24 @@ export default function DecisionLog() {
                             Archive
                           </div>
                         )}
+                        {!decisionAI[d.id] && (
+                          <div onClick={() => analyzeDecision(d)}
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
+                            {decisionAILoading === d.id ? <><ThinkingDots color={ACCENT} /> Analyzing…</> : '✦ Get AI Feedback'}
+                          </div>
+                        )}
                       </div>
+
+                      {decisionAI[d.id] && (
+                        <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
+                          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Decision Analysis</div>
+                          <MD text={decisionAI[d.id]} color={ACCENT} />
+                          <div onClick={() => setDecisionAI(prev => { const n = { ...prev }; delete n[d.id]; return n; })}
+                            style={{ marginTop: 10, fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
+                            Clear analysis
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

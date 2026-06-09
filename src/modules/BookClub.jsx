@@ -76,6 +76,23 @@ export default function BookClub() {
     setLoading(false);
   };
 
+  const handleDeepDiveFor = async (modeId) => {
+    if (!selectedBook) return;
+    setLoading(true);
+    setResult('');
+    try {
+      const reply = await callClaude({
+        system: CB_LEARNING_SPINE,
+        messages: [{ role: 'user', content: PROMPTS[modeId](selectedBook) }],
+        maxTokens: 1400,
+      });
+      setResult(reply);
+    } catch {
+      setResult('Unable to generate — check connection and try again.');
+    }
+    setLoading(false);
+  };
+
   const pad     = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
   const gridCol = isPhone ? 'repeat(2,1fr)' : isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)';
   const modeCol = isPhone ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
@@ -117,12 +134,25 @@ export default function BookClub() {
               {filtered.length} Books · Click to Deep Dive
             </div>
 
+            {filtered.length === 0 && (
+              <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 14 }}>
+                <div style={{ fontSize: 28, marginBottom: 10 }}>📚</div>
+                <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
+                  {search ? `No books match "${search}"` : 'No books in your library yet.'}
+                </div>
+                <button onClick={() => { setSearch(''); setTab('add'); }}
+                  style={{ padding: '9px 20px', background: '#a78bfa', color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  + Add a Book
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'grid', gridTemplateColumns: gridCol, gap: 10 }}>
               {filtered.map((book, i) => {
                 const isSelected = selectedBook?.title === book.title;
                 return (
                   <div key={i}
-                    onClick={() => { setSelectedBook(book); setTab('dive'); setResult(''); }}
+                    onClick={() => { setSelectedBook(book); setMode('overview'); setResult(''); setTab('dive'); }}
                     style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? '#a78bfa' : (book.color || '#6366F1') + '22'}`, borderTop: `3px solid ${book.color || '#6366F1'}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
                     <div style={{ fontSize: 9, color: book.color || '#6366F1', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
                       {book.type || 'General'}
@@ -137,6 +167,7 @@ export default function BookClub() {
                       </div>
                     )}
                     {book.note && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
+                    <div style={{ marginTop: 10, fontSize: 9, color: '#a78bfa', fontWeight: 700 }}>🤿 Deep Dive →</div>
                   </div>
                 );
               })}
@@ -200,10 +231,10 @@ export default function BookClub() {
                 </div>
 
                 {/* Study mode grid */}
-                <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Choose Study Mode</div>
+                <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Choose Study Mode — click any to generate instantly</div>
                 <div style={{ display: 'grid', gridTemplateColumns: modeCol, gap: 8, marginBottom: 20 }}>
                   {STUDY_MODES.map(m => (
-                    <button key={m.id} onClick={() => { setMode(m.id); setResult(''); }}
+                    <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
                       style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(167,139,250,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? '#a78bfa' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
                       <div style={{ fontSize: 16 }}>{m.icon}</div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? '#a78bfa' : 'var(--text)', marginTop: 4 }}>{m.label}</div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
+import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#f59e0b';
@@ -69,7 +70,7 @@ Be direct. No padding. CB-style.`;
 }
 
 export default function QuizCenter() {
-  const { isMobile, graph } = useApp();
+  const { isMobile, graph, setChatPrefill, setChatOpen } = useApp();
   const [view,       setView]       = useState('pick');  // pick | quiz | result | history
   const [topic,      setTopic]      = useState(null);
   const [questions,  setQuestions]  = useState([]);
@@ -199,13 +200,7 @@ export default function QuizCenter() {
           {gapLoading ? (
             <div><div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color={ACCENT} /></div>
           ) : (
-            <div style={{ fontSize: 13, color: 'var(--text-b)', lineHeight: 1.8 }}>
-              {gapReport.split('\n').map((line, i) => {
-                const bold = line.match(/^\*\*(.*?)\*\*/);
-                if (bold) return <div key={i} style={{ marginBottom: 6 }}><strong style={{ color: 'var(--text)' }}>{bold[1]}</strong>{line.replace(/^\*\*.*?\*\*/, '')}</div>;
-                return line.trim() ? <div key={i} style={{ marginBottom: 4 }}>{line}</div> : null;
-              })}
-            </div>
+            <MD text={gapReport} color={ACCENT} />
           )}
         </div>
 
@@ -219,6 +214,12 @@ export default function QuizCenter() {
             New Topic
           </div>
         </div>
+        {gapReport && (
+          <div onClick={() => { setChatPrefill(`Let's go deeper on ${topic?.label}. Based on my quiz gaps, help me build a study plan and explain the key concepts I'm missing.`); setChatOpen(true); }}
+            style={{ marginTop: 10, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--subtle)', cursor: 'pointer' }}>
+            ✦ Deep Dive with AI →
+          </div>
+        )}
       </div>
     );
   }

@@ -282,6 +282,92 @@ function ExpertiseExport({ notes }) {
   );
 }
 
+// ─── Note Detail ─────────────────────────────────────────────────────────────
+function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
+  const [aiMode,    setAiMode]    = useState(''); // '' | 'expand' | 'connect' | 'apply'
+  const [aiResult,  setAiResult]  = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
+  const { setChatPrefill, setChatOpen } = useApp();
+
+  const runAI = async (mode) => {
+    if (aiMode === mode) { setAiMode(''); return; }
+    setAiMode(mode);
+    setAiResult('');
+    setAiLoading(true);
+    const prompts = {
+      expand: `Expand on this note for CB. Deepen the insight — add supporting evidence, a real-world example, and a second-order implication CB might not have considered.\n\nNote title: ${note.title}\nContent: ${note.content}`,
+      connect: `Connect this note to CB's broader knowledge base. What other fields, mental models, or domains does this insight intersect with? How does it compound with CB's goals (BD, passive income, health, leadership)?\n\nNote title: ${note.title}\nContent: ${note.content}`,
+      apply: `Give CB 3 specific, concrete ways to apply the insight in this note within the next 30 days. Be specific to CB's world (Houston TX, BD professional, investor, family-first operator).\n\nNote title: ${note.title}\nContent: ${note.content}`,
+    };
+    try {
+      const r = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompts[mode] }], maxTokens: 700 });
+      setAiResult(r);
+    } catch { setAiResult('Network error — try again.'); }
+    setAiLoading(false);
+  };
+
+  return (
+    <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
+        <div onClick={onBack} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer' }}>← Vault</div>
+        <div onClick={onCardCreate} style={{ fontSize: 10, padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 8 }}>{note.title}</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {note.tags?.map(t => <Badge key={t} color={note.color}>{t}</Badge>)}
+          </div>
+        </div>
+        <div onClick={onDelete} style={{ fontSize: 10, color: '#ff4444', padding: '5px 10px', border: '1px solid #ff444440', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
+      </div>
+      <div style={{ fontSize: 13, lineHeight: 1.85, color: 'var(--text-c)', whiteSpace: 'pre-wrap', marginBottom: 24 }}>{note.content}</div>
+      {note.connections?.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <Label>Knowledge Connections</Label>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {note.connections.map(c => (
+              <div key={c} onClick={() => { setChatPrefill(`Tell me more about "${c}" and how it connects to: ${note.title}`); setChatOpen(true); }}
+                style={{ fontSize: 10, padding: isMobile ? '8px 14px' : '5px 12px', background: 'var(--surface)', border: `1px solid ${note.color}25`, color: note.color, borderRadius: 20, cursor: 'pointer', minHeight: isMobile ? 36 : undefined }}>
+                📚 {c}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* AI Deepen Panel */}
+      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+        <Label>✦ Deepen This Note</Label>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {[
+            { id: 'expand',  label: '📖 Expand Insight' },
+            { id: 'connect', label: '🔗 Cross-Connect' },
+            { id: 'apply',   label: '🎯 Apply in 30 Days' },
+          ].map(btn => (
+            <div key={btn.id} onClick={() => runAI(btn.id)}
+              style={{ padding: isMobile ? '10px 16px' : '6px 14px', fontSize: 11, fontWeight: 600, border: `1px solid ${aiMode === btn.id ? note.color : 'var(--border)'}`, borderRadius: 8, color: aiMode === btn.id ? note.color : 'var(--subtle)', background: aiMode === btn.id ? `${note.color}12` : 'var(--surface)', cursor: 'pointer', transition: 'all 0.12s', minHeight: isMobile ? 40 : undefined }}>
+              {btn.label}
+            </div>
+          ))}
+          <div onClick={() => { setChatPrefill(`I want to dive deeper into this note: "${note.title}". ${note.content.slice(0, 200)}`); setChatOpen(true); }}
+            style={{ padding: isMobile ? '10px 16px' : '6px 14px', fontSize: 11, fontWeight: 600, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', background: 'var(--surface)', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>
+            💬 Ask CB AI
+          </div>
+        </div>
+        {aiMode && (aiLoading || aiResult) && (
+          <div style={{ padding: '14px 16px', background: `${note.color}08`, border: `1px solid ${note.color}25`, borderRadius: 10 }}>
+            <div style={{ fontSize: 8, letterSpacing: 3, color: note.color, textTransform: 'uppercase', marginBottom: 10 }}>
+              {aiMode === 'expand' ? 'Expanded Insight' : aiMode === 'connect' ? 'Cross-Connections' : '30-Day Applications'}
+            </div>
+            {aiLoading ? <ThinkingDots color={note.color} /> : <MD text={aiResult} color={note.color} />}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Module ─────────────────────────────────────────────────────────────
 export default function MasteryVault() {
   const { notes, setNotes, graph, isMobile } = useApp();
@@ -336,34 +422,7 @@ export default function MasteryVault() {
   if (activeNote) {
     const note = notes.find(n => n.id === activeNote);
     if (!note) { setActiveNote(null); return null; }
-    return (
-      <div style={{ padding: '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
-          <div onClick={() => setActiveNote(null)} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer' }}>← Vault</div>
-          <div onClick={() => addCardFromNote(note)} style={{ fontSize: 10, padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 8 }}>{note.title}</div>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {note.tags?.map(t => <Badge key={t} color={note.color}>{t}</Badge>)}
-            </div>
-          </div>
-          <div onClick={() => deleteNote(note.id)} style={{ fontSize: 10, color: '#ff4444', padding: '5px 10px', border: '1px solid #ff444440', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
-        </div>
-        <div style={{ fontSize: 13, lineHeight: 1.85, color: 'var(--text-c)', whiteSpace: 'pre-wrap', marginBottom: 24 }}>{note.content}</div>
-        {note.connections?.length > 0 && (
-          <div>
-            <Label>Knowledge Connections</Label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {note.connections.map(c => (
-                <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: `1px solid ${note.color}25`, color: note.color, borderRadius: 20 }}>📚 {c}</div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
+    return <NoteDetail note={note} isMobile={isMobile} onBack={() => setActiveNote(null)} onDelete={() => deleteNote(note.id)} onCardCreate={() => addCardFromNote(note)} />;
   }
 
   // ── Main view ────────────────────────────────────────────────────────────

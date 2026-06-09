@@ -201,6 +201,7 @@ export default function PodcastHub() {
 
   // ─── Paste & Analyze state ─────────────────────────────────────────────
   const [pasteOpen, setPasteOpen]   = useState(false);
+  const [pasteUrl, setPasteUrl]     = useState('');
   const [pasteText, setPasteText]   = useState('');
   const [pasteMode, setPasteMode]   = useState('');
   const [pasteResult, setPasteResult] = useState('');
@@ -209,16 +210,20 @@ export default function PodcastHub() {
   const [pasteVaulted, setPasteVaulted] = useState(false);
   const [ttsGlobal] = useState(() => typeof window !== 'undefined' && 'speechSynthesis' in window);
 
+  const pasteHasContent = pasteUrl.trim() || pasteText.trim();
+
   const handlePasteAI = async (mode) => {
-    if (!pasteText.trim()) return;
+    if (!pasteHasContent) return;
     if (pasteMode === mode) { setPasteMode(''); return; }
     setPasteMode(mode);
     setPasteResult('');
     setPasteLoading(true);
+    const urlContext = pasteUrl.trim() ? `\nEpisode/Show URL: ${pasteUrl.trim()}` : '';
+    const textContext = pasteText.trim() ? `\n\nContent:\n${pasteText.slice(0, 6000)}` : '';
     const prompts = {
-      summary: `Summarize this podcast content in 3-4 tight, insight-packed sentences for CB. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).\n\nContent:\n${pasteText.slice(0, 6000)}`,
-      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation\n(continue for 5 total)\n\nContent:\n${pasteText.slice(0, 6000)}`,
-      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and CB-specific action items (BD professional, investor, Houston TX). Be specific, thorough, and decisive.\n\nContent:\n${pasteText.slice(0, 6000)}`,
+      summary: `Summarize this podcast content in 3-4 tight, insight-packed sentences for CB. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).${urlContext}${textContext}`,
+      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation\n(continue for 5 total)${urlContext}${textContext}`,
+      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and CB-specific action items (BD professional, investor, Houston TX). Be specific, thorough, and decisive.${urlContext}${textContext}`,
     };
     try {
       const result = await callClaude({
@@ -402,13 +407,20 @@ export default function PodcastHub() {
           <span style={{ fontSize: 14 }}>📋</span>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Paste & Analyze</div>
-            <div style={{ fontSize: 10, color: 'var(--dim)' }}>Paste any podcast transcript, show notes, or text — get instant AI analysis</div>
+            <div style={{ fontSize: 10, color: 'var(--dim)' }}>Enter a podcast URL or paste transcript/show notes — get instant AI analysis</div>
           </div>
           <span style={{ fontSize: 11, color: 'var(--subtle)', transition: 'transform 0.2s', transform: pasteOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
         </div>
 
         {pasteOpen && (
           <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px' }}>
+            <input
+              value={pasteUrl}
+              onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); }}
+              placeholder="Podcast episode URL (optional) — e.g. https://podcasts.apple.com/… or Spotify link"
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }}
+            />
+            <div style={{ fontSize: 10, color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
             <textarea
               value={pasteText}
               onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); }}
@@ -422,19 +434,19 @@ export default function PodcastHub() {
                 { id: 'takeaways', label: '📋 Takeaways', short: '📋' },
                 { id: 'deepdive',  label: '📄 Deep Dive', short: '📄' },
               ].map(btn => (
-                <button key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteText.trim() || (pasteLoading && pasteMode !== btn.id)}
-                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteText.trim() ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteText.trim() ? 'default' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                <button key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteHasContent || (pasteLoading && pasteMode !== btn.id)}
+                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteLoading && pasteMode === btn.id ? `${btn.short} Analyzing…` : btn.label}
                 </button>
               ))}
               {ttsGlobal && (
-                <button onClick={handlePasteReadAloud} disabled={!pasteText.trim() && !pasteResult}
-                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteText.trim() && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                <button onClick={handlePasteReadAloud} disabled={!pasteHasContent && !pasteResult}
+                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteReading ? '⏹ Stop' : '🔊 Read Aloud'}
                 </button>
               )}
-              {pasteText && (
-                <button onClick={() => { setPasteText(''); setPasteResult(''); setPasteMode(''); }}
+              {pasteHasContent && (
+                <button onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); }}
                   style={{ padding: '6px 10px', fontSize: 10, border: '1px solid var(--border)', borderRadius: 7, background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
                   Clear
                 </button>
@@ -449,7 +461,7 @@ export default function PodcastHub() {
                   <>
                     <MD text={pasteResult} color={ACCENT} />
                     {!pasteVaulted
-                      ? <div onClick={() => { saveToVault('[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
+                      ? <div onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
                           style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#ffcc4410', border: '1px solid #ffcc4440', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#ffcc44', cursor: 'pointer' }}>
                           🏛 Save to Vault
                         </div>
