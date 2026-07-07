@@ -21,13 +21,14 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stream, setStream] = useState('');
   const [attachments, setAttachments] = useState([]);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   const sendRef = useRef(null);
   const { listening, toggle: toggleVoice, supported: voiceOk } = useVoiceInput();
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   // Auto-send when opened via AI search
   useEffect(() => {
@@ -46,14 +47,16 @@ export default function ChatPanel() {
     setInput('');
     setAttachments([]);
     setLoading(true);
+    setStream('');
     try {
       const system = buildSystem(null, null, { chatMode }, graph);
       const apiMsgs = await buildApiMessages(newHist);
-      const reply = await callClaude({ system, messages: apiMsgs });
+      const reply = await callClaude({ system, messages: apiMsgs, onToken: (t) => setStream(s => s + t) });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
+    setStream('');
     setLoading(false);
   };
   sendRef.current = send;
@@ -83,15 +86,15 @@ export default function ChatPanel() {
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif" }}>Intelligence Chat</div>
-            <div style={{ fontSize: 9, color: '#00FFB2', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{mode?.icon} {mode?.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
+            <div style={{ fontSize: 9, color: '#D9A441', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{mode?.icon} {mode?.label}</div>
           </div>
           <div onClick={() => setChatOpen(false)} style={{ fontSize: 13, color: 'var(--subtle)', cursor: 'pointer', padding: '2px 5px' }}>✕</div>
         </div>
         <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
           {CHAT_MODES.map(m => (
             <div key={m.id} onClick={() => setChatMode(m.id)} title={m.desc}
-              style={{ fontSize: 9, padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? '#00FFB2' : 'var(--border)'}`, color: chatMode === m.id ? '#00FFB2' : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? '#00FFB210' : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              style={{ fontSize: 9, padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? '#D9A441' : 'var(--border)'}`, color: chatMode === m.id ? '#D9A441' : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? '#D9A44110' : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
               {m.icon} {m.label}
             </div>
           ))}
@@ -126,9 +129,9 @@ export default function ChatPanel() {
                 {msg.content}
               </div>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid #00FFB220', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 8 }}>Aether · {mode?.label}</div>
-                <MD text={msg.content} color="#00FFB2" />
+              <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
+                <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
+                <MD text={msg.content} color="#D9A441" />
               </div>
             )}
           </div>
@@ -136,9 +139,11 @@ export default function ChatPanel() {
 
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #00FFB220', borderRadius: '3px 14px 14px 14px', padding: '12px 14px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 8 }}>Thinking...</div>
-              <ThinkingDots color="#00FFB2" />
+            <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
+              {stream
+                ? <MD text={stream + '▍'} color="#D9A441" />
+                : <ThinkingDots color="#D9A441" />}
             </div>
           </div>
         )}
@@ -149,9 +154,9 @@ export default function ChatPanel() {
       {attachments.length > 0 && (
         <div style={{ padding: '6px 14px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {attachments.map((a, i) => (
-            <div key={i} style={{ fontSize: 9, color: '#4488ff', background: '#4488ff12', border: '1px solid #4488ff25', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div key={i} style={{ fontSize: 9, color: '#D9A441', background: '#D9A44112', border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
               {a.icon} {a.name.slice(0, 14)}
-              <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: '#ff4444', cursor: 'pointer' }}>✕</span>
+              <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: '#C4553D', cursor: 'pointer' }}>✕</span>
             </div>
           ))}
         </div>
@@ -179,16 +184,16 @@ export default function ChatPanel() {
           {voiceOk && (
             <div onClick={() => toggleVoice((t, final) => { setInput(t); })}
               title={listening ? 'Stop recording' : 'Voice input'}
-              style={{ padding: '8px', background: listening ? '#ff444412' : 'var(--surface)', border: `1px solid ${listening ? '#ff4444' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', color: listening ? '#ff4444' : 'var(--subtle)', fontSize: 13, flexShrink: 0, minHeight: 36, display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
+              style={{ padding: '8px', background: listening ? '#C4553D12' : 'var(--surface)', border: `1px solid ${listening ? '#C4553D' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', color: listening ? '#C4553D' : 'var(--subtle)', fontSize: 13, flexShrink: 0, minHeight: 36, display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
               🎙️
             </div>
           )}
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
             rows={1} placeholder={listening ? 'Listening…' : 'Ask anything — paste docs, images, or use voice…'}
-            style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${listening ? '#ff444440' : 'var(--border)'}`, borderRadius: 10, padding: '8px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 80, transition: 'border-color 0.15s' }} />
+            style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${listening ? '#C4553D40' : 'var(--border)'}`, borderRadius: 10, padding: '8px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 80, transition: 'border-color 0.15s' }} />
           <button onClick={() => send(input)} disabled={!input.trim() && attachments.length === 0}
-            style={{ padding: '8px 13px', background: input.trim() || attachments.length > 0 ? 'var(--accent,#00C6E6)' : 'var(--bord2)', border: 'none', borderRadius: 9, color: input.trim() || attachments.length > 0 ? '#000' : 'var(--dim)', fontSize: 12, fontWeight: 800, cursor: 'pointer', flexShrink: 0, minHeight: 36 }}>→</button>
+            style={{ padding: '8px 13px', background: input.trim() || attachments.length > 0 ? 'var(--accent,#D9A441)' : 'var(--bord2)', border: 'none', borderRadius: 9, color: input.trim() || attachments.length > 0 ? '#000' : 'var(--dim)', fontSize: 12, fontWeight: 800, cursor: 'pointer', flexShrink: 0, minHeight: 36 }}>→</button>
         </div>
       </div>
     </div>

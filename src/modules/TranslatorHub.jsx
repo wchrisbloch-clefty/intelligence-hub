@@ -53,7 +53,7 @@ function LangSelector({ label, value, onChange }) {
               {/* Variants or single option */}
               {(lang.variants && lang.variants.length > 1 ? lang.variants : [{ code: lang.code, label: `${lang.flag} ${lang.label}` }]).map(v => (
                 <div key={v.code} onClick={() => { onChange(v.code); setOpen(false); }}
-                  style={{ padding: lang.variants && lang.variants.length > 1 ? '8px 14px 8px 24px' : '8px 14px', fontSize: 12, color: value === v.code ? 'var(--accent,#38bdf8)' : 'var(--text-b)', cursor: 'pointer', background: value === v.code ? 'var(--accent-glow,rgba(56,189,248,0.08))' : 'transparent', fontWeight: value === v.code ? 600 : 400, borderBottom: '1px solid var(--bord2)' }}>
+                  style={{ padding: lang.variants && lang.variants.length > 1 ? '8px 14px 8px 24px' : '8px 14px', fontSize: 12, color: value === v.code ? 'var(--accent,#D9A441)' : 'var(--text-b)', cursor: 'pointer', background: value === v.code ? 'var(--accent-glow,rgba(56,189,248,0.08))' : 'transparent', fontWeight: value === v.code ? 600 : 400, borderBottom: '1px solid var(--bord2)' }}>
                   {v.label}
                 </div>
               ))}
@@ -166,7 +166,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
       {/* Header */}
       <div style={{ padding: `${pad} ${pad} 0`, marginBottom: 20 }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub</div>
-        <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5 }}>
+        <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
           🌐 Translator
         </div>
         <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 5 }}>
@@ -180,7 +180,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', marginBottom: 20, paddingBottom: 2 }}>
           {QUICK_PAIRS.map(p => (
             <button key={p.label} onClick={() => { setFromLang(p.from); setToLang(p.to); setOutput(''); }}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${fromLang === p.from && toLang === p.to ? 'var(--accent,#38bdf8)' : 'var(--border)'}`, background: fromLang === p.from && toLang === p.to ? 'rgba(56,189,248,0.1)' : 'transparent', color: fromLang === p.from && toLang === p.to ? 'var(--accent,#38bdf8)' : 'var(--muted)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: fromLang === p.from && toLang === p.to ? 'rgba(56,189,248,0.1)' : 'transparent', color: fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
               {p.label}
             </button>
           ))}
@@ -200,7 +200,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 16 }}>
           {TRANSLATION_MODES.map(m => (
             <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#38bdf8)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(56,189,248,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent,#38bdf8)' : 'var(--muted)', fontSize: 11, fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(56,189,248,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 11, fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
               {m.icon} {m.label}
             </button>
           ))}
@@ -215,7 +215,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
               <div style={{ display: 'flex', gap: 6 }}>
                 {voiceOk && (
                   <button onClick={() => toggleVoice((t) => setInput(t))}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? '#ff4444' : 'var(--border)'}`, background: listening ? '#ff444410' : 'transparent', color: listening ? '#ff4444' : 'var(--dim)', fontSize: 12, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
+                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? '#C4553D' : 'var(--border)'}`, background: listening ? '#C4553D10' : 'transparent', color: listening ? '#C4553D' : 'var(--dim)', fontSize: 12, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
                     {listening ? '⏹ Stop' : '🎙️ Voice'}
                   </button>
                 )}
@@ -266,7 +266,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
 
         {/* Translate button */}
         <button onClick={translate} disabled={loading || !input.trim()}
-          style={{ padding: '12px 32px', background: loading || !input.trim() ? 'var(--surf2)' : 'var(--accent,#38bdf8)', color: loading || !input.trim() ? 'var(--dim)' : '#000', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 800, cursor: loading || !input.trim() ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 24 }}>
+          style={{ padding: '12px 32px', background: loading || !input.trim() ? 'var(--surf2)' : 'var(--accent,#D9A441)', color: loading || !input.trim() ? 'var(--dim)' : '#000', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 800, cursor: loading || !input.trim() ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 24 }}>
           {loading ? 'Translating…' : `🌐 Translate`}
         </button>
 
@@ -279,7 +279,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
                 <div key={i} onClick={() => { setInput(h.fullInput || ''); setOutput(h.full); setFromLang(h.fromCode || fromLang); setToLang(h.toCode || toLang); }}
                   style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer' }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 9, color: 'var(--accent,#38bdf8)', fontWeight: 700 }}>{h.from} → {h.to}</span>
+                    <span style={{ fontSize: 9, color: 'var(--accent,#D9A441)', fontWeight: 700 }}>{h.from} → {h.to}</span>
                     <span style={{ fontSize: 9, color: 'var(--dim)' }}>·</span>
                     <span style={{ fontSize: 9, color: 'var(--dim)' }}>{h.mode}</span>
                   </div>

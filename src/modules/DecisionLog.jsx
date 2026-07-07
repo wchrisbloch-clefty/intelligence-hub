@@ -5,13 +5,13 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#f59e0b';
+const ACCENT        = '#D9A441';
 const ACCENT_BG     = 'rgba(245,158,11,0.07)';
 const ACCENT_BORDER = 'rgba(245,158,11,0.22)';
 
 const STATUS_META = {
-  thinking: { label: 'Thinking',    color: '#38bdf8' },
-  decided:  { label: 'Decided',     color: '#10b981' },
+  thinking: { label: 'Thinking',    color: '#D9A441' },
+  decided:  { label: 'Decided',     color: '#D9A441' },
   closed:   { label: 'Archived',    color: 'var(--dim)' },
 };
 
@@ -121,7 +121,7 @@ export default function DecisionLog() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Decision Log</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>Decisions That Compound</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Decisions That Compound</div>
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
       </div>
 
@@ -286,7 +286,7 @@ export default function DecisionLog() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {d.status === 'thinking' && (
                           <div onClick={() => updateStatus(d.id, 'decided')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: '#10b98115', border: '1px solid #10b98130', color: '#10b981', minHeight: isMobile ? 44 : 34 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: '#D9A44115', border: '1px solid #D9A44130', color: '#D9A441', minHeight: isMobile ? 44 : 34 }}>
                             ✓ Mark Decided
                           </div>
                         )}

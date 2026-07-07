@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#f59e0b';
+const ACCENT        = '#D9A441';
 const ACCENT_BG     = 'rgba(245,158,11,0.08)';
 const ACCENT_BORDER = 'rgba(245,158,11,0.22)';
 
@@ -22,12 +23,9 @@ const PRESET_TOPICS = [
 
 const STORAGE_KEY = 'aether_quiz_results';
 
-function loadResults() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-}
-function saveResults(r) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch {}
-}
+// Quiz history persists cross-device: instant local read, server write-through.
+function loadResults() { return readLocal(STORAGE_KEY, []); }
+function saveResults(r) { writeThrough(STORAGE_KEY, r); }
 
 function buildQuizPrompt(topic, topicLabel) {
   return `Generate a 6-question self-assessment quiz for CB about: "${topicLabel}"
@@ -81,6 +79,15 @@ export default function QuizCenter() {
   const [gapLoading, setGapLoading] = useState(false);
   const [history,    setHistory]    = useState(loadResults);
   const [customTopic, setCustomTopic] = useState('');
+
+  // Pull any history saved on another device once mounted.
+  useEffect(() => {
+    hydrate(STORAGE_KEY).then((remote) => {
+      if (Array.isArray(remote) && remote.length) {
+        setHistory((local) => (remote.length >= local.length ? remote : local));
+      }
+    });
+  }, []);
 
   const pad = isMobile ? '14px' : '24px';
 
@@ -157,7 +164,7 @@ export default function QuizCenter() {
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <div onClick={() => setView('pick')} style={{ fontSize: 12, color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Back</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif" }}>Quiz History</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Quiz History</div>
         </div>
         {history.length === 0 ? (
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 12 }}>No quizzes completed yet.</div>
@@ -169,7 +176,7 @@ export default function QuizCenter() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: h.score / h.total >= 0.7 ? '#00CC76' : h.score / h.total >= 0.5 ? ACCENT : '#ff4444' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: h.score / h.total >= 0.7 ? '#D9A441' : h.score / h.total >= 0.5 ? ACCENT : '#C4553D' }}>
                   {h.score}/{h.total}
                 </div>
               </div>
@@ -185,7 +192,7 @@ export default function QuizCenter() {
     const score   = last?.score || 0;
     const total   = last?.total || 1;
     const pct     = Math.round((score / total) * 100);
-    const scoreColor = pct >= 70 ? '#00CC76' : pct >= 50 ? ACCENT : '#ff4444';
+    const scoreColor = pct >= 70 ? '#D9A441' : pct >= 50 ? ACCENT : '#C4553D';
 
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
@@ -305,7 +312,7 @@ export default function QuizCenter() {
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Self-Assessment</div>
-          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5 }}>
+          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
             Knowledge Check
           </div>
           <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 4 }}>
@@ -327,7 +334,7 @@ export default function QuizCenter() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {graphTopics.map(t => (
                 <div key={t.title} onClick={() => startQuiz({ id: t.title.toLowerCase().replace(/\s+/g, '_'), label: t.title, icon: '📚', desc: `Your tracked topic — ${t.sessions} sessions` })}
-                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(0,198,230,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--accent, #00C6E6)' }}>
+                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--accent, #D9A441)' }}>
                   📚 {t.title} · {t.confidence}/10
                 </div>
               ))}

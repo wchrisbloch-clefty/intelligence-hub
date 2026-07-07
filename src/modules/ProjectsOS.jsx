@@ -37,7 +37,7 @@ export default function ProjectsOS() {
     const p = def({
       id: uid(), title: newProj.title, emoji: newProj.emoji || '🚀',
       status: 'planning', category: newProj.category,
-      color: PROJECT_CATEGORIES[newProj.category]?.color || '#00FFB2',
+      color: PROJECT_CATEGORIES[newProj.category]?.color || '#D9A441',
       description: newProj.description, milestones: [], connections: [],
       blueOcean: '', createdAt: Date.now(), updatedAt: Date.now(), priority: newProj.priority,
     });
@@ -74,11 +74,11 @@ export default function ProjectsOS() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: '#ff8844', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>Your Projects</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
           <div style={{ fontSize: 11, color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
         </div>
-        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: '#ff8844', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
+        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: '#D9A441', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -129,7 +129,7 @@ export default function ProjectsOS() {
                         {p.artifacts?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>📎 {p.artifacts.length}</div>}
                         {p.personas?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>👤 {p.personas.length}</div>}
                         {p.process?.stages?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>⚙ {p.process.stages.length} stages</div>}
-                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 8, color: '#ff6644' }}>▲ HIGH</div>}
+                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 8, color: '#D9A441' }}>▲ HIGH</div>}
                       </div>
                     </div>
                   );
@@ -171,11 +171,11 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0 }}>
             <div style={{ fontSize: 26, flexShrink: 0 }}>{proj.emoji}</div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: isPhone ? 15 : 18, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", lineHeight: 1.2, marginBottom: 5 }}>{proj.title}</div>
+              <div style={{ fontSize: isPhone ? 15 : 18, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.2, marginBottom: 5 }}>{proj.title}</div>
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
                 <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
-                {proj.priority === 'high' && <Badge color="#ff6644">high priority</Badge>}
+                {proj.priority === 'high' && <Badge color="#D9A441">high priority</Badge>}
                 {proj.milestones.length > 0 && <Badge color={proj.color}>{pct}%</Badge>}
               </div>
             </div>
@@ -188,7 +188,7 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
               </div>
             ))}
             <div onClick={() => { if (confirm('Delete this project?')) onDelete(); }}
-              style={{ padding: '4px 9px', fontSize: 9, border: '1px solid #ff444440', color: '#ff4444', borderRadius: 6, cursor: 'pointer' }}>
+              style={{ padding: '4px 9px', fontSize: 9, border: '1px solid #C4553D40', color: '#C4553D', borderRadius: 6, cursor: 'pointer' }}>
               Delete
             </div>
           </div>
@@ -263,7 +263,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
         <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${proj.color}20`, borderRadius: 10, marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <Label>Progress</Label>
-            <div style={{ fontSize: 15, fontWeight: 800, color: proj.color, fontFamily: "'Fraunces', serif" }}>{pct}%</div>
+            <div style={{ fontSize: 15, fontWeight: 800, color: proj.color, fontFamily: "'Newsreader', serif" }}>{pct}%</div>
           </div>
           <div style={{ background: 'var(--border)', borderRadius: 3, height: 5, marginBottom: 8 }}>
             <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${proj.color}, ${proj.color}80)`, borderRadius: 3, transition: 'width 0.5s' }} />
@@ -299,15 +299,15 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
           <Label>Knowledge Connections</Label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #00FFB225', color: '#00FFB2', borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: '#D9A441', borderRadius: 20 }}>📚 {c}</div>
             ))}
           </div>
         </div>
       )}
 
       {proj.blueOcean && (
-        <div style={{ padding: '12px 14px', background: '#6366F108', border: '1px solid #6366F130', borderRadius: 10, marginBottom: 24 }}>
-          <Label color="#6366F1">🌊 Blue Ocean Insight</Label>
+        <div style={{ padding: '12px 14px', background: '#D9A44108', border: '1px solid #D9A44130', borderRadius: 10, marginBottom: 24 }}>
+          <Label color="#D9A441">🌊 Blue Ocean Insight</Label>
           <div style={{ fontSize: 12, color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
         </div>
       )}
@@ -435,7 +435,7 @@ ${rawText.slice(0, 3000)}`;
           placeholder="Paste your process, playbook, framework, or methodology here..."
           rows={10}
           style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
-        {parseError && <div style={{ fontSize: 11, color: '#ff4444', marginBottom: 10 }}>{parseError}</div>}
+        {parseError && <div style={{ fontSize: 11, color: '#C4553D', marginBottom: 10 }}>{parseError}</div>}
         <div style={{ display: 'flex', gap: 8 }}>
           {hasProcess && (
             <button onClick={() => setView('stages')} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--subtle)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
@@ -584,7 +584,7 @@ function NotesTab({ proj, onUpdate }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <Label>Project Notes</Label>
-        <div style={{ fontSize: 9, color: saved ? '#00CC76' : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
+        <div style={{ fontSize: 9, color: saved ? '#D9A441' : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
       </div>
       <textarea value={text} onChange={e => handleChange(e.target.value)}
         placeholder="Write anything here — meeting notes, ideas, strategy, call summaries, observations, next steps, frameworks you're trying...&#10;&#10;Auto-saves as you type."
@@ -729,10 +729,10 @@ function FilesTab({ proj, onUpdate }) {
 
 // ─── Personas / ICP Tab ───────────────────────────────────────────────────────
 const PERSONA_STATUSES = [
-  { id: 'prospect', label: 'Prospect', color: '#6366F1' },
-  { id: 'active',   label: 'Active',   color: '#00FFB2' },
-  { id: 'partner',  label: 'Partner',  color: '#ffcc44' },
-  { id: 'closed',   label: 'Closed',   color: '#ff4444' },
+  { id: 'prospect', label: 'Prospect', color: '#D9A441' },
+  { id: 'active',   label: 'Active',   color: '#D9A441' },
+  { id: 'partner',  label: 'Partner',  color: '#D9A441' },
+  { id: 'closed',   label: 'Closed',   color: '#C4553D' },
 ];
 
 const blankPersona = () => ({ id: uid(), name: '', role: '', company: '', industry: '', painPoints: '', valueProp: '', outreachAngle: '', status: 'prospect', notes: '', crmRef: '', createdAt: Date.now() });
@@ -874,7 +874,7 @@ function PersonasTab({ proj, onUpdate }) {
                 </div>
                 {p.painPoints && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: '#ff8844', textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: '#D9A441', textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
                     <div style={{ fontSize: 10, color: 'var(--text-c)', lineHeight: 1.5 }}>{p.painPoints}</div>
                   </div>
                 )}
@@ -886,7 +886,7 @@ function PersonasTab({ proj, onUpdate }) {
                 )}
                 {p.outreachAngle && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: '#00CC76', textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: '#D9A441', textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
                     <div style={{ fontSize: 10, color: 'var(--text-c)', lineHeight: 1.5 }}>{p.outreachAngle}</div>
                   </div>
                 )}
@@ -907,7 +907,7 @@ function PersonasTab({ proj, onUpdate }) {
 // ─── New Project Modal ────────────────────────────────────────────────────────
 function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
   return (
-    <Modal title="New Project" accent="#ff8844" onClose={onClose}>
+    <Modal title="New Project" accent="#D9A441" onClose={onClose}>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <input value={val.emoji} onChange={e => setVal(p => ({ ...p, emoji: e.target.value }))}
           style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px', color: 'var(--text-b)', fontSize: 18, outline: 'none', textAlign: 'center' }} />
@@ -935,7 +935,7 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {['high', 'medium', 'low'].map(p => (
             <div key={p} onClick={() => setVal(prev => ({ ...prev, priority: p }))}
-              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? '#ff8844' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 10, color: val.priority === p ? '#ff8844' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
+              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? '#D9A441' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 10, color: val.priority === p ? '#D9A441' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
               {p}
             </div>
           ))}
@@ -944,7 +944,7 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
       <div style={{ display: 'flex', gap: 8 }}>
         <div onClick={onClose} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
         <div onClick={val.title.trim() ? onCreate : undefined}
-          style={{ flex: 2, padding: '11px', background: val.title.trim() ? '#ff8844' : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: val.title.trim() ? '#000' : 'var(--dim)', cursor: val.title.trim() ? 'pointer' : 'default' }}>
+          style={{ flex: 2, padding: '11px', background: val.title.trim() ? '#D9A441' : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: val.title.trim() ? '#000' : 'var(--dim)', cursor: val.title.trim() ? 'pointer' : 'default' }}>
           Create Project →
         </div>
       </div>

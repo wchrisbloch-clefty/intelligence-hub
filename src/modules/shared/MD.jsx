@@ -1,9 +1,9 @@
-export default function MD({ text, color = '#00FFB2' }) {
+export default function MD({ text, color = '#D9A441' }) {
   return (
     <div>
       {text.split('\n').map((line, i) => {
         if (!line.trim()) return <div key={i} style={{ height: 7 }} />;
-        if (line.startsWith('# '))  return <div key={i} style={{ fontSize: 15, fontWeight: 700, color, marginTop: 20, marginBottom: 10, borderBottom: `1px solid ${color}20`, paddingBottom: 8, fontFamily: "'Fraunces', serif" }}>{line.slice(2)}</div>;
+        if (line.startsWith('# '))  return <div key={i} style={{ fontSize: 15, fontWeight: 700, color, marginTop: 20, marginBottom: 10, borderBottom: `1px solid ${color}20`, paddingBottom: 8, fontFamily: "'Newsreader', serif" }}>{line.slice(2)}</div>;
         if (line.startsWith('## ')) return <div key={i} style={{ fontSize: 13, fontWeight: 700, color, marginTop: 16, marginBottom: 8 }}>{line.slice(3)}</div>;
         if (line.startsWith('### ')) return <div key={i} style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginTop: 12, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.8 }}>{line.slice(4)}</div>;
         if (line.startsWith('---')) return <div key={i} style={{ borderTop: '1px solid var(--border-dim)', margin: '12px 0' }} />;

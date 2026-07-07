@@ -1,6 +1,6 @@
 // Shared primitive UI components — uses CSS variables for theming
 
-export function Btn({ children, onClick, color = '#00FFB2', disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
+export function Btn({ children, onClick, color = '#D9A441', disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
   const pad = { sm: '7px 14px', md: '11px 18px', lg: '14px 22px' }[size];
   const fs = { sm: 11, md: 12, lg: 13 }[size];
   const base = { padding: pad, borderRadius: 10, fontSize: fs, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', transition: 'all 0.15s', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, ...extraStyle };
@@ -55,7 +55,7 @@ export function Card({ children, color, style: extraStyle = {}, onClick }) {
   );
 }
 
-export function Badge({ children, color = '#00FFB2' }) {
+export function Badge({ children, color = '#D9A441' }) {
   return (
     <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color, background: `${color}18`, border: `1px solid ${color}30`, borderRadius: 4, padding: '3px 7px', fontWeight: 700 }}>
       {children}
@@ -71,13 +71,13 @@ export function Label({ children, color = 'var(--subtle)' }) {
   );
 }
 
-export function Spinner({ color = '#00FFB2', size = 18 }) {
+export function Spinner({ color = '#D9A441', size = 18 }) {
   return (
     <div style={{ width: size, height: size, border: `2px solid ${color}20`, borderTop: `2px solid ${color}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
   );
 }
 
-export function ThinkingDots({ color = '#00FFB2' }) {
+export function ThinkingDots({ color = '#D9A441' }) {
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
       {[0, 1, 2].map(j => (
@@ -91,7 +91,7 @@ export function Divider({ style: extraStyle = {} }) {
   return <div style={{ borderTop: '1px solid var(--border-dim)', margin: '16px 0', ...extraStyle }} />;
 }
 
-export function Modal({ children, onClose, title, accent = '#00FFB2', width = 520 }) {
+export function Modal({ children, onClose, title, accent = '#D9A441', width = 520 }) {
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
@@ -110,7 +110,7 @@ export function Modal({ children, onClose, title, accent = '#00FFB2', width = 52
   );
 }
 
-export function BottomSheet({ children, onClose, title, accent = '#00FFB2' }) {
+export function BottomSheet({ children, onClose, title, accent = '#D9A441' }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: '16px 16px 0 0', padding: '20px 20px 40px', animation: 'fadeUp 0.2s ease' }}>
@@ -126,11 +126,32 @@ export function BottomSheet({ children, onClose, title, accent = '#00FFB2' }) {
   );
 }
 
-export function ProgressBar({ value, max = 10, color = '#00FFB2', height = 3 }) {
-  const pct = Math.min(100, Math.round((value / max) * 100));
+// Signature element — "yard lines". Progress reads as a field marker: a gold
+// fill advancing across hairline ticks set at every 10%. Used app-wide for the
+// confidence bar, quiz progress, and session cards so the motif stays consistent.
+export function ProgressBar({ value, max = 10, color = 'var(--accent)', height = 6, ticks = true }) {
+  const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div style={{ background: 'var(--border)', borderRadius: 2, height }}>
-      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 2, transition: 'width 0.5s ease' }} />
+    <div style={{ position: 'relative', background: 'var(--line)', borderRadius: 2, height, overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.6s cubic-bezier(0.2,0.8,0.2,1)' }} />
+      {ticks && [10,20,30,40,50,60,70,80,90].map(t => (
+        <div key={t} style={{ position: 'absolute', top: 0, bottom: 0, left: `${t}%`, width: 1, background: 'var(--ink)', opacity: 0.55 }} />
+      ))}
+    </div>
+  );
+}
+
+// Yard-line dots — the quiz/step progress form of the same motif.
+export function YardDots({ total, current = 0, color = 'var(--accent)' }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+      {Array.from({ length: total }).map((_, i) => (
+        <div key={i} style={{
+          height: 3, flex: 1, borderRadius: 2,
+          background: i < current ? color : 'var(--line)',
+          transition: 'background 0.3s ease',
+        }} />
+      ))}
     </div>
   );
 }
@@ -140,7 +161,7 @@ export function ChipRow({ chips, selected, onSelect, colorFn }) {
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {chips.map(c => {
         const active = selected === c.id;
-        const color = colorFn ? colorFn(c) : '#00FFB2';
+        const color = colorFn ? colorFn(c) : '#D9A441';
         return (
           <div key={c.id} onClick={() => onSelect(c.id)}
             style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${active ? color : 'var(--bord2)'}`, color: active ? color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: active ? `${color}15` : 'transparent' }}>

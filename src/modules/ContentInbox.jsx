@@ -5,7 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#10b981';
+const ACCENT        = '#D9A441';
 const ACCENT_BG     = 'rgba(16,185,129,0.07)';
 const ACCENT_BORDER = 'rgba(16,185,129,0.2)';
 
@@ -18,7 +18,7 @@ const FILTERS = [
 ];
 
 const TYPE_ICON  = { article: '📰', video: '▶️', social: '💬', note: '📝' };
-const TYPE_COLOR = { article: '#10b981', video: '#e11d48', social: '#38bdf8', note: '#f59e0b' };
+const TYPE_COLOR = { article: '#D9A441', video: '#D9A441', social: '#D9A441', note: '#D9A441' };
 
 function detectType(url) {
   if (!url) return 'note';
@@ -143,7 +143,7 @@ export default function ContentInbox() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>Capture & Synthesize</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Capture & Synthesize</div>
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Save articles, videos, links, or paste text — AI extracts what matters for CB.</div>
       </div>
 
@@ -220,13 +220,13 @@ export default function ContentInbox() {
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {item.url && (
                             <span onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}
-                              style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer' }}>
+                              style={{ fontSize: 10, color: 'var(--accent, #D9A441)', cursor: 'pointer' }}>
                               ↗ {shortHost(item.url)}
                             </span>
                           )}
                           <span style={{ fontSize: isMobile ? 10 : 9, color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
                           <span style={{ fontSize: isMobile ? 10 : 9, padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
-                          {item.inVault && <span style={{ fontSize: isMobile ? 10 : 9, color: '#ffcc44', fontWeight: 600 }}>✓ Vaulted</span>}
+                          {item.inVault && <span style={{ fontSize: isMobile ? 10 : 9, color: '#D9A441', fontWeight: 600 }}>✓ Vaulted</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
@@ -245,7 +245,7 @@ export default function ContentInbox() {
                       <MD text={item.summary} color={ACCENT} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
                         <div onClick={() => copyToClipboard(item.id, item.summary)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#10b981' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(16,185,129,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#D9A441' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(16,185,129,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
                           {copiedId === item.id ? '✓ Copied!' : 'Copy'}
                         </div>
                         <div onClick={() => reanalyze(item)}
@@ -254,12 +254,12 @@ export default function ContentInbox() {
                         </div>
                         {!item.inVault && (
                           <div onClick={() => saveToVault(item)}
-                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #ffcc4440', borderRadius: 7, color: '#ffcc44', cursor: 'pointer', background: '#ffcc4410', minHeight: isMobile ? 40 : undefined }}>
+                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
                             🏛 Save to Vault
                           </div>
                         )}
                         <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #6366F140', borderRadius: 7, color: '#6366F1', cursor: 'pointer', background: '#6366F110', minHeight: isMobile ? 40 : undefined }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
                           🚀 Save to Project
                         </div>
                       </div>

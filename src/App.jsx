@@ -114,7 +114,10 @@ export default function App() {
           paddingRight: (!isMobile && chatOpen) ? 360 : 0,
           transition: 'padding-right 0.22s ease',
         }}>
-          {modules[activeModule] || <HomeDashboard />}
+          {/* Orchestrated entrance: each view rises 8px + fades on mount */}
+          <div key={activeModule} className="rise">
+            {modules[activeModule] || <HomeDashboard />}
+          </div>
         </main>
 
         {isMobile && <BottomNav activeModule={activeModule} setActiveModule={setActiveModule} isPhone={isPhone} />}
@@ -157,9 +160,9 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
               justifyContent: 'center',
               gap: 3,
               border: 'none',
-              borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #00C6E6)') : 'transparent'}`,
+              borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #D9A441)') : 'transparent'}`,
               background: 'transparent',
-              color: active ? (item.accent || 'var(--accent, #00C6E6)') : 'var(--muted)',
+              color: active ? (item.accent || 'var(--accent, #D9A441)') : 'var(--muted)',
               cursor: 'pointer',
               fontFamily: 'inherit',
               outline: 'none',
@@ -194,7 +197,7 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
           <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {projects.map(p => (
               <div key={p.id} onClick={() => setSelectedId(p.id)}
-                style={{ padding: '10px 12px', background: selectedId === p.id ? `${p.color || '#00FFB2'}15` : 'var(--bg)', border: `1px solid ${selectedId === p.id ? (p.color || '#00FFB2') + '50' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
+                style={{ padding: '10px 12px', background: selectedId === p.id ? `${p.color || '#D9A441'}15` : 'var(--bg)', border: `1px solid ${selectedId === p.id ? (p.color || '#D9A441') + '50' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ fontSize: 16 }}>{p.emoji}</div>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
@@ -206,7 +209,7 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
-              style={{ flex: 2, padding: '10px', background: selectedId ? '#00FFB2' : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              style={{ flex: 2, padding: '10px', background: selectedId ? '#D9A441' : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
               Save to Project →
             </button>
           </div>
@@ -219,13 +222,13 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
 function LoadingScreen() {
   return (
     <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 28, fontFamily: "'Fraunces', serif", fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>Aether</div>
+      <div style={{ fontSize: 30, fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
       <div style={{ display: 'flex', gap: 5 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #00C6E6)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
+          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #D9A441)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
         ))}
       </div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Loading intelligence hub</div>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Studying the tape</div>
     </div>
   );
 }

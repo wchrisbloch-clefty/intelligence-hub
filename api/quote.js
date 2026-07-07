@@ -7,7 +7,10 @@
 // (1) we want clean parsed JSON, (2) we cap per-symbol cache, (3) if Yahoo
 // changes shape we change one place.
 
+import { requireAuth } from './_lib.js';
+
 export default async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   res.setHeader('Access-Control-Allow-Origin', '*');
   const sym = (req.query.sym || '').trim();
   if (!sym) return res.status(400).json({ error: 'Missing sym query param' });

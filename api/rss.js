@@ -1,4 +1,7 @@
+import { requireAuth } from './_lib.js';
+
 export default async function handler(req, res) {
+  if (!requireAuth(req, res)) return;
   const { url } = req.query;
   if (!url) return res.status(400).json({ error: 'No URL provided' });
   try {
