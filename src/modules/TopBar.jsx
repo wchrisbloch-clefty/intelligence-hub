@@ -40,9 +40,9 @@ export default function TopBar() {
       {showAiRow && (
         <div onClick={handleSearchSubmit}
           style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'var(--accent-glow, rgba(0,198,230,0.06))', borderBottom: filtered.length ? '1px solid var(--bord2)' : 'none' }}>
-          <span style={{ fontSize: 13, color: 'var(--accent, #00C6E6)' }}>✦</span>
+          <span style={{ fontSize: 13, color: 'var(--accent, #D9A441)' }}>✦</span>
           <div>
-            <div style={{ fontSize: 12, color: 'var(--accent, #00C6E6)', fontWeight: 700 }}>Ask AI: "{searchQuery}"</div>
+            <div style={{ fontSize: 12, color: 'var(--accent, #D9A441)', fontWeight: 700 }}>Ask AI: "{searchQuery}"</div>
             <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 1 }}>Opens Intelligence Chat · Press ↵</div>
           </div>
         </div>
@@ -50,7 +50,7 @@ export default function TopBar() {
       {filtered.map((s, i) => (
         <div key={i} onClick={() => { setActiveModule(s.module); setSearchQuery(''); setSearchFocused(false); }}
           style={{ padding: '9px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: i < filtered.length - 1 ? '1px solid var(--bord2)' : 'none' }}>
-          <span style={{ fontSize: 9, color: s.type === 'project' ? '#ff8844' : 'var(--accent, #00C6E6)', background: s.type === 'project' ? '#ff884418' : 'var(--accent-glow, rgba(0,198,230,0.1))', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
+          <span style={{ fontSize: 9, color: s.type === 'project' ? '#D9A441' : 'var(--accent, #D9A441)', background: s.type === 'project' ? '#D9A44118' : 'var(--accent-glow, rgba(0,198,230,0.1))', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
           <span style={{ fontSize: 12, color: 'var(--text-b)' }}>{s.label}</span>
         </div>
       ))}
@@ -67,7 +67,7 @@ export default function TopBar() {
 
   const chatBtn = (
     <button onClick={() => setChatOpen(o => !o)}
-      style={{ padding: '0 14px', height: 36, borderRadius: 9, background: chatOpen ? 'var(--accent, #00C6E6)' : 'var(--surf2)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? (theme === 'dark' ? '#000' : '#fff') : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
+      style={{ padding: '0 14px', height: 36, borderRadius: 9, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--surf2)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? (theme === 'dark' ? '#000' : '#fff') : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, whiteSpace: 'nowrap' }}>
       {chatOpen ? '✕ Close' : '💬 AI Chat'}
     </button>
   );
@@ -78,10 +78,10 @@ export default function TopBar() {
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 20, position: 'relative' }}>
         <div style={{ height: 54, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
           <div style={{ flexShrink: 0 }}>
-            <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5 }}>Aether</div>
+            <div style={{ fontSize: 17, fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, whiteSpace: 'nowrap' }}>Film Room</div>
           </div>
           <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: `1px solid ${searchFocused ? 'var(--accent, #00C6E6)' : 'var(--border)'}`, borderRadius: 8, padding: '7px 12px', transition: 'border-color 0.15s' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: `1px solid ${searchFocused ? 'var(--accent, #D9A441)' : 'var(--border)'}`, borderRadius: 8, padding: '7px 12px', transition: 'border-color 0.15s' }}>
               <span style={{ fontSize: 12, color: 'var(--dim)' }}>⌕</span>
               <input
                 value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
@@ -94,11 +94,11 @@ export default function TopBar() {
               {voiceOk && (
                 <span onClick={() => toggleVoice(t => setSearchQuery(t))}
                   title={voiceListening ? 'Stop' : 'Voice search'}
-                  style={{ fontSize: 14, cursor: 'pointer', color: voiceListening ? '#ff4444' : 'var(--dim)', flexShrink: 0, transition: 'color 0.15s' }}>
+                  style={{ fontSize: 14, cursor: 'pointer', color: voiceListening ? '#C4553D' : 'var(--dim)', flexShrink: 0, transition: 'color 0.15s' }}>
                   🎙️
                 </span>
               )}
-              {searchQuery && <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>↵</span>}
+              {searchQuery && <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>↵</span>}
             </div>
             {dropdown}
           </div>
@@ -119,7 +119,7 @@ export default function TopBar() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             background: 'var(--bg)',
-            border: `1.5px solid ${searchFocused ? 'var(--accent, #00C6E6)' : 'var(--border)'}`,
+            border: `1.5px solid ${searchFocused ? 'var(--accent, #D9A441)' : 'var(--border)'}`,
             borderRadius: 12, padding: '9px 16px',
             transition: 'border-color 0.15s, box-shadow 0.15s',
             boxShadow: searchFocused ? '0 0 0 3px var(--accent-glow, rgba(0,198,230,0.12))' : 'none',
@@ -137,12 +137,12 @@ export default function TopBar() {
             {voiceOk && (
               <span onClick={() => toggleVoice(t => setSearchQuery(t))}
                 title={voiceListening ? 'Stop recording' : 'Voice search'}
-                style={{ fontSize: 14, cursor: 'pointer', color: voiceListening ? '#ff4444' : 'var(--dim)', flexShrink: 0, transition: 'color 0.15s' }}>
+                style={{ fontSize: 14, cursor: 'pointer', color: voiceListening ? '#C4553D' : 'var(--dim)', flexShrink: 0, transition: 'color 0.15s' }}>
                 🎙️
               </span>
             )}
             {searchQuery
-              ? <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>Ask AI →</span>
+              ? <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>Ask AI →</span>
               : <span style={{ fontSize: 9, color: 'var(--dim)', background: 'var(--surf2)', border: '1px solid var(--border)', padding: '2px 7px', borderRadius: 5, flexShrink: 0 }}>↵</span>
             }
           </div>

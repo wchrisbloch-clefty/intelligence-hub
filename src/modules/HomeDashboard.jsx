@@ -69,7 +69,7 @@ Return ONLY valid JSON (no markdown):
     setLoading(false);
   };
 
-  const typeColors = { book: '#a78bfa', video: '#e2231a', action: '#00C6E6', concept: '#6366F1' };
+  const typeColors = { book: '#D9A441', video: '#D9A441', action: '#D9A441', concept: '#D9A441' };
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -78,11 +78,11 @@ Return ONLY valid JSON (no markdown):
           <span style={{ fontSize: 12 }}>✦</span>
           <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--dim)', letterSpacing: 2.5, textTransform: 'uppercase' }}>For You</span>
         </div>
-        <div onClick={generate} style={{ fontSize: 10, color: 'var(--accent, #00C6E6)', cursor: 'pointer', fontWeight: 700 }}>↻ Refresh</div>
+        <div onClick={generate} style={{ fontSize: 10, color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700 }}>↻ Refresh</div>
       </div>
       {loading ? (
         <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', textAlign: 'center' }}>
-          <ThinkingDots color="var(--accent, #00C6E6)" />
+          <ThinkingDots color="var(--accent, #D9A441)" />
         </div>
       ) : (recos || []).length === 0 ? null : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
@@ -93,7 +93,7 @@ Return ONLY valid JSON (no markdown):
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
                 <span style={{ fontSize: 14 }}>{r.icon}</span>
-                <span style={{ fontSize: 8, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: (typeColors[r.type] || '#00C6E6') + '18', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
+                <span style={{ fontSize: 8, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: (typeColors[r.type] || '#D9A441') + '18', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{r.title}</div>
               <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.5 }}>{r.reason}</div>
@@ -106,21 +106,21 @@ Return ONLY valid JSON (no markdown):
 }
 
 const SIGNALS = [
-  { emoji: '🏘', title: 'Small Multifamily in Transitioning Houston Zips', insight: 'Institutional buyers skip sub-10 unit buildings. AI-driven migration is quietly repricing these before anyone notices.', category: 'Real Estate', color: '#00C6E6', urgency: 'HIGH' },
-  { emoji: '🤖', title: 'AI-Augmented BD Professionals', insight: 'First movers who build systematic AI pipelines in BD will have a 10x edge within 18 months. Almost nobody is doing this yet.', category: 'Career Edge', color: '#6366F1', urgency: 'HIGH' },
-  { emoji: '📈', title: 'Covered Calls on Dividend Stacks', insight: 'Systematic covered call writing on dividend portfolios adds 3–5% yield with no extra capital. Almost no retail investors act on it.', category: 'Finance', color: '#ffcc44', urgency: 'MED' },
-  { emoji: '⚡', title: 'ERCOT Ancillary Services', insight: 'Texas grid volatility = pricing opportunity in frequency regulation and demand response. Deeply underutilized by non-institutional players.', category: 'Energy/Macro', color: '#ff8844', urgency: 'MED' },
-  { emoji: '🏥', title: 'Longevity Biomarkers Protocol', insight: "Attia's Zone 2 + VO₂Max + muscle mass trifecta: most people optimize none. The compounding return on health at 40+ is asymmetric.", category: 'Longevity', color: '#ff4488', urgency: 'HIGH' },
-  { emoji: '🌐', title: 'Onshoring Infrastructure Play', insight: 'Data centers, chip fabs, and LNG terminals being built at scale. The construction supply chain is the overlooked moat.', category: 'Macro', color: '#4488ff', urgency: 'MED' },
+  { emoji: '🏘', title: 'Small Multifamily in Transitioning Houston Zips', insight: 'Institutional buyers skip sub-10 unit buildings. AI-driven migration is quietly repricing these before anyone notices.', category: 'Real Estate', color: '#D9A441', urgency: 'HIGH' },
+  { emoji: '🤖', title: 'AI-Augmented BD Professionals', insight: 'First movers who build systematic AI pipelines in BD will have a 10x edge within 18 months. Almost nobody is doing this yet.', category: 'Career Edge', color: '#D9A441', urgency: 'HIGH' },
+  { emoji: '📈', title: 'Covered Calls on Dividend Stacks', insight: 'Systematic covered call writing on dividend portfolios adds 3–5% yield with no extra capital. Almost no retail investors act on it.', category: 'Finance', color: '#D9A441', urgency: 'MED' },
+  { emoji: '⚡', title: 'ERCOT Ancillary Services', insight: 'Texas grid volatility = pricing opportunity in frequency regulation and demand response. Deeply underutilized by non-institutional players.', category: 'Energy/Macro', color: '#D9A441', urgency: 'MED' },
+  { emoji: '🏥', title: 'Longevity Biomarkers Protocol', insight: "Attia's Zone 2 + VO₂Max + muscle mass trifecta: most people optimize none. The compounding return on health at 40+ is asymmetric.", category: 'Longevity', color: '#D9A441', urgency: 'HIGH' },
+  { emoji: '🌐', title: 'Onshoring Infrastructure Play', insight: 'Data centers, chip fabs, and LNG terminals being built at scale. The construction supply chain is the overlooked moat.', category: 'Macro', color: '#D9A441', urgency: 'MED' },
 ];
 
 const QUICK_MODULES = [
-  { id: 'learn',    icon: '📚', label: 'Learn',    desc: 'Books, topics, courses',  color: '#00C6E6' },
-  { id: 'research', icon: '🔭', label: 'Research',  desc: 'Truth-first analysis',   color: '#6366F1' },
-  { id: 'podcast',  icon: '🎙️', label: 'Podcasts',  desc: 'AI summaries + listen', color: '#e11d48' },
-  { id: 'projects', icon: '🚀', label: 'Projects',  desc: 'Track & ship',           color: '#ff8844' },
-  { id: 'vault',    icon: '🏛', label: 'Vault',     desc: 'Knowledge base',         color: '#ffcc44' },
-  { id: 'growth',   icon: '📈', label: 'Growth',    desc: 'Goals & synthesis',      color: '#44ffcc' },
+  { id: 'learn',    icon: '📚', label: 'Learn',    desc: 'Books, topics, courses',  color: '#D9A441' },
+  { id: 'research', icon: '🔭', label: 'Research',  desc: 'Truth-first analysis',   color: '#D9A441' },
+  { id: 'podcast',  icon: '🎙️', label: 'Podcasts',  desc: 'AI summaries + listen', color: '#D9A441' },
+  { id: 'projects', icon: '🚀', label: 'Projects',  desc: 'Track & ship',           color: '#D9A441' },
+  { id: 'vault',    icon: '🏛', label: 'Vault',     desc: 'Knowledge base',         color: '#D9A441' },
+  { id: 'growth',   icon: '📈', label: 'Growth',    desc: 'Goals & synthesis',      color: '#D9A441' },
 ];
 
 function RadarChart({ data, size = 160 }) {
@@ -150,9 +150,9 @@ function RadarChart({ data, size = 160 }) {
       ))}
       <polygon points={poly(dataPoints)}
         fill="var(--accent-glow, rgba(0,198,230,0.12))"
-        stroke="var(--accent, #00C6E6)" strokeWidth="1.5" strokeLinejoin="round" />
+        stroke="var(--accent, #D9A441)" strokeWidth="1.5" strokeLinejoin="round" />
       {dataPoints.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--accent, #00C6E6)" />
+        <circle key={i} cx={p.x} cy={p.y} r="3.5" fill="var(--accent, #D9A441)" />
       ))}
       {outerRing.map((p, i) => {
         const name  = items[i].title || '';
@@ -176,7 +176,7 @@ function ProgressRing({ confidence = 5, size = 60, label }) {
   const r      = (size - 8) / 2;
   const circ   = 2 * Math.PI * r;
   const filled = circ * Math.min(confidence / 10, 1);
-  const color  = confidence >= 8 ? '#00CC76' : confidence >= 5 ? 'var(--accent, #00C6E6)' : '#ffcc44';
+  const color  = confidence >= 8 ? '#D9A441' : confidence >= 5 ? 'var(--accent, #D9A441)' : '#D9A441';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -202,7 +202,7 @@ function ProgressRing({ confidence = 5, size = 60, label }) {
   );
 }
 
-function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--accent, #00C6E6)' }) {
+function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--accent, #D9A441)' }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -218,7 +218,7 @@ function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--a
 
 function SkillBar({ title, confidence = 5 }) {
   const pct   = Math.round((confidence / 10) * 100);
-  const color = confidence >= 8 ? '#00CC76' : confidence >= 5 ? 'var(--accent, #00C6E6)' : '#ffcc44';
+  const color = confidence >= 8 ? '#D9A441' : confidence >= 5 ? 'var(--accent, #D9A441)' : '#D9A441';
   const tier  = confidence >= 8 ? 'Expert' : confidence >= 6 ? 'Proficient' : confidence >= 4 ? 'Learning' : 'Beginner';
   return (
     <div style={{ marginBottom: 10 }}>
@@ -229,8 +229,12 @@ function SkillBar({ title, confidence = 5 }) {
           <span style={{ fontSize: 10, fontWeight: 800, color, minWidth: 28, textAlign: 'right' }}>{pct}%</span>
         </div>
       </div>
-      <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}99, ${color})`, borderRadius: 4, transition: 'width 0.6s ease' }} />
+      {/* yard-line confidence bar — hairline ticks every 10%, gold fill advancing */}
+      <div style={{ position: 'relative', height: 6, background: 'var(--line)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.6s cubic-bezier(0.2,0.8,0.2,1)' }} />
+        {[10,20,30,40,50,60,70,80,90].map(t => (
+          <div key={t} style={{ position: 'absolute', top: 0, bottom: 0, left: `${t}%`, width: 1, background: 'var(--ink)', opacity: 0.55 }} />
+        ))}
       </div>
     </div>
   );
@@ -324,12 +328,12 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Active Projects */}
       {activeProjects.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#ff8844" />
+          <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#D9A441" />
           {activeProjects.slice(0, 4).map((p, idx) => {
             const done  = (p.milestones || []).filter(m => m.done).length;
             const total = (p.milestones || []).length;
             const pct   = total ? Math.round((done / total) * 100) : 0;
-            const color = p.color || '#ff8844';
+            const color = p.color || '#D9A441';
             return (
               <div key={p.id} onClick={() => setActiveModule('projects')} style={{ cursor: 'pointer', marginBottom: idx < activeProjects.slice(0, 4).length - 1 ? 12 : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 }}>
@@ -375,7 +379,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
           <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </div>
-          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5, lineHeight: 1.1 }}>
+          <div style={{ fontSize: isMobile ? 22 : 28, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, lineHeight: 1.1 }}>
             {greeting}, CB.
           </div>
           <div style={{ fontSize: isMobile ? 11 : 13, color: 'var(--muted)', marginTop: 5 }}>
@@ -422,7 +426,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
           <div style={{
             background: 'var(--surface)',
             border: '1px solid var(--border)',
-            borderTop: '3px solid var(--accent, #00C6E6)',
+            borderTop: '3px solid var(--accent, #D9A441)',
             borderRadius: isMobile ? 0 : 14,
             overflow: 'hidden',
             marginBottom: isMobile ? 16 : 20,
@@ -434,7 +438,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
                 <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(0,198,230,0.15), rgba(99,102,241,0.15))', border: '1px solid rgba(0,198,230,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>⚡</div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.2 }}>Daily Intelligence Brief</div>
-                  <div style={{ fontSize: 9, color: 'var(--accent, #00C6E6)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
+                  <div style={{ fontSize: 9, color: 'var(--accent, #D9A441)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
                 </div>
               </div>
               {briefDone && (
@@ -448,28 +452,28 @@ Be blunt. No hedging. One decisive line per bullet.`;
               {briefLoading && !brief && (
                 <div>
                   <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 12 }}>Generating intelligence brief…</div>
-                  <ThinkingDots color="var(--accent, #00C6E6)" />
+                  <ThinkingDots color="var(--accent, #D9A441)" />
                 </div>
               )}
               {briefError && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Brief unavailable — check connection.</div>
-                  <div onClick={() => generateBrief(null)} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--accent-glow)', border: '1px solid rgba(0,198,230,0.3)', borderRadius: 6, color: 'var(--accent, #00C6E6)', cursor: 'pointer' }}>Retry</div>
+                  <div onClick={() => generateBrief(null)} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--accent-glow)', border: '1px solid rgba(0,198,230,0.3)', borderRadius: 6, color: 'var(--accent, #D9A441)', cursor: 'pointer' }}>Retry</div>
                 </div>
               )}
-              {brief && <MD text={brief} color="var(--accent, #00C6E6)" />}
+              {brief && <MD text={brief} color="var(--accent, #D9A441)" />}
             </div>
           </div>
 
           {/* Blue Ocean Signals */}
           <div style={{ marginBottom: isMobile ? 20 : 24, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
             <div style={{ padding: isMobile ? '0 14px' : '0' }}>
-              <SectionLabel icon="🌊" label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#6366F1" />
+              <SectionLabel icon="🌊" label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#D9A441" />
             </div>
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
                 {SIGNALS.map((s, i) => (
-                  <div key={i} style={{ flexShrink: 0, width: isPhone ? 240 : 270, padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${s.color}22`, borderTop: `3px solid ${s.color}`, borderRadius: 12 }}>
+                  <div key={i} className="rise" style={{ animationDelay: `${i * 40}ms`, flexShrink: 0, width: isPhone ? 240 : 270, padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--line)', borderTop: `3px solid ${s.color}`, borderRadius: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
                       <div style={{ fontSize: 9, fontWeight: 800, color: s.color, letterSpacing: 0.5 }}>{s.emoji} {s.category}</div>
                       <span style={{ fontSize: 8, padding: '2px 6px', borderRadius: 4, background: s.urgency === 'HIGH' ? `${s.color}20` : 'var(--bg)', border: `1px solid ${s.color}30`, color: s.color, fontWeight: 800, letterSpacing: 1 }}>{s.urgency}</span>
@@ -515,20 +519,20 @@ Be blunt. No hedging. One decisive line per bullet.`;
 
               {activeProjects.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#ff8844" />
+                  <SectionLabel icon="🚀" label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#D9A441" />
                   {activeProjects.slice(0, 3).map(p => {
                     const done  = (p.milestones || []).filter(m => m.done).length;
                     const total = (p.milestones || []).length || 1;
                     const pct   = Math.round((done / total) * 100);
                     return (
                       <div key={p.id} onClick={() => setActiveModule('projects')}
-                        style={{ padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${p.color || '#ff8844'}22`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
+                        style={{ padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${p.color || '#D9A441'}22`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>{p.emoji} {p.title}</div>
-                          <div style={{ fontSize: 11, color: p.color || '#ff8844', fontWeight: 700, flexShrink: 0 }}>{pct}%</div>
+                          <div style={{ fontSize: 11, color: p.color || '#D9A441', fontWeight: 700, flexShrink: 0 }}>{pct}%</div>
                         </div>
                         <div style={{ background: 'var(--border)', borderRadius: 2, height: 3 }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: p.color || '#ff8844', borderRadius: 2 }} />
+                          <div style={{ width: `${pct}%`, height: '100%', background: p.color || '#D9A441', borderRadius: 2 }} />
                         </div>
                       </div>
                     );

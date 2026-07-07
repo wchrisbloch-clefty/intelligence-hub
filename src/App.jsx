@@ -109,7 +109,10 @@ export default function App() {
             paddingRight: (!isMobile && chatOpen) ? 360 : 0,
             transition: 'padding-right 0.22s ease',
           }}>
-            {modules[activeModule] || <HomeDashboard />}
+            {/* Orchestrated entrance: each view rises 8px + fades on mount */}
+            <div key={activeModule} className="rise">
+              {modules[activeModule] || <HomeDashboard />}
+            </div>
           </main>
         </div>
 
@@ -146,9 +149,9 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
               justifyContent: 'center',
               gap: 2,
               border: 'none',
-              borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #00C6E6)') : 'transparent'}`,
+              borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #D9A441)') : 'transparent'}`,
               background: 'transparent',
-              color: active ? (item.accent || 'var(--accent, #00C6E6)') : 'var(--muted)',
+              color: active ? (item.accent || 'var(--accent, #D9A441)') : 'var(--muted)',
               cursor: 'pointer',
               fontFamily: 'inherit',
               outline: 'none',
@@ -167,13 +170,13 @@ function BottomNav({ activeModule, setActiveModule, isPhone }) {
 function LoadingScreen() {
   return (
     <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 28, fontFamily: "'Fraunces', serif", fontWeight: 800, color: 'var(--text)', letterSpacing: -1 }}>Aether</div>
+      <div style={{ fontSize: 30, fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
       <div style={{ display: 'flex', gap: 5 }}>
         {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #00C6E6)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
+          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #D9A441)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
         ))}
       </div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Loading intelligence hub</div>
+      <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Studying the tape</div>
     </div>
   );
 }

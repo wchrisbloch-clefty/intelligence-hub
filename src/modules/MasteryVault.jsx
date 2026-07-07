@@ -5,8 +5,8 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Modal, ThinkingDots } from './shared/Common.jsx';
 
-const VAULT_ACCENT  = '#ffcc44';
-const NOTE_COLORS   = ['#00FFB2', '#6366F1', '#ff8844', '#ffcc44', '#ff4488', '#4488ff'];
+const VAULT_ACCENT  = '#D9A441';
+const NOTE_COLORS   = ['#D9A441', '#D9A441', '#D9A441', '#D9A441', '#D9A441', '#D9A441'];
 
 const EXPORT_FORMATS = [
   { id: 'linkedin',  icon: '💼', label: 'LinkedIn Post',     desc: 'Engaging professional post with hook, body, CTA' },
@@ -74,7 +74,7 @@ function FlashCards({ onCreateFromNote }) {
       <div style={{ fontSize: 10, color: 'var(--dim)', textAlign: 'center', marginBottom: 20 }}>
         Card {(studyIdx % due.length) + 1} of {due.length} · {cards.filter(c => c.dueDate <= Date.now()).length} due today
       </div>
-      <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? '#00FFB240' : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
+      <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? '#D9A44140' : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: VAULT_ACCENT, textTransform: 'uppercase', marginBottom: 12 }}>{revealed ? 'Answer' : 'Question'}</div>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5 }}>
           {revealed ? studyCard?.back : studyCard?.front}
@@ -87,10 +87,10 @@ function FlashCards({ onCreateFromNote }) {
       </div>
       {revealed && (
         <div style={{ display: 'flex', gap: 12 }}>
-          <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#ff444415', border: '1px solid #ff444440', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#ff4444', cursor: 'pointer' }}>
+          <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#C4553D15', border: '1px solid #C4553D40', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#C4553D', cursor: 'pointer' }}>
             ✕ Hard — review again
           </div>
-          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#00FFB215', border: '1px solid #00FFB240', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#00FFB2', cursor: 'pointer' }}>
+          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#D9A44115', border: '1px solid #D9A44140', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
             ✓ Got it — {Math.min(Math.round((studyCard?.interval || 1) * (studyCard?.easeFactor || 2.5)), 30)}d
           </div>
         </div>
@@ -287,7 +287,7 @@ export default function MasteryVault() {
   const [activeNote, setActiveNote] = useState(null);
   const [showNew,    setShowNew]    = useState(false);
   const [filterTag,  setFilterTag]  = useState('all');
-  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: '#00FFB2' });
+  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: '#D9A441' });
   const [tagInput,   setTagInput]   = useState('');
 
   const updateNotes = async (updated) => {
@@ -299,7 +299,7 @@ export default function MasteryVault() {
     if (!newNote.title.trim()) return;
     const note = { id: uid(), ...newNote, createdAt: Date.now() };
     await updateNotes([note, ...notes]);
-    setNewNote({ title: '', content: '', tags: [], connections: [], color: '#00FFB2' });
+    setNewNote({ title: '', content: '', tags: [], connections: [], color: '#D9A441' });
     setTagInput('');
     setShowNew(false);
   };
@@ -342,12 +342,12 @@ export default function MasteryVault() {
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 8 }}>{note.title}</div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 8 }}>{note.title}</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {note.tags?.map(t => <Badge key={t} color={note.color}>{t}</Badge>)}
             </div>
           </div>
-          <div onClick={() => deleteNote(note.id)} style={{ fontSize: 10, color: '#ff4444', padding: '5px 10px', border: '1px solid #ff444440', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
+          <div onClick={() => deleteNote(note.id)} style={{ fontSize: 10, color: '#C4553D', padding: '5px 10px', border: '1px solid #C4553D40', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
         </div>
         <div style={{ fontSize: 13, lineHeight: 1.85, color: 'var(--text-c)', whiteSpace: 'pre-wrap', marginBottom: 24 }}>{note.content}</div>
         {note.connections?.length > 0 && (
@@ -372,7 +372,7 @@ export default function MasteryVault() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <div style={{ fontSize: 9, letterSpacing: 4, color: VAULT_ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Mastery Vault</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>Your Knowledge Base</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Knowledge Base</div>
           <div style={{ fontSize: 11, color: 'var(--subtle)' }}>{notes.length} notes · flash cards · publish-ready exports</div>
         </div>
         {tab === 'notes' && (
@@ -475,7 +475,7 @@ export default function MasteryVault() {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
               {topics.slice(0, 10).map(t => (
                 <div key={t} onClick={() => setNewNote(p => ({ ...p, connections: p.connections.includes(t) ? p.connections.filter(x => x !== t) : [...p.connections, t] }))}
-                  style={{ fontSize: 9, padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? '#00FFB2' : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? '#00FFB2' : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? '#00FFB215' : 'transparent' }}>
+                  style={{ fontSize: 9, padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? '#D9A441' : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? '#D9A441' : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? '#D9A44115' : 'transparent' }}>
                   {t}
                 </div>
               ))}

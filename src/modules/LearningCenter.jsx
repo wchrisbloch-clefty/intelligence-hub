@@ -64,7 +64,7 @@ export default function LearningCenter() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
-  const accentColor = entryMode === 'reading' ? currentContentType.color : '#00FFB2';
+  const accentColor = '#D9A441'; // one confident accent — the active session is gold
   const sessionTitle = entryMode === 'reading' ? context.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : 'Document';
 
   const send = async (text, attachments = []) => {
@@ -201,16 +201,16 @@ export default function LearningCenter() {
     <div style={{ padding: pad, maxWidth: 800, margin: '0 auto' }}>
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 6 }}>CB · Learning Center</div>
-        <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5, marginBottom: 6 }}>What do you want to learn?</div>
+        <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 6 }}>What do you want to learn?</div>
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Books · Documents · Topics · YouTube — all tracked, all connected.</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
         {[
-          { icon: '📚', label: 'Reading Companion', desc: 'Any book, paper, manual, or novel — personal mentor as you read.', color: '#00FFB2', action: () => setScreen('reading-add') },
-          { icon: '🎓', label: 'Topic / Course', desc: 'Name any subject. I build a structured course.', color: '#ff8844', action: () => { setEntryMode('topic'); setScreen('topic-input'); } },
-          { icon: '▶️', label: 'YouTube', desc: 'Paste a URL. Transcript extraction + deep analysis.', color: '#ff4444', action: () => { setEntryMode('youtube'); setScreen('youtube-input'); } },
-          { icon: '📄', label: 'Document', desc: 'PDF, Word, Excel, image, or web link.', color: '#4488ff', action: () => { setEntryMode('document'); setScreen('doc-upload'); } },
+          { icon: '📚', label: 'Reading Companion', desc: 'Any book, paper, manual, or novel — personal mentor as you read.', color: '#D9A441', action: () => setScreen('reading-add') },
+          { icon: '🎓', label: 'Topic / Course', desc: 'Name any subject. I build a structured course.', color: '#D9A441', action: () => { setEntryMode('topic'); setScreen('topic-input'); } },
+          { icon: '▶️', label: 'YouTube', desc: 'Paste a URL. Transcript extraction + deep analysis.', color: '#C4553D', action: () => { setEntryMode('youtube'); setScreen('youtube-input'); } },
+          { icon: '📄', label: 'Document', desc: 'PDF, Word, Excel, image, or web link.', color: '#D9A441', action: () => { setEntryMode('document'); setScreen('doc-upload'); } },
         ].map(m => (
           <Card key={m.label} color={m.color} onClick={m.action} style={{ padding: '16px 18px', cursor: 'pointer' }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
@@ -228,13 +228,13 @@ export default function LearningCenter() {
         <Label>Knowledge Graph</Label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
           {[
-            ['Topics', Object.keys(graph?.topics || {}).length, '#00FFB2'],
-            ['Sessions', (graph?.sessions || []).length, '#6366F1'],
-            ['Minutes', graph?.totalTime || 0, '#ff8844'],
-            ['Avg Conf', (Object.values(graph?.topics || {}).length ? Math.round(Object.values(graph.topics).reduce((s, t) => s + t.confidence, 0) / Object.values(graph.topics).length) : 0) + '/10', '#ffcc44'],
+            ['Topics', Object.keys(graph?.topics || {}).length, '#D9A441'],
+            ['Sessions', (graph?.sessions || []).length, '#D9A441'],
+            ['Minutes', graph?.totalTime || 0, '#D9A441'],
+            ['Avg Conf', (Object.values(graph?.topics || {}).length ? Math.round(Object.values(graph.topics).reduce((s, t) => s + t.confidence, 0) / Object.values(graph.topics).length) : 0) + '/10', '#D9A441'],
           ].map(([label, val, color]) => (
             <div key={label} style={{ background: 'var(--surface)', border: `1px solid ${color}20`, borderRadius: 8, padding: '10px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'Fraunces', serif" }}>{val}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'Newsreader', serif" }}>{val}</div>
               <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--dim)', textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
             </div>
           ))}
@@ -245,7 +245,7 @@ export default function LearningCenter() {
               <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{t.title}</div>
               <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 1 }}>{t.sessions} sessions · {t.totalMin}min</div>
             </div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.confidence >= 7 ? '#00FFB2' : t.confidence >= 4 ? '#ffcc44' : '#ff6644' }}>{t.confidence}/10</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: t.confidence >= 7 ? '#D9A441' : t.confidence >= 4 ? '#D9A441' : '#D9A441' }}>{t.confidence}/10</div>
           </div>
         ))}
       </div>
@@ -258,8 +258,8 @@ export default function LearningCenter() {
   if (screen === 'reading-add') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Learn</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 8 }}>📚 Reading Companion</div>
-      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 6 }}>What are you reading?</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>📚 Reading Companion</div>
+      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 6 }}>What are you reading?</div>
       <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 24 }}>Book, paper, manual, textbook, novel — anything.</div>
 
       <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Title *"
@@ -280,7 +280,7 @@ export default function LearningCenter() {
       <div style={{ display: 'flex', gap: 10 }}>
         <div onClick={() => setScreen('book-select')} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Browse Full List</div>
         <div onClick={() => { if (!customTitle.trim()) return; setContext({ title: customTitle.trim(), author: customAuthor.trim() }); setScreen('content-type'); }}
-          style={{ flex: 2, padding: '11px', background: customTitle.trim() ? '#00FFB2' : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: customTitle.trim() ? '#000' : 'var(--dim)', cursor: customTitle.trim() ? 'pointer' : 'default' }}>
+          style={{ flex: 2, padding: '11px', background: customTitle.trim() ? '#D9A441' : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: customTitle.trim() ? '#000' : 'var(--dim)', cursor: customTitle.trim() ? 'pointer' : 'default' }}>
           Continue →
         </div>
       </div>
@@ -290,8 +290,8 @@ export default function LearningCenter() {
   if (screen === 'content-type') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('reading-add')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 6 }}>Step 1 of 2</div>
-      <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>What type of content is this?</div>
+      <div style={{ fontSize: 9, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 6 }}>Step 1 of 2</div>
+      <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>What type of content is this?</div>
       <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 20 }}>"{context.title}"</div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 24 }}>
         {CONTENT_TYPES.map(t => (
@@ -316,7 +316,7 @@ export default function LearningCenter() {
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('content-type')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
       <div style={{ fontSize: 9, letterSpacing: 3, color: currentContentType.color, textTransform: 'uppercase', marginBottom: 6 }}>Step 2 of 2</div>
-      <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>How do you want to engage?</div>
+      <div style={{ fontSize: isMobile ? 18 : 20, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>How do you want to engage?</div>
       <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 22 }}>"{context.title}"</div>
 
       <Label>Your Goal</Label>
@@ -368,7 +368,7 @@ export default function LearningCenter() {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
         {['all', ...Object.keys(TYPE_META)].map(t => (
           <div key={t} onClick={() => setFilterType(t)}
-            style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterType === t ? '#00FFB2' : 'var(--bord2)'}`, color: filterType === t ? '#00FFB2' : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterType === t ? '#00FFB218' : 'transparent' }}>
+            style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterType === t ? '#D9A441' : 'var(--bord2)'}`, color: filterType === t ? '#D9A441' : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterType === t ? '#D9A44118' : 'transparent' }}>
             {t === 'all' ? 'All' : TYPE_META[t]?.label}
           </div>
         ))}
@@ -397,12 +397,12 @@ export default function LearningCenter() {
   if (screen === 'doc-upload') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: '#4488ff', textTransform: 'uppercase', marginBottom: 8 }}>📄 Document Intelligence</div>
-      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Fraunces', serif" }}>Upload Your Document</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>📄 Document Intelligence</div>
+      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>Upload Your Document</div>
       <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
         onDrop={async e => { e.preventDefault(); setDragOver(false); const files = await processFiles(e.dataTransfer.files); setUploadedFiles(p => [...p, ...files]); }}
         onClick={() => fileRef.current?.click()}
-        style={{ border: `2px dashed ${dragOver ? '#4488ff' : 'var(--border)'}`, borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 14, background: dragOver ? '#4488ff08' : 'transparent' }}>
+        style={{ border: `2px dashed ${dragOver ? '#D9A441' : 'var(--border)'}`, borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 14, background: dragOver ? '#D9A44108' : 'transparent' }}>
         <div style={{ fontSize: 32, marginBottom: 8 }}>📂</div>
         <div style={{ fontSize: 12, color: 'var(--text)', marginBottom: 3 }}>Drop files or tap to browse</div>
         <div style={{ fontSize: 10, color: 'var(--subtle)' }}>PDF · Word · Excel · PowerPoint · Images</div>
@@ -416,7 +416,7 @@ export default function LearningCenter() {
             placeholder="https://..."
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={() => { if (webUrl.trim()) { setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]); setWebUrl(''); } }}
-            style={{ padding: '10px 14px', background: '#4488ff', border: 'none', borderRadius: 8, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            style={{ padding: '10px 14px', background: '#D9A441', border: 'none', borderRadius: 8, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add</button>
         </div>
       </div>
       {uploadedFiles.length > 0 && (
@@ -425,13 +425,13 @@ export default function LearningCenter() {
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6 }}>
               <span style={{ fontSize: 18 }}>{f.icon}</span>
               <div style={{ flex: 1, fontSize: 12, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
-              <div onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: '#ff4444', cursor: 'pointer', fontSize: 14 }}>✕</div>
+              <div onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: '#C4553D', cursor: 'pointer', fontSize: 14 }}>✕</div>
             </div>
           ))}
         </div>
       )}
-      <Btn color="#4488ff" disabled={uploadedFiles.length === 0} onClick={() => { setContext({ files: uploadedFiles }); setEntryMode('document'); setScreen('session'); autoOpen('document', sessionMode, { files: uploadedFiles }); }}>
-        Analyze {uploadedFiles.length > 1 ? `${uploadedFiles.length} Documents` : 'Document'} →
+      <Btn color="#D9A441" disabled={uploadedFiles.length === 0} onClick={() => { setContext({ files: uploadedFiles }); setEntryMode('document'); setScreen('session'); autoOpen('document', sessionMode, { files: uploadedFiles }); }}>
+        Analyze {uploadedFiles.length > 1 ? `${uploadedFiles.length} documents` : 'document'}
       </Btn>
     </div>
   );
@@ -439,15 +439,15 @@ export default function LearningCenter() {
   if (screen === 'topic-input') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: '#ff8844', textTransform: 'uppercase', marginBottom: 8 }}>🎓 Topic / Course Builder</div>
-      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Fraunces', serif" }}>What do you want to master?</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>🎓 Topic / Course Builder</div>
+      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>What do you want to master?</div>
       <Textarea value={topicInput} onChange={setTopicInput} rows={3} placeholder={'ERCOT energy markets\nReal estate underwriting\nSemiconductor supply chain\nNegotiation psychology'} />
       <div style={{ marginBottom: 16 }}>
         <Label>Mode</Label>
         <div style={{ display: 'flex', gap: 8 }}>
           {[{ id: 'chat', label: 'Course Build' }, { id: 'socratic', label: '🧠 Quiz Me' }].map(m => (
             <div key={m.id} onClick={() => setSessionMode(m.id)}
-              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? '#ff8844' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 11, color: sessionMode === m.id ? '#ff8844' : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? '#ff884408' : 'transparent' }}>
+              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? '#D9A441' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 11, color: sessionMode === m.id ? '#D9A441' : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? '#D9A44108' : 'transparent' }}>
               {m.label}
             </div>
           ))}
@@ -458,7 +458,7 @@ export default function LearningCenter() {
           <div key={s} onClick={() => setTopicInput(s)} style={{ fontSize: 10, padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 20, cursor: 'pointer' }}>{s}</div>
         ))}
       </div>
-      <Btn color="#ff8844" disabled={!topicInput.trim()} onClick={() => { setContext({ topic: topicInput }); setEntryMode('topic'); setScreen('session'); autoOpen('topic', sessionMode, { topic: topicInput }); }}>
+      <Btn color="#D9A441" disabled={!topicInput.trim()} onClick={() => { setContext({ topic: topicInput }); setEntryMode('topic'); setScreen('session'); autoOpen('topic', sessionMode, { topic: topicInput }); }}>
         {sessionMode === 'socratic' ? 'Start Quiz →' : 'Build My Course →'}
       </Btn>
     </div>
@@ -467,23 +467,23 @@ export default function LearningCenter() {
   if (screen === 'youtube-input') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: '#ff4444', textTransform: 'uppercase', marginBottom: 8 }}>▶️ YouTube Intelligence</div>
-      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Fraunces', serif" }}>Paste a YouTube URL</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: '#C4553D', textTransform: 'uppercase', marginBottom: 8 }}>▶️ YouTube Intelligence</div>
+      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>Paste a YouTube URL</div>
       <Input label="YouTube URL" value={youtubeUrl} onChange={setYoutubeUrl} placeholder="https://youtube.com/watch?v=..." />
-      {ytError && <div style={{ fontSize: 11, color: '#ff4444', marginBottom: 12, padding: '8px 12px', background: '#ff444412', borderRadius: 6 }}>{ytError}</div>}
+      {ytError && <div style={{ fontSize: 11, color: '#C4553D', marginBottom: 12, padding: '8px 12px', background: '#C4553D12', borderRadius: 6 }}>{ytError}</div>}
       <div style={{ marginBottom: 16 }}>
         <Label>Mode</Label>
         <div style={{ display: 'flex', gap: 8 }}>
           {[{ id: 'chat', label: 'Teach Me' }, { id: 'socratic', label: '🧠 Quiz Me' }].map(m => (
             <div key={m.id} onClick={() => setSessionMode(m.id)}
-              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? '#ff4444' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 11, color: sessionMode === m.id ? '#ff4444' : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? '#ff444408' : 'transparent' }}>
+              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? '#C4553D' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 11, color: sessionMode === m.id ? '#C4553D' : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? '#C4553D08' : 'transparent' }}>
               {m.label}
             </div>
           ))}
         </div>
       </div>
-      <Btn color="#ff4444" disabled={!youtubeUrl.trim() || ytLoading} onClick={handleYouTube}>
-        {ytLoading ? 'Fetching transcript...' : 'Analyze Video →'}
+      <Btn color="#C4553D" disabled={!youtubeUrl.trim() || ytLoading} onClick={handleYouTube}>
+        {ytLoading ? 'Fetching transcript…' : 'Analyze video'}
       </Btn>
     </div>
   );
@@ -507,7 +507,7 @@ export default function LearningCenter() {
                   </div>
                 )}
                 <div onClick={() => setSearchEnabled(s => !s)}
-                  style={{ fontSize: 9, padding: '2px 7px', border: `1px solid ${searchEnabled ? '#4488ff' : 'var(--border)'}`, borderRadius: 6, color: searchEnabled ? '#4488ff' : 'var(--dim)', cursor: 'pointer' }}>
+                  style={{ fontSize: 9, padding: '2px 7px', border: `1px solid ${searchEnabled ? '#D9A441' : 'var(--border)'}`, borderRadius: 6, color: searchEnabled ? '#D9A441' : 'var(--dim)', cursor: 'pointer' }}>
                   🔍 Web {searchEnabled ? 'ON' : 'OFF'}
                 </div>
                 <div onClick={generateQuiz} style={{ fontSize: 9, padding: '2px 7px', border: `1px solid ${accentColor}40`, borderRadius: 6, color: accentColor, cursor: 'pointer', background: `${accentColor}10` }}>
@@ -521,7 +521,7 @@ export default function LearningCenter() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 5 }}>
-              <div onClick={() => setShowLogModal(true)} style={{ fontSize: 10, color: accentColor, padding: '5px 10px', border: `1px solid ${accentColor}40`, borderRadius: 6, cursor: 'pointer' }}>Log</div>
+              <div onClick={() => setShowLogModal(true)} style={{ fontSize: 10, color: accentColor, padding: '5px 10px', border: `1px solid ${accentColor}40`, borderRadius: 6, cursor: 'pointer' }}>Save session</div>
               <div onClick={() => { setScreen('home'); setContext({}); setMessages([]); setUploadedFiles([]); setQuizMode(false); setShowAnnotation(false); }} style={{ fontSize: 10, color: 'var(--subtle)', padding: '5px 10px', border: '1px solid var(--bord2)', borderRadius: 6, cursor: 'pointer' }}>← Learn</div>
             </div>
           </div>
@@ -587,8 +587,8 @@ export default function LearningCenter() {
           {uploadedFiles.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 7 }}>
               {uploadedFiles.map((f, i) => (
-                <div key={i} style={{ fontSize: 9, color: '#4488ff', background: '#4488ff12', border: '1px solid #4488ff30', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {f.icon} {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: '#ff4444', cursor: 'pointer' }}>✕</span>
+                <div key={i} style={{ fontSize: 9, color: '#D9A441', background: '#D9A44112', border: '1px solid #D9A44130', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {f.icon} {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: '#C4553D', cursor: 'pointer' }}>✕</span>
                 </div>
               ))}
             </div>
@@ -618,7 +618,7 @@ function LogSessionModal({ title, onLog, onSkip, color }) {
   const [conf, setConf] = useState(7);
   const [notes, setNotes] = useState('');
   return (
-    <BottomSheet title={`Log: ${title}`} accent={color} onClose={onSkip}>
+    <BottomSheet title={`Save session — ${title}`} accent={color} onClose={onSkip}>
       <div style={{ marginBottom: 16 }}>
         <Label>Confidence Level: {conf}/10</Label>
         <input type="range" min={1} max={10} value={conf} onChange={e => setConf(+e.target.value)} style={{ width: '100%', accentColor: color }} />
@@ -629,7 +629,7 @@ function LogSessionModal({ title, onLog, onSkip, color }) {
       <Textarea value={notes} onChange={setNotes} placeholder="Key insight or note (optional)..." rows={2} />
       <div style={{ display: 'flex', gap: 8 }}>
         <div onClick={onSkip} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Skip</div>
-        <div onClick={() => onLog(conf, notes)} style={{ flex: 2, padding: '11px', background: color, borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Log Session →</div>
+        <div onClick={() => onLog(conf, notes)} style={{ flex: 2, padding: '11px', background: color, borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#1A130A', cursor: 'pointer' }}>Save session</div>
       </div>
     </BottomSheet>
   );

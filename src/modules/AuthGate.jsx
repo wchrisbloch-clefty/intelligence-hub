@@ -70,7 +70,7 @@ function LockScreen({ onUnlock }) {
   return (
     <div style={screenWrap}>
       <form onSubmit={submit} style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
-        <div style={{ fontFamily: "'Newsreader', 'Fraunces', serif", fontSize: 30, fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5, marginBottom: 6 }}>
+        <div style={{ fontFamily: "'Newsreader', serif", fontSize: 30, fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5, marginBottom: 6 }}>
           The Film Room
         </div>
         <div style={{ fontSize: 12, color: 'var(--chalk-dim, var(--muted))', marginBottom: 28 }}>
@@ -84,12 +84,12 @@ function LockScreen({ onUnlock }) {
           autoFocus
           style={{
             width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: 3,
-            background: 'var(--surface)', border: `1px solid ${error ? 'var(--red, #FF3D2E)' : 'var(--line, var(--border))'}`,
+            background: 'var(--surface)', border: `1px solid ${error ? 'var(--red, #C4553D)' : 'var(--line, var(--border))'}`,
             borderRadius: 8, padding: '13px 16px', color: 'var(--chalk, var(--text))', fontSize: 15,
             outline: 'none', fontFamily: 'inherit', marginBottom: 14,
           }}
         />
-        {error && <div style={{ fontSize: 12, color: 'var(--red, #FF3D2E)', marginBottom: 14 }}>{error}</div>}
+        {error && <div style={{ fontSize: 12, color: 'var(--red, #C4553D)', marginBottom: 14 }}>{error}</div>}
         <button
           type="submit"
           disabled={busy || !code.trim()}

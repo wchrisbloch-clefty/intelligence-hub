@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Btn } from './Common.jsx';
 
-export default function QuizMode({ questions, onComplete, color = '#00FFB2' }) {
+export default function QuizMode({ questions, onComplete, color = 'var(--accent)' }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [openAnswer, setOpenAnswer] = useState('');
@@ -19,18 +19,20 @@ export default function QuizMode({ questions, onComplete, color = '#00FFB2' }) {
   };
 
   return (
-    <div style={{ background: '#0a0a18', border: `1px solid ${color}30`, borderRadius: 14, padding: 20, marginBottom: 16, animation: 'fadeUp 0.2s ease' }}>
-      {/* header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color, textTransform: 'uppercase' }}>Quiz · {idx + 1} of {questions.length}</div>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: 20, marginBottom: 16, animation: 'fadeUp 0.2s ease' }}>
+      {/* header — yard-line progress */}
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent)', textTransform: 'uppercase' }}>Question {idx + 1} of {questions.length}</div>
+        </div>
         <div style={{ display: 'flex', gap: 4 }}>
           {questions.map((_, i) => (
-            <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: i < scores.length ? (scores[i] > 0 ? color : '#ff4444') : i === idx ? `${color}70` : '#1e2a38' }} />
+            <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i < scores.length ? (scores[i] > 0 ? 'var(--accent)' : 'var(--red)') : i === idx ? 'var(--accent-glow)' : 'var(--line)', transition: 'background 0.3s ease' }} />
           ))}
         </div>
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', lineHeight: 1.7, marginBottom: 18 }}>{q.q}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--chalk)', lineHeight: 1.6, marginBottom: 18 }}>{q.q}</div>
 
       {/* Multiple choice */}
       {q.type === 'mc' && (
@@ -39,26 +41,26 @@ export default function QuizMode({ questions, onComplete, color = '#00FFB2' }) {
             const letter = opt[0];
             const isCorrect = letter === q.answer;
             const isSelected = selected === letter;
-            let bg = '#0c0c18', border = '#1e2a38', textColor = '#b0c0d0';
+            let bg = 'var(--ink)', border = 'var(--line)', textColor = 'var(--text-b)';
             if (revealed) {
-              if (isCorrect)       { bg = `${color}18`; border = color; textColor = '#fff'; }
-              else if (isSelected) { bg = '#ff444418'; border = '#ff4444'; }
-            } else if (isSelected) { bg = `${color}12`; border = `${color}60`; }
+              if (isCorrect)       { bg = 'var(--accent-glow)'; border = 'var(--accent)'; textColor = 'var(--chalk)'; }
+              else if (isSelected) { bg = 'rgba(196,85,61,0.10)'; border = 'var(--red)'; }
+            } else if (isSelected) { bg = 'var(--accent-glow)'; border = 'var(--accent)'; }
             return (
               <div key={i} onClick={() => !revealed && setSelected(letter)}
-                style={{ padding: '10px 14px', borderRadius: 8, border: `1px solid ${border}`, background: bg, cursor: revealed ? 'default' : 'pointer', fontSize: 12, color: textColor, transition: 'all 0.15s' }}>
+                style={{ padding: '11px 14px', borderRadius: 8, border: `1px solid ${border}`, background: bg, cursor: revealed ? 'default' : 'pointer', fontSize: 13, color: textColor, transition: 'all 0.15s', minHeight: 42, display: 'flex', alignItems: 'center' }}>
                 {opt}
               </div>
             );
           })}
           {!revealed
-            ? <Btn color={color} disabled={!selected} onClick={() => setRevealed(true)} size="sm">Check Answer</Btn>
+            ? <Btn color={color} disabled={!selected} onClick={() => setRevealed(true)} size="sm">Check answer</Btn>
             : <>
-                <div style={{ fontSize: 11, color: selected === q.answer ? color : '#ff6644', padding: '8px 12px', background: selected === q.answer ? `${color}10` : '#ff444410', borderRadius: 6, marginBottom: 8 }}>
+                <div style={{ fontSize: 12, color: selected === q.answer ? 'var(--accent)' : 'var(--red)', padding: '8px 12px', background: selected === q.answer ? 'var(--accent-glow)' : 'rgba(196,85,61,0.08)', borderRadius: 6, marginBottom: 8 }}>
                   {selected === q.answer ? '✓ Correct' : `✗ Correct answer: ${q.answer}`}
                 </div>
-                <div style={{ fontSize: 11, color: '#778', lineHeight: 1.65, marginBottom: 10 }}>{q.explanation}</div>
-                <Btn color={color} size="sm" onClick={() => advance(selected === q.answer ? 1 : 0)}>{isLast ? 'See Results' : 'Next →'}</Btn>
+                <div style={{ fontSize: 12, color: 'var(--chalk-dim)', lineHeight: 1.65, marginBottom: 10 }}>{q.explanation}</div>
+                <Btn color={color} size="sm" onClick={() => advance(selected === q.answer ? 1 : 0)}>{isLast ? 'See results' : 'Next →'}</Btn>
               </>
           }
         </div>
@@ -67,17 +69,17 @@ export default function QuizMode({ questions, onComplete, color = '#00FFB2' }) {
       {/* Open / apply */}
       {(q.type === 'open' || q.type === 'apply') && (
         <div>
-          <textarea value={openAnswer} onChange={e => setOpenAnswer(e.target.value)} placeholder="Type your answer..."
-            rows={3} style={{ width: '100%', background: '#0c0c18', border: '1px solid #1e2a38', borderRadius: 8, padding: '10px 12px', color: '#c8d4e0', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 8 }} />
+          <textarea value={openAnswer} onChange={e => setOpenAnswer(e.target.value)} placeholder="Type your answer…"
+            rows={3} style={{ width: '100%', background: 'var(--ink)', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', color: 'var(--chalk)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 8 }} />
           {!revealed
-            ? <Btn color={color} size="sm" disabled={!openAnswer.trim()} onClick={() => setRevealed(true)}>Reveal Answer</Btn>
+            ? <Btn color={color} size="sm" disabled={!openAnswer.trim()} onClick={() => setRevealed(true)}>Reveal answer</Btn>
             : <>
-                <div style={{ fontSize: 10, color: '#556', marginBottom: 5, fontStyle: 'italic' }}>Model answer:</div>
-                <div style={{ fontSize: 11, color: '#b0c0d0', lineHeight: 1.65, marginBottom: 8, padding: '8px 12px', background: `${color}08`, borderRadius: 6 }}>{q.answer}</div>
-                {q.explanation && <div style={{ fontSize: 11, color: '#445', lineHeight: 1.6, marginBottom: 10 }}>{q.explanation}</div>}
+                <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 5, fontStyle: 'italic' }}>Model answer</div>
+                <div style={{ fontSize: 12, color: 'var(--text-b)', lineHeight: 1.65, marginBottom: 8, padding: '8px 12px', background: 'var(--accent-glow)', borderRadius: 6 }}>{q.answer}</div>
+                {q.explanation && <div style={{ fontSize: 12, color: 'var(--chalk-dim)', lineHeight: 1.6, marginBottom: 10 }}>{q.explanation}</div>}
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <div onClick={() => advance(0)} style={{ flex: 1, padding: '8px', background: '#ff444412', border: '1px solid #ff444430', borderRadius: 8, textAlign: 'center', fontSize: 11, color: '#ff6644', cursor: 'pointer' }}>Missed it</div>
-                  <div onClick={() => advance(1)} style={{ flex: 1, padding: '8px', background: `${color}12`, border: `1px solid ${color}30`, borderRadius: 8, textAlign: 'center', fontSize: 11, color, cursor: 'pointer' }}>Got it</div>
+                  <div onClick={() => advance(0)} style={{ flex: 1, padding: '10px', background: 'rgba(196,85,61,0.10)', border: '1px solid var(--red)', borderRadius: 8, textAlign: 'center', fontSize: 12, color: 'var(--red)', cursor: 'pointer', minHeight: 40 }}>Missed it</div>
+                  <div onClick={() => advance(1)} style={{ flex: 1, padding: '10px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 8, textAlign: 'center', fontSize: 12, color: 'var(--accent)', cursor: 'pointer', minHeight: 40 }}>Got it</div>
                 </div>
               </>
           }

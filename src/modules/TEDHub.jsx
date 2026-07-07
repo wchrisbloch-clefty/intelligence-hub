@@ -5,7 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#e2231a';
+const ACCENT        = '#D9A441';
 const ACCENT_BG     = 'rgba(226,35,26,0.07)';
 const ACCENT_BORDER = 'rgba(226,35,26,0.2)';
 
@@ -122,7 +122,7 @@ const CURATED_TALKS = [
 ];
 
 function RelevanceDot({ score }) {
-  const color = score >= 9 ? '#00CC76' : score >= 7 ? '#ffcc44' : '#ff8844';
+  const color = score >= 9 ? '#D9A441' : score >= 7 ? '#D9A441' : '#D9A441';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
@@ -191,7 +191,7 @@ Be blunt. CB-style. No fluff.`;
           </a>
           <button onClick={analyze}
             style={{ fontSize: 11, padding: '6px 12px', background: expanded && analysis ? 'var(--surf2)' : 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-b)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flex: 1, textAlign: 'left' }}>
-            {loading ? 'Analyzing…' : analysis ? (expanded ? '▲ Hide Analysis' : '▼ CB Analysis') : '✦ AI Analyze'}
+            {loading ? 'Analyzing…' : analysis ? (expanded ? 'Hide analysis' : 'Show analysis') : 'Analyze talk'}
           </button>
         </div>
       </div>
@@ -212,7 +212,7 @@ Be blunt. CB-style. No fluff.`;
                   🏛 Save to Vault
                 </button>
               )}
-              {vaulted && <div style={{ marginTop: 8, fontSize: 10, color: '#00CC76' }}>✓ Saved to Vault</div>}
+              {vaulted && <div style={{ marginTop: 8, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>}
             </>
           )}
         </div>
@@ -247,7 +247,7 @@ export default function TEDHub() {
       {/* Header */}
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)' }}>
         <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Thought Leadership</div>
-        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5, marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>
           TED Intelligence Hub
         </div>
         <div style={{ fontSize: 11, color: 'var(--dim)' }}>

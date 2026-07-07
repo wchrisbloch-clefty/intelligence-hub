@@ -5,7 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT       = '#e11d48';
+const ACCENT       = '#D9A441';
 const ACCENT_BG    = 'rgba(225,29,72,0.07)';
 const ACCENT_BORDER= 'rgba(225,29,72,0.18)';
 
@@ -92,7 +92,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
     <div style={{ background: 'var(--surface)', border: `1px solid ${aiPanel ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px', transition: 'border-color 0.15s' }}>
       {/* Header row */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Fraunces', serif" }}>{idx + 1}</div>
+        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{idx + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, marginBottom: 3, letterSpacing: 0.3 }}>
             {ep.emoji} {ep.show}
@@ -141,11 +141,11 @@ function PodCard({ ep, idx, onSaveToVault }) {
                     <MD text={aiCache[aiPanel]} color={ACCENT} />
                     {!vaulted && (
                       <div onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }}
-                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#ffcc4410', border: '1px solid #ffcc4440', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#ffcc44', cursor: 'pointer' }}>
+                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#D9A44110', border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
                         🏛 Save to Vault
                       </div>
                     )}
-                    {vaulted && <div style={{ marginTop: 10, fontSize: 10, color: '#ffcc44' }}>✓ Saved to Vault</div>}
+                    {vaulted && <div style={{ marginTop: 10, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>}
                   </>
                 : null
             }
@@ -315,7 +315,7 @@ export default function PodcastHub() {
 
   // ─── Header ────────────────────────────────────────────────────────────
   const header = (
-    <div style={{ background: `linear-gradient(135deg, ${ACCENT}, #f43f5e)`, borderRadius: 12, padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
+    <div style={{ background: `linear-gradient(135deg, ${ACCENT}, #D9A441)`, borderRadius: 12, padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
       <div style={{ fontSize: 28, flexShrink: 0 }}>{activePod ? activePod.emoji : '🎙️'}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 8, letterSpacing: 4, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub · Podcast Feed</div>
@@ -349,7 +349,7 @@ export default function PodcastHub() {
           {allEps.slice(0, 6).map((ep, i) => (
             <div key={i} onClick={() => ep.link && window.open(ep.link, '_blank')}
               style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--bord2)', cursor: ep.link ? 'pointer' : 'default' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--border)', minWidth: 16, flexShrink: 0, fontFamily: "'Fraunces', serif" }}>{i + 1}</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--border)', minWidth: 16, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{i + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ep.title}</div>
                 <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2 }}>{ep.show} · {fmtPodDate(ep.pubDate)}</div>
@@ -450,10 +450,10 @@ export default function PodcastHub() {
                     <MD text={pasteResult} color={ACCENT} />
                     {!pasteVaulted
                       ? <div onClick={() => { saveToVault('[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
-                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#ffcc4410', border: '1px solid #ffcc4440', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#ffcc44', cursor: 'pointer' }}>
+                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#D9A44110', border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
                           🏛 Save to Vault
                         </div>
-                      : <div style={{ marginTop: 10, fontSize: 10, color: '#ffcc44' }}>✓ Saved to Vault</div>
+                      : <div style={{ marginTop: 10, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>
                     }
                   </>
                 )}

@@ -24,7 +24,7 @@ export default function ProjectsOS() {
       emoji: newProject.emoji || '🚀',
       status: 'planning',
       category: newProject.category,
-      color: PROJECT_CATEGORIES[newProject.category]?.color || '#00FFB2',
+      color: PROJECT_CATEGORIES[newProject.category]?.color || '#D9A441',
       description: newProject.description,
       milestones: [],
       connections: [],
@@ -87,11 +87,11 @@ export default function ProjectsOS() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: '#ff8844', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>Your Projects</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
           <div style={{ fontSize: 11, color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
         </div>
-        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: '#ff8844', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
+        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: '#D9A441', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -138,7 +138,7 @@ export default function ProjectsOS() {
                         </>
                       )}
                       {proj.priority === 'high' && (
-                        <div style={{ marginTop: 8, fontSize: 8, color: '#ff6644', letterSpacing: 1 }}>▲ HIGH PRIORITY</div>
+                        <div style={{ marginTop: 8, fontSize: 8, color: '#D9A441', letterSpacing: 1 }}>▲ HIGH PRIORITY</div>
                       )}
                     </div>
                   );
@@ -155,7 +155,7 @@ export default function ProjectsOS() {
       </div>
 
       {showNew && (
-        <Modal title="New Project" accent="#ff8844" onClose={() => setShowNew(false)}>
+        <Modal title="New Project" accent="#D9A441" onClose={() => setShowNew(false)}>
           <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
             <input value={newProject.emoji} onChange={e => setNewProject(p => ({ ...p, emoji: e.target.value }))}
               style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px', color: 'var(--text-b)', fontSize: 18, outline: 'none', textAlign: 'center' }} />
@@ -182,7 +182,7 @@ export default function ProjectsOS() {
             <div style={{ display: 'flex', gap: 8 }}>
               {['high', 'medium', 'low'].map(p => (
                 <div key={p} onClick={() => setNewProject(prev => ({ ...prev, priority: p }))}
-                  style={{ flex: 1, padding: '8px', border: `1px solid ${newProject.priority === p ? '#ff8844' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 10, color: newProject.priority === p ? '#ff8844' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
+                  style={{ flex: 1, padding: '8px', border: `1px solid ${newProject.priority === p ? '#D9A441' : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 10, color: newProject.priority === p ? '#D9A441' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
                   {p}
                 </div>
               ))}
@@ -190,7 +190,7 @@ export default function ProjectsOS() {
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <div onClick={() => setShowNew(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-            <div onClick={createProject} style={{ flex: 2, padding: '11px', background: '#ff8844', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Create Project →</div>
+            <div onClick={createProject} style={{ flex: 2, padding: '11px', background: '#D9A441', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Create Project →</div>
           </div>
         </Modal>
       )}
@@ -208,11 +208,11 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
           <div style={{ fontSize: 36, marginBottom: 10 }}>{proj.emoji}</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", marginBottom: 4 }}>{proj.title}</div>
+          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>{proj.title}</div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
             <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
-            {proj.priority === 'high' && <Badge color="#ff6644">high priority</Badge>}
+            {proj.priority === 'high' && <Badge color="#D9A441">high priority</Badge>}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -222,7 +222,7 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
               {s.label}
             </div>
           ))}
-          <div onClick={onDelete} style={{ padding: '5px 10px', fontSize: 9, border: '1px solid #ff444440', color: '#ff4444', borderRadius: 6, cursor: 'pointer' }}>Delete</div>
+          <div onClick={onDelete} style={{ padding: '5px 10px', fontSize: 9, border: '1px solid #C4553D40', color: '#C4553D', borderRadius: 6, cursor: 'pointer' }}>Delete</div>
         </div>
       </div>
 
@@ -232,7 +232,7 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
         <div style={{ padding: '16px', background: 'var(--surface)', border: `1px solid ${proj.color}20`, borderRadius: 10, marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
             <Label>Progress</Label>
-            <div style={{ fontSize: 14, fontWeight: 800, color: proj.color, fontFamily: "'Fraunces', serif" }}>{pct}%</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: proj.color, fontFamily: "'Newsreader', serif" }}>{pct}%</div>
           </div>
           <div style={{ background: 'var(--border)', borderRadius: 3, height: 5, marginBottom: 14 }}>
             <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${proj.color}, ${proj.color}80)`, borderRadius: 3, transition: 'width 0.5s' }} />
@@ -267,15 +267,15 @@ function ProjectDetail({ proj, cat, pct, done, onBack, onUpdateMilestone, onAddM
           <Label>Knowledge Connections</Label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #00FFB225', color: '#00FFB2', borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: '#D9A441', borderRadius: 20 }}>📚 {c}</div>
             ))}
           </div>
         </div>
       )}
 
       {proj.blueOcean && (
-        <div style={{ padding: '14px 16px', background: '#6366F108', border: '1px solid #6366F130', borderRadius: 10 }}>
-          <Label color="#6366F1">🌊 Blue Ocean Insight</Label>
+        <div style={{ padding: '14px 16px', background: '#D9A44108', border: '1px solid #D9A44130', borderRadius: 10 }}>
+          <Label color="#D9A441">🌊 Blue Ocean Insight</Label>
           <div style={{ fontSize: 12, color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
         </div>
       )}

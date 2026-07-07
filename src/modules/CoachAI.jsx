@@ -5,7 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#8b5cf6';
+const ACCENT        = '#D9A441';
 const ACCENT_BG     = 'rgba(139,92,246,0.08)';
 const ACCENT_BORDER = 'rgba(139,92,246,0.2)';
 
@@ -101,7 +101,7 @@ export default function CoachAI() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", lineHeight: 1.1 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
               {currentTone.icon} {currentTone.label} Mode
             </div>
             <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 3 }}>{currentTone.desc}</div>

@@ -35,24 +35,24 @@ export default function Sidebar({ collapsed, onToggle }) {
           width: 34,
           height: 34,
           borderRadius: 10,
-          background: 'linear-gradient(135deg, var(--accent, #00C6E6), #6366F1)',
+          background: 'linear-gradient(135deg, var(--accent, #D9A441), #D9A441)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: 16,
-          fontWeight: 900,
-          color: '#fff',
+          fontWeight: 700,
+          color: '#1A130A',
           flexShrink: 0,
-          fontFamily: "'Fraunces', serif",
-          boxShadow: '0 2px 12px var(--accent-glow, rgba(0,198,230,0.2))',
-        }}>A</div>
+          fontFamily: "'Newsreader', serif",
+          boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))',
+        }}>FR</div>
 
         {!collapsed && (
           <div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: "'Fraunces', serif", letterSpacing: -0.5, lineHeight: 1 }}>
-              Aether
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1 }}>
+              The Film Room
             </div>
-            <div style={{ fontSize: 8, letterSpacing: 2.5, color: 'var(--accent, #00C6E6)', textTransform: 'uppercase', marginTop: 2 }}>
+            <div style={{ fontSize: 9, letterSpacing: 2.5, color: 'var(--accent, #D9A441)', textTransform: 'uppercase', marginTop: 3 }}>
               Intelligence Hub
             </div>
           </div>
@@ -77,8 +77,8 @@ export default function Sidebar({ collapsed, onToggle }) {
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 background: active ? 'var(--accent-glow, rgba(0,198,230,0.09))' : 'transparent',
                 border: 'none',
-                borderLeft: collapsed ? 'none' : `3px solid ${active ? 'var(--accent, #00C6E6)' : 'transparent'}`,
-                color: active ? 'var(--accent, #00C6E6)' : 'var(--muted)',
+                borderLeft: collapsed ? 'none' : `3px solid ${active ? 'var(--accent, #D9A441)' : 'transparent'}`,
+                color: active ? 'var(--accent, #D9A441)' : 'var(--muted)',
                 cursor: 'pointer',
                 fontFamily: 'inherit',
                 textAlign: 'left',
@@ -93,7 +93,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                   position: 'absolute', left: 0, top: '50%',
                   transform: 'translateY(-50%)',
                   width: 3, height: 26,
-                  background: 'var(--accent, #00C6E6)',
+                  background: 'var(--accent, #D9A441)',
                   borderRadius: '0 3px 3px 0',
                 }} />
               )}
