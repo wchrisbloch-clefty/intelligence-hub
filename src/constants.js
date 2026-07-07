@@ -104,20 +104,20 @@ export const SESSION_MODES = [
 ];
 
 export const NAV_ITEMS = [
-  { id: "home",      icon: "⌂",  label: "Home",      accent: '#D9A441' },
-  { id: "learn",     icon: "📚", label: "Learn",     accent: '#D9A441' },
-  { id: "books",     icon: "📖", label: "Books",     accent: '#D9A441' },
-  { id: "research",  icon: "🔭", label: "Research",  accent: '#D9A441' },
-  { id: "translate", icon: "🌐", label: "Translate", accent: '#D9A441' },
-  { id: "projects",  icon: "🚀", label: "Projects",  accent: '#D9A441' },
-  { id: "podcast",   icon: "🎙️", label: "Podcasts",  accent: '#D9A441' },
-  { id: "vault",     icon: "🏛", label: "Vault",     accent: '#D9A441' },
-  { id: "growth",    icon: "📈", label: "Growth",    accent: '#D9A441' },
-  { id: "inbox",     icon: "📥", label: "Inbox",     accent: '#D9A441' },
-  { id: "decisions", icon: "⚖️", label: "Decisions", accent: '#D9A441' },
-  { id: "coach",     icon: "🧭", label: "Coach",     accent: '#D9A441' },
-  { id: "ted",       icon: "🎙", label: "TED",       accent: '#D9A441' },
-  { id: "quiz",      icon: "🧪", label: "Quiz",      accent: '#D9A441' },
+  { id: "home",      label: "Home",       desc: "Dashboard & daily brief",   accent: '#D9A441' },
+  { id: "learn",     label: "Learn",      desc: "AI-powered study sessions", accent: '#D9A441' },
+  { id: "books",     label: "Books",      desc: "Deep reading mode",         accent: '#D9A441' },
+  { id: "research",  label: "Research",   desc: "Truth-first analysis",      accent: '#D9A441' },
+  { id: "translate", label: "Translate",  desc: "25+ languages",             accent: '#D9A441' },
+  { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: '#D9A441' },
+  { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: '#D9A441' },
+  { id: "vault",     label: "Vault",      desc: "Knowledge base",            accent: '#D9A441' },
+  { id: "growth",    label: "Growth",     desc: "Goals & synthesis",         accent: '#D9A441' },
+  { id: "inbox",     label: "Inbox",      desc: "Save & analyze content",    accent: '#D9A441' },
+  { id: "decisions", label: "Decisions",  desc: "Decision journal",          accent: '#D9A441' },
+  { id: "coach",     label: "Coach",      desc: "AI accountability coach",   accent: '#D9A441' },
+  { id: "ted",       label: "TED",        desc: "Curated talks, AI briefed", accent: '#D9A441' },
+  { id: "quiz",      label: "Quiz",       desc: "Self-assessment & gaps",    accent: '#D9A441' },
 ];
 
 export const CHAT_MODES = [

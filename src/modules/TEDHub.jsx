@@ -222,7 +222,7 @@ Be blunt. CB-style. No fluff.`;
 }
 
 export default function TEDHub() {
-  const { isMobile, notes, setNotes } = useApp();
+  const { isMobile, notes, setNotes, setActiveModule, setChatPrefill, setChatOpen } = useApp();
   const [topicFilter, setTopicFilter] = useState('all');
   const [sortBy,      setSortBy]      = useState('relevance');
   const [search,      setSearch]      = useState('');
@@ -295,8 +295,14 @@ export default function TEDHub() {
       {/* Add your own */}
       <div style={{ margin: `0 ${pad} 20px`, padding: '16px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center' }}>
         <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>Want to analyze a specific TED talk or YouTube talk?</div>
-        <div onClick={() => {}} style={{ fontSize: 11, color: ACCENT, fontWeight: 700, cursor: 'pointer' }}>
-          Paste a URL in the Podcast Hub → AI will extract and analyze it
+        <div onClick={() => {
+          setChatPrefill('Analyze this TED talk for me: ');
+          setChatOpen(true);
+        }} style={{ fontSize: 11, color: ACCENT, fontWeight: 700, cursor: 'pointer' }}>
+          Open AI Chat to analyze any talk URL →
+        </div>
+        <div onClick={() => setActiveModule('podcast')} style={{ fontSize: 11, color: 'var(--subtle)', fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>
+          Or go to Podcast Hub to paste a URL
         </div>
       </div>
     </div>

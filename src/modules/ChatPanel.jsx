@@ -130,7 +130,7 @@ export default function ChatPanel() {
               </div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Aether · {mode?.label}</div>
+                <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
                 <MD text={msg.content} color="#D9A441" />
               </div>
             )}
@@ -140,7 +140,7 @@ export default function ChatPanel() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Aether · {mode?.label}</div>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
               {stream
                 ? <MD text={stream + '▍'} color="#D9A441" />
                 : <ThinkingDots color="#D9A441" />}

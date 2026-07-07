@@ -32,7 +32,7 @@ function shortHost(url) {
 }
 
 export default function ContentInbox() {
-  const { notes, setNotes, isMobile } = useApp();
+  const { notes, setNotes, isMobile, setPendingArtifact } = useApp();
 
   const [items, setItems] = useState(() => {
     try { return JSON.parse(localStorage.getItem('aether_inbox') || '[]'); } catch { return []; }
@@ -44,6 +44,8 @@ export default function ContentInbox() {
   const [text,       setText]       = useState('');
   const [title,      setTitle]      = useState('');
   const [analyzing,  setAnalyzing]  = useState(false);
+  const [copiedId,   setCopiedId]   = useState(null);
+  const [reanalyzing,setReanalyzing]= useState(null);
 
   const persist = (updated) => {
     setItems(updated);
@@ -106,6 +108,33 @@ export default function ContentInbox() {
     persist(items.map(i => i.id === item.id ? { ...i, inVault: true } : i));
   };
 
+  const copyToClipboard = (id, text) => {
+    navigator.clipboard?.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1800);
+  };
+
+  const reanalyze = async (item) => {
+    if (reanalyzing) return;
+    setReanalyzing(item.id);
+    const type = item.type;
+    const typeLabel = type === 'video' ? 'YouTube/video' : type === 'social' ? 'social post' : 'article/document';
+    const prompt = item.snippet
+      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways with specific CB applications (BD, investing, health, Houston)\n3. Connection to CB's mental model library\n4. Decisive action or insight\n\nContent:\n${item.snippet}`
+      : `The user saved this ${typeLabel} URL for CB: ${item.url}\n\nAnalyze based on URL/domain context. Cover:\n1. What this source likely contains and why CB saved it\n2. 3 insights CB should extract if he reads/watches this\n3. How it connects to CB's goals (BD, passive income, longevity, Houston)\n4. Decisive recommendation`;
+    try {
+      const summary = await callClaude({
+        system: CB_IDENTITY,
+        messages: [{ role: 'user', content: prompt }],
+        maxTokens: 900,
+      });
+      persist(items.map(i => i.id === item.id ? { ...i, summary, inVault: false } : i));
+    } catch {
+      alert('Re-analysis failed — check network and try again.');
+    }
+    setReanalyzing(null);
+  };
+
   const filtered = filter === 'all' ? items : items.filter(i => i.type === filter);
 
   return (
@@ -113,7 +142,7 @@ export default function ContentInbox() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
+        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Capture & Synthesize</div>
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Save articles, videos, links, or paste text — AI extracts what matters for CB.</div>
       </div>
@@ -135,21 +164,21 @@ export default function ContentInbox() {
 
           <input value={title} onChange={e => setTitle(e.target.value)}
             placeholder="Title (optional — auto-detected)"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10, minHeight: isMobile ? 44 : undefined }} />
 
           <input value={url} onChange={e => setUrl(e.target.value)}
             placeholder="URL — article, YouTube, Twitter, LinkedIn, any link…"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10, minHeight: isMobile ? 44 : undefined }} />
 
           <div style={{ fontSize: 10, color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
 
           <textarea value={text} onChange={e => setText(e.target.value)}
             placeholder="Paste article, notes, quotes, email, transcript, or any text…"
             rows={5}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14 }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
 
           <button onClick={analyze} disabled={analyzing || (!url.trim() && !text.trim())}
-            style={{ width: '100%', padding: '12px', background: (url.trim() || text.trim()) && !analyzing ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, color: (url.trim() || text.trim()) && !analyzing ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: (url.trim() || text.trim()) && !analyzing ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, color: (url.trim() || text.trim()) && !analyzing ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             {analyzing ? <><ThinkingDots color="#000" /> Analyzing…</> : '✦ Analyze & Save'}
           </button>
         </div>
@@ -183,48 +212,56 @@ export default function ContentInbox() {
               const expanded = expandedId === item.id;
               return (
                 <div key={item.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
-                  <div style={{ padding: '13px 16px' }}>
+                  <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : item.id)}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <span style={{ fontSize: 18, flexShrink: 0 }}>{TYPE_ICON[item.type] || '📄'}</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.3 }}>{item.title}</div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {item.url && (
-                            <span onClick={() => window.open(item.url, '_blank')}
+                            <span onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}
                               style={{ fontSize: 10, color: 'var(--accent, #D9A441)', cursor: 'pointer' }}>
                               ↗ {shortHost(item.url)}
                             </span>
                           )}
-                          <span style={{ fontSize: 9, color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
-                          <span style={{ fontSize: 9, padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
-                          {item.inVault && <span style={{ fontSize: 9, color: '#D9A441', fontWeight: 600 }}>✓ Vaulted</span>}
+                          <span style={{ fontSize: isMobile ? 10 : 9, color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
+                          <span style={{ fontSize: isMobile ? 10 : 9, padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
+                          {item.inVault && <span style={{ fontSize: isMobile ? 10 : 9, color: '#D9A441', fontWeight: 600 }}>✓ Vaulted</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                        <div onClick={() => setExpandedId(expanded ? null : item.id)}
-                          style={{ fontSize: 10, color: ACCENT, cursor: 'pointer', padding: '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600 }}>
-                          {expanded ? 'Hide' : 'View AI'}
+                        <div
+                          style={{ fontSize: 10, color: ACCENT, padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined, display: 'flex', alignItems: 'center' }}>
+                          {expanded ? '▲ Hide' : '▼ View AI'}
                         </div>
-                        <div onClick={() => remove(item.id)} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                        <div onClick={e => { e.stopPropagation(); remove(item.id); }} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                       </div>
                     </div>
                   </div>
 
                   {expanded && item.summary && (
                     <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
-                      <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
+                      <div style={{ fontSize: isMobile ? 10 : 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
                       <MD text={item.summary} color={ACCENT} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                        <div onClick={() => { navigator.clipboard?.writeText(item.summary); }}
-                          style={{ padding: '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, cursor: 'pointer', background: 'transparent' }}>
-                          Copy
+                        <div onClick={() => copyToClipboard(item.id, item.summary)}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#D9A441' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(16,185,129,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          {copiedId === item.id ? '✓ Copied!' : 'Copy'}
+                        </div>
+                        <div onClick={() => reanalyze(item)}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, cursor: reanalyzing ? 'default' : 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined, opacity: reanalyzing === item.id ? 0.6 : 1 }}>
+                          {reanalyzing === item.id ? '⟳ Re-analyzing…' : '⟳ Re-analyze'}
                         </div>
                         {!item.inVault && (
                           <div onClick={() => saveToVault(item)}
-                            style={{ padding: '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110' }}>
+                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
                             🏛 Save to Vault
                           </div>
                         )}
+                        <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
+                          🚀 Save to Project
+                        </div>
                       </div>
                     </div>
                   )}

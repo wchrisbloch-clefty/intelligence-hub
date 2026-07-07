@@ -73,9 +73,9 @@ export default function Sidebar({ collapsed, onToggle }) {
                 display: 'flex',
                 alignItems: 'center',
                 gap: 12,
-                padding: collapsed ? '10px 0' : '9px 18px',
+                padding: collapsed ? '7px 0' : '7px 16px',
                 justifyContent: collapsed ? 'center' : 'flex-start',
-                background: active ? 'var(--accent-glow, rgba(0,198,230,0.09))' : 'transparent',
+                background: active ? 'var(--accent-glow, rgba(217,164,65,0.09))' : 'transparent',
                 border: 'none',
                 borderLeft: collapsed ? 'none' : `3px solid ${active ? 'var(--accent, #D9A441)' : 'transparent'}`,
                 color: active ? 'var(--accent, #D9A441)' : 'var(--muted)',
@@ -85,7 +85,7 @@ export default function Sidebar({ collapsed, onToggle }) {
                 transition: 'all 0.12s',
                 outline: 'none',
                 position: 'relative',
-                minHeight: 40,
+                minHeight: 36,
               }}
             >
               {active && collapsed && (
@@ -97,9 +97,9 @@ export default function Sidebar({ collapsed, onToggle }) {
                   borderRadius: '0 3px 3px 0',
                 }} />
               )}
-              <span style={{ fontSize: 17, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>{item.icon}</span>
+              <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>{item.icon}</span>
               {!collapsed && (
-                <span style={{ fontSize: 13, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>
                   {item.label}
                 </span>
               )}
@@ -110,19 +110,17 @@ export default function Sidebar({ collapsed, onToggle }) {
 
       {/* Stats strip — expanded only */}
       {!collapsed && (
-        <div style={{ padding: '10px 12px 8px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', gap: 5 }}>
-            {[
-              { value: streak + 'd', label: '🔥 Streak' },
-              { value: totalHours + 'h', label: '⏱ Learn' },
-              { value: topicCount,       label: '📚 Topics' },
-            ].map(s => (
-              <div key={s.label} style={{ flex: 1, background: 'var(--bg)', borderRadius: 8, padding: '7px 4px', textAlign: 'center' }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
-                <div style={{ fontSize: 8, color: 'var(--dim)', marginTop: 3 }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
+        <div style={{ padding: '6px 10px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', gap: 4 }}>
+          {[
+            { value: streak + 'd', label: '🔥' },
+            { value: totalHours + 'h', label: '⏱' },
+            { value: topicCount, label: '📚' },
+          ].map(s => (
+            <div key={s.label} style={{ flex: 1, background: 'var(--bg)', borderRadius: 6, padding: '5px 3px', textAlign: 'center' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
         </div>
       )}
 
