@@ -60,10 +60,11 @@ export default function CoachAI() {
   const [messages,     setMessages]     = useState([]);
   const [input,        setInput]        = useState('');
   const [loading,      setLoading]      = useState(false);
+  const [stream,       setStream]       = useState('');
   const bottomRef = useRef(null);
   const sendRef   = useRef(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   const send = async (text) => {
     if (!text.trim() || loading) return;
@@ -72,16 +73,19 @@ export default function CoachAI() {
     setMessages(hist);
     setInput('');
     setLoading(true);
+    setStream('');
     try {
       const reply = await callClaude({
         system:    buildSystem(tone, topic),
         messages:  hist.map(m => ({ role: m.role, content: m.content })),
         maxTokens: 700,
+        onToken:   (t) => setStream(s => s + t),
       });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
+    setStream('');
     setLoading(false);
   };
   sendRef.current = send;
@@ -184,9 +188,11 @@ export default function CoachAI() {
 
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 16px' }}>
-            <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '12px 16px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
-              <ThinkingDots color={ACCENT} />
+            <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '12px 16px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Coach</div>
+              {stream
+                ? <MD text={stream + '▍'} color={ACCENT} />
+                : <ThinkingDots color={ACCENT} />}
             </div>
           </div>
         )}

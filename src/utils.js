@@ -1,24 +1,19 @@
 import { CB_IDENTITY, CB_LEARNING_SPINE } from './constants.js';
 import { GRAPH_KEY, PROJECTS_KEY, NOTES_KEY, RESEARCH_KEY } from './constants.js';
 import { SEED_GRAPH, SEED_PROJECTS, SEED_NOTES, SEED_RESEARCH } from './seedData.js';
+import { storage } from './lib/storage.js';
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────
+// Backed by /api/storage (Upstash, cross-device) with a localStorage fallback.
 async function storageGet(key) {
   try {
-    if (window.storage) {
-      const r = await window.storage.get(key);
-      return r ? JSON.parse(r.value) : null;
-    }
-    const v = localStorage.getItem(key);
-    return v ? JSON.parse(v) : null;
+    const r = await storage.get(key);
+    return r ? JSON.parse(r.value) : null;
   } catch { return null; }
 }
 
 async function storageSet(key, val) {
-  try {
-    if (window.storage) await window.storage.set(key, JSON.stringify(val));
-    else localStorage.setItem(key, JSON.stringify(val));
-  } catch {}
+  try { await storage.set(key, JSON.stringify(val)); } catch {}
 }
 
 export async function loadGraph() {
@@ -89,28 +84,25 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null;
 }
 
-export async function fetchYouTubeTranscript(videoId) {
-  const urls = [
-    `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}`,
-    `https://api.kome.ai/api/tools/youtube-transcripts?video_id=${videoId}`,
-  ];
-  for (const url of urls) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const d = await r.json();
-      if (Array.isArray(d) && d.length > 0) return d.map(s => s.text || '').join(' ').replace(/\[.*?\]/g, '').trim();
-      if (d.transcript) return d.transcript;
-    } catch {}
-  }
+// Both transcript and metadata now come from our own /api/transcript endpoint
+// (server-side youtube-transcript + oEmbed) — no third-party proxies, no CORS.
+async function fetchTranscriptData(videoId) {
+  try {
+    const r = await fetch(`/api/transcript?videoId=${encodeURIComponent(videoId)}`, { credentials: 'same-origin' });
+    if (r.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
+    if (r.ok) return await r.json();
+  } catch {}
   return null;
 }
 
+export async function fetchYouTubeTranscript(videoId) {
+  const d = await fetchTranscriptData(videoId);
+  return d?.transcriptAvailable ? d.transcript : null;
+}
+
 export async function fetchYouTubeMeta(videoId) {
-  try {
-    const r = await fetch(`https://www.youtube.com/oembed?url=https://youtube.com/watch?v=${videoId}&format=json`);
-    if (r.ok) return await r.json();
-  } catch {}
+  const d = await fetchTranscriptData(videoId);
+  if (d) return { title: d.title, author_name: d.channel };
   return { title: 'YouTube Video', author_name: 'Unknown Channel' };
 }
 
@@ -189,7 +181,7 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
 
   if (entryMode === 'youtube') {
     const { title, channel, transcript, url, transcriptAvailable } = context;
-    const tSection = transcriptAvailable ? 'FULL TRANSCRIPT:\n' + transcript.slice(0, 8000) : 'NOTE: Transcript unavailable. Use your knowledge of this creator, channel, and topic. Be transparent.';
+    const tSection = transcriptAvailable ? 'FULL TRANSCRIPT:\n' + transcript.slice(0, 30000) : 'NOTE: Transcript unavailable. Use your knowledge of this creator, channel, and topic. Be transparent.';
     const socraticNote = sessionMode === 'socratic' ? '\n\nSOCRATIC MODE: Ask CB questions about this video\'s content one at a time. Wait for answers. Correct and build.' : '\n\nTeach: orient → thesis → 5-7 key moments → CB translation → cross-reference → action → deeper dive.';
     return {
       cached: spine,
@@ -271,40 +263,87 @@ Format EXACTLY as JSON — no preamble, no markdown fences, just raw JSON:
 }
 
 // ─── CLAUDE API CALL ──────────────────────────────────────────────────────
-export async function callClaude({ system, messages, maxTokens = 1500, searchEnabled = false }) {
-  // Build system blocks with prompt caching.
-  // system can be a string (cached as-is), an object { cached, dynamic },
-  // or empty/falsy (no system prompt, e.g. quiz generation).
-  let systemBlocks;
-  if (!system || (typeof system === 'string' && !system.trim())) {
-    systemBlocks = undefined;
-  } else if (typeof system === 'string') {
-    systemBlocks = [{ type: 'text', text: system, cache_control: { type: 'ephemeral' } }];
-  } else {
-    systemBlocks = [
-      { type: 'text', text: system.cached, cache_control: { type: 'ephemeral' } },
-      ...(system.dynamic ? [{ type: 'text', text: system.dynamic }] : []),
-    ];
-  }
+// Routes through our own /api/chat proxy — the API key lives only on the
+// server. `system` may be a string, { cached, dynamic }, or falsy.
+//
+// Pass `onToken(chunk)` to stream: it fires for each text delta as it arrives
+// and the full text is still returned when the stream completes. Without
+// `onToken` we request a single non-streamed JSON response.
+export class AuthError extends Error {
+  constructor(msg = 'Auth expired — re-enter code') { super(msg); this.name = 'AuthError'; this.authExpired = true; }
+}
 
-  const body = { model: 'claude-sonnet-4-6', max_tokens: maxTokens, messages };
-  if (systemBlocks) body.system = systemBlocks;
+function notifyAuthExpired() {
+  if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
+}
+
+export async function callClaude({ system, messages, maxTokens = 4096, searchEnabled = false, onToken }) {
+  const body = { system, messages, max_tokens: maxTokens, stream: !!onToken };
   if (searchEnabled) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
+  const res = await fetch('/api/chat', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-      'anthropic-beta': 'prompt-caching-2024-07-31',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify(body),
   });
-  const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return data.content?.filter(b => b.type === 'text').map(b => b.text).join('\n') || 'No response.';
+
+  if (res.status === 401) { notifyAuthExpired(); throw new AuthError(); }
+
+  // Non-streaming path — plain JSON { text } or { error }
+  if (!onToken) {
+    const data = await res.json().catch(() => ({ error: 'AI request failed — retry' }));
+    if (!res.ok || data.error) throw new Error(data.error || 'AI request failed — retry');
+    return data.text || 'No response.';
+  }
+
+  // Streaming path — parse the SSE passthrough and surface text deltas.
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || 'AI request failed — retry');
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let full = '';
+
+  const handleEvent = (raw) => {
+    // Each SSE block may have multiple lines; we only care about `data:` JSON.
+    for (const line of raw.split('\n')) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith('data:')) continue;
+      const json = trimmed.slice(5).trim();
+      if (!json || json === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(json);
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          full += evt.delta.text;
+          onToken(evt.delta.text);
+        } else if (evt.type === 'error') {
+          throw new Error(evt.error?.message || 'AI request failed — retry');
+        }
+      } catch (e) {
+        if (e.message && e.message !== 'Unexpected end of JSON input') { /* swallow parse noise */ }
+      }
+    }
+  };
+
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    // SSE events are separated by a blank line
+    let idx;
+    while ((idx = buffer.indexOf('\n\n')) !== -1) {
+      const chunk = buffer.slice(0, idx);
+      buffer = buffer.slice(idx + 2);
+      handleEvent(chunk);
+    }
+  }
+  if (buffer.trim()) handleEvent(buffer);
+
+  return full || 'No response.';
 }
 
 export async function buildApiMessages(messages) {

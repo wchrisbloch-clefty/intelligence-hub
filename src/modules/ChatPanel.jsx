@@ -21,13 +21,14 @@ export default function ChatPanel() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stream, setStream] = useState('');
   const [attachments, setAttachments] = useState([]);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   const sendRef = useRef(null);
   const { listening, toggle: toggleVoice, supported: voiceOk } = useVoiceInput();
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   // Auto-send when opened via AI search
   useEffect(() => {
@@ -46,14 +47,16 @@ export default function ChatPanel() {
     setInput('');
     setAttachments([]);
     setLoading(true);
+    setStream('');
     try {
       const system = buildSystem(null, null, { chatMode }, graph);
       const apiMsgs = await buildApiMessages(newHist);
-      const reply = await callClaude({ system, messages: apiMsgs });
+      const reply = await callClaude({ system, messages: apiMsgs, onToken: (t) => setStream(s => s + t) });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
+    setStream('');
     setLoading(false);
   };
   sendRef.current = send;
@@ -136,9 +139,11 @@ export default function ChatPanel() {
 
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #00FFB220', borderRadius: '3px 14px 14px 14px', padding: '12px 14px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 8 }}>Thinking...</div>
-              <ThinkingDots color="#00FFB2" />
+            <div style={{ background: 'var(--surface)', border: '1px solid #00FFB220', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: '#00FFB2', textTransform: 'uppercase', marginBottom: 8 }}>Aether · {mode?.label}</div>
+              {stream
+                ? <MD text={stream + '▍'} color="#00FFB2" />
+                : <ThinkingDots color="#00FFB2" />}
             </div>
           </div>
         )}

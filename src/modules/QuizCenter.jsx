@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -21,12 +22,9 @@ const PRESET_TOPICS = [
 
 const STORAGE_KEY = 'aether_quiz_results';
 
-function loadResults() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-}
-function saveResults(r) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch {}
-}
+// Quiz history persists cross-device: instant local read, server write-through.
+function loadResults() { return readLocal(STORAGE_KEY, []); }
+function saveResults(r) { writeThrough(STORAGE_KEY, r); }
 
 function buildQuizPrompt(topic, topicLabel) {
   return `Generate a 6-question self-assessment quiz for CB about: "${topicLabel}"
@@ -80,6 +78,15 @@ export default function QuizCenter() {
   const [gapLoading, setGapLoading] = useState(false);
   const [history,    setHistory]    = useState(loadResults);
   const [customTopic, setCustomTopic] = useState('');
+
+  // Pull any history saved on another device once mounted.
+  useEffect(() => {
+    hydrate(STORAGE_KEY).then((remote) => {
+      if (Array.isArray(remote) && remote.length) {
+        setHistory((local) => (remote.length >= local.length ? remote : local));
+      }
+    });
+  }, []);
 
   const pad = isMobile ? '14px' : '24px';
 

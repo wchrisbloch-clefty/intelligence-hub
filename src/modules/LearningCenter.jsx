@@ -41,6 +41,7 @@ export default function LearningCenter() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [stream, setStream] = useState(''); // live streamed assistant text
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [webUrl, setWebUrl] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
@@ -60,7 +61,7 @@ export default function LearningCenter() {
 
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = entryMode === 'reading' ? currentContentType.color : '#00FFB2';
@@ -74,16 +75,18 @@ export default function LearningCenter() {
     setInput('');
     setUploadedFiles([]);
     setLoading(true);
+    setStream('');
     try {
       const apiMessages = await buildApiMessages(newHistory);
       const system = entryMode === 'reading'
         ? buildReadingSystem({ contentType, goal: readerGoal, depth: depthLevel, progress: readingProgress, content: context, graph })
         : buildSystem(entryMode, sessionMode, context, graph);
-      const reply = await callClaude({ system, messages: apiMessages, searchEnabled });
+      const reply = await callClaude({ system, messages: apiMessages, searchEnabled, onToken: (t) => setStream(s => s + t) });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
+    setStream('');
     setLoading(false);
   };
 
@@ -101,6 +104,7 @@ export default function LearningCenter() {
     setMessages([]);
     setSessionStart(Date.now());
     setLoading(true);
+    setStream('');
     let opener = '';
     if (eMode === 'reading') {
       const t = ctx.title;
@@ -131,11 +135,12 @@ export default function LearningCenter() {
       const system = eMode === 'reading'
         ? buildReadingSystem({ contentType: cType, goal, depth, progress, content: ctx, graph })
         : buildSystem(eMode, sMode, ctx, graph);
-      const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }] });
+      const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }], onToken: (t) => setStream(s => s + t) });
       setMessages([{ role: 'assistant', content: reply }]);
     } catch {
       setMessages([{ role: 'assistant', content: 'Ready. What would you like to explore?' }]);
     }
+    setStream('');
     setLoading(false);
   };
 
@@ -551,9 +556,11 @@ export default function LearningCenter() {
           )}
           {loading && (
             <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 720, margin: '0 auto 18px' }}>
-              <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '12px 16px' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 8 }}>Thinking...</div>
-                <ThinkingDots color={accentColor} />
+              <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
+                <div style={{ fontSize: 8, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: stream ? 10 : 8 }}>CB Intelligence</div>
+                {stream
+                  ? <MD text={stream + '▍'} color={accentColor} />
+                  : <ThinkingDots color={accentColor} />}
               </div>
             </div>
           )}

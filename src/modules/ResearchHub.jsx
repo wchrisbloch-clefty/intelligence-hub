@@ -166,13 +166,14 @@ export default function ResearchHub() {
   const [searchInput, setSearchInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [stream, setStream] = useState('');
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [showNewThread, setShowNewThread] = useState(false);
   const [newQuery, setNewQuery] = useState('');
   const [boardView, setBoardView] = useState(false);
   const bottomRef = useRef(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
   const startThread = async (query) => {
     const thread = {
@@ -201,21 +202,23 @@ export default function ResearchHub() {
     setMessages(newMsgs);
     setSearchInput('');
     setLoading(true);
+    setStream('');
     try {
       const system = {
         cached: CB_IDENTITY,
         dynamic: "\n\nMODE: TRUTH & RESEARCH HUB\nYour job: cut through narrative, surface signal, flag bias, give CB the contrarian insight most people miss. Prioritize analytical depth and objectivity over forced connections. End every response with: (1) Truth Score (1-10, how confident you are in this), (2) Bias Flags (sources or narratives to be skeptical of), (3) Decisive Bet (what CB should do with this information). Be rigorous.",
       };
-      const reply = await callClaude({ system, messages: newMsgs.map(m => ({ role: m.role, content: m.content })), searchEnabled });
+      const reply = await callClaude({ system, messages: newMsgs.map(m => ({ role: m.role, content: m.content })), searchEnabled, onToken: (t) => setStream(s => s + t) });
       const assistantMsg = { role: 'assistant', content: reply };
       const finalMsgs = [...newMsgs, assistantMsg];
       setMessages(finalMsgs);
       const updatedThreads = threads.map(t => t.id === threadId ? { ...t, messages: finalMsgs } : t);
       setResearch(updatedThreads);
       await saveResearch(updatedThreads);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
+    } catch (e) {
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
+    setStream('');
     setLoading(false);
   };
 
@@ -353,9 +356,11 @@ export default function ResearchHub() {
         ))}
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #6366F120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid #6366F120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
               <div style={{ fontSize: 8, letterSpacing: 3, color: '#6366F1', textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
-              <ThinkingDots color="#6366F1" />
+              {stream
+                ? <MD text={stream + '▍'} color="#6366F1" />
+                : <ThinkingDots color="#6366F1" />}
             </div>
           </div>
         )}
