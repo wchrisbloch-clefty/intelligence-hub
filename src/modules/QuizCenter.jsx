@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude } from '../utils.js';
+import { callClaude, buildQuizPrompt } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
+import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#D9A441';
@@ -26,22 +27,6 @@ const STORAGE_KEY = 'aether_quiz_results';
 // Quiz history persists cross-device: instant local read, server write-through.
 function loadResults() { return readLocal(STORAGE_KEY, []); }
 function saveResults(r) { writeThrough(STORAGE_KEY, r); }
-
-function buildQuizPrompt(topic, topicLabel) {
-  return `Generate a 6-question self-assessment quiz for CB about: "${topicLabel}"
-
-CB's context: BD professional, Houston TX. Active interests: real estate, leadership, longevity, AI-augmented work, stoic philosophy.
-
-Return ONLY valid JSON (no markdown, no extra text):
-{"questions":[
-  {"type":"mc","q":"Question?","options":["A. ..","B. ..","C. ..","D. .."],"answer":"A","explanation":"Why + CB connection"},
-  {"type":"mc","q":"Question?","options":["A. ..","B. ..","C. ..","D. .."],"answer":"B","explanation":"Why + CB connection"},
-  {"type":"mc","q":"Question?","options":["A. ..","B. ..","C. ..","D. .."],"answer":"C","explanation":"Why + CB connection"},
-  {"type":"rate","q":"Rate your current mastery: [specific skill in this topic] — 1 (beginner) to 5 (expert)","scale":5},
-  {"type":"apply","q":"CB application question — specific scenario in his world (BD, real estate, or health)","answer":"Model answer with framework"},
-  {"type":"open","q":"Open insight question about this topic","answer":"Key insight CB should know"}
-]}`;
-}
 
 function buildGapPrompt(topic, topicLabel, results) {
   const summary = results.map((r, i) => {
@@ -72,8 +57,6 @@ export default function QuizCenter() {
   const [view,       setView]       = useState('pick');  // pick | quiz | result | history
   const [topic,      setTopic]      = useState(null);
   const [questions,  setQuestions]  = useState([]);
-  const [answers,    setAnswers]    = useState({});
-  const [current,    setCurrent]    = useState(0);
   const [generating, setGenerating] = useState(false);
   const [gapReport,  setGapReport]  = useState('');
   const [gapLoading, setGapLoading] = useState(false);
@@ -96,13 +79,11 @@ export default function QuizCenter() {
     setView('quiz');
     setGenerating(true);
     setQuestions([]);
-    setAnswers({});
-    setCurrent(0);
     setGapReport('');
     try {
       const raw = await callClaude({
         system: CB_IDENTITY,
-        messages: [{ role: 'user', content: buildQuizPrompt(topicObj.id, topicObj.label) }],
+        messages: [{ role: 'user', content: buildQuizPrompt({ subject: topicObj.label, count: 6, includeRate: true }) }],
         maxTokens: 1200,
       });
       const clean = raw.replace(/```json|```/g, '').trim();
@@ -114,27 +95,8 @@ export default function QuizCenter() {
     setGenerating(false);
   };
 
-  const handleAnswer = (val) => {
-    setAnswers(a => ({ ...a, [current]: val }));
-  };
-
-  const next = () => {
-    if (current < questions.length - 1) {
-      setCurrent(c => c + 1);
-    } else {
-      finishQuiz();
-    }
-  };
-
-  const finishQuiz = async () => {
-    const results = questions.map((q, i) => ({
-      type:     q.type,
-      question: q.q,
-      answer:   answers[i] || '',
-      correct:  q.type === 'mc' ? answers[i] === q.answer : null,
-      model:    q.answer,
-      explanation: q.explanation || '',
-    }));
+  // QuizMode hands back one result object per question (see shared/QuizMode).
+  const onQuizDone = async (results) => {
     const mcCorrect = results.filter(r => r.type === 'mc' && r.correct).length;
     const mcTotal   = results.filter(r => r.type === 'mc').length;
     const entry = { id: Date.now(), topic: topic.label, topicId: topic.id, date: Date.now(), score: mcCorrect, total: mcTotal, results };
@@ -155,9 +117,6 @@ export default function QuizCenter() {
     }
     setGapLoading(false);
   };
-
-  const q       = questions[current];
-  const answered = answers[current] !== undefined;
 
   if (view === 'history') {
     return (
@@ -241,63 +200,11 @@ export default function QuizCenter() {
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <div style={{ fontSize: 11, color: 'var(--dim)' }}>Q {current + 1} of {questions.length}</div>
-              <div style={{ display: 'flex', gap: 4 }}>
-                {questions.map((_, i) => (
-                  <div key={i} style={{ width: 20, height: 4, borderRadius: 2, background: i < current ? ACCENT : i === current ? ACCENT : 'var(--border)', opacity: i === current ? 1 : i < current ? 0.7 : 0.3 }} />
-                ))}
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div onClick={() => setView('pick')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
               <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>{topic?.label}</div>
             </div>
-
-            <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '22px 22px 18px', marginBottom: 16 }}>
-              <div style={{ fontSize: 8, fontWeight: 700, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
-                {q.type === 'mc' ? 'Multiple Choice' : q.type === 'rate' ? 'Self-Assessment' : q.type === 'apply' ? 'Application' : 'Open Insight'}
-              </div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5, marginBottom: 18 }}>{q.q}</div>
-
-              {q.type === 'mc' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {q.options.map((opt, i) => {
-                    const letter = opt[0];
-                    const selected = answers[current] === letter;
-                    return (
-                      <div key={i} onClick={() => handleAnswer(letter)}
-                        style={{ padding: '10px 14px', borderRadius: 8, border: `1px solid ${selected ? ACCENT_BORDER : 'var(--border)'}`, background: selected ? ACCENT_BG : 'var(--bg)', cursor: 'pointer', fontSize: 12, color: selected ? ACCENT : 'var(--text-b)', fontWeight: selected ? 700 : 400, transition: 'all 0.1s' }}>
-                        {opt}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {q.type === 'rate' && (
-                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 8 }}>
-                  {[1, 2, 3, 4, 5].map(v => (
-                    <div key={v} onClick={() => handleAnswer(String(v))}
-                      style={{ width: 48, height: 48, borderRadius: 10, border: `2px solid ${answers[current] === String(v) ? ACCENT : 'var(--border)'}`, background: answers[current] === String(v) ? ACCENT_BG : 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, color: answers[current] === String(v) ? ACCENT : 'var(--muted)', cursor: 'pointer', transition: 'all 0.1s' }}>
-                      {v}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {(q.type === 'open' || q.type === 'apply') && (
-                <textarea
-                  value={answers[current] || ''}
-                  onChange={e => handleAnswer(e.target.value)}
-                  placeholder="Type your answer…"
-                  rows={4}
-                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box' }}
-                />
-              )}
-            </div>
-
-            <button onClick={next} disabled={!answered}
-              style={{ width: '100%', padding: '13px', background: answered ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: answered ? '#fff' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: answered ? 'pointer' : 'not-allowed', fontFamily: 'inherit', transition: 'background 0.15s' }}>
-              {current < questions.length - 1 ? 'Next →' : 'Finish & Get Gap Analysis'}
-            </button>
+            <QuizMode questions={questions} color={ACCENT} onComplete={onQuizDone} />
           </>
         )}
       </div>

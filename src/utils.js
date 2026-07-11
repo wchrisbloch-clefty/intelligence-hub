@@ -252,14 +252,26 @@ export function buildReadingSystem({ contentType, goal, depth, progress, content
   return { cached: CB_LEARNING_SPINE, dynamic };
 }
 
-export function buildQuizPrompt(context, entryMode, count = 5) {
-  const subject = entryMode === 'reading' ? context.title : entryMode === 'book' ? context.book?.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : 'the uploaded document';
-  return `Generate exactly ${count} quiz questions about "${subject}" tailored to CB's learning style and goals.
+// Canonical quiz-prompt builder — shared by QuizCenter and LearningCenter.
+// `subject` is the topic/title string. `includeRate` adds a 1–5 self-rating
+// question (QuizCenter's self-assessment flavor). Both surfaces render the
+// result through the same shared/QuizMode component.
+export function buildQuizPrompt({ subject, count = 5, includeRate = false }) {
+  const rateLine = includeRate
+    ? `\n  {"type":"rate","q":"Rate your current mastery of a specific skill in this topic — 1 (beginner) to 5 (expert)","scale":5},`
+    : '';
+  return `Generate a ${count}-question self-assessment quiz for CB about: "${subject}".
 
-Mix: 2 multiple choice (4 options each, label A/B/C/D), 2 open-ended, 1 application question (how would CB apply this to his specific goals: passive income, BD, longevity).
+CB's context: BD professional, Houston TX. Interests: real estate, leadership, longevity, AI-augmented work, stoic philosophy. Tailor questions to his learning style and goals (passive income, BD, longevity).
 
-Format EXACTLY as JSON — no preamble, no markdown fences, just raw JSON:
-{"questions":[{"type":"mc","q":"Question text","options":["A. option","B. option","C. option","D. option"],"answer":"A","explanation":"Why correct and connection to CB's mental models"},{"type":"open","q":"Question text","answer":"Model answer","explanation":"Key insight"},{"type":"apply","q":"Application question for CB specifically","answer":"Model answer connecting to CB's goals"}]}`;
+Mix: multiple choice (4 options each, labelled A/B/C/D), one application question (a specific scenario in CB's world), and one open insight question.${includeRate ? ' Include one self-rating question.' : ''}
+
+Return ONLY valid JSON — no markdown fences, no preamble:
+{"questions":[
+  {"type":"mc","q":"Question?","options":["A. ..","B. ..","C. ..","D. .."],"answer":"A","explanation":"Why correct + connection to CB's mental models"},${rateLine}
+  {"type":"apply","q":"Application question — a specific scenario in CB's world","answer":"Model answer with framework"},
+  {"type":"open","q":"Open insight question","answer":"Key insight CB should know","explanation":"Why it matters"}
+]}`;
 }
 
 // ─── CLAUDE API CALL ──────────────────────────────────────────────────────
