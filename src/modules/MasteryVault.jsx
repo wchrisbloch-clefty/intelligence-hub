@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveNotes, callClaude, uid } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
+
+const FLASHCARDS_KEY = 'aether_flashcards';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Modal, ThinkingDots } from './shared/Common.jsx';
 
@@ -19,16 +22,17 @@ const EXPORT_FORMATS = [
 
 const DAY_MS = 86_400_000;
 
-function loadCards() {
-  try { return JSON.parse(localStorage.getItem('aether_flashcards') || '[]'); } catch { return []; }
-}
-function saveCards(cards) { localStorage.setItem('aether_flashcards', JSON.stringify(cards)); }
+function loadCards() { return readLocal(FLASHCARDS_KEY, []); }
+function saveCards(cards) { writeThrough(FLASHCARDS_KEY, cards); }
 
 // ─── Flash Card Study ────────────────────────────────────────────────────────
 function FlashCards({ onCreateFromNote }) {
   const { isMobile } = useApp();
   const [cards,     setCards]     = useState(loadCards);
   const [mode,      setMode]      = useState('list'); // list | study | create
+
+  // Cross-device: pull the server copy after mount.
+  useEffect(() => { hydrate(FLASHCARDS_KEY).then(r => { if (Array.isArray(r)) setCards(r); }); }, []);
   const [revealed,  setRevealed]  = useState(false);
   const [studyIdx,  setStudyIdx]  = useState(0);
   const [newCard,   setNewCard]   = useState({ front: '', back: '' });

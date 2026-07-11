@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
+
+const INBOX_KEY = 'aether_inbox';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -34,9 +37,10 @@ function shortHost(url) {
 export default function ContentInbox() {
   const { notes, setNotes, isMobile, setPendingArtifact } = useApp();
 
-  const [items, setItems] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aether_inbox') || '[]'); } catch { return []; }
-  });
+  const [items, setItems] = useState(() => readLocal(INBOX_KEY, []));
+
+  // Cross-device: pull the server copy after mount.
+  useEffect(() => { hydrate(INBOX_KEY).then(r => { if (Array.isArray(r)) setItems(r); }); }, []);
   const [tab,        setTab]        = useState('inbox');
   const [filter,     setFilter]     = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -49,7 +53,7 @@ export default function ContentInbox() {
 
   const persist = (updated) => {
     setItems(updated);
-    localStorage.setItem('aether_inbox', JSON.stringify(updated));
+    writeThrough(INBOX_KEY, updated);
   };
 
   const analyze = async () => {

@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS } from '../constants.js';
+
+const BOOKCLUB_KEY = 'aether_bookclub';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -35,9 +38,10 @@ export default function BookClub() {
   const [addTitle,     setAddTitle]     = useState('');
   const [addAuthor,    setAddAuthor]    = useState('');
   const [addNote,      setAddNote]      = useState('');
-  const [customBooks,  setCustomBooks]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aether_bookclub') || '[]'); } catch { return []; }
-  });
+  const [customBooks,  setCustomBooks]  = useState(() => readLocal(BOOKCLUB_KEY, []));
+
+  // Cross-device: pull the server copy after mount.
+  useEffect(() => { hydrate(BOOKCLUB_KEY).then(r => { if (Array.isArray(r)) setCustomBooks(r); }); }, []);
 
   const allBooks = [...KNOWN_BOOKS, ...customBooks];
   const filtered = search
@@ -46,7 +50,7 @@ export default function BookClub() {
 
   const saveCustom = (updated) => {
     setCustomBooks(updated);
-    localStorage.setItem('aether_bookclub', JSON.stringify(updated));
+    writeThrough(BOOKCLUB_KEY, updated);
   };
 
   const addBook = () => {
