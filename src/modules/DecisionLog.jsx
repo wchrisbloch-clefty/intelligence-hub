@@ -6,8 +6,8 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#D9A441';
-const ACCENT_BG     = 'rgba(245,158,11,0.07)';
-const ACCENT_BORDER = 'rgba(245,158,11,0.22)';
+const ACCENT_BG     = 'rgba(217,164,65,0.07)';
+const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
 
 const STATUS_META = {
   thinking: { label: 'Thinking',    color: '#D9A441' },
@@ -235,7 +235,7 @@ export default function DecisionLog() {
               const reviewReady = d.status === 'decided' && days !== null && days >= 28;
 
               return (
-                <div key={d.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : reviewReady ? 'rgba(245,158,11,0.3)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
+                <div key={d.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : reviewReady ? 'rgba(217,164,65,0.3)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
                   <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : d.id)}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>

@@ -6,8 +6,8 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#D9A441';
-const ACCENT_BG     = 'rgba(226,35,26,0.07)';
-const ACCENT_BORDER = 'rgba(226,35,26,0.2)';
+const ACCENT_BG     = 'rgba(217,164,65,0.07)';
+const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const TOPIC_FILTERS = [
   { id: 'all',        label: 'All Talks' },

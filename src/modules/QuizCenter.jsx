@@ -7,8 +7,8 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#D9A441';
-const ACCENT_BG     = 'rgba(245,158,11,0.08)';
-const ACCENT_BORDER = 'rgba(245,158,11,0.22)';
+const ACCENT_BG     = 'rgba(217,164,65,0.08)';
+const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
 
 const PRESET_TOPICS = [
   { id: 'realestate',  label: 'Real Estate',          icon: '🏘', desc: 'Multifamily, cash flow, cap rates, market dynamics' },

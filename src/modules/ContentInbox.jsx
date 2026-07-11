@@ -6,8 +6,8 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT        = '#D9A441';
-const ACCENT_BG     = 'rgba(16,185,129,0.07)';
-const ACCENT_BORDER = 'rgba(16,185,129,0.2)';
+const ACCENT_BG     = 'rgba(217,164,65,0.07)';
+const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const FILTERS = [
   { id: 'all',     label: 'All',      icon: '📥' },
@@ -245,7 +245,7 @@ export default function ContentInbox() {
                       <MD text={item.summary} color={ACCENT} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
                         <div onClick={() => copyToClipboard(item.id, item.summary)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#D9A441' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(16,185,129,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#D9A441' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
                           {copiedId === item.id ? '✓ Copied!' : 'Copy'}
                         </div>
                         <div onClick={() => reanalyze(item)}
