@@ -1,6 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude } from '../utils.js';
+import useChatThread from '../hooks/useChatThread.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -57,33 +57,17 @@ export default function CoachAI() {
   const [tone,         setTone]         = useState('coach');
   const [topic,        setTopic]        = useState('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [messages,     setMessages]     = useState([]);
-  const [input,        setInput]        = useState('');
-  const [loading,      setLoading]      = useState(false);
   const bottomRef = useRef(null);
   const sendRef   = useRef(null);
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
+  const buildRequest = useCallback(
+    () => ({ system: buildSystem(tone, topic) }),
+    [tone, topic],
+  );
+  const { messages, setMessages, input, setInput, loading, send } =
+    useChatThread({ maxTokens: 700, stream: false, buildRequest });
 
-  const send = async (text) => {
-    if (!text.trim() || loading) return;
-    const userMsg = { role: 'user', content: text };
-    const hist    = [...messages, userMsg];
-    setMessages(hist);
-    setInput('');
-    setLoading(true);
-    try {
-      const reply = await callClaude({
-        system:    buildSystem(tone, topic),
-        messages:  hist.map(m => ({ role: m.role, content: m.content })),
-        maxTokens: 700,
-      });
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Network error. Try again.' }]);
-    }
-    setLoading(false);
-  };
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
   sendRef.current = send;
 
   const currentTone  = TONES.find(t => t.id === tone)  || TONES[0];

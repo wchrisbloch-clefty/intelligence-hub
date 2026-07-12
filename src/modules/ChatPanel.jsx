@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { CHAT_MODES } from '../constants.js';
-import { callClaude, buildApiMessages, buildSystem, processFiles } from '../utils.js';
+import { buildSystem, processFiles } from '../utils.js';
+import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
@@ -18,15 +19,17 @@ const QUICK_PROMPTS = {
 export default function ChatPanel() {
   const { chatOpen, setChatOpen, activeModule, graph, projects, isMobile, chatPrefill, setChatPrefill } = useApp();
   const [chatMode, setChatMode] = useState('synthesis');
-  const [messages, setMessages] = useState([]);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [stream, setStream] = useState('');
-  const [attachments, setAttachments] = useState([]);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   const sendRef = useRef(null);
   const { listening, toggle: toggleVoice, supported: voiceOk } = useVoiceInput();
+
+  const buildRequest = useCallback(
+    () => ({ system: buildSystem(null, null, { chatMode }, graph) }),
+    [chatMode, graph],
+  );
+  const { messages, input, setInput, attachments, setAttachments, loading, streamText: stream, send } =
+    useChatThread({ buildRequest });
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
@@ -38,27 +41,6 @@ export default function ChatPanel() {
       setTimeout(() => sendRef.current?.(query), 120);
     }
   }, [chatOpen, chatPrefill, setChatPrefill]);
-
-  const send = async (text) => {
-    if ((!text.trim() && attachments.length === 0) || loading) return;
-    const userMsg = { role: 'user', content: text, attachments };
-    const newHist = [...messages, userMsg];
-    setMessages(newHist);
-    setInput('');
-    setAttachments([]);
-    setLoading(true);
-    setStream('');
-    try {
-      const system = buildSystem(null, null, { chatMode }, graph);
-      const apiMsgs = await buildApiMessages(newHist);
-      const reply = await callClaude({ system, messages: apiMsgs, onToken: (t) => setStream(s => s + t) });
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
-    } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
-    }
-    setStream('');
-    setLoading(false);
-  };
   sendRef.current = send;
 
   const handleFiles = async (files) => {
