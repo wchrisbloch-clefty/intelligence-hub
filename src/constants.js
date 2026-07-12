@@ -109,6 +109,7 @@ export const NAV_ITEMS = [
   { id: "ladder",    label: "Ladder",     desc: "Structured learning path",  accent: '#D9A441' },
   { id: "books",     label: "Books",      desc: "Deep reading mode",         accent: '#D9A441' },
   { id: "research",  label: "Research",   desc: "Truth-first analysis",      accent: '#D9A441' },
+  { id: "deepdive",  label: "Deep Dive",  desc: "Sourced research files",    accent: '#D9A441' },
   { id: "translate", label: "Translate",  desc: "25+ languages",             accent: '#D9A441' },
   { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: '#D9A441' },
   { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: '#D9A441' },

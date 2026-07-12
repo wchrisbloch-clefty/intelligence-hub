@@ -334,6 +334,16 @@ Cross-reference CB's mental model library where it genuinely applies (Chip War c
   };
 }
 
+// Pull a rough source list out of a cited brief's trailing "SOURCES" section.
+export function extractSources(md = '') {
+  const m = md.search(/(^|\n)\s*#{0,3}\s*(sources|references)\b/i);
+  if (m === -1) return [];
+  return md.slice(m).split('\n').slice(1)
+    .map(l => l.replace(/^\s*[-*•\d.)\]\[]+\s*/, '').trim())
+    .filter(l => l.length > 3 && !/^#{1,3}\s/.test(l) && !/^(confidence|consensus)/i.test(l))
+    .slice(0, 20);
+}
+
 // ─── INTENT ROUTER (Universal Capture Bar) ─────────────────────────────────
 // Classifies a raw intent into a destination. Returns a safe fallback shape
 // even if the model or network misbehaves.

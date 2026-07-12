@@ -10,6 +10,7 @@ import LearningCenter from './modules/LearningCenter.jsx';
 import LearningLadder from './modules/LearningLadder.jsx';
 import BookClub from './modules/BookClub.jsx';
 import ResearchHub from './modules/ResearchHub.jsx';
+import DeepDive from './modules/DeepDive.jsx';
 import TranslatorHub from './modules/TranslatorHub.jsx';
 import ProjectsOS from './modules/ProjectsOS.jsx';
 import MasteryVault from './modules/MasteryVault.jsx';
@@ -101,6 +102,7 @@ export default function App() {
     ladder:    <LearningLadder />,
     books:     <BookClub />,
     research:  <ResearchHub />,
+    deepdive:  <DeepDive />,
     translate: <TranslatorHub />,
     projects:  <ProjectsOS />,
     podcast:   <PodcastHub />,
