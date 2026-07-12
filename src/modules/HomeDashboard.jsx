@@ -5,6 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import NavIcon from './shared/NavIcon.jsx';
+import DueReviews from './shared/DueReviews.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
@@ -563,6 +564,10 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {!onboarded && (
             <OnboardingBanner onDismiss={() => { setOnboarded(true); localStorage.setItem(ONBOARDING_KEY, '1'); }} />
           )}
+
+          {/* Spaced repetition — due today */}
+          <DueReviews onQuiz={(label) => { setChatPrefill(`Quiz me on ${label} — I'm reviewing it today.`); setChatOpen(true); }} />
+
 
           {/* Recommendations */}
           <RecommendationsSection graph={graph} projects={projects} setActiveModule={setActiveModule} />

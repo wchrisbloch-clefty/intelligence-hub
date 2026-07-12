@@ -4,6 +4,7 @@ import { callClaude, buildLadderPrompt, buildQuizPrompt } from '../utils.js';
 import { CB_LEARNING_SPINE } from '../constants.js';
 import { loadIndex, hydrateIndex, loadLadder, hydrateLadder, saveLadder, removeLadder, buildLadder, completeModule } from '../lib/ladders.js';
 import useChatThread from '../hooks/useChatThread.js';
+import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -82,6 +83,7 @@ export default function LearningLadder() {
   const onModulePass = (mod, results) => {
     const graded = results.filter(r => r.score !== null);
     const pct = graded.length ? Math.round((graded.filter(r => r.score > 0).length / graded.length) * 100) : 0;
+    recordQuizResult({ topicId: `ladder_${ladder.id}_${mod.id}`, topicLabel: `${ladder.topic} — ${mod.title}`, results });
     if (pct >= PASS_PCT) {
       const updated = completeModule(ladder, mod.id);
       setLadder(updated); refreshIndex();

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildQuizPrompt } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
+import { recordQuizResult } from '../lib/reviews.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
@@ -103,6 +104,9 @@ export default function QuizCenter() {
     const updated = [entry, ...history].slice(0, 20);
     setHistory(updated);
     saveResults(updated);
+    // Schedule a spaced-repetition review for this topic.
+    const reviewId = topic.id === 'custom' ? topic.label.toLowerCase().replace(/\s+/g, '_') : topic.id;
+    recordQuizResult({ topicId: reviewId, topicLabel: topic.label, results });
     setView('result');
     setGapLoading(true);
     try {
