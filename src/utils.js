@@ -242,13 +242,6 @@ export function buildReadingSystem({ contentType, goal, depth, progress, content
     quick:   `GOAL: QUICK UNDERSTANDING\nEfficiency mode. Core idea only. Format: essential insight → one practical implication → done.`,
   };
 
-  const depthInstructions = {
-    surface:  `DEPTH: SURFACE — Concise. Key idea + one implication max.`,
-    standard: `DEPTH: STANDARD — Full explanation with at least one concrete example.`,
-    deep:     `DEPTH: DEEP DIVE — Full reasoning, multiple perspectives, edge cases. Don't oversimplify.`,
-    expert:   `DEPTH: EXPERT — Peer discourse. Challenge assumptions. No hand-holding.`,
-  };
-
   const progressInstructions = {
     start:     `READING POSITION: Just starting. Orient the reader to the full structure first, then work through the opening.`,
     mid:       `READING POSITION: Mid-way through. Reference what they've encountered — never assume what they haven't reached yet.`,
@@ -260,7 +253,7 @@ export function buildReadingSystem({ contentType, goal, depth, progress, content
     `\n\nCONTENT: "${content.title}"${content.author ? ` by ${content.author}` : ''}` +
     `\n\n${typeInstructions[contentType] || typeInstructions.nonfiction}` +
     `\n\n${goalInstructions[goal] || goalInstructions.master}` +
-    `\n\n${depthInstructions[depth] || depthInstructions.standard}` +
+    `\n\n${depthProtocol(depth)}` +
     `\n\n${progressInstructions[progress] || progressInstructions.start}`;
 
   return { cached: CB_LEARNING_SPINE, dynamic };
@@ -286,6 +279,89 @@ Return ONLY valid JSON — no markdown fences, no preamble:
   {"type":"apply","q":"Application question — a specific scenario in CB's world","answer":"Model answer with framework"},
   {"type":"open","q":"Open insight question","answer":"Key insight CB should know","explanation":"Why it matters"}
 ]}`;
+}
+
+// ─── CERTIFIED DEPTH ENGINE ────────────────────────────────────────────────
+// Depth controls real-world grounding, not verbosity. deep/expert turn on
+// web_search (pass searchEnabled to callClaude when depthNeedsWeb is true).
+export const DEPTH_META = {
+  surface:  { label: 'Surface',  web: false, heavy: false, blurb: 'Model knowledge, no web' },
+  standard: { label: 'Standard', web: false, heavy: false, blurb: 'Concept + example' },
+  deep:     { label: 'Deep',     web: true,  heavy: true,  blurb: 'Live web, multiple sources, cited' },
+  expert:   { label: 'Expert',   web: true,  heavy: true,  blurb: '8–15 sources, sources list + confidence' },
+};
+export function depthNeedsWeb(depth) { return !!DEPTH_META[depth]?.web; }
+export function depthIsHeavy(depth) { return !!DEPTH_META[depth]?.heavy; }
+
+export function depthProtocol(depth) {
+  switch (depth) {
+    case 'surface':
+      return `DEPTH — SURFACE: Answer from your own knowledge. One core concept + one implication. No web search. Fast and cheap.`;
+    case 'deep':
+      return `DEPTH — DEEP (web search ON): Use web_search to pull MULTIPLE independent sources. Prefer primary sources. Surface conflicting viewpoints where they exist. Cite inline as [n] and keep a running numbered source list. Explicitly distinguish what is established from what is contested.`;
+    case 'expert':
+      return `DEPTH — EXPERT / CERTIFIED (web search ON): Conduct multi-source research (aim for 8–15 independent sources). Prefer primary sources; name authorities, industry frameworks, and current data. Cite inline as [n] as you go.\n\nCERTIFIED = AUDITABLE, never credentialed — issue NO certificates. You MUST: (1) cite as you go, (2) end with a "SOURCES" list (each: title — who — why credible), and (3) end with a "CONFIDENCE / CONSENSUS SPLIT" separating established facts from contested or open debates, and state your overall confidence.`;
+    case 'standard':
+    default:
+      return `DEPTH — STANDARD: Concept + one concrete example. Model knowledge is fine; sanity-check at most one fact. Keep it tight.`;
+  }
+}
+
+// Heuristic: does a raw request look like it wants a heavy, source-grounded
+// dive? Used to FLAG (never silently run) before a heavy tier.
+export function looksDeep(text = '') {
+  const t = text.toLowerCase();
+  const triggers = /\b(deep dive|deep-dive|go deep|research|analy[sz]e|market (size|structure|map)|industry|landscape|competitive|value chain|players|thoroughly|comprehensive|in[- ]depth|state of|full breakdown|everything about|regulat|outlook|forecast|economics|margins|disruption)\b/;
+  return triggers.test(t) || t.trim().split(/\s+/).length > 18;
+}
+
+// System for a Deep Dive research file (Expert tier, industry scaffold).
+export function buildDeepDiveSystem(topic, category, depth = 'expert', focusSection = null) {
+  const scaffold = focusSection
+    ? `Focus this pass on the section: "${focusSection}". Go deeper than before — new sources, sharper specifics.`
+    : `Structure the dive using this industry/topic scaffold (adapt sensibly):
+1. Market size & structure
+2. Value chain
+3. Key players
+4. Economics / margins
+5. Disruption vectors
+6. Regulatory landscape
+7. Outlook
+Cross-reference CB's mental model library where it genuinely applies (Chip War chokepoints, Blue Ocean, Buffett economics/moats, Tipping Point).`;
+  return {
+    cached: CB_LEARNING_SPINE,
+    dynamic: `\n\nDEEP DIVE RESEARCH FILE\nTopic: "${topic}"${category ? `\nCategory: ${category}` : ''}\n\n${depthProtocol(depth)}\n\n${scaffold}\n\nWrite as a structured brief with clear section headers, not a chat reply. Be decisive.`,
+  };
+}
+
+// ─── INTENT ROUTER (Universal Capture Bar) ─────────────────────────────────
+// Classifies a raw intent into a destination. Returns a safe fallback shape
+// even if the model or network misbehaves.
+export const CAPTURE_ROUTES = ['learn', 'ladder', 'deepdive', 'research', 'project', 'note'];
+
+export async function routeIntent(text) {
+  const prompt = `Classify CB's raw intent into exactly one destination and extract fields. Destinations:
+- "learn": a quick one-off learning question or concept.
+- "ladder": wants to master a subject over multiple steps (a structured journey).
+- "deepdive": wants a researched, source-grounded brief on an industry/market/topic (a saveable research project).
+- "research": open-ended truth-seeking / analysis on a claim or question.
+- "project": something to build, ship, or track (a project with tasks).
+- "note": something to capture/save for later, not act on now.
+
+Return ONLY valid JSON, no markdown:
+{"route":"one of the six","topic":"cleaned topic/title","suggestedCategory":"short category label or ''","suggestedDepth":"surface|standard|deep|expert","rationale":"one short sentence"}
+
+Intent: "${text.replace(/"/g, "'").slice(0, 500)}"`;
+  const fallback = { route: 'learn', topic: text.trim().slice(0, 120), suggestedCategory: '', suggestedDepth: looksDeep(text) ? 'deep' : 'standard', rationale: 'Defaulted (router unavailable).' };
+  try {
+    const raw = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 300 });
+    const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    if (!CAPTURE_ROUTES.includes(parsed.route)) parsed.route = fallback.route;
+    if (!DEPTH_META[parsed.suggestedDepth]) parsed.suggestedDepth = fallback.suggestedDepth;
+    return { ...fallback, ...parsed };
+  } catch {
+    return fallback;
+  }
 }
 
 // Learning Ladder generation — returns structured JSON the app persists as a

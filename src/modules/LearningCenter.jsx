@@ -6,8 +6,8 @@ import {
 } from '../constants.js';
 import {
   buildSystem, buildReadingSystem, buildQuizPrompt, callClaude, buildApiMessages,
-  logSession, saveGraph, extractYouTubeId, fetchYouTubeTranscript,
-  fetchYouTubeMeta, processFiles,
+  logSession, extractYouTubeId, fetchYouTubeTranscript,
+  fetchYouTubeMeta, processFiles, depthNeedsWeb,
 } from '../utils.js';
 import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
@@ -82,7 +82,9 @@ export default function LearningCenter() {
       const system = entryMode === 'reading'
         ? buildReadingSystem({ contentType, goal: readerGoal, depth: depthLevel, progress: readingProgress, content: context, graph })
         : buildSystem(entryMode, sessionMode, context, graph);
-      const reply = await callClaude({ system, messages: apiMessages, searchEnabled, onToken: (t) => setStream(s => s + t) });
+      // Deep/Expert reading depth grounds itself in live sources — auto-enable web.
+      const useWeb = searchEnabled || (entryMode === 'reading' && depthNeedsWeb(depthLevel));
+      const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, onToken: (t) => setStream(s => s + t) });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
