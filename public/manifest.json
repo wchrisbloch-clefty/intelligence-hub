@@ -1,19 +1,18 @@
 {
-  "name": "MyNewsHub",
-  "short_name": "NewsHub",
-  "description": "Personalized news, markets, sports, and briefings",
+  "name": "The Film Room — Intelligence Hub",
+  "short_name": "Film Room",
+  "description": "CB's personal intelligence hub — study, ladders, spaced review, and AI briefings.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f9fafb",
-  "theme_color": "#1d4ed8",
+  "background_color": "#111A16",
+  "theme_color": "#111A16",
   "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%231d4ed8'/%3E%3Ctext x='50%25' y='55%25' dominant-baseline='middle' text-anchor='middle' font-size='120' font-family='system-ui'>📰%3C/text%3E%3C/svg%3E",
-      "sizes": "192x192",
-      "type": "image/svg+xml"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
-  "categories": ["news", "finance", "sports"],
+  "categories": ["education", "productivity"],
   "lang": "en-US"
 }
