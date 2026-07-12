@@ -84,15 +84,29 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null;
 }
 
-// Both transcript and metadata now come from our own /api/transcript endpoint
-// (server-side youtube-transcript + oEmbed) — no third-party proxies, no CORS.
-async function fetchTranscriptData(videoId) {
-  try {
-    const r = await fetch(`/api/transcript?videoId=${encodeURIComponent(videoId)}`, { credentials: 'same-origin' });
-    if (r.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
-    if (r.ok) return await r.json();
-  } catch {}
+// Run providers in order, each with its own timeout; return the first non-null
+// result, or null if they all fail. Keeps fallback chains declarative.
+async function firstOk(providers) {
+  for (const p of providers) {
+    try {
+      const r = await p();
+      if (r != null) return r;
+    } catch { /* try the next provider */ }
+  }
   return null;
+}
+
+// Transcript + metadata come from our own /api/transcript endpoint (server-side
+// youtube-transcript + oEmbed) — no third-party proxies, no CORS. Extraction
+// can be slow/flaky, so we try a fast attempt then a patient retry, each with
+// its own AbortSignal timeout.
+async function fetchTranscriptData(videoId) {
+  const attempt = (ms) => async () => {
+    const r = await fetch(`/api/transcript?videoId=${encodeURIComponent(videoId)}`, { credentials: 'same-origin', signal: AbortSignal.timeout(ms) });
+    if (r.status === 401) { notifyAuthExpired(); return null; }
+    return r.ok ? await r.json() : null;
+  };
+  return await firstOk([attempt(8000), attempt(15000)]);
 }
 
 export async function fetchYouTubeTranscript(videoId) {
@@ -413,36 +427,18 @@ export function parsePodcastXML(txt) {
   } catch { return []; }
 }
 
+// Feeds are fetched through our own /api/rss serverless proxy (User-Agent,
+// timeout, s-maxage caching, auth) — no public CORS proxies. A fast attempt
+// then a patient retry, each with its own timeout.
 export async function fetchPodcastRSS(url) {
-  const proxies = [
-    `/api/rss?url=${encodeURIComponent(url)}`,
-    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&count=20`,
-    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-  for (const proxy of proxies) {
-    try {
-      const r = await fetch(proxy, { signal: AbortSignal.timeout(9000) });
-      if (!r.ok) continue;
-      if (proxy.includes('rss2json')) {
-        const d = await r.json();
-        if (d.items?.length) return d.items.map(i => ({
-          title: (i.title || '').trim(),
-          link: i.link || '',
-          desc: (i.description || i.content || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').trim().slice(0, 400),
-          pubDate: i.pubDate,
-          duration: i.itunes_duration || '',
-        }));
-      } else if (proxy.includes('allorigins')) {
-        const d = await r.json();
-        if (d.contents) { const items = parsePodcastXML(d.contents); if (items.length) return items; }
-      } else {
-        const items = parsePodcastXML(await r.text());
-        if (items.length) return items;
-      }
-    } catch {}
-  }
-  return [];
+  const attempt = (ms) => async () => {
+    const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`, { credentials: 'same-origin', signal: AbortSignal.timeout(ms) });
+    if (r.status === 401) { notifyAuthExpired(); return null; }
+    if (!r.ok) return null;
+    const items = parsePodcastXML(await r.text());
+    return items.length ? items : null;
+  };
+  return (await firstOk([attempt(9000), attempt(15000)])) || [];
 }
 
 export function fmtDuration(s) {
