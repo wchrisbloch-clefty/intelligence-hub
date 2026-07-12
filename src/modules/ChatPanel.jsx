@@ -5,6 +5,7 @@ import { buildSystem, processFiles } from '../utils.js';
 import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
+import SessionDrawer from './shared/SessionDrawer.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
 
 const QUICK_PROMPTS = {
@@ -17,8 +18,10 @@ const QUICK_PROMPTS = {
 };
 
 export default function ChatPanel() {
-  const { chatOpen, setChatOpen, activeModule, graph, projects, isMobile, chatPrefill, setChatPrefill } = useApp();
+  const { chatOpen, setChatOpen, activeModule, graph, projects, isMobile, chatPrefill, setChatPrefill, newChatNonce } = useApp();
   const [chatMode, setChatMode] = useState('synthesis');
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+  const [drawerVersion, setDrawerVersion] = useState(0);
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   const sendRef = useRef(null);
@@ -28,10 +31,13 @@ export default function ChatPanel() {
     () => ({ system: buildSystem(null, null, { chatMode }, graph) }),
     [chatMode, graph],
   );
-  const { messages, input, setInput, attachments, setAttachments, loading, streamText: stream, send } =
-    useChatThread({ buildRequest });
+  const { messages, input, setInput, attachments, setAttachments, loading, streamText: stream, send, sessionId, resumeSession, startNewSession } =
+    useChatThread({ buildRequest, persist: { module: 'chat', onSaved: () => setDrawerVersion(v => v + 1) } });
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
+
+  // Global "New chat" from the top bar → start fresh here.
+  useEffect(() => { if (newChatNonce) { startNewSession(); setSessionsOpen(false); } }, [newChatNonce, startNewSession]);
 
   // Auto-send when opened via AI search
   useEffect(() => {
@@ -64,6 +70,17 @@ export default function ChatPanel() {
       zIndex: isMobile ? 200 : 50,
       animation: 'slideInRight 0.22s ease',
     }}>
+      {sessionsOpen && (
+        <SessionDrawer
+          module="chat"
+          activeId={sessionId}
+          version={drawerVersion}
+          color="#D9A441"
+          onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); }}
+          onNew={startNewSession}
+          onClose={() => setSessionsOpen(false)}
+        />
+      )}
       {/* Header */}
       <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -71,7 +88,11 @@ export default function ChatPanel() {
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
             <div style={{ fontSize: 9, color: '#D9A441', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{mode?.icon} {mode?.label}</div>
           </div>
-          <div onClick={() => setChatOpen(false)} style={{ fontSize: 13, color: 'var(--subtle)', cursor: 'pointer', padding: '2px 5px' }}>✕</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 13, color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
+            <div onClick={() => { startNewSession(); setSessionsOpen(false); }} title="New session" style={{ fontSize: 13, color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>✎</div>
+            <div onClick={() => setChatOpen(false)} title="Close" style={{ fontSize: 13, color: 'var(--subtle)', cursor: 'pointer', padding: '2px 5px' }}>✕</div>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
           {CHAT_MODES.map(m => (
