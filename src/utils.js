@@ -274,6 +274,24 @@ Return ONLY valid JSON — no markdown fences, no preamble:
 ]}`;
 }
 
+// Learning Ladder generation — returns structured JSON the app persists as a
+// first-class ladder object (see lib/ladders.js). prereqIndexes reference
+// earlier modules by 0-based position so the app can wire prereq unlocking.
+export function buildLadderPrompt(topic, goal) {
+  return `Design a structured learning ladder for CB to master: "${topic}".
+Goal: ${goal || 'deep, applied mastery'}.
+
+CB's context: BD professional, Houston TX. Systems thinker, learns big-picture first, sports analogies, applies everything to passive income / BD / longevity.
+
+Produce 5–7 sequential modules from fundamentals to mastery. Each builds on prior ones. For each module give 2–4 concrete learning objectives and list the indexes of the modules that are prerequisites (earlier modules only).
+
+Return ONLY valid JSON — no markdown fences, no preamble:
+{"topic":"${topic}","goal":"${goal || 'mastery'}","modules":[
+  {"title":"Module title","objectives":["objective 1","objective 2"],"prereqIndexes":[]},
+  {"title":"Module title","objectives":["objective 1","objective 2","objective 3"],"prereqIndexes":[0]}
+]}`;
+}
+
 // ─── CLAUDE API CALL ──────────────────────────────────────────────────────
 // Routes through our own /api/chat proxy — the API key lives only on the
 // server. `system` may be a string, { cached, dynamic }, or falsy.

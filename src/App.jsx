@@ -7,6 +7,7 @@ import ChatPanel from './modules/ChatPanel.jsx';
 import NavIcon from './modules/shared/NavIcon.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
+import LearningLadder from './modules/LearningLadder.jsx';
 import BookClub from './modules/BookClub.jsx';
 import ResearchHub from './modules/ResearchHub.jsx';
 import TranslatorHub from './modules/TranslatorHub.jsx';
@@ -97,6 +98,7 @@ export default function App() {
   const modules = {
     home:      <HomeDashboard />,
     learn:     <LearningCenter />,
+    ladder:    <LearningLadder />,
     books:     <BookClub />,
     research:  <ResearchHub />,
     translate: <TranslatorHub />,
