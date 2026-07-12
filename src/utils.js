@@ -84,15 +84,29 @@ export function extractYouTubeId(url) {
   return m ? m[1] : null;
 }
 
-// Both transcript and metadata now come from our own /api/transcript endpoint
-// (server-side youtube-transcript + oEmbed) — no third-party proxies, no CORS.
-async function fetchTranscriptData(videoId) {
-  try {
-    const r = await fetch(`/api/transcript?videoId=${encodeURIComponent(videoId)}`, { credentials: 'same-origin' });
-    if (r.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
-    if (r.ok) return await r.json();
-  } catch {}
+// Run providers in order, each with its own timeout; return the first non-null
+// result, or null if they all fail. Keeps fallback chains declarative.
+async function firstOk(providers) {
+  for (const p of providers) {
+    try {
+      const r = await p();
+      if (r != null) return r;
+    } catch { /* try the next provider */ }
+  }
   return null;
+}
+
+// Transcript + metadata come from our own /api/transcript endpoint (server-side
+// youtube-transcript + oEmbed) — no third-party proxies, no CORS. Extraction
+// can be slow/flaky, so we try a fast attempt then a patient retry, each with
+// its own AbortSignal timeout.
+async function fetchTranscriptData(videoId) {
+  const attempt = (ms) => async () => {
+    const r = await fetch(`/api/transcript?videoId=${encodeURIComponent(videoId)}`, { credentials: 'same-origin', signal: AbortSignal.timeout(ms) });
+    if (r.status === 401) { notifyAuthExpired(); return null; }
+    return r.ok ? await r.json() : null;
+  };
+  return await firstOk([attempt(8000), attempt(15000)]);
 }
 
 export async function fetchYouTubeTranscript(videoId) {
@@ -252,14 +266,44 @@ export function buildReadingSystem({ contentType, goal, depth, progress, content
   return { cached: CB_LEARNING_SPINE, dynamic };
 }
 
-export function buildQuizPrompt(context, entryMode, count = 5) {
-  const subject = entryMode === 'reading' ? context.title : entryMode === 'book' ? context.book?.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : 'the uploaded document';
-  return `Generate exactly ${count} quiz questions about "${subject}" tailored to CB's learning style and goals.
+// Canonical quiz-prompt builder — shared by QuizCenter and LearningCenter.
+// `subject` is the topic/title string. `includeRate` adds a 1–5 self-rating
+// question (QuizCenter's self-assessment flavor). Both surfaces render the
+// result through the same shared/QuizMode component.
+export function buildQuizPrompt({ subject, count = 5, includeRate = false }) {
+  const rateLine = includeRate
+    ? `\n  {"type":"rate","q":"Rate your current mastery of a specific skill in this topic — 1 (beginner) to 5 (expert)","scale":5},`
+    : '';
+  return `Generate a ${count}-question self-assessment quiz for CB about: "${subject}".
 
-Mix: 2 multiple choice (4 options each, label A/B/C/D), 2 open-ended, 1 application question (how would CB apply this to his specific goals: passive income, BD, longevity).
+CB's context: BD professional, Houston TX. Interests: real estate, leadership, longevity, AI-augmented work, stoic philosophy. Tailor questions to his learning style and goals (passive income, BD, longevity).
 
-Format EXACTLY as JSON — no preamble, no markdown fences, just raw JSON:
-{"questions":[{"type":"mc","q":"Question text","options":["A. option","B. option","C. option","D. option"],"answer":"A","explanation":"Why correct and connection to CB's mental models"},{"type":"open","q":"Question text","answer":"Model answer","explanation":"Key insight"},{"type":"apply","q":"Application question for CB specifically","answer":"Model answer connecting to CB's goals"}]}`;
+Mix: multiple choice (4 options each, labelled A/B/C/D), one application question (a specific scenario in CB's world), and one open insight question.${includeRate ? ' Include one self-rating question.' : ''}
+
+Return ONLY valid JSON — no markdown fences, no preamble:
+{"questions":[
+  {"type":"mc","q":"Question?","options":["A. ..","B. ..","C. ..","D. .."],"answer":"A","explanation":"Why correct + connection to CB's mental models"},${rateLine}
+  {"type":"apply","q":"Application question — a specific scenario in CB's world","answer":"Model answer with framework"},
+  {"type":"open","q":"Open insight question","answer":"Key insight CB should know","explanation":"Why it matters"}
+]}`;
+}
+
+// Learning Ladder generation — returns structured JSON the app persists as a
+// first-class ladder object (see lib/ladders.js). prereqIndexes reference
+// earlier modules by 0-based position so the app can wire prereq unlocking.
+export function buildLadderPrompt(topic, goal) {
+  return `Design a structured learning ladder for CB to master: "${topic}".
+Goal: ${goal || 'deep, applied mastery'}.
+
+CB's context: BD professional, Houston TX. Systems thinker, learns big-picture first, sports analogies, applies everything to passive income / BD / longevity.
+
+Produce 5–7 sequential modules from fundamentals to mastery. Each builds on prior ones. For each module give 2–4 concrete learning objectives and list the indexes of the modules that are prerequisites (earlier modules only).
+
+Return ONLY valid JSON — no markdown fences, no preamble:
+{"topic":"${topic}","goal":"${goal || 'mastery'}","modules":[
+  {"title":"Module title","objectives":["objective 1","objective 2"],"prereqIndexes":[]},
+  {"title":"Module title","objectives":["objective 1","objective 2","objective 3"],"prereqIndexes":[0]}
+]}`;
 }
 
 // ─── CLAUDE API CALL ──────────────────────────────────────────────────────
@@ -383,36 +427,18 @@ export function parsePodcastXML(txt) {
   } catch { return []; }
 }
 
+// Feeds are fetched through our own /api/rss serverless proxy (User-Agent,
+// timeout, s-maxage caching, auth) — no public CORS proxies. A fast attempt
+// then a patient retry, each with its own timeout.
 export async function fetchPodcastRSS(url) {
-  const proxies = [
-    `/api/rss?url=${encodeURIComponent(url)}`,
-    `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&count=20`,
-    `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  ];
-  for (const proxy of proxies) {
-    try {
-      const r = await fetch(proxy, { signal: AbortSignal.timeout(9000) });
-      if (!r.ok) continue;
-      if (proxy.includes('rss2json')) {
-        const d = await r.json();
-        if (d.items?.length) return d.items.map(i => ({
-          title: (i.title || '').trim(),
-          link: i.link || '',
-          desc: (i.description || i.content || '').replace(/<[^>]*>/g, '').replace(/&amp;/g, '&').replace(/&nbsp;/g, ' ').trim().slice(0, 400),
-          pubDate: i.pubDate,
-          duration: i.itunes_duration || '',
-        }));
-      } else if (proxy.includes('allorigins')) {
-        const d = await r.json();
-        if (d.contents) { const items = parsePodcastXML(d.contents); if (items.length) return items; }
-      } else {
-        const items = parsePodcastXML(await r.text());
-        if (items.length) return items;
-      }
-    } catch {}
-  }
-  return [];
+  const attempt = (ms) => async () => {
+    const r = await fetch(`/api/rss?url=${encodeURIComponent(url)}`, { credentials: 'same-origin', signal: AbortSignal.timeout(ms) });
+    if (r.status === 401) { notifyAuthExpired(); return null; }
+    if (!r.ok) return null;
+    const items = parsePodcastXML(await r.text());
+    return items.length ? items : null;
+  };
+  return (await firstOk([attempt(9000), attempt(15000)])) || [];
 }
 
 export function fmtDuration(s) {

@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
+
+const BOARD_KEY = 'aether_board';
 import MD from './shared/MD.jsx';
 import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
 
@@ -12,8 +15,8 @@ const BOARD_COLS = [
   { id: 'insights',     label: 'Insights',     icon: '💡', color: '#D9A441' },
 ];
 
-function loadBoard()   { try { return JSON.parse(localStorage.getItem('aether_board') || '[]'); } catch { return []; } }
-function saveBoard(b)  { localStorage.setItem('aether_board', JSON.stringify(b)); }
+function loadBoard()   { return readLocal(BOARD_KEY, []); }
+function saveBoard(b)  { writeThrough(BOARD_KEY, b); }
 
 function ResearchBoard() {
   const [cards, setCards]         = useState(loadBoard);
@@ -25,6 +28,9 @@ function ResearchBoard() {
   const [cardAnalysis, setCardAnalysis] = useState({}); // id -> analysis text
 
   const persist = (updated) => { setCards(updated); saveBoard(updated); };
+
+  // Cross-device: pull the server copy after mount.
+  useEffect(() => { hydrate(BOARD_KEY).then(r => { if (Array.isArray(r)) setCards(r); }); }, []);
 
   const addCard = (colId) => {
     if (!draft.trim()) return;

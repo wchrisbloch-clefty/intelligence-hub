@@ -1,7 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
+import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS } from '../constants.js';
+
+const BOOKCLUB_KEY = 'aether_bookclub';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -35,9 +38,10 @@ export default function BookClub() {
   const [addTitle,     setAddTitle]     = useState('');
   const [addAuthor,    setAddAuthor]    = useState('');
   const [addNote,      setAddNote]      = useState('');
-  const [customBooks,  setCustomBooks]  = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aether_bookclub') || '[]'); } catch { return []; }
-  });
+  const [customBooks,  setCustomBooks]  = useState(() => readLocal(BOOKCLUB_KEY, []));
+
+  // Cross-device: pull the server copy after mount.
+  useEffect(() => { hydrate(BOOKCLUB_KEY).then(r => { if (Array.isArray(r)) setCustomBooks(r); }); }, []);
 
   const allBooks = [...KNOWN_BOOKS, ...customBooks];
   const filtered = search
@@ -46,7 +50,7 @@ export default function BookClub() {
 
   const saveCustom = (updated) => {
     setCustomBooks(updated);
-    localStorage.setItem('aether_bookclub', JSON.stringify(updated));
+    writeThrough(BOOKCLUB_KEY, updated);
   };
 
   const addBook = () => {
@@ -115,7 +119,7 @@ export default function BookClub() {
       <div style={{ padding: `0 ${pad}`, display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
         {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: tab === t.id ? 'rgba(167,139,250,0.1)' : 'transparent', color: tab === t.id ? '#D9A441' : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: tab === t.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: tab === t.id ? '#D9A441' : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
             {t.label}
           </button>
         ))}
@@ -235,7 +239,7 @@ export default function BookClub() {
                 <div style={{ display: 'grid', gridTemplateColumns: modeCol, gap: 8, marginBottom: 20 }}>
                   {STUDY_MODES.map(m => (
                     <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
-                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(167,139,250,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? '#D9A441' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
+                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(217,164,65,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? '#D9A441' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
                       <div style={{ fontSize: 16 }}>{m.icon}</div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? '#D9A441' : 'var(--text)', marginTop: 4 }}>{m.label}</div>
                       <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>

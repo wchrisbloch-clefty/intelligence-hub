@@ -5,6 +5,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import NavIcon from './shared/NavIcon.jsx';
+import DueReviews from './shared/DueReviews.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
@@ -44,7 +45,7 @@ function OnboardingBanner({ onDismiss }) {
   const items = [
     { Icon: Radio,      color: '#D9A441', label: 'Daily Brief',  desc: 'AI-generated signal intel every morning — refresh anytime.' },
     { Icon: Waves,      color: '#D9A441', label: 'Blue Ocean',   desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
-    { Icon: LayoutGrid, color: '#D9A441', label: '14 Modules',   desc: 'Learn, Research, Coach, TED, Quiz, Projects, Vault and more.' },
+    { Icon: LayoutGrid, color: '#D9A441', label: '15 Modules',   desc: 'Learn, Ladder, Research, Coach, TED, Quiz, Projects, Vault and more.' },
   ];
   return (
     <div style={{ margin: '0 0 20px', padding: '14px 18px', background: 'linear-gradient(135deg, rgba(217,164,65,0.05) 0%, rgba(217,164,65,0.05) 100%)', border: '1px solid rgba(217,164,65,0.18)', borderRadius: 12 }}>
@@ -563,6 +564,10 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {!onboarded && (
             <OnboardingBanner onDismiss={() => { setOnboarded(true); localStorage.setItem(ONBOARDING_KEY, '1'); }} />
           )}
+
+          {/* Spaced repetition — due today */}
+          <DueReviews onQuiz={(label) => { setChatPrefill(`Quiz me on ${label} — I'm reviewing it today.`); setChatOpen(true); }} />
+
 
           {/* Recommendations */}
           <RecommendationsSection graph={graph} projects={projects} setActiveModule={setActiveModule} />

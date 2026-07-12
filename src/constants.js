@@ -106,6 +106,7 @@ export const SESSION_MODES = [
 export const NAV_ITEMS = [
   { id: "home",      label: "Home",       desc: "Dashboard & daily brief",   accent: '#D9A441' },
   { id: "learn",     label: "Learn",      desc: "AI-powered study sessions", accent: '#D9A441' },
+  { id: "ladder",    label: "Ladder",     desc: "Structured learning path",  accent: '#D9A441' },
   { id: "books",     label: "Books",      desc: "Deep reading mode",         accent: '#D9A441' },
   { id: "research",  label: "Research",   desc: "Truth-first analysis",      accent: '#D9A441' },
   { id: "translate", label: "Translate",  desc: "25+ languages",             accent: '#D9A441' },

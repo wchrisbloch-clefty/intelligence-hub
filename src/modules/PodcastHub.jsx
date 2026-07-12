@@ -6,8 +6,8 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const ACCENT       = '#D9A441';
-const ACCENT_BG    = 'rgba(225,29,72,0.07)';
-const ACCENT_BORDER= 'rgba(225,29,72,0.18)';
+const ACCENT_BG    = 'rgba(217,164,65,0.07)';
+const ACCENT_BORDER= 'rgba(217,164,65,0.18)';
 
 const PODCAST_FEEDS = [
   { name: 'Joe Rogan Experience', host: 'Joe Rogan',         url: 'https://feeds.megaphone.fm/GLT1412515089',   emoji: '🟢' },

@@ -7,6 +7,7 @@ import ChatPanel from './modules/ChatPanel.jsx';
 import NavIcon from './modules/shared/NavIcon.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
+import LearningLadder from './modules/LearningLadder.jsx';
 import BookClub from './modules/BookClub.jsx';
 import ResearchHub from './modules/ResearchHub.jsx';
 import TranslatorHub from './modules/TranslatorHub.jsx';
@@ -42,6 +43,7 @@ export default function App() {
 
   const [theme, setTheme] = useState(() => localStorage.getItem('aether-theme') || 'dark');
   const [pendingArtifact, setPendingArtifact] = useState(null);
+  const [newChatNonce, setNewChatNonce] = useState(0); // bump → session-aware surfaces start fresh
 
   const { isMobile, isTablet, isPhone, isDesktop, isWide } = useViewport();
 
@@ -59,6 +61,13 @@ export default function App() {
   if (!loaded) return <LoadingScreen />;
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
+
+  // Global "New chat": start a fresh session in the current module's chat
+  // surface. For non-chat modules, open the global Intelligence Chat fresh.
+  const triggerNewChat = () => {
+    setNewChatNonce(n => n + 1);
+    if (activeModule !== 'coach') setChatOpen(true);
+  };
 
   const saveArtifactToProject = async (projectId, artifact) => {
     const updated = projects.map(p => {
@@ -83,11 +92,13 @@ export default function App() {
     isMobile, isTablet, isPhone, isDesktop, isWide,
     theme,    toggleTheme,
     pendingArtifact, setPendingArtifact, saveArtifactToProject,
+    newChatNonce, triggerNewChat,
   };
 
   const modules = {
     home:      <HomeDashboard />,
     learn:     <LearningCenter />,
+    ladder:    <LearningLadder />,
     books:     <BookClub />,
     research:  <ResearchHub />,
     translate: <TranslatorHub />,

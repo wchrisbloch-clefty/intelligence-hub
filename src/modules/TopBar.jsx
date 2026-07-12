@@ -3,14 +3,14 @@ import { useApp } from '../App.jsx';
 import { NAV_ITEMS } from '../constants.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import NavIcon from './shared/NavIcon.jsx';
-import { Sun, Moon, MessageSquare, X, Search } from 'lucide-react';
+import { Sun, Moon, MessageSquare, X, Search, PenSquare } from 'lucide-react';
 
 export default function TopBar() {
   const {
     activeModule, setActiveModule,
     graph, chatOpen, setChatOpen,
     searchQuery, setSearchQuery,
-    setChatPrefill,
+    setChatPrefill, triggerNewChat,
     isMobile, isPhone,
     theme, toggleTheme,
   } = useApp();
@@ -89,6 +89,9 @@ export default function TopBar() {
           <button onClick={toggleTheme} style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none' }}>
             {theme === 'dark' ? <Sun size={14} color="var(--muted)" /> : <Moon size={14} color="var(--muted)" />}
           </button>
+          <button onClick={triggerNewChat} title="New chat" style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--muted)' }}>
+            <PenSquare size={14} />
+          </button>
           <button onClick={() => setChatOpen(o => !o)} style={{ height: 34, padding: '0 12px', borderRadius: 8, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             {chatOpen ? <X size={14} /> : <MessageSquare size={14} />}
           </button>
@@ -153,6 +156,10 @@ export default function TopBar() {
 
         <button onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', transition: 'border-color 0.15s' }}>
           {theme === 'dark' ? <Sun size={15} color="var(--muted)" strokeWidth={1.8} /> : <Moon size={15} color="var(--muted)" strokeWidth={1.8} />}
+        </button>
+
+        <button onClick={triggerNewChat} title="New chat" style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--muted)', transition: 'border-color 0.15s' }}>
+          <PenSquare size={15} strokeWidth={1.8} />
         </button>
 
         <button onClick={() => setChatOpen(o => !o)} style={{ padding: '0 16px', height: 36, borderRadius: 9, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, transition: 'all 0.15s', letterSpacing: 0.2 }}>

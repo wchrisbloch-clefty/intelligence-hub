@@ -9,6 +9,7 @@ import {
   logSession, saveGraph, extractYouTubeId, fetchYouTubeTranscript,
   fetchYouTubeMeta, processFiles,
 } from '../utils.js';
+import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
@@ -147,7 +148,7 @@ export default function LearningCenter() {
   const generateQuiz = async () => {
     setQuizLoading(true);
     try {
-      const reply = await callClaude({ system: '', messages: [{ role: 'user', content: buildQuizPrompt(context, entryMode) }] });
+      const reply = await callClaude({ system: '', messages: [{ role: 'user', content: buildQuizPrompt({ subject: sessionTitle, count: 5, includeRate: false }) }] });
       const parsed = JSON.parse(reply.replace(/```json|```/g, '').trim());
       setQuizQuestions(parsed.questions || []);
       setQuizMode(true);
@@ -157,8 +158,10 @@ export default function LearningCenter() {
     setQuizLoading(false);
   };
 
-  const onQuizComplete = (scores) => {
-    const pct = Math.round((scores.filter(s => s > 0).length / scores.length) * 100);
+  const onQuizComplete = (results) => {
+    const graded = results.filter(r => r.score !== null);
+    const pct = graded.length ? Math.round((graded.filter(r => r.score > 0).length / graded.length) * 100) : 0;
+    if (sessionTitle) recordQuizResult({ topicId: sessionTitle.toLowerCase().replace(/\s+/g, '_'), topicLabel: sessionTitle, results });
     setQuizMode(false);
     setQuizQuestions([]);
     setMessages(prev => [...prev, { role: 'assistant', content: `**Quiz Complete — ${pct}%**\n\n${pct >= 80 ? 'Strong. Core material internalized.' : pct >= 60 ? 'Solid foundation. Review what you missed.' : 'Early stages — this is data, not judgment. Run it again after another pass.'}\n\nWant to go deeper on anything you missed?` }]);
