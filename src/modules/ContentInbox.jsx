@@ -35,12 +35,21 @@ function shortHost(url) {
 }
 
 export default function ContentInbox() {
-  const { notes, setNotes, isMobile, setPendingArtifact } = useApp();
+  const { notes, setNotes, isMobile, setPendingArtifact, captureRoute, clearCapture } = useApp();
 
   const [items, setItems] = useState(() => readLocal(INBOX_KEY, []));
 
   // Cross-device: pull the server copy after mount.
   useEffect(() => { hydrate(INBOX_KEY).then(r => { if (Array.isArray(r)) setItems(r); }); }, []);
+  // Capture-bar route (D1): prefill the add form (URL vs note text).
+  useEffect(() => {
+    if (captureRoute?.route === 'note') {
+      const t = captureRoute.topic || '';
+      if (/^https?:\/\//i.test(t)) setUrl(t); else setText(t);
+      setTab('add');
+      clearCapture?.();
+    }
+  }, [captureRoute, clearCapture]);
   const [tab,        setTab]        = useState('inbox');
   const [filter,     setFilter]     = useState('all');
   const [expandedId, setExpandedId] = useState(null);

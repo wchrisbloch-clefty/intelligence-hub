@@ -26,7 +26,7 @@ const READING_QUICK_PROMPTS = {
 };
 
 export default function LearningCenter() {
-  const { graph, setGraph, isMobile, isPhone, isTablet } = useApp();
+  const { graph, setGraph, isMobile, isPhone, isTablet, captureRoute, clearCapture } = useApp();
   const [screen, setScreen] = useState('home');
   const [entryMode, setEntryMode] = useState(null);
   const [sessionMode, setSessionMode] = useState('chat');
@@ -63,6 +63,15 @@ export default function LearningCenter() {
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
+  // Capture-bar route (D1): drop into the topic-course entry, pre-filled.
+  useEffect(() => {
+    if (captureRoute?.route === 'learn') {
+      setTopicInput(captureRoute.topic || '');
+      setEntryMode('topic');
+      setScreen('topic-input');
+      clearCapture?.();
+    }
+  }, [captureRoute, clearCapture]);
 
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = '#D9A441'; // one confident accent — the active session is gold

@@ -1,7 +1,19 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveProjects, uid, callClaude, processFiles, getFileIcon, timeAgo } from '../utils.js';
 import { PROJECT_CATEGORIES, PROJECT_STATUSES, CB_IDENTITY, ACCEPT_TYPES } from '../constants.js';
+
+// Map a free-text inferred category label to a project category key.
+// Category is never mandatory — this only pre-selects a sensible default.
+function inferCategory(labelRaw = '') {
+  const l = labelRaw.toLowerCase().trim();
+  if (PROJECT_CATEGORIES[l]) return l;
+  if (/financ|invest|money|divid|real ?estate|passive/.test(l)) return 'finance';
+  if (/health|longevity|fitness|medical|wellness/.test(l)) return 'health';
+  if (/learn|study|educat|course|skill/.test(l)) return 'learning';
+  if (/business|\bbd\b|sales|startup|company|market|product|revenue/.test(l)) return 'business';
+  return 'other';
+}
 import { Badge, Label, Modal, ThinkingDots } from './shared/Common.jsx';
 import MD from './shared/MD.jsx';
 
@@ -24,13 +36,22 @@ const WORKSPACE_TABS = [
 
 // ─── Root list (kanban) ───────────────────────────────────────────────────────
 export default function ProjectsOS() {
-  const { projects, setProjects, isMobile, isPhone } = useApp();
+  const { projects, setProjects, isMobile, isPhone, captureRoute, clearCapture } = useApp();
   const [activeId, setActiveId]   = useState(null);
   const [showNew, setShowNew]     = useState(false);
-  const [newProj, setNewProj]     = useState({ title: '', emoji: '🚀', description: '', category: 'business', priority: 'high' });
+  const [newProj, setNewProj]     = useState({ title: '', emoji: '🚀', description: '', category: 'other', priority: 'high' });
   const [statusFilter, setStatusFilter] = useState('all');
 
   const persist = async updated => { setProjects(updated); await saveProjects(updated); };
+
+  // Capture-bar route (D1): open the new-project modal pre-filled, category inferred.
+  useEffect(() => {
+    if (captureRoute?.route === 'project') {
+      setNewProj({ title: captureRoute.topic || '', emoji: '🚀', description: '', category: inferCategory(captureRoute.suggestedCategory), priority: 'high' });
+      setShowNew(true);
+      clearCapture?.();
+    }
+  }, [captureRoute, clearCapture]);
 
   const createProject = async () => {
     if (!newProj.title.trim()) return;
@@ -42,7 +63,7 @@ export default function ProjectsOS() {
       blueOcean: '', createdAt: Date.now(), updatedAt: Date.now(), priority: newProj.priority,
     });
     await persist([...projects, p]);
-    setNewProj({ title: '', emoji: '🚀', description: '', category: 'business', priority: 'high' });
+    setNewProj({ title: '', emoji: '🚀', description: '', category: 'other', priority: 'high' });
     setShowNew(false);
     setActiveId(p.id);
   };
@@ -920,7 +941,7 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
         placeholder="What is this project about? What's the goal?" rows={3}
         style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }} />
       <div style={{ marginBottom: 14 }}>
-        <Label>Category</Label>
+        <Label>Category <span style={{ color: 'var(--dim)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>· optional, inferred</span></Label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
             <div key={k} onClick={() => setVal(p => ({ ...p, category: k }))}

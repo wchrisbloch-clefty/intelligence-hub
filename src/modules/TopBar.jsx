@@ -3,14 +3,14 @@ import { useApp } from '../App.jsx';
 import { NAV_ITEMS } from '../constants.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import NavIcon from './shared/NavIcon.jsx';
-import { Sun, Moon, MessageSquare, X, Search, PenSquare } from 'lucide-react';
+import { Sun, Moon, MessageSquare, X, Search, PenSquare, Sparkles } from 'lucide-react';
 
 export default function TopBar() {
   const {
     activeModule, setActiveModule,
     graph, chatOpen, setChatOpen,
     searchQuery, setSearchQuery,
-    setChatPrefill, triggerNewChat,
+    setChatPrefill, triggerNewChat, focusCapture,
     isMobile, isPhone,
     theme, toggleTheme,
   } = useApp();
@@ -89,6 +89,9 @@ export default function TopBar() {
           <button onClick={toggleTheme} style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none' }}>
             {theme === 'dark' ? <Sun size={14} color="var(--muted)" /> : <Moon size={14} color="var(--muted)" />}
           </button>
+          <button onClick={focusCapture} title="Capture — type anything" style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--accent, #D9A441)' }}>
+            <Sparkles size={14} />
+          </button>
           <button onClick={triggerNewChat} title="New chat" style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--muted)' }}>
             <PenSquare size={14} />
           </button>
@@ -156,6 +159,10 @@ export default function TopBar() {
 
         <button onClick={toggleTheme} title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`} style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', transition: 'border-color 0.15s' }}>
           {theme === 'dark' ? <Sun size={15} color="var(--muted)" strokeWidth={1.8} /> : <Moon size={15} color="var(--muted)" strokeWidth={1.8} />}
+        </button>
+
+        <button onClick={focusCapture} title="Capture — type anything" style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--accent, #D9A441)', transition: 'border-color 0.15s' }}>
+          <Sparkles size={15} strokeWidth={1.8} />
         </button>
 
         <button onClick={triggerNewChat} title="New chat" style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--muted)', transition: 'border-color 0.15s' }}>

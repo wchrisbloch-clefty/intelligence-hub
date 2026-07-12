@@ -45,6 +45,9 @@ export default function App() {
   const [theme, setTheme] = useState(() => localStorage.getItem('aether-theme') || 'dark');
   const [pendingArtifact, setPendingArtifact] = useState(null);
   const [newChatNonce, setNewChatNonce] = useState(0); // bump → session-aware surfaces start fresh
+  const [captureRoute, setCaptureRoute] = useState(null);   // last routed intent, consumed by target module
+  const [focusCaptureNonce, setFocusCaptureNonce] = useState(0);
+  const [studioSource, setStudioSource] = useState(null);   // { kind, id, title } handed to Creation Studio
 
   const { isMobile, isTablet, isPhone, isDesktop, isWide } = useViewport();
 
@@ -70,6 +73,18 @@ export default function App() {
     if (activeModule !== 'coach') setChatOpen(true);
   };
 
+  // Universal capture: route a classified intent to its module, pre-filled.
+  const ROUTE_MODULE = { learn: 'learn', ladder: 'ladder', deepdive: 'deepdive', research: 'research', project: 'projects', note: 'inbox' };
+  const applyRoute = (payload) => {
+    setCaptureRoute({ ...payload, ts: Date.now() });
+    setActiveModule(ROUTE_MODULE[payload.route] || 'home');
+  };
+  const clearCapture = () => setCaptureRoute(null);
+  const focusCapture = () => { setActiveModule('home'); setFocusCaptureNonce(n => n + 1); };
+
+  // Creation Studio hand-off from a Deep Dive / ladder / session.
+  const openStudio = (source) => { setStudioSource(source); setActiveModule('studio'); };
+
   const saveArtifactToProject = async (projectId, artifact) => {
     const updated = projects.map(p => {
       if (p.id !== projectId) return p;
@@ -94,6 +109,9 @@ export default function App() {
     theme,    toggleTheme,
     pendingArtifact, setPendingArtifact, saveArtifactToProject,
     newChatNonce, triggerNewChat,
+    captureRoute, applyRoute, clearCapture,
+    focusCapture, focusCaptureNonce,
+    studioSource, setStudioSource, openStudio,
   };
 
   const modules = {
