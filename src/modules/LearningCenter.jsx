@@ -6,8 +6,8 @@ import {
 } from '../constants.js';
 import {
   buildSystem, buildReadingSystem, buildQuizPrompt, callClaude, buildApiMessages,
-  logSession, saveGraph, extractYouTubeId, fetchYouTubeTranscript,
-  fetchYouTubeMeta, processFiles,
+  logSession, extractYouTubeId, fetchYouTubeTranscript,
+  fetchYouTubeMeta, processFiles, depthNeedsWeb,
 } from '../utils.js';
 import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
@@ -26,7 +26,7 @@ const READING_QUICK_PROMPTS = {
 };
 
 export default function LearningCenter() {
-  const { graph, setGraph, isMobile, isPhone, isTablet } = useApp();
+  const { graph, setGraph, isMobile, isPhone, isTablet, captureRoute, clearCapture } = useApp();
   const [screen, setScreen] = useState('home');
   const [entryMode, setEntryMode] = useState(null);
   const [sessionMode, setSessionMode] = useState('chat');
@@ -63,6 +63,15 @@ export default function LearningCenter() {
   const fileRef = useRef(null);
   const bottomRef = useRef(null);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
+  // Capture-bar route (D1): drop into the topic-course entry, pre-filled.
+  useEffect(() => {
+    if (captureRoute?.route === 'learn') {
+      setTopicInput(captureRoute.topic || '');
+      setEntryMode('topic');
+      setScreen('topic-input');
+      clearCapture?.();
+    }
+  }, [captureRoute, clearCapture]);
 
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = '#D9A441'; // one confident accent — the active session is gold
@@ -82,7 +91,9 @@ export default function LearningCenter() {
       const system = entryMode === 'reading'
         ? buildReadingSystem({ contentType, goal: readerGoal, depth: depthLevel, progress: readingProgress, content: context, graph })
         : buildSystem(entryMode, sessionMode, context, graph);
-      const reply = await callClaude({ system, messages: apiMessages, searchEnabled, onToken: (t) => setStream(s => s + t) });
+      // Deep/Expert reading depth grounds itself in live sources — auto-enable web.
+      const useWeb = searchEnabled || (entryMode === 'reading' && depthNeedsWeb(depthLevel));
+      const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, onToken: (t) => setStream(s => s + t) });
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);

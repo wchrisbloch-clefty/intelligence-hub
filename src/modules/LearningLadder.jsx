@@ -34,7 +34,7 @@ function YardLines({ modules }) {
 }
 
 export default function LearningLadder() {
-  const { isMobile, graph } = useApp();
+  const { isMobile, graph, captureRoute, clearCapture } = useApp();
   const [view,   setView]   = useState('home'); // home | view | session | quiz
   const [index,  setIndex]  = useState(() => loadIndex());
   const [ladder, setLadder] = useState(null);
@@ -49,6 +49,8 @@ export default function LearningLadder() {
 
   useEffect(() => { hydrateIndex().then(r => { if (Array.isArray(r)) setIndex(r); }); }, []);
   useEffect(() => { if (view !== 'home' && !ladder) setView('home'); }, [view, ladder]);
+  // Capture-bar route (D1): prefill the topic.
+  useEffect(() => { if (captureRoute?.route === 'ladder') { setTopicInput(captureRoute.topic || ''); setView('home'); clearCapture?.(); } }, [captureRoute, clearCapture]);
 
   const refreshIndex = () => setIndex(loadIndex());
 

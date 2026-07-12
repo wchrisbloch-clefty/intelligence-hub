@@ -200,7 +200,7 @@ const SOURCE_LIBRARY = [
 ];
 
 export default function ResearchHub() {
-  const { graph, research, setResearch, isMobile } = useApp();
+  const { graph, research, setResearch, isMobile, captureRoute, clearCapture } = useApp();
   const [activeThread, setActiveThread] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -209,6 +209,8 @@ export default function ResearchHub() {
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [showNewThread, setShowNewThread] = useState(false);
   const [newQuery, setNewQuery] = useState('');
+  // Capture-bar route (D1): prefill the research query for review before firing.
+  useEffect(() => { if (captureRoute?.route === 'research') { setNewQuery(captureRoute.topic || ''); clearCapture?.(); } }, [captureRoute, clearCapture]);
   const [boardView, setBoardView] = useState(false);
   const bottomRef = useRef(null);
 

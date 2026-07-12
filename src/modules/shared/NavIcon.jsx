@@ -1,7 +1,7 @@
 import {
   Home, GraduationCap, BookMarked, Telescope, Globe,
   Layers, Mic2, Archive, TrendingUp, Inbox,
-  Scale, Compass, PlayCircle, ClipboardList, Route,
+  Scale, Compass, PlayCircle, ClipboardList, Route, Microscope, Wand2,
 } from 'lucide-react';
 
 const MAP = {
@@ -10,6 +10,7 @@ const MAP = {
   ladder:    Route,
   books:     BookMarked,
   research:  Telescope,
+  deepdive:  Microscope,
   translate: Globe,
   projects:  Layers,
   podcast:   Mic2,
@@ -18,6 +19,7 @@ const MAP = {
   inbox:     Inbox,
   decisions: Scale,
   coach:     Compass,
+  studio:    Wand2,
   ted:       PlayCircle,
   quiz:      ClipboardList,
 };

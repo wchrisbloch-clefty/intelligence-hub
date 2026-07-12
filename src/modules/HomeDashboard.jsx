@@ -6,6 +6,7 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import NavIcon from './shared/NavIcon.jsx';
 import DueReviews from './shared/DueReviews.jsx';
+import CaptureBar from './shared/CaptureBar.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
@@ -536,6 +537,11 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {(graph?.streak || 0) > 0 && <div style={{ fontSize: 10, color: 'var(--text-c)', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20 }}>🔥 {graph.streak}d</div>}
           {totalMin > 0 && <div style={{ fontSize: 10, color: 'var(--text-c)', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20 }}>⏱ {Math.round(totalMin / 60)}h</div>}
         </div>
+      </div>
+
+      {/* Universal capture — type-and-go front door */}
+      <div style={{ padding: `0 ${pad}` }}>
+        <CaptureBar />
       </div>
 
       {/* Mobile: Continue Learning rings */}
