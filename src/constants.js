@@ -114,6 +114,7 @@ export const NAV_ITEMS = [
   { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: '#D9A441' },
   { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: '#D9A441' },
   { id: "vault",     label: "Vault",      desc: "Knowledge base",            accent: '#D9A441' },
+  { id: "studio",    label: "Studio",     desc: "Generate deliverables",     accent: '#D9A441' },
   { id: "growth",    label: "Growth",     desc: "Goals & synthesis",         accent: '#D9A441' },
   { id: "inbox",     label: "Inbox",      desc: "Save & analyze content",    accent: '#D9A441' },
   { id: "decisions", label: "Decisions",  desc: "Decision journal",          accent: '#D9A441' },

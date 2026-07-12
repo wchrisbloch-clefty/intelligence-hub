@@ -19,6 +19,7 @@ import PodcastHub from './modules/PodcastHub.jsx';
 import ContentInbox from './modules/ContentInbox.jsx';
 import DecisionLog from './modules/DecisionLog.jsx';
 import CoachAI from './modules/CoachAI.jsx';
+import CreationStudio from './modules/CreationStudio.jsx';
 import TEDHub from './modules/TEDHub.jsx';
 import QuizCenter from './modules/QuizCenter.jsx';
 
@@ -129,6 +130,7 @@ export default function App() {
     inbox:     <ContentInbox />,
     decisions: <DecisionLog />,
     coach:     <CoachAI />,
+    studio:    <CreationStudio />,
     ted:       <TEDHub />,
     quiz:      <QuizCenter />,
   };

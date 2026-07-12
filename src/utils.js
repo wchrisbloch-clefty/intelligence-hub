@@ -344,6 +344,25 @@ export function extractSources(md = '') {
     .slice(0, 20);
 }
 
+// ─── CREATION STUDIO ───────────────────────────────────────────────────────
+// Turn a saved Deep Dive / ladder / session into a deliverable. Pure prompt
+// builder; callers supply the serialized source text.
+export const CREATION_KINDS = [
+  { id: 'doc',   label: 'Document',      icon: '📄', desc: 'A polished written brief' },
+  { id: 'deck',  label: 'Slide Outline', icon: '🖥', desc: 'A deck outline, slide by slide' },
+  { id: 'guide', label: 'Study Guide',   icon: '📚', desc: 'Key points, Q&A, self-quiz' },
+];
+
+export function buildCreationPrompt(kind, title, sourceText) {
+  const base = `Source material — "${title}":\n\n${(sourceText || '').slice(0, 12000)}\n\n---\n\n`;
+  const kinds = {
+    doc:   `Turn the source into a polished DOCUMENT / executive brief in Markdown. Clear headers, tight decisive prose, keep the strongest evidence and any sources. End with a one-paragraph bottom line.`,
+    deck:  `Turn the source into a SLIDE OUTLINE for a deck, in Markdown. Format each slide as "## Slide N — Title" followed by 3–5 concise bullets. 8–12 slides. Open with a title slide + one-line thesis; close with a recommendations slide.`,
+    guide: `Turn the source into a STUDY GUIDE in Markdown: (1) Key concepts (term → one-line definition), (2) the 5 most important takeaways, (3) 5 self-quiz questions each followed by its answer, (4) how CB should apply this. Optimize for retention.`,
+  };
+  return base + (kinds[kind] || kinds.doc);
+}
+
 // ─── INTENT ROUTER (Universal Capture Bar) ─────────────────────────────────
 // Classifies a raw intent into a destination. Returns a safe fallback shape
 // even if the model or network misbehaves.
