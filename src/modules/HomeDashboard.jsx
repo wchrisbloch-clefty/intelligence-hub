@@ -8,6 +8,7 @@ import NavIcon from './shared/NavIcon.jsx';
 import DueReviews from './shared/DueReviews.jsx';
 import CaptureBar from './shared/CaptureBar.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
+import { getFeed, fmtCount, PLATFORM_META, TIER_META } from '../lib/adapters.js';
 
 const ONBOARDING_KEY = 'aether_onboarded_v1';
 
@@ -271,6 +272,68 @@ function SkillBar({ title, confidence = 5 }) {
       <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, overflow: 'hidden' }}>
         <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${color}99, ${color})`, borderRadius: 4, transition: 'width 0.6s ease' }} />
       </div>
+    </div>
+  );
+}
+
+// Live signal feed — YouTube via the live adapter, other platforms manual.
+// Every item is normalized (always tiered) before it renders here.
+function LiveSignalFeed({ isMobile }) {
+  const [feed,    setFeed]    = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    setLoading(true);
+    try { setFeed(await getFeed({ limit: 8 })); }
+    catch { setFeed([]); }
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  return (
+    <div style={{ marginBottom: isMobile ? 20 : 24, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
+      <div style={{ padding: isMobile ? '0 14px' : '0' }}>
+        <SectionLabel icon={<Radio size={12} strokeWidth={2} />} label="Live Signal Feed" action={load} actionLabel="Refresh" />
+      </div>
+      {loading ? (
+        <div style={{ padding: '16px', background: 'var(--surface)', borderRadius: 10, border: '1px solid var(--border)', textAlign: 'center', margin: isMobile ? '0 14px' : 0 }}>
+          <ThinkingDots color="var(--accent, #D9A441)" />
+        </div>
+      ) : feed.length === 0 ? (
+        <div style={{ padding: '14px 16px', background: 'var(--surface)', borderRadius: 10, border: '1px dashed var(--border)', fontSize: 11, color: 'var(--subtle)', lineHeight: 1.6, margin: isMobile ? '0 14px' : 0 }}>
+          No live signals right now. YouTube videos appear here once <code style={{ color: 'var(--text-c)' }}>YOUTUBE_API_KEY</code> is set in Vercel — other platforms are curated manually.
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 10, padding: isMobile ? '0 14px' : 0 }}>
+          {feed.map(s => {
+            const meta   = PLATFORM_META[s.platform] || {};
+            const tier   = TIER_META[s.tier] || TIER_META.unranked;
+            const live   = s.status === 'live';
+            const accent = meta.color || 'var(--accent, #D9A441)';
+            return (
+              <a key={s.id} href={s.url} target="_blank" rel="noopener noreferrer"
+                style={{ display: 'block', textDecoration: 'none', padding: '13px 15px', background: 'var(--surface)', border: '1px solid var(--border)', borderLeft: `3px solid ${accent}`, borderRadius: 10, transition: 'border-color 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.borderColor = `${accent}66`}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 7, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 9, fontWeight: 800, color: accent, letterSpacing: 0.4 }}>{meta.icon} {meta.label || s.platform}</span>
+                  <span style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tier.color, background: `${tier.color}18`, border: `1px solid ${tier.color}33`, padding: '1px 5px', borderRadius: 3 }}>{tier.label}</span>
+                  <span style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: 1, color: live ? 'var(--green, #00CC76)' : 'var(--muted)' }}>
+                    {live ? '● LIVE' : '○ MANUAL'}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{s.title}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 10, color: 'var(--dim)' }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '45%' }}>{s.source}</span>
+                  <span>· {fmtCount(s.views)} views</span>
+                  {s.relTime && <span>· {s.relTime}</span>}
+                </div>
+              </a>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -656,6 +719,9 @@ Be blunt. No hedging. One decisive line per bullet.`;
               </div>
             )}
           </div>
+
+          {/* Live Signal Feed — YouTube live via adapter, others manual */}
+          <LiveSignalFeed isMobile={isMobile} />
 
           {/* Mobile: quick access + projects */}
           {isMobile && (
