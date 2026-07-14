@@ -8,6 +8,7 @@ import {
   buildSystem, buildReadingSystem, buildQuizPrompt, callClaude, buildApiMessages,
   logSession, extractYouTubeId, fetchYouTubeTranscript,
   fetchYouTubeMeta, processFiles, depthNeedsWeb,
+  fetchArticle, detectCaptureType,
 } from '../utils.js';
 import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
@@ -50,6 +51,7 @@ export default function LearningCenter() {
   const [ytError, setYtError] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [topicInput, setTopicInput] = useState('');
+  const [captureInput, setCaptureInput] = useState('');
   const [dragOver, setDragOver] = useState(false);
   const [showLogModal, setShowLogModal] = useState(false);
   const [sessionStart, setSessionStart] = useState(null);
@@ -75,7 +77,7 @@ export default function LearningCenter() {
 
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = '#D9A441'; // one confident accent — the active session is gold
-  const sessionTitle = entryMode === 'reading' ? context.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : 'Document';
+  const sessionTitle = entryMode === 'reading' ? context.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : entryMode === 'capture' ? context.title : 'Document';
 
   const send = async (text, attachments = []) => {
     if ((!text.trim() && attachments.length === 0) || loading) return;
@@ -140,6 +142,7 @@ export default function LearningCenter() {
         document: "I've uploaded a document. Analyze completely, teach in CB style, connect to my mental models and goals.",
         topic:    sMode === 'socratic' ? `Start Socratic mode on: "${ctx.topic}". First question now.` : `I want to learn about "${ctx.topic}". Master expert mode. Full course outline or specific module?`,
         youtube:  `YouTube: "${ctx.title}" by ${ctx.channel}. ${ctx.transcriptAvailable ? 'Transcript in context.' : 'No transcript — use your knowledge.'} Teach me now.`,
+        capture:  `I've captured content ("${ctx.title}"). ${ctx.articleAvailable ? 'Full content is in context.' : 'Content could not be retrieved — use your knowledge and say so.'} Analyze it, teach in CB style, connect to my mental models and goals, and tell me what to act on.`,
       };
       opener = eMode === 'book' ? (openers.book[sMode] || openers.book.chat) : openers[eMode];
     }
@@ -178,15 +181,57 @@ export default function LearningCenter() {
     setMessages(prev => [...prev, { role: 'assistant', content: `**Quiz Complete — ${pct}%**\n\n${pct >= 80 ? 'Strong. Core material internalized.' : pct >= 60 ? 'Solid foundation. Review what you missed.' : 'Early stages — this is data, not judgment. Run it again after another pass.'}\n\nWant to go deeper on anything you missed?` }]);
   };
 
-  const handleYouTube = async () => {
-    if (!youtubeUrl.trim()) return;
-    const videoId = extractYouTubeId(youtubeUrl.trim());
+  const handleYouTube = async (urlArg) => {
+    // urlArg may be a string (from Universal Capture) or a click event (from the
+    // button) — only treat a string as an explicit URL, else read from state.
+    const raw = (typeof urlArg === 'string' ? urlArg : youtubeUrl).trim();
+    if (!raw) return;
+    const videoId = extractYouTubeId(raw);
     if (!videoId) { setYtError('Invalid YouTube URL.'); return; }
     setYtLoading(true); setYtError('');
     const [meta, transcript] = await Promise.all([fetchYouTubeMeta(videoId), fetchYouTubeTranscript(videoId)]);
-    const ctx = { url: youtubeUrl.trim(), videoId, title: meta?.title || 'YouTube Video', channel: meta?.author_name || 'Unknown', transcript: transcript || '', transcriptAvailable: !!(transcript && transcript.length > 100) };
+    const ctx = { url: raw, videoId, title: meta?.title || 'YouTube Video', channel: meta?.author_name || 'Unknown', transcript: transcript || '', transcriptAvailable: !!(transcript && transcript.length > 100) };
     setContext(ctx); setEntryMode('youtube'); setScreen('session'); setYoutubeUrl('');
     autoOpen('youtube', sessionMode, ctx);
+    setYtLoading(false);
+  };
+
+  // Universal Capture — accepts a YouTube URL, any article URL, or raw text,
+  // auto-detects the type, and routes into the session engine.
+  const handleCapture = async (raw) => {
+    const value = (raw ?? captureInput).trim();
+    if (!value) return;
+    const kind = detectCaptureType(value);
+    setCaptureInput('');
+
+    if (kind === 'youtube') {
+      await handleYouTube(value);   // pass the URL explicitly — no state race
+      return;
+    }
+
+    setYtLoading(true);
+    let ctx;
+    if (kind === 'url') {
+      const article = await fetchArticle(value);
+      ctx = {
+        captureKind: 'url',
+        url: value,
+        title: value.replace(/^https?:\/\//, '').slice(0, 60),
+        content: article || '',
+        articleAvailable: !!article,
+      };
+    } else {
+      ctx = {
+        captureKind: 'text',
+        title: 'Pasted Content',
+        content: value,
+        articleAvailable: true,
+      };
+    }
+    setContext(ctx);
+    setEntryMode('capture');
+    setScreen('session');
+    autoOpen('capture', sessionMode, ctx);
     setYtLoading(false);
   };
 
@@ -204,6 +249,7 @@ export default function LearningCenter() {
       document: ['Core thesis', 'Extract key frameworks', 'Connect to my goals', 'What to act on now', 'Quiz me on this'],
       topic: ['Full course outline', 'Start Module 1', 'Tipping point in this field', 'Blue Ocean opportunities', 'Decisive bet'],
       youtube: ['3 biggest ideas', 'Connect to my mental models', 'What should I act on?', 'Quiz me on this video'],
+      capture: ['3 biggest ideas', 'Connect to my mental models', 'What should I act on?', 'Build a course from this', 'Quiz me on this', 'Blue Ocean angle', 'Contrast with what I\'ve read', 'Sports-analogy summary'],
     };
     if (entryMode === 'book') return qp.book[sessionMode] || qp.book.chat;
     return qp[entryMode] || qp.topic;
@@ -216,11 +262,12 @@ export default function LearningCenter() {
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 6 }}>CB · Learning Center</div>
         <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 6 }}>What do you want to learn?</div>
-        <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Books · Documents · Topics · YouTube — all tracked, all connected.</div>
+        <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Capture · Books · Documents · Topics · YouTube — all tracked, all connected.</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
         {[
+          { icon: '⚡', label: 'Universal Capture', desc: 'Paste anything — a link, an article, a YouTube URL, or raw text. I detect it and teach you.', color: '#a855f7', action: () => { setEntryMode('capture'); setScreen('capture-input'); } },
           { icon: '📚', label: 'Reading Companion', desc: 'Any book, paper, manual, or novel — personal mentor as you read.', color: '#D9A441', action: () => setScreen('reading-add') },
           { icon: '🎓', label: 'Topic / Course', desc: 'Name any subject. I build a structured course.', color: '#D9A441', action: () => { setEntryMode('topic'); setScreen('topic-input'); } },
           { icon: '▶️', label: 'YouTube', desc: 'Paste a URL. Transcript extraction + deep analysis.', color: '#C4553D', action: () => { setEntryMode('youtube'); setScreen('youtube-input'); } },
@@ -483,6 +530,22 @@ export default function LearningCenter() {
     </div>
   );
 
+  if (screen === 'capture-input') return (
+    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
+      <div onClick={() => { setScreen('home'); setCaptureInput(''); }} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Learn</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: '#a855f7', textTransform: 'uppercase', marginBottom: 8 }}>⚡ Universal Capture</div>
+      <div style={{ fontSize: isMobile ? 20 : 22, fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: "'Newsreader', serif" }}>Paste anything</div>
+      <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 16 }}>YouTube · Article URL · Development plan · Any text.</div>
+      <textarea value={captureInput} onChange={e => setCaptureInput(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && captureInput.trim() && !ytLoading) handleCapture(); }}
+        rows={6} placeholder={'https://youtube.com/watch?v=…\nhttps://an-article.com/…\n\nOr paste a development plan, notes, a transcript — anything.'}
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', marginBottom: 16, lineHeight: 1.6 }} />
+      <Btn color="#a855f7" disabled={!captureInput.trim() || ytLoading} onClick={() => handleCapture()}>
+        {ytLoading ? 'Reading & analyzing…' : 'Analyze →'}
+      </Btn>
+    </div>
+  );
+
   if (screen === 'youtube-input') return (
     <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
       <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
@@ -587,10 +650,27 @@ export default function LearningCenter() {
         </div>
 
         {!quizMode && (
-          <div style={{ position: 'sticky', bottom: 72, left: 0, right: 0, padding: '0 12px 6px', background: 'linear-gradient(transparent, var(--bg) 30%)', display: 'flex', gap: 5, overflowX: 'auto' }}>
-            {prompts.slice(0, isMobile ? 2 : 5).map(p => (
-              <div key={p} onClick={() => send(p)} style={{ fontSize: 10, padding: '5px 11px', background: 'var(--surface)', border: '1px solid var(--bord2)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>{p}</div>
-            ))}
+          <div style={{ position: 'sticky', bottom: 72, left: 0, right: 0, padding: '0 12px 6px', background: 'linear-gradient(transparent, var(--bg) 30%)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {/* Prominent action chips — surface the instant content loads */}
+            {messages.length <= 1 && (
+              <div style={{ display: 'flex', gap: 7, overflowX: 'auto' }}>
+                {[
+                  { label: '✦ Summarize', onClick: () => send('Give me the CB-style summary — thesis first, then key points.') },
+                  { label: '🧠 Quiz me', onClick: generateQuiz },
+                  { label: '🔗 Recommend related', onClick: () => send('Recommend related content, creators, and books connected to my mental model library.') },
+                ].map(a => (
+                  <div key={a.label} onClick={a.onClick}
+                    style={{ fontSize: 12, fontWeight: 700, padding: '9px 15px', background: `${accentColor}14`, border: `1px solid ${accentColor}40`, color: accentColor, borderRadius: 22, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>
+                    {a.label}
+                  </div>
+                ))}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: 5, overflowX: 'auto' }}>
+              {prompts.slice(0, isMobile ? 2 : 5).map(p => (
+                <div key={p} onClick={() => send(p)} style={{ fontSize: 10, padding: '5px 11px', background: 'var(--surface)', border: '1px solid var(--bord2)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>{p}</div>
+              ))}
+            </div>
           </div>
         )}
 
