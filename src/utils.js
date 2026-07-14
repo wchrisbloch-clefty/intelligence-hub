@@ -120,6 +120,50 @@ export async function fetchYouTubeMeta(videoId) {
   return { title: 'YouTube Video', author_name: 'Unknown Channel' };
 }
 
+// ─── UNIVERSAL CAPTURE ──────────────────────────────────────────────────────
+// Classify a raw paste: a YouTube link, any other URL, or plain text.
+export function detectCaptureType(raw) {
+  const s = (raw || '').trim();
+  if (extractYouTubeId(s)) return 'youtube';
+  if (/^https?:\/\/\S+$/i.test(s)) return 'url';
+  return 'text';
+}
+
+// Real article fetch. The browser can't read an arbitrary URL for Claude, so
+// we pull the page text through a multi-proxy reader chain and hand the actual
+// content to the model. r.jina.ai returns clean reader-mode markdown; the
+// allorigins/corsproxy fallbacks cover the case where one provider is
+// rate-limiting or down. Returns the retrieved text (capped) or null if every
+// provider fails — callers degrade gracefully rather than crash.
+// (These are client-side reader proxies, distinct from the server-proxied
+// /api/transcript and /api/rss paths — there is no server endpoint for
+// arbitrary article extraction.)
+const articleCache = new Map(); // url → text|null, so re-sends don't refetch
+
+export async function fetchArticle(url) {
+  if (articleCache.has(url)) return articleCache.get(url);
+  const proxies = [
+    `https://r.jina.ai/${url}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  ];
+  for (const p of proxies) {
+    try {
+      const r = await fetch(p, { signal: AbortSignal.timeout(12000) });
+      if (r.ok) {
+        const text = await r.text();
+        if (text && text.length > 200) {
+          const clipped = text.slice(0, 12000);
+          articleCache.set(url, clipped);
+          return clipped;
+        }
+      }
+    } catch { /* try the next proxy */ }
+  }
+  articleCache.set(url, null);
+  return null;
+}
+
 // ─── FILE HELPERS ─────────────────────────────────────────────────────────
 export function getFileIcon(name = '') {
   const ext = name.split('.').pop().toLowerCase();
@@ -200,6 +244,21 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
     return {
       cached: spine,
       dynamic: graphSummary + `\n\nSESSION: YOUTUBE VIDEO INTELLIGENCE\nVideo: "${title}"\nChannel: ${channel}\nURL: ${url}\n\n` + tSection + socraticNote,
+    };
+  }
+
+  if (entryMode === 'capture') {
+    const { title, content, url, articleAvailable, captureKind } = context;
+    const src = captureKind === 'url' ? `URL: ${url}` : 'Source: pasted text';
+    const body = articleAvailable
+      ? 'CAPTURED CONTENT:\n' + (content || '').slice(0, 12000)
+      : 'NOTE: Could not retrieve the page content. Be transparent about this, then use your knowledge of the source/topic.';
+    const socraticNote = sessionMode === 'socratic'
+      ? '\n\nSOCRATIC MODE: Ask CB one question at a time about this content. Wait for answers. Correct and build.'
+      : '\n\nTeach: orient → thesis → key points → CB translation → cross-reference to his mental models → decisive action.';
+    return {
+      cached: spine,
+      dynamic: graphSummary + '\n\nSESSION: UNIVERSAL CAPTURE INTELLIGENCE\n' + src + '\nTitle: ' + title + '\n\n' + body + socraticNote,
     };
   }
 
@@ -500,7 +559,14 @@ export async function buildApiMessages(messages) {
     if (m.role === 'user' && m.attachments?.length > 0) {
       const parts = [];
       for (const att of m.attachments) {
-        if (att.type === 'url') parts.push({ type: 'text', text: `[Web URL: ${att.url}] — fetch and analyze.` });
+        if (att.type === 'url') {
+          // Real fetch — Claude can't open a bare URL, so pull the page text
+          // and inject it. Falls back to a transparent note if fetch fails.
+          const art = await fetchArticle(att.url);
+          parts.push({ type: 'text', text: art
+            ? `[Web content from ${att.url}]:\n${art.slice(0, 10000)}`
+            : `[Could not fetch ${att.url} — analyze from your knowledge and note the limitation.]` });
+        }
         else if (att.isImage) parts.push({ type: 'image', source: { type: 'base64', media_type: att.mimeType, data: att.data } });
         else if (att.mimeType === 'application/pdf') parts.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: att.data } });
         else parts.push({ type: 'text', text: `[Document: ${att.name} (${att.label})] — analyze this document.` });
