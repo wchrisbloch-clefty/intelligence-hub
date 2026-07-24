@@ -1,24 +1,58 @@
 import { CB_IDENTITY, CB_LEARNING_SPINE } from './constants.js';
-import { GRAPH_KEY, PROJECTS_KEY, NOTES_KEY, RESEARCH_KEY } from './constants.js';
+import { GRAPH_KEY, PROJECTS_KEY, NOTES_KEY, RESEARCH_KEY, DECISIONS_KEY, INBOX_KEY, QUIZ_KEY } from './constants.js';
 import { SEED_GRAPH, SEED_PROJECTS, SEED_NOTES, SEED_RESEARCH } from './seedData.js';
+import { cloudGet, cloudSet, isCloudSyncEnabled } from './lib/cloudSync.js';
 
 // ─── STORAGE ──────────────────────────────────────────────────────────────
-async function storageGet(key) {
+// Layered store: Supabase (source of truth when signed in) over localStorage
+// (warm cache + offline/local-dev fallback).
+//
+// Reads: try Supabase first when cloud sync is enabled; write the result
+//   through to localStorage so the cache stays warm. If the cloud read fails
+//   or cloud sync is off, serve from localStorage.
+// Writes: hit localStorage synchronously (UI never blocks on the network) and
+//   fire the Supabase upsert in the background.
+function localGet(key) {
   try {
-    if (window.storage) {
-      const r = await window.storage.get(key);
-      return r ? JSON.parse(r.value) : null;
-    }
     const v = localStorage.getItem(key);
     return v ? JSON.parse(v) : null;
   } catch { return null; }
 }
 
+function localSet(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch {}
+}
+
+async function storageGet(key) {
+  if (isCloudSyncEnabled()) {
+    try {
+      const cloud = await cloudGet(key);
+      if (cloud !== null && cloud !== undefined) {
+        localSet(key, cloud); // warm the cache
+        return cloud;
+      }
+      // No cloud row yet: if we have a local value, seed the cloud from it so
+      // this device's existing data survives the first cross-device sync.
+      const local = localGet(key);
+      if (local !== null) { cloudSet(key, local).catch(() => {}); }
+      return local;
+    } catch {
+      // Cloud read failed (offline, transient error) — fall back to cache.
+      return localGet(key);
+    }
+  }
+  return localGet(key);
+}
+
 async function storageSet(key, val) {
-  try {
-    if (window.storage) await window.storage.set(key, JSON.stringify(val));
-    else localStorage.setItem(key, JSON.stringify(val));
-  } catch {}
+  localSet(key, val); // synchronous warm-cache write, UI unblocked
+  if (isCloudSyncEnabled()) {
+    cloudSet(key, val).catch((err) => {
+      if (typeof window !== 'undefined' && window.__newshub_debug__) {
+        console.warn('[cloudSet failed]', key, err?.message || err);
+      }
+    });
+  }
 }
 
 export async function loadGraph() {
@@ -55,6 +89,33 @@ export async function loadResearch() {
 
 export async function saveResearch(threads) {
   await storageSet(RESEARCH_KEY, threads);
+}
+
+export async function loadDecisions() {
+  const saved = await storageGet(DECISIONS_KEY);
+  return saved || [];
+}
+
+export async function saveDecisions(decisions) {
+  await storageSet(DECISIONS_KEY, decisions);
+}
+
+export async function loadInbox() {
+  const saved = await storageGet(INBOX_KEY);
+  return saved || [];
+}
+
+export async function saveInbox(items) {
+  await storageSet(INBOX_KEY, items);
+}
+
+export async function loadQuizResults() {
+  const saved = await storageGet(QUIZ_KEY);
+  return saved || [];
+}
+
+export async function saveQuizResults(results) {
+  await storageSet(QUIZ_KEY, results);
 }
 
 export async function logSession(title, type, durationMin, confidence, notes) {

@@ -218,6 +218,11 @@ export const GRAPH_KEY    = "aether_graph_v1";
 export const PROJECTS_KEY = "aether_projects_v1";
 export const NOTES_KEY    = "aether_notes_v1";
 export const RESEARCH_KEY = "aether_research_v1";
+// Keys for modules folded into the shared storage layer. Values match the
+// original raw-localStorage keys so existing on-device data migrates cleanly.
+export const DECISIONS_KEY = "aether_decisions";
+export const INBOX_KEY     = "aether_inbox";
+export const QUIZ_KEY      = "aether_quiz_results";
 
 export const CONTENT_TYPES = [
   { id: 'nonfiction',  label: 'Non-Fiction / Business', icon: '📊', color: '#00FFB2', examples: 'Business, finance, science, self-help' },
