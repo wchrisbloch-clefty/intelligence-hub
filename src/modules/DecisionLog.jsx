@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude, uid } from '../utils.js';
+import { callClaude, uid, loadDecisions, saveDecisions } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -24,18 +24,18 @@ function daysAgo(ts) { return Math.floor((Date.now() - ts) / 86_400_000); }
 export default function DecisionLog() {
   const { isMobile } = useApp();
 
-  const [decisions, setDecisions] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aether_decisions') || '[]'); } catch { return []; }
-  });
+  const [decisions, setDecisions] = useState([]);
   const [tab,        setTab]        = useState('log');
   const [expandedId, setExpandedId] = useState(null);
   const [form,       setForm]       = useState(BLANK_FORM);
   const [patterns,   setPatterns]   = useState('');
   const [aiLoading,  setAiLoading]  = useState(false);
 
+  useEffect(() => { loadDecisions().then(setDecisions); }, []);
+
   const persist = (updated) => {
     setDecisions(updated);
-    localStorage.setItem('aether_decisions', JSON.stringify(updated));
+    saveDecisions(updated);
   };
 
   const addDecision = () => {

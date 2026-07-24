@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude } from '../utils.js';
+import { callClaude, loadQuizResults, saveQuizResults } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -18,15 +18,6 @@ const PRESET_TOPICS = [
   { id: 'systems',     label: 'Systems Thinking',      icon: '⚙️', desc: 'Tipping points, compounding effects, leverage points' },
   { id: 'stoic',       label: 'Stoic Philosophy',      icon: '🪨', desc: 'Marcus Aurelius, Seneca, Epictetus — adversity as data' },
 ];
-
-const STORAGE_KEY = 'aether_quiz_results';
-
-function loadResults() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
-}
-function saveResults(r) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(r)); } catch {}
-}
 
 function buildQuizPrompt(topic, topicLabel) {
   return `Generate a 6-question self-assessment quiz for CB about: "${topicLabel}"
@@ -78,8 +69,10 @@ export default function QuizCenter() {
   const [generating, setGenerating] = useState(false);
   const [gapReport,  setGapReport]  = useState('');
   const [gapLoading, setGapLoading] = useState(false);
-  const [history,    setHistory]    = useState(loadResults);
+  const [history,    setHistory]    = useState([]);
   const [customTopic, setCustomTopic] = useState('');
+
+  useEffect(() => { loadQuizResults().then(setHistory); }, []);
 
   const pad = isMobile ? '14px' : '24px';
 
@@ -132,7 +125,7 @@ export default function QuizCenter() {
     const entry = { id: Date.now(), topic: topic.label, topicId: topic.id, date: Date.now(), score: mcCorrect, total: mcTotal, results };
     const updated = [entry, ...history].slice(0, 20);
     setHistory(updated);
-    saveResults(updated);
+    saveQuizResults(updated);
     setView('result');
     setGapLoading(true);
     try {

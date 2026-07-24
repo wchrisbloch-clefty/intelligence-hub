@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude, saveNotes, uid } from '../utils.js';
+import { callClaude, saveNotes, uid, loadInbox, saveInbox } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -34,9 +34,7 @@ function shortHost(url) {
 export default function ContentInbox() {
   const { notes, setNotes, isMobile } = useApp();
 
-  const [items, setItems] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('aether_inbox') || '[]'); } catch { return []; }
-  });
+  const [items, setItems] = useState([]);
   const [tab,        setTab]        = useState('inbox');
   const [filter,     setFilter]     = useState('all');
   const [expandedId, setExpandedId] = useState(null);
@@ -45,9 +43,11 @@ export default function ContentInbox() {
   const [title,      setTitle]      = useState('');
   const [analyzing,  setAnalyzing]  = useState(false);
 
+  useEffect(() => { loadInbox().then(setItems); }, []);
+
   const persist = (updated) => {
     setItems(updated);
-    localStorage.setItem('aether_inbox', JSON.stringify(updated));
+    saveInbox(updated);
   };
 
   const analyze = async () => {
