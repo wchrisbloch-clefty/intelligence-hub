@@ -1,0 +1,15 @@
+# Supabase project config.
+# Generated/extended for the scheduled recap functions. If you later run
+# `supabase init`, merge any additional generated sections into this file rather
+# than overwriting these [functions.*] blocks.
+project_id = "hmblakpkglbkyhaghltz"
+
+# Both functions are invoked by pg_cron via net.http_post, which cannot present
+# an end-user JWT. verify_jwt = false lets the request through; the functions
+# instead require the CRON_SECRET via the x-cron-secret header (see
+# _shared/auth.ts) so the endpoints are not publicly triggerable.
+[functions.weekly-recap]
+verify_jwt = false
+
+[functions.monthly-review]
+verify_jwt = false
