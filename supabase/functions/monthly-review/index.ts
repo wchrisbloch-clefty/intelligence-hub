@@ -1,20 +1,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Monthly Profile Review — Supabase Edge Function
 //
-// Reads CB's full Intelligence Hub state from app_state and asks Claude to
-// generate the monthly review: full profile update, cross-project opportunity
-// scan, business ideas, agent upgrades, health optimizations, and book recs.
-// Writes the result back to app_state under `monthly_review_latest`.
+// Reads CB's full Intelligence Hub state from Upstash Redis (the app's store,
+// via /api/storage) and asks Claude to generate the monthly review: full profile
+// update, cross-project opportunity scan, business ideas, agent upgrades, health
+// optimizations, and book recs. Writes the result back to Upstash under
+// `monthly_review_latest`.
 //
 // Runs with verify_jwt=false + an x-cron-secret gate (see _shared/auth.ts).
 //
 // ── DEPLOY (CB runs these locally after `supabase login`) ────────────────────
 //   supabase functions deploy monthly-review --project-ref hmblakpkglbkyhaghltz
 //   # Secrets are shared with weekly-recap (ANTHROPIC_API_KEY, CRON_SECRET,
-//   # optional RECAP_USER_ID) — no need to set them again if already set.
+//   # KV_REST_API_URL, KV_REST_API_TOKEN) — no need to set them again if set.
 // After deploy, schedule it via supabase/functions/schedule.sql.
 // ─────────────────────────────────────────────────────────────────────────────
-import { serviceClient, resolveTargetUserIds, readState, writeState, KEYS } from "../_shared/appState.ts";
+import { readState, writeState, KEYS } from "../_shared/appState.ts";
 import { callAnthropic, RECAP_MODEL } from "../_shared/anthropic.ts";
 import { assertCronSecret, json } from "../_shared/auth.ts";
 import { CB_IDENTITY } from "../_shared/identity.ts";
@@ -121,8 +122,8 @@ mental-model library and the specific decision or project it would sharpen.
 **The Bet:** The single highest-leverage focus for the month ahead.`;
 }
 
-async function generateForUser(sb: any, userId: string) {
-  const state = await readState(sb, userId, [
+async function generateReview() {
+  const state = await readState([
     KEYS.GRAPH, KEYS.PROJECTS, KEYS.RESEARCH, KEYS.DECISIONS, KEYS.QUIZ, KEYS.NOTES,
   ]);
 
@@ -144,7 +145,7 @@ async function generateForUser(sb: any, userId: string) {
     model: RECAP_MODEL,
     content,
   };
-  await writeState(sb, userId, KEYS.MONTHLY_REVIEW, record);
+  await writeState(KEYS.MONTHLY_REVIEW, record);
   return record;
 }
 
@@ -153,22 +154,8 @@ Deno.serve(async (req: Request) => {
   if (denied) return denied;
 
   try {
-    const sb = serviceClient();
-    const userIds = await resolveTargetUserIds(sb);
-    if (userIds.length === 0) {
-      return json({ ok: true, message: "No users found in app_state; nothing to do." });
-    }
-
-    const results: Array<{ userId: string; ok: boolean; error?: string; generatedAtISO?: string }> = [];
-    for (const userId of userIds) {
-      try {
-        const rec = await generateForUser(sb, userId);
-        results.push({ userId, ok: true, generatedAtISO: rec.generatedAtISO });
-      } catch (err) {
-        results.push({ userId, ok: false, error: String((err as Error)?.message ?? err) });
-      }
-    }
-    return json({ ok: true, processed: results.length, results });
+    const record = await generateReview();
+    return json({ ok: true, generatedAtISO: record.generatedAtISO });
   } catch (err) {
     return json({ ok: false, error: String((err as Error)?.message ?? err) }, 500);
   }
