@@ -1,23 +1,24 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Friday Weekly Recap — Supabase Edge Function
 //
-// Reads CB's recent news/research/projects/notes from app_state, asks Claude to
-// generate the Friday recap in the app's established format (NewsHub
-// improvements, Spine updates, active project suggestions, skills upgrades), and
-// writes the result back to app_state under `weekly_recap_latest`.
+// Reads CB's recent news/research/projects/notes from Upstash Redis (the app's
+// store, via /api/storage), asks Claude to generate the Friday recap in the
+// app's established format (NewsHub improvements, Spine updates, active project
+// suggestions, skills upgrades), and writes the result back to Upstash under
+// `weekly_recap_latest`.
 //
 // Runs with verify_jwt=false + an x-cron-secret gate (see _shared/auth.ts).
 //
 // ── DEPLOY (CB runs these locally after `supabase login`) ────────────────────
 //   supabase functions deploy weekly-recap --project-ref hmblakpkglbkyhaghltz
-//   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...   --project-ref hmblakpkglbkyhaghltz
+//   supabase secrets set ANTHROPIC_API_KEY=sk-ant-...        --project-ref hmblakpkglbkyhaghltz
 //   supabase secrets set CRON_SECRET=$(openssl rand -hex 32) --project-ref hmblakpkglbkyhaghltz
-//   # Optional — pin to one user; otherwise every user_id in app_state is processed:
-//   supabase secrets set RECAP_USER_ID=<cb-auth-user-uuid> --project-ref hmblakpkglbkyhaghltz
-// SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are injected automatically.
-// After deploy, schedule it via supabase/functions/schedule.sql.
+//   supabase secrets set KV_REST_API_URL=...                 --project-ref hmblakpkglbkyhaghltz
+//   supabase secrets set KV_REST_API_TOKEN=...               --project-ref hmblakpkglbkyhaghltz
+// (KV_* are the same Upstash creds used by the Vercel app — copy them from the
+// Vercel project's env vars.) After deploy, schedule via functions/schedule.sql.
 // ─────────────────────────────────────────────────────────────────────────────
-import { serviceClient, resolveTargetUserIds, readState, writeState, KEYS } from "../_shared/appState.ts";
+import { readState, writeState, KEYS } from "../_shared/appState.ts";
 import { callAnthropic, RECAP_MODEL } from "../_shared/anthropic.ts";
 import { assertCronSecret, json } from "../_shared/auth.ts";
 import { CB_IDENTITY } from "../_shared/identity.ts";
@@ -107,8 +108,8 @@ resource for each.
 **The Bet:** One decisive recommendation for the week ahead.`;
 }
 
-async function generateForUser(sb: any, userId: string) {
-  const state = await readState(sb, userId, [
+async function generateRecap() {
+  const state = await readState([
     KEYS.PROJECTS, KEYS.RESEARCH, KEYS.INBOX, KEYS.NOTES,
   ]);
 
@@ -128,7 +129,7 @@ async function generateForUser(sb: any, userId: string) {
     model: RECAP_MODEL,
     content,
   };
-  await writeState(sb, userId, KEYS.WEEKLY_RECAP, record);
+  await writeState(KEYS.WEEKLY_RECAP, record);
   return record;
 }
 
@@ -137,22 +138,8 @@ Deno.serve(async (req: Request) => {
   if (denied) return denied;
 
   try {
-    const sb = serviceClient();
-    const userIds = await resolveTargetUserIds(sb);
-    if (userIds.length === 0) {
-      return json({ ok: true, message: "No users found in app_state; nothing to do." });
-    }
-
-    const results: Array<{ userId: string; ok: boolean; error?: string; generatedAtISO?: string }> = [];
-    for (const userId of userIds) {
-      try {
-        const rec = await generateForUser(sb, userId);
-        results.push({ userId, ok: true, generatedAtISO: rec.generatedAtISO });
-      } catch (err) {
-        results.push({ userId, ok: false, error: String((err as Error)?.message ?? err) });
-      }
-    }
-    return json({ ok: true, processed: results.length, results });
+    const record = await generateRecap();
+    return json({ ok: true, generatedAtISO: record.generatedAtISO });
   } catch (err) {
     return json({ ok: false, error: String((err as Error)?.message ?? err) }, 500);
   }
