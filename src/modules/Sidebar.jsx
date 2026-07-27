@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useApp } from '../App.jsx';
 import { NAV_ITEMS } from '../constants.js';
 
@@ -41,7 +42,7 @@ export default function Sidebar({ collapsed, onToggle }) {
           justifyContent: 'center',
           fontSize: 16,
           fontWeight: 700,
-          color: '#1A130A',
+          color: T.canvas,
           flexShrink: 0,
           fontFamily: "'Newsreader', serif",
           boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))',

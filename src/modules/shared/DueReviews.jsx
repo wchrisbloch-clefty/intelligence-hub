@@ -1,7 +1,8 @@
+import { T } from '../../theme';
 import { useState, useEffect } from 'react';
 import { loadIndex, hydrateIndex, dueReviews, gradeTopic, GRADES } from '../../lib/reviews.js';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 
 // "Due for review today" — SM-2 items whose dueAt has passed. Grading a card
 // (Again/Hard/Good/Easy) reschedules it and drops it from today's list.

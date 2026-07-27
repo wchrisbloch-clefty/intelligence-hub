@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildLadderPrompt, buildQuizPrompt } from '../utils.js';
@@ -9,7 +10,7 @@ import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 const PASS_PCT = 70;
 
 const GOALS = [
@@ -117,7 +118,7 @@ export default function LearningLadder() {
             ))}
           </div>
           <button onClick={build} disabled={!topicInput.trim() || generating}
-            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !generating ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !generating ? '#1A130A' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: topicInput.trim() && !generating ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !generating ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !generating ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: topicInput.trim() && !generating ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
             {generating ? 'Designing your path…' : 'Build my ladder →'}
           </button>
           {generating && <div style={{ marginTop: 12, textAlign: 'center' }}><ThinkingDots color={ACCENT} /></div>}
@@ -181,7 +182,7 @@ export default function LearningLadder() {
         const done   = m.status === 'done';
         return (
           <div key={m.id} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-            <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, border: `1.5px solid ${done ? ACCENT : locked ? 'var(--line)' : ACCENT}`, background: done ? ACCENT : 'transparent', color: done ? '#1A130A' : locked ? 'var(--dim)' : ACCENT }}>
+            <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, border: `1.5px solid ${done ? ACCENT : locked ? 'var(--line)' : ACCENT}`, background: done ? ACCENT : 'transparent', color: done ? T.canvas : locked ? 'var(--dim)' : ACCENT }}>
               {done ? '✓' : locked ? '🔒' : i + 1}
             </div>
             <div style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${locked ? 'var(--border-dim)' : done ? 'var(--border)' : ACCENT}`, borderRadius: 10, padding: '12px 14px', opacity: locked ? 0.6 : 1 }}>
@@ -269,7 +270,7 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
             rows={1} placeholder="Ask about this objective…"
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => send(input)} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? '#1A130A' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
         </div>
       </div>
     </div>
@@ -306,7 +307,7 @@ function LadderQuiz({ topic, mod, onComplete, onBack, onDone }) {
         <div style={{ fontSize: 46, fontWeight: 800, color: outcome.passed ? ACCENT : 'var(--red)', marginBottom: 6 }}>{outcome.pct}%</div>
         <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{outcome.passed ? 'Module cleared — next rung unlocked.' : 'Not yet — review and run it again.'}</div>
         <div style={{ fontSize: 12, color: 'var(--dim)', marginBottom: 24 }}>{outcome.passed ? `You passed "${mod.title}".` : `You need ${PASS_PCT}% to advance. This is data, not judgment.`}</div>
-        <div onClick={onDone} style={{ display: 'inline-block', padding: '11px 24px', background: ACCENT, borderRadius: 9, color: '#1A130A', fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Back to ladder →</div>
+        <div onClick={onDone} style={{ display: 'inline-block', padding: '11px 24px', background: ACCENT, borderRadius: 9, color: T.canvas, fontSize: 13, fontWeight: 800, cursor: 'pointer' }}>Back to ladder →</div>
       </div>
     );
   }

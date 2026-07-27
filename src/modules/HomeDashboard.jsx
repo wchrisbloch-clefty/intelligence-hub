@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
@@ -7,6 +8,7 @@ import { ThinkingDots } from './shared/Common.jsx';
 import NavIcon from './shared/NavIcon.jsx';
 import DueReviews from './shared/DueReviews.jsx';
 import CaptureBar from './shared/CaptureBar.jsx';
+import RecapCard from './shared/RecapCard.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 import { getFeed, fmtCount, PLATFORM_META, TIER_META } from '../lib/adapters.js';
 
@@ -45,9 +47,9 @@ const RECO_CACHE_KEY = () => `aether_recos_${new Date().toDateString()}`;
 function OnboardingBanner({ onDismiss }) {
   const { isMobile, isPhone } = useApp();
   const items = [
-    { Icon: Radio,      color: '#D9A441', label: 'Daily Brief',  desc: 'AI-generated signal intel every morning — refresh anytime.' },
-    { Icon: Waves,      color: '#D9A441', label: 'Blue Ocean',   desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
-    { Icon: LayoutGrid, color: '#D9A441', label: '15 Modules',   desc: 'Learn, Ladder, Research, Coach, TED, Quiz, Projects, Vault and more.' },
+    { Icon: Radio,      color: T.accent, label: 'Daily Brief',  desc: 'AI-generated signal intel every morning — refresh anytime.' },
+    { Icon: Waves,      color: T.accent, label: 'Blue Ocean',   desc: 'CB-curated opportunities in Real Estate, Finance, and Longevity.' },
+    { Icon: LayoutGrid, color: T.accent, label: '15 Modules',   desc: 'Learn, Ladder, Research, Coach, TED, Quiz, Projects, Vault and more.' },
   ];
   return (
     <div style={{ margin: '0 0 20px', padding: '14px 18px', background: 'linear-gradient(135deg, rgba(217,164,65,0.05) 0%, rgba(217,164,65,0.05) 100%)', border: '1px solid rgba(217,164,65,0.18)', borderRadius: 12 }}>
@@ -107,7 +109,7 @@ Return ONLY valid JSON (no markdown):
     setLoading(false);
   };
 
-  const typeColors = { book: '#D9A441', video: '#D9A441', action: '#D9A441', concept: '#D9A441' };
+  const typeColors = { book: T.accent, video: T.accent, action: T.accent, concept: T.accent };
 
   return (
     <div style={{ marginBottom: 20 }}>
@@ -133,7 +135,7 @@ Return ONLY valid JSON (no markdown):
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
                 <span style={{ fontSize: 14 }}>{r.icon}</span>
-                <span style={{ fontSize: 9, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: (typeColors[r.type] || '#D9A441') + '18', padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: typeColors[r.type] || 'var(--accent)', background: withAlpha(typeColors[r.type] || T.accent, 9), padding: '2px 6px', borderRadius: 3, textTransform: 'uppercase', letterSpacing: 1 }}>{r.type}</span>
               </div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{r.title}</div>
               <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.5 }}>{r.reason}</div>
@@ -146,21 +148,21 @@ Return ONLY valid JSON (no markdown):
 }
 
 const SIGNALS = [
-  { emoji: '🏘', title: 'Small Multifamily in Transitioning Houston Zips', insight: 'Institutional buyers skip sub-10 unit buildings. AI-driven migration is quietly repricing these before anyone notices.', category: 'Real Estate', color: '#D9A441', urgency: 'HIGH' },
-  { emoji: '🤖', title: 'AI-Augmented BD Professionals', insight: 'First movers who build systematic AI pipelines in BD will have a 10x edge within 18 months. Almost nobody is doing this yet.', category: 'Career Edge', color: '#D9A441', urgency: 'HIGH' },
-  { emoji: '📈', title: 'Covered Calls on Dividend Stacks', insight: 'Systematic covered call writing on dividend portfolios adds 3–5% yield with no extra capital. Almost no retail investors act on it.', category: 'Finance', color: '#D9A441', urgency: 'MED' },
-  { emoji: '⚡', title: 'ERCOT Ancillary Services', insight: 'Texas grid volatility = pricing opportunity in frequency regulation and demand response. Deeply underutilized by non-institutional players.', category: 'Energy/Macro', color: '#D9A441', urgency: 'MED' },
-  { emoji: '🏥', title: 'Longevity Biomarkers Protocol', insight: "Attia's Zone 2 + VO₂Max + muscle mass trifecta: most people optimize none. The compounding return on health at 40+ is asymmetric.", category: 'Longevity', color: '#D9A441', urgency: 'HIGH' },
-  { emoji: '🌐', title: 'Onshoring Infrastructure Play', insight: 'Data centers, chip fabs, and LNG terminals being built at scale. The construction supply chain is the overlooked moat.', category: 'Macro', color: '#D9A441', urgency: 'MED' },
+  { emoji: '🏘', title: 'Small Multifamily in Transitioning Houston Zips', insight: 'Institutional buyers skip sub-10 unit buildings. AI-driven migration is quietly repricing these before anyone notices.', category: 'Real Estate', color: T.accent, urgency: 'HIGH' },
+  { emoji: '🤖', title: 'AI-Augmented BD Professionals', insight: 'First movers who build systematic AI pipelines in BD will have a 10x edge within 18 months. Almost nobody is doing this yet.', category: 'Career Edge', color: T.accent, urgency: 'HIGH' },
+  { emoji: '📈', title: 'Covered Calls on Dividend Stacks', insight: 'Systematic covered call writing on dividend portfolios adds 3–5% yield with no extra capital. Almost no retail investors act on it.', category: 'Finance', color: T.accent, urgency: 'MED' },
+  { emoji: '⚡', title: 'ERCOT Ancillary Services', insight: 'Texas grid volatility = pricing opportunity in frequency regulation and demand response. Deeply underutilized by non-institutional players.', category: 'Energy/Macro', color: T.accent, urgency: 'MED' },
+  { emoji: '🏥', title: 'Longevity Biomarkers Protocol', insight: "Attia's Zone 2 + VO₂Max + muscle mass trifecta: most people optimize none. The compounding return on health at 40+ is asymmetric.", category: 'Longevity', color: T.accent, urgency: 'HIGH' },
+  { emoji: '🌐', title: 'Onshoring Infrastructure Play', insight: 'Data centers, chip fabs, and LNG terminals being built at scale. The construction supply chain is the overlooked moat.', category: 'Macro', color: T.accent, urgency: 'MED' },
 ];
 
 const QUICK_MODULES = [
-  { id: 'learn',    icon: '📚', label: 'Learn',    desc: 'Books, topics, courses',  color: '#D9A441' },
-  { id: 'research', icon: '🔭', label: 'Research',  desc: 'Truth-first analysis',   color: '#D9A441' },
-  { id: 'podcast',  icon: '🎙️', label: 'Podcasts',  desc: 'AI summaries + listen', color: '#D9A441' },
-  { id: 'projects', icon: '🚀', label: 'Projects',  desc: 'Track & ship',           color: '#D9A441' },
-  { id: 'vault',    icon: '🏛', label: 'Vault',     desc: 'Knowledge base',         color: '#D9A441' },
-  { id: 'growth',   icon: '📈', label: 'Growth',    desc: 'Goals & synthesis',      color: '#D9A441' },
+  { id: 'learn',    icon: '📚', label: 'Learn',    desc: 'Books, topics, courses',  color: T.accent },
+  { id: 'research', icon: '🔭', label: 'Research',  desc: 'Truth-first analysis',   color: T.accent },
+  { id: 'podcast',  icon: '🎙️', label: 'Podcasts',  desc: 'AI summaries + listen', color: T.accent },
+  { id: 'projects', icon: '🚀', label: 'Projects',  desc: 'Track & ship',           color: T.accent },
+  { id: 'vault',    icon: '🏛', label: 'Vault',     desc: 'Knowledge base',         color: T.accent },
+  { id: 'growth',   icon: '📈', label: 'Growth',    desc: 'Goals & synthesis',      color: T.accent },
 ];
 
 function RadarChart({ data, size = 160 }) {
@@ -216,7 +218,7 @@ function ProgressRing({ confidence = 5, size = 60, label }) {
   const r      = (size - 8) / 2;
   const circ   = 2 * Math.PI * r;
   const filled = circ * Math.min(confidence / 10, 1);
-  const color  = confidence >= 8 ? '#D9A441' : confidence >= 5 ? 'var(--accent, #D9A441)' : '#D9A441';
+  const color  = confidence >= 8 ? T.accent : confidence >= 5 ? 'var(--accent, #D9A441)' : T.accent;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
@@ -258,7 +260,7 @@ function SectionLabel({ icon, label, action, actionLabel, actionColor = 'var(--a
 
 function SkillBar({ title, confidence = 5 }) {
   const pct   = Math.round((confidence / 10) * 100);
-  const color = confidence >= 8 ? '#D9A441' : confidence >= 5 ? 'var(--accent, #D9A441)' : '#D9A441';
+  const color = confidence >= 8 ? T.accent : confidence >= 5 ? 'var(--accent, #D9A441)' : T.accent;
   const tier  = confidence >= 8 ? 'Expert' : confidence >= 6 ? 'Proficient' : confidence >= 4 ? 'Learning' : 'Beginner';
   return (
     <div style={{ marginBottom: 10 }}>
@@ -430,9 +432,9 @@ Be direct and specific to CB's context. No vague advice.`;
         {/* Action buttons */}
         <div style={{ padding: '14px 20px', borderTop: '1px solid var(--bord2)', display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
           {[
-            { label: 'Study Topic',  id: 'learn',    color: '#D9A441' },
-            { label: 'Research',     id: 'research',  color: '#D9A441' },
-            { label: 'Add Project',  id: 'projects',  color: '#D9A441' },
+            { label: 'Study Topic',  id: 'learn',    color: T.accent },
+            { label: 'Research',     id: 'research',  color: T.accent },
+            { label: 'Add Project',  id: 'projects',  color: T.accent },
           ].map(a => (
             <button key={a.id} onClick={() => { setActiveModule(a.id); onClose(); }}
               style={{ flex: 1, minWidth: 80, padding: '9px 12px', borderRadius: 8, background: `${a.color}12`, border: `1px solid ${a.color}25`, color: a.color, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', letterSpacing: 0.2, outline: 'none' }}>
@@ -538,12 +540,12 @@ Be blunt. No hedging. One decisive line per bullet.`;
       {/* Active Projects */}
       {activeProjects.length > 0 && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '18px 20px' }}>
-          <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor="#D9A441" />
+          <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="All" actionColor={T.accent} />
           {activeProjects.slice(0, 4).map((p, idx) => {
             const done  = (p.milestones || []).filter(m => m.done).length;
             const total = (p.milestones || []).length;
             const pct   = total ? Math.round((done / total) * 100) : 0;
-            const color = p.color || '#D9A441';
+            const color = p.color || T.accent;
             return (
               <div key={p.id} onClick={() => setActiveModule('projects')} style={{ cursor: 'pointer', marginBottom: idx < activeProjects.slice(0, 4).length - 1 ? 12 : 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 5 }}>
@@ -654,7 +656,7 @@ Be blunt. No hedging. One decisive line per bullet.`;
           }}>
             <div style={{ padding: isMobile ? '14px 16px 12px' : '16px 20px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--bord2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(217,164,65,0.15), rgba(217,164,65,0.15))', border: '1px solid rgba(217,164,65,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Zap size={15} strokeWidth={2} color="#D9A441" /></div>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: 'linear-gradient(135deg, rgba(217,164,65,0.15), rgba(217,164,65,0.15))', border: '1px solid rgba(217,164,65,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Zap size={15} strokeWidth={2} color={T.accent} /></div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', letterSpacing: -0.2 }}>Daily Intelligence Brief</div>
                   <div style={{ fontSize: 9, color: 'var(--accent, #D9A441)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
@@ -684,10 +686,15 @@ Be blunt. No hedging. One decisive line per bullet.`;
             </div>
           </div>
 
+          {/* Weekly / Monthly recaps — generated server-side by the recap Edge Functions */}
+          <div style={{ marginBottom: isMobile ? 16 : 20, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
+            <RecapCard />
+          </div>
+
           {/* Blue Ocean Signals */}
           <div style={{ marginBottom: isMobile ? 20 : 24, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
             <div style={{ padding: isMobile ? '0 14px' : '0' }}>
-              <SectionLabel icon={<Waves size={12} strokeWidth={2} />} label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor="#D9A441" />
+              <SectionLabel icon={<Waves size={12} strokeWidth={2} />} label="Blue Ocean Signals" action={() => setActiveModule('research')} actionLabel="Research" actionColor={T.accent} />
             </div>
             {isMobile ? (
               <div style={{ display: 'flex', gap: 10, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', padding: `0 14px 4px` }}>
@@ -743,20 +750,20 @@ Be blunt. No hedging. One decisive line per bullet.`;
 
               {activeProjects.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
-                  <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor="#D9A441" />
+                  <SectionLabel icon={<Rocket size={12} strokeWidth={2} />} label="Active Projects" action={() => setActiveModule('projects')} actionLabel="View all" actionColor={T.accent} />
                   {activeProjects.slice(0, 3).map(p => {
                     const done  = (p.milestones || []).filter(m => m.done).length;
                     const total = (p.milestones || []).length || 1;
                     const pct   = Math.round((done / total) * 100);
                     return (
                       <div key={p.id} onClick={() => setActiveModule('projects')}
-                        style={{ padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${p.color || '#D9A441'}22`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
+                        style={{ padding: '12px 14px', background: 'var(--surface)', border: `1px solid ${withAlpha(p.color || T.accent, 13)}`, borderRadius: 10, cursor: 'pointer', marginBottom: 8 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, marginRight: 8 }}>{p.emoji} {p.title}</div>
-                          <div style={{ fontSize: 11, color: p.color || '#D9A441', fontWeight: 700, flexShrink: 0 }}>{pct}%</div>
+                          <div style={{ fontSize: 11, color: p.color || T.accent, fontWeight: 700, flexShrink: 0 }}>{pct}%</div>
                         </div>
                         <div style={{ background: 'var(--border)', borderRadius: 2, height: 3 }}>
-                          <div style={{ width: `${pct}%`, height: '100%', background: p.color || '#D9A441', borderRadius: 2 }} />
+                          <div style={{ width: `${pct}%`, height: '100%', background: p.color || T.accent, borderRadius: 2 }} />
                         </div>
                       </div>
                     );

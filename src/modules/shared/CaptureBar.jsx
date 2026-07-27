@@ -1,9 +1,10 @@
+import { T } from '../../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { routeIntent } from '../../utils.js';
 import { ThinkingDots } from './Common.jsx';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 const ROUTES = [
   { id: 'learn',    label: 'Learn' },
   { id: 'ladder',   label: 'Ladder' },
@@ -54,7 +55,7 @@ export default function CaptureBar() {
           placeholder="A topic, a question, an idea — no category needed. I'll route it."
           style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '11px 13px', fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
         <button onClick={classify} disabled={!text.trim() || busy}
-          style={{ padding: '11px 16px', background: text.trim() && !busy ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: text.trim() && !busy ? '#1A130A' : 'var(--dim)', fontSize: 14, fontWeight: 800, cursor: text.trim() && !busy ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+          style={{ padding: '11px 16px', background: text.trim() && !busy ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: text.trim() && !busy ? T.canvas : 'var(--dim)', fontSize: 14, fontWeight: 800, cursor: text.trim() && !busy ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
       </div>
 
       {busy && (
@@ -71,7 +72,7 @@ export default function CaptureBar() {
               {result.topic ? <span style={{ color: 'var(--muted)' }}> · {result.topic}</span> : null}
             </div>
             <div onClick={() => go(result.route)}
-              style={{ padding: '6px 14px', background: ACCENT, borderRadius: 8, color: '#1A130A', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Go →</div>
+              style={{ padding: '6px 14px', background: ACCENT, borderRadius: 8, color: T.canvas, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>Go →</div>
           </div>
           {result.rationale && <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4 }}>{result.rationale}</div>}
           <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>

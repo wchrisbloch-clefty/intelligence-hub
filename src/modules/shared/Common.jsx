@@ -1,6 +1,7 @@
+import { T } from '../../theme';
 // Shared primitive UI components — uses CSS variables for theming
 
-export function Btn({ children, onClick, color = '#D9A441', disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
+export function Btn({ children, onClick, color = T.accent, disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
   const pad = { sm: '7px 14px', md: '11px 18px', lg: '14px 22px' }[size];
   const fs = { sm: 11, md: 12, lg: 13 }[size];
   const base = { padding: pad, borderRadius: 10, fontSize: fs, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', transition: 'all 0.15s', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, ...extraStyle };
@@ -55,7 +56,7 @@ export function Card({ children, color, style: extraStyle = {}, onClick }) {
   );
 }
 
-export function Badge({ children, color = '#D9A441' }) {
+export function Badge({ children, color = T.accent }) {
   return (
     <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color, background: `${color}18`, border: `1px solid ${color}30`, borderRadius: 4, padding: '3px 7px', fontWeight: 700 }}>
       {children}
@@ -71,13 +72,13 @@ export function Label({ children, color = 'var(--subtle)' }) {
   );
 }
 
-export function Spinner({ color = '#D9A441', size = 18 }) {
+export function Spinner({ color = T.accent, size = 18 }) {
   return (
     <div style={{ width: size, height: size, border: `2px solid ${color}20`, borderTop: `2px solid ${color}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
   );
 }
 
-export function ThinkingDots({ color = '#D9A441' }) {
+export function ThinkingDots({ color = T.accent }) {
   return (
     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
       {[0, 1, 2].map(j => (
@@ -91,7 +92,7 @@ export function Divider({ style: extraStyle = {} }) {
   return <div style={{ borderTop: '1px solid var(--border-dim)', margin: '16px 0', ...extraStyle }} />;
 }
 
-export function Modal({ children, onClose, title, accent = '#D9A441', width = 520 }) {
+export function Modal({ children, onClose, title, accent = T.accent, width = 520 }) {
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
@@ -110,7 +111,7 @@ export function Modal({ children, onClose, title, accent = '#D9A441', width = 52
   );
 }
 
-export function BottomSheet({ children, onClose, title, accent = '#D9A441' }) {
+export function BottomSheet({ children, onClose, title, accent = T.accent }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: '16px 16px 0 0', padding: '20px 20px 40px', animation: 'fadeUp 0.2s ease' }}>
@@ -161,7 +162,7 @@ export function ChipRow({ chips, selected, onSelect, colorFn }) {
     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
       {chips.map(c => {
         const active = selected === c.id;
-        const color = colorFn ? colorFn(c) : '#D9A441';
+        const color = colorFn ? colorFn(c) : T.accent;
         return (
           <div key={c.id} onClick={() => onSelect(c.id)}
             style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${active ? color : 'var(--bord2)'}`, color: active ? color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: active ? `${color}15` : 'transparent' }}>

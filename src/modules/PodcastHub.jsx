@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, fetchPodcastRSS, fmtDuration, fmtPodDate, saveNotes, uid } from '../utils.js';
@@ -5,7 +6,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT       = '#D9A441';
+const ACCENT       = T.accent;
 const ACCENT_BG    = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER= 'rgba(217,164,65,0.18)';
 
@@ -141,11 +142,11 @@ function PodCard({ ep, idx, onSaveToVault }) {
                     <MD text={aiCache[aiPanel]} color={ACCENT} />
                     {!vaulted && (
                       <div onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }}
-                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#D9A44110', border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
+                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
                         🏛 Save to Vault
                       </div>
                     )}
-                    {vaulted && <div style={{ marginTop: 10, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>}
+                    {vaulted && <div style={{ marginTop: 10, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>}
                   </>
                 : null
             }
@@ -462,10 +463,10 @@ export default function PodcastHub() {
                     <MD text={pasteResult} color={ACCENT} />
                     {!pasteVaulted
                       ? <div onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
-                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: '#D9A44110', border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
+                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
                           🏛 Save to Vault
                         </div>
-                      : <div style={{ marginTop: 10, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>
+                      : <div style={{ marginTop: 10, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>
                     }
                   </>
                 )}

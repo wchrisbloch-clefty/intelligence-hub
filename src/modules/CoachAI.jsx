@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import useChatThread from '../hooks/useChatThread.js';
@@ -6,7 +7,7 @@ import MD from './shared/MD.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#D9A441';
+const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.08)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
@@ -219,7 +220,7 @@ export default function CoachAI() {
             rows={1} placeholder="Be honest. The AI can handle it."
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => send(input)} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? '#1A130A' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
         </div>
       </div>
     </div>

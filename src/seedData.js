@@ -1,3 +1,4 @@
+import { T } from './theme';
 const NOW = Date.now();
 const DAY = 86400000;
 
@@ -90,7 +91,7 @@ export const SEED_PROJECTS = [
     emoji: "🏘",
     status: "active",
     category: "finance",
-    color: "#9BA69B",
+    color: T.textSecondary,
     description: "Build $10K+/mo passive income through strategic Houston-area real estate acquisitions. Target: duplex/triplex value-add plays within 30min of downtown.",
     milestones: [
       { id: "m1", text: "Complete market analysis — zip codes 77002, 77006, 77007", done: true },
@@ -111,7 +112,7 @@ export const SEED_PROJECTS = [
     emoji: "🤝",
     status: "active",
     category: "business",
-    color: "#9BA69B",
+    color: T.textSecondary,
     description: "Systematize BD process to compound deal flow. Build referral network, track conversion rates, identify highest-leverage prospect profiles.",
     milestones: [
       { id: "m1", text: "CRM audit + data hygiene", done: true },
@@ -132,7 +133,7 @@ export const SEED_PROJECTS = [
     emoji: "💰",
     status: "planning",
     category: "finance",
-    color: "#9BA69B",
+    color: T.textSecondary,
     description: "Build dividend income stream targeting $5K/mo within 5 years. Focus on REITs, dividend growth stocks, covered calls overlay to generate extra yield.",
     milestones: [
       { id: "m1", text: "Portfolio strategy document locked", done: true },
@@ -152,7 +153,7 @@ export const SEED_PROJECTS = [
     emoji: "⚡",
     status: "active",
     category: "health",
-    color: "#9BA69B",
+    color: T.textSecondary,
     description: "Implement Attia/Huberman longevity framework. Zone 2 training, strength base, sleep optimization, quarterly bloodwork tracking.",
     milestones: [
       { id: "m1", text: "Baseline bloodwork panel (NMR lipids, hs-CRP, HbA1c, testosterone)", done: true },
@@ -177,7 +178,7 @@ export const SEED_NOTES = [
     tags: ["systems", "real-estate", "mental-models"],
     connections: ["Chip War", "Essays of Warren Buffett", "Real Estate Cash Flow System"],
     createdAt: NOW - DAY * 4,
-    color: "#9BA69B",
+    color: T.textSecondary,
   },
   {
     id: "note_2",
@@ -186,7 +187,7 @@ export const SEED_NOTES = [
     tags: ["negotiation", "bd", "mental-models"],
     connections: ["Never Split the Difference", "BD Pipeline Optimization"],
     createdAt: NOW - DAY * 12,
-    color: "#9BA69B",
+    color: T.textSecondary,
   },
   {
     id: "note_3",
@@ -195,7 +196,7 @@ export const SEED_NOTES = [
     tags: ["relationships", "leadership", "compounding"],
     connections: ["The Snowball Effect", "Transfluence", "7 Habits"],
     createdAt: NOW - DAY * 18,
-    color: "#9BA69B",
+    color: T.textSecondary,
   },
   {
     id: "note_4",
@@ -204,7 +205,7 @@ export const SEED_NOTES = [
     tags: ["real-estate", "blue-ocean", "houston"],
     connections: ["Chip War", "Real Estate Cash Flow System"],
     createdAt: NOW - DAY * 6,
-    color: "#9BA69B",
+    color: T.textSecondary,
   },
 ];
 

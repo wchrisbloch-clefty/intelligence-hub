@@ -1,6 +1,7 @@
+import { T } from '../../theme';
 import { DEPTH_META } from '../../utils.js';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 
 // Shown before a heavy tier runs — never auto-run a research job silently.
 // The user picks: quick take now, or the full sourced Deep Dive.
@@ -16,7 +17,7 @@ export function DepthConfirm({ topic, onQuick, onDeep, onClose }) {
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <div onClick={onDeep}
-              style={{ padding: '8px 14px', borderRadius: 8, background: ACCENT, color: '#1A130A', fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+              style={{ padding: '8px 14px', borderRadius: 8, background: ACCENT, color: T.canvas, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
               ⚡ Build the Deep Dive
             </div>
             <div onClick={onQuick}

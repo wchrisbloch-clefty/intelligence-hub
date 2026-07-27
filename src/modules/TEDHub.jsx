@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
@@ -5,7 +6,7 @@ import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#D9A441';
+const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
@@ -122,7 +123,7 @@ const CURATED_TALKS = [
 ];
 
 function RelevanceDot({ score }) {
-  const color = score >= 9 ? '#D9A441' : score >= 7 ? '#D9A441' : '#D9A441';
+  const color = score >= 9 ? T.accent : score >= 7 ? T.accent : T.accent;
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
@@ -212,7 +213,7 @@ Be blunt. CB-style. No fluff.`;
                   🏛 Save to Vault
                 </button>
               )}
-              {vaulted && <div style={{ marginTop: 8, fontSize: 10, color: '#D9A441' }}>✓ Saved to Vault</div>}
+              {vaulted && <div style={{ marginTop: 8, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>}
             </>
           )}
         </div>

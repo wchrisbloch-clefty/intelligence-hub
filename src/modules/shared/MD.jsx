@@ -1,4 +1,5 @@
-export default function MD({ text, color = '#D9A441' }) {
+import { T } from '../../theme';
+export default function MD({ text, color = T.accent }) {
   return (
     <div>
       {text.split('\n').map((line, i) => {

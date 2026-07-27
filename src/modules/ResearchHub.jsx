@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
@@ -9,10 +10,10 @@ import MD from './shared/MD.jsx';
 import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
 
 const BOARD_COLS = [
-  { id: 'collecting',   label: 'Collecting',   icon: '📥', color: '#D9A441' },
-  { id: 'analyzing',    label: 'Analyzing',    icon: '🔍', color: '#D9A441' },
-  { id: 'synthesizing', label: 'Synthesizing', icon: '⚗️', color: '#D9A441' },
-  { id: 'insights',     label: 'Insights',     icon: '💡', color: '#D9A441' },
+  { id: 'collecting',   label: 'Collecting',   icon: '📥', color: T.accent },
+  { id: 'analyzing',    label: 'Analyzing',    icon: '🔍', color: T.accent },
+  { id: 'synthesizing', label: 'Synthesizing', icon: '⚗️', color: T.accent },
+  { id: 'insights',     label: 'Insights',     icon: '💡', color: T.accent },
 ];
 
 function loadBoard()   { return readLocal(BOARD_KEY, []); }
@@ -98,7 +99,7 @@ function ResearchBoard() {
           <div style={{ fontSize: 10, color: 'var(--dim)' }}>Collect signals → analyze → synthesize → extract insights</div>
         </div>
         {cards.length > 0 && (
-          <div onClick={synthesizeAll} style={{ padding: '7px 16px', background: '#D9A441', borderRadius: 9, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+          <div onClick={synthesizeAll} style={{ padding: '7px 16px', background: T.accent, borderRadius: 9, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
             {synLoading ? '⟳ Synthesizing…' : '✦ AI Synthesize All'}
           </div>
         )}
@@ -106,8 +107,8 @@ function ResearchBoard() {
 
       {synthesis && (
         <div style={{ background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 12, padding: '16px 18px', marginBottom: 20 }}>
-          <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
-          <MD text={synthesis} color="#D9A441" />
+          <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
+          <MD text={synthesis} color={T.accent} />
           <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 10, color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
         </div>
       )}
@@ -189,14 +190,14 @@ const SEARCH_SUGGESTIONS = [
 ];
 
 const SOURCE_LIBRARY = [
-  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker', color: '#D9A441' },
-  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker', color: '#D9A441' },
-  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker', color: '#D9A441' },
-  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author', color: '#D9A441' },
-  { name: 'Warren Buffett', domain: 'Investing', type: 'Author', color: '#D9A441' },
-  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author', color: '#D9A441' },
-  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter', color: '#D9A441' },
-  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter', color: '#D9A441' },
+  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker', color: T.accent },
+  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker', color: T.accent },
+  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker', color: T.accent },
+  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author', color: T.accent },
+  { name: 'Warren Buffett', domain: 'Investing', type: 'Author', color: T.accent },
+  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author', color: T.accent },
+  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter', color: T.accent },
+  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter', color: T.accent },
 ];
 
 export default function ResearchHub() {
@@ -280,7 +281,7 @@ export default function ResearchHub() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
           <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Deep Intelligence Search</div>
           <div style={{ fontSize: 11, color: 'var(--subtle)' }}>CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
         </div>
@@ -291,7 +292,7 @@ export default function ResearchHub() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {[{ id: false, label: '💬 Threads' }, { id: true, label: '🗂 Research Board' }].map(v => (
           <div key={String(v.id)} onClick={() => setBoardView(v.id)}
-            style={{ padding: '7px 16px', fontSize: 12, fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? '#D9A441' : 'var(--border)'}`, background: boardView === v.id ? '#D9A44115' : 'var(--surface)', color: boardView === v.id ? '#D9A441' : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '7px 16px', fontSize: 12, fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? T.accent : 'var(--muted)', transition: 'all 0.12s' }}>
             {v.label}
           </div>
         ))}
@@ -301,13 +302,13 @@ export default function ResearchHub() {
 
       {!boardView && <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 14, padding: '14px 18px', marginBottom: 12 }}>
-          <span style={{ fontSize: 16, color: '#D9A441' }}>🔭</span>
+          <span style={{ fontSize: 16, color: T.accent }}>🔭</span>
           <input value={newQuery} onChange={e => setNewQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
             placeholder="Research a topic, question, or opportunity..."
             style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-b)', fontFamily: 'inherit' }} />
-          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? '#D9A441' : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? '#D9A441' : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
-          {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: '#D9A441', borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
+          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+          {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {SEARCH_SUGGESTIONS.map(s => (
@@ -318,17 +319,17 @@ export default function ResearchHub() {
 
       {!boardView && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 280px', gap: 24 }}>
         <div>
-          <Label color="#D9A441">Research Threads</Label>
+          <Label color={T.accent}>Research Threads</Label>
           {research.length === 0 && <div style={{ fontSize: 12, color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
           {research.map(t => (
-            <Card key={t.id} color="#D9A441" onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
+            <Card key={t.id} color={T.accent} onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{t.title}</div>
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 10 }}>
-                  <Badge color={t.status === 'active' ? '#D9A441' : 'var(--subtle)'}>{t.status}</Badge>
+                  <Badge color={t.status === 'active' ? T.accent : 'var(--subtle)'}>{t.status}</Badge>
                   <div onClick={e => { e.stopPropagation(); deleteThread(t.id); }} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                 </div>
               </div>
@@ -342,7 +343,7 @@ export default function ResearchHub() {
         </div>
 
         <div>
-          <Label color="#D9A441">Source Library</Label>
+          <Label color={T.accent}>Source Library</Label>
           {SOURCE_LIBRARY.map(s => (
             <div key={s.name}
               onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}
@@ -361,11 +362,11 @@ export default function ResearchHub() {
       </div>}
 
       {showNewThread && (
-        <Modal title="New Research Thread" accent="#D9A441" onClose={() => setShowNewThread(false)}>
+        <Modal title="New Research Thread" accent={T.accent} onClose={() => setShowNewThread(false)}>
           <Textarea value={newQuery} onChange={setNewQuery} placeholder="What do you want to research? Be specific — the more context, the better the response." rows={4} />
           <div style={{ display: 'flex', gap: 8 }}>
             <div onClick={() => setShowNewThread(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-            <div onClick={() => newQuery.trim() && startThread(newQuery)} style={{ flex: 2, padding: '11px', background: '#D9A441', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>Research →</div>
+            <div onClick={() => newQuery.trim() && startThread(newQuery)} style={{ flex: 2, padding: '11px', background: T.accent, borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>Research →</div>
           </div>
         </Modal>
       )}
@@ -382,7 +383,7 @@ export default function ResearchHub() {
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', maxWidth: 500 }}>{thread?.title}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? '#D9A441' : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? '#D9A441' : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           </div>
         </div>
       </div>
@@ -394,8 +395,8 @@ export default function ResearchHub() {
               <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '80%', fontSize: 13, lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
-                <MD text={msg.content} color="#D9A441" />
+                <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
+                <MD text={msg.content} color={T.accent} />
               </div>
             )}
           </div>
@@ -403,10 +404,10 @@ export default function ResearchHub() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
             <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
               {stream
-                ? <MD text={stream + '▍'} color="#D9A441" />
-                : <ThinkingDots color="#D9A441" />}
+                ? <MD text={stream + '▍'} color={T.accent} />
+                : <ThinkingDots color={T.accent} />}
             </div>
           </div>
         )}
@@ -420,7 +421,7 @@ export default function ResearchHub() {
             rows={1} placeholder="Follow-up question, contrarian challenge, or deeper dive..."
             style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => sendMessage(activeThread, research, searchInput, messages)} disabled={!searchInput.trim() || loading}
-            style={{ padding: '10px 16px', background: searchInput.trim() ? '#D9A441' : 'var(--bord2)', border: 'none', borderRadius: 10, color: searchInput.trim() ? '#fff' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
+            style={{ padding: '10px 16px', background: searchInput.trim() ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 10, color: searchInput.trim() ? '#fff' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
         </div>
       </div>
     </div>
