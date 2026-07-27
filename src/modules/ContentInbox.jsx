@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
@@ -8,7 +9,7 @@ const INBOX_KEY = 'aether_inbox';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#D9A441';
+const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
@@ -21,7 +22,7 @@ const FILTERS = [
 ];
 
 const TYPE_ICON  = { article: '📰', video: '▶️', social: '💬', note: '📝' };
-const TYPE_COLOR = { article: '#D9A441', video: '#D9A441', social: '#D9A441', note: '#D9A441' };
+const TYPE_COLOR = { article: T.accent, video: T.accent, social: T.accent, note: T.accent };
 
 function detectType(url) {
   if (!url) return 'note';
@@ -239,7 +240,7 @@ export default function ContentInbox() {
                           )}
                           <span style={{ fontSize: isMobile ? 10 : 9, color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
                           <span style={{ fontSize: isMobile ? 10 : 9, padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
-                          {item.inVault && <span style={{ fontSize: isMobile ? 10 : 9, color: '#D9A441', fontWeight: 600 }}>✓ Vaulted</span>}
+                          {item.inVault && <span style={{ fontSize: isMobile ? 10 : 9, color: T.accent, fontWeight: 600 }}>✓ Vaulted</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
@@ -258,7 +259,7 @@ export default function ContentInbox() {
                       <MD text={item.summary} color={ACCENT} />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
                         <div onClick={() => copyToClipboard(item.id, item.summary)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? '#D9A441' : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? T.accent : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
                           {copiedId === item.id ? '✓ Copied!' : 'Copy'}
                         </div>
                         <div onClick={() => reanalyze(item)}
@@ -267,12 +268,12 @@ export default function ContentInbox() {
                         </div>
                         {!item.inVault && (
                           <div onClick={() => saveToVault(item)}
-                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
+                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: T.accent, cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
                             🏛 Save to Vault
                           </div>
                         )}
                         <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: '#D9A441', cursor: 'pointer', background: '#D9A44110', minHeight: isMobile ? 40 : undefined }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: T.accent, cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
                           🚀 Save to Project
                         </div>
                       </div>

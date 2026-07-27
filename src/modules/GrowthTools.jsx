@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
@@ -6,27 +7,27 @@ import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Btn, ThinkingDots } from './shared/Common.jsx';
 
 const GOALS = [
-  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: '#D9A441', icon: '💰', horizon: '3-5 years' },
-  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: '#D9A441', icon: '⚡', horizon: 'Ongoing' },
-  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: '#D9A441', icon: '📊', horizon: '5 years' },
-  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: '#D9A441', icon: '📚', horizon: '2025' },
+  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: T.accent, icon: '💰', horizon: '3-5 years' },
+  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: T.accent, icon: '⚡', horizon: 'Ongoing' },
+  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: T.accent, icon: '📊', horizon: '5 years' },
+  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: T.accent, icon: '📚', horizon: '2025' },
 ];
 
 const SKILLS = [
-  { name: 'Business Development', level: 9, growth: '+0', color: '#D9A441' },
-  { name: 'Real Estate Investing', level: 6, growth: '+2', color: '#D9A441' },
-  { name: 'Negotiation', level: 8, growth: '+1', color: '#D9A441' },
-  { name: 'Capital Allocation', level: 5, growth: '+1', color: '#D9A441' },
-  { name: 'Stoic Leadership', level: 8, growth: '0', color: '#D9A441' },
-  { name: 'Systems Thinking', level: 7, growth: '+1', color: '#D9A441' },
-  { name: 'Health/Longevity', level: 7, growth: '+2', color: '#D9A441' },
-  { name: 'AI/Technology', level: 4, growth: '+2', color: '#D9A441' },
+  { name: 'Business Development', level: 9, growth: '+0', color: T.accent },
+  { name: 'Real Estate Investing', level: 6, growth: '+2', color: T.accent },
+  { name: 'Negotiation', level: 8, growth: '+1', color: T.accent },
+  { name: 'Capital Allocation', level: 5, growth: '+1', color: T.accent },
+  { name: 'Stoic Leadership', level: 8, growth: '0', color: T.accent },
+  { name: 'Systems Thinking', level: 7, growth: '+1', color: T.accent },
+  { name: 'Health/Longevity', level: 7, growth: '+2', color: T.accent },
+  { name: 'AI/Technology', level: 4, growth: '+2', color: T.accent },
 ];
 
 const CERTS = [
-  { name: 'Real Estate License', status: 'exploring', color: '#D9A441' },
-  { name: 'CFA Level 1', status: 'exploring', color: '#D9A441' },
-  { name: 'Options Trading (CBOE)', status: 'exploring', color: '#D9A441' },
+  { name: 'Real Estate License', status: 'exploring', color: T.accent },
+  { name: 'CFA Level 1', status: 'exploring', color: T.accent },
+  { name: 'Options Trading (CBOE)', status: 'exploring', color: T.accent },
 ];
 
 export default function GrowthTools() {
@@ -106,17 +107,17 @@ export default function GrowthTools() {
   return (
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: '#D9A441', textTransform: 'uppercase', marginBottom: 6 }}>Growth & Synthesis</div>
+        <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Growth & Synthesis</div>
         <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Compounding Dashboard</div>
         <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Goals · Skills · Synthesis · Certifications</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
         {[
-          { label: 'Avg Confidence', value: avgConf + '/10', color: '#D9A441', icon: '🎯' },
-          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: '#D9A441', icon: '✓' },
-          { label: 'Streak', value: streak + 'd', color: '#D9A441', icon: '🔥' },
-          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: '#D9A441', icon: '⏱' },
+          { label: 'Avg Confidence', value: avgConf + '/10', color: T.accent, icon: '🎯' },
+          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: T.accent, icon: '✓' },
+          { label: 'Streak', value: streak + 'd', color: T.accent, icon: '🔥' },
+          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: T.accent, icon: '⏱' },
         ].map(s => (
           <Card key={s.label} color={s.color} style={{ padding: '14px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
@@ -129,7 +130,7 @@ export default function GrowthTools() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
         {tabs.map(t => (
           <div key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? '#D9A441' : 'var(--subtle)', cursor: 'pointer', borderBottom: activeTab === t.id ? '2px solid #D9A441' : '2px solid transparent', marginBottom: -1 }}>
+            style={{ padding: '8px 16px', fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? T.accent : 'var(--subtle)', cursor: 'pointer', borderBottom: activeTab === t.id ? '2px solid #D9A441' : '2px solid transparent', marginBottom: -1 }}>
             {t.label}
           </div>
         ))}
@@ -186,7 +187,7 @@ export default function GrowthTools() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ fontSize: 9, color: s.growth.startsWith('+') ? '#D9A441' : 'var(--subtle)' }}>{s.growth}</div>
+                      <div style={{ fontSize: 9, color: s.growth.startsWith('+') ? T.accent : 'var(--subtle)' }}>{s.growth}</div>
                       <div style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{s.level}/10</div>
                       <div style={{ fontSize: 9, color: isExp ? s.color : 'var(--dim)', transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</div>
                     </div>
@@ -207,8 +208,8 @@ export default function GrowthTools() {
               );
             })}
           </div>
-          <div style={{ marginTop: 16, padding: '12px 16px', background: '#D9A44108', border: '1px solid #D9A44120', borderRadius: 10 }}>
-            <div style={{ fontSize: 10, color: '#D9A441', marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>
+          <div style={{ marginTop: 16, padding: '12px 16px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44120', borderRadius: 10 }}>
+            <div style={{ fontSize: 10, color: T.accent, marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>
             <div style={{ fontSize: 12, color: 'var(--text-c)' }}>AI/Technology (currently 4/10) — highest asymmetric upside given your BD + real estate focus. A BD professional fluent in AI tools is a rare, compounding edge.</div>
           </div>
         </div>
@@ -226,15 +227,15 @@ export default function GrowthTools() {
             </div>
           </div>
           {synthLoading && (
-            <Card color="#D9A441" style={{ padding: '20px' }}>
-              <div style={{ fontSize: 10, color: '#D9A441', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Analyzing your growth trajectory...</div>
-              <ThinkingDots color="#D9A441" />
+            <Card color={T.accent} style={{ padding: '20px' }}>
+              <div style={{ fontSize: 10, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Analyzing your growth trajectory...</div>
+              <ThinkingDots color={T.accent} />
             </Card>
           )}
           {synthesis && !synthLoading && (
-            <Card color="#D9A441" style={{ padding: '20px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: '#D9A441', textTransform: 'uppercase', marginBottom: 14 }}>Growth Synthesis · CB Intelligence</div>
-              <MD text={synthesis} color="#D9A441" />
+            <Card color={T.accent} style={{ padding: '20px' }}>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 14 }}>Growth Synthesis · CB Intelligence</div>
+              <MD text={synthesis} color={T.accent} />
             </Card>
           )}
           {!synthesis && !synthLoading && (
@@ -252,13 +253,13 @@ export default function GrowthTools() {
                 {topics.filter(t => t.confidence >= 7).slice(0, 5).map(t => (
                   <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontSize: 12, color: 'var(--text-c)' }}>✓ {t.title}</div>
-                    <div style={{ fontSize: 10, color: '#D9A441' }}>Strong ({t.confidence}/10)</div>
+                    <div style={{ fontSize: 10, color: T.accent }}>Strong ({t.confidence}/10)</div>
                   </div>
                 ))}
                 {topics.filter(t => t.confidence < 5).slice(0, 3).map(t => (
                   <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid #C4553D20', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ fontSize: 12, color: 'var(--text-c)' }}>⚠ {t.title}</div>
-                    <div style={{ fontSize: 10, color: '#D9A441' }}>Needs work ({t.confidence}/10)</div>
+                    <div style={{ fontSize: 10, color: T.accent }}>Needs work ({t.confidence}/10)</div>
                   </div>
                 ))}
               </div>

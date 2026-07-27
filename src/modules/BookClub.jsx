@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
@@ -55,7 +56,7 @@ export default function BookClub() {
 
   const addBook = () => {
     if (!addTitle.trim()) return;
-    const book = { title: addTitle.trim(), author: addAuthor.trim() || 'Unknown', type: 'other', color: '#D9A441', custom: true, note: addNote.trim() };
+    const book = { title: addTitle.trim(), author: addAuthor.trim() || 'Unknown', type: 'other', color: T.accent, custom: true, note: addNote.trim() };
     saveCustom([...customBooks, book]);
     setAddTitle(''); setAddAuthor(''); setAddNote('');
     setTab('library');
@@ -119,7 +120,7 @@ export default function BookClub() {
       <div style={{ padding: `0 ${pad}`, display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
         {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: tab === t.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: tab === t.id ? '#D9A441' : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: tab === t.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: tab === t.id ? T.accent : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
             {t.label}
           </button>
         ))}
@@ -145,7 +146,7 @@ export default function BookClub() {
                   {search ? `No books match "${search}"` : 'No books in your library yet.'}
                 </div>
                 <button onClick={() => { setSearch(''); setTab('add'); }}
-                  style={{ padding: '9px 20px', background: '#D9A441', color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '9px 20px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   + Add a Book
                 </button>
               </div>
@@ -157,21 +158,21 @@ export default function BookClub() {
                 return (
                   <div key={i}
                     onClick={() => { setSelectedBook(book); setMode('overview'); setResult(''); setTab('dive'); }}
-                    style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? '#D9A441' : (book.color || '#D9A441') + '22'}`, borderTop: `3px solid ${book.color || '#D9A441'}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
-                    <div style={{ fontSize: 9, color: book.color || '#D9A441', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                    style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? T.accent : withAlpha(book.color || T.accent, 13)}`, borderTop: `3px solid ${book.color || T.accent}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
+                    <div style={{ fontSize: 9, color: book.color || T.accent, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
                       {book.type || 'General'}
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4 }}>{book.title}</div>
                     <div style={{ fontSize: 10, color: 'var(--muted)' }}>{book.author}</div>
                     {book.custom && (
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                        <div style={{ fontSize: 8, color: '#D9A441', fontWeight: 700 }}>CUSTOM</div>
+                        <div style={{ fontSize: 8, color: T.accent, fontWeight: 700 }}>CUSTOM</div>
                         <div onClick={(e) => { e.stopPropagation(); const idx = customBooks.findIndex(b => b.title === book.title); if (idx !== -1) removeCustom(idx); }}
                           style={{ fontSize: 9, color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px' }}>✕</div>
                       </div>
                     )}
                     {book.note && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
-                    <div style={{ marginTop: 10, fontSize: 9, color: '#D9A441', fontWeight: 700 }}>🤿 Deep Dive →</div>
+                    <div style={{ marginTop: 10, fontSize: 9, color: T.accent, fontWeight: 700 }}>🤿 Deep Dive →</div>
                   </div>
                 );
               })}
@@ -202,7 +203,7 @@ export default function BookClub() {
                 style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
             <button onClick={addBook} disabled={!addTitle.trim()}
-              style={{ padding: '11px 24px', background: addTitle.trim() ? '#D9A441' : 'var(--surf2)', color: addTitle.trim() ? '#fff' : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: addTitle.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              style={{ padding: '11px 24px', background: addTitle.trim() ? T.accent : 'var(--surf2)', color: addTitle.trim() ? '#fff' : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: addTitle.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
               Add to Library
             </button>
           </div>
@@ -216,14 +217,14 @@ export default function BookClub() {
                 <div style={{ fontSize: 32, marginBottom: 12 }}>📖</div>
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Select a book from the Library to deep dive</div>
                 <button onClick={() => setTab('library')}
-                  style={{ padding: '9px 20px', background: '#D9A441', color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '9px 20px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Browse Library
                 </button>
               </div>
             ) : (
               <div>
                 {/* Selected book header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid #D9A44130`, borderLeft: `3px solid ${selectedBook.color || '#D9A441'}`, borderRadius: 12, marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid #D9A44130`, borderLeft: `3px solid ${selectedBook.color || T.accent}`, borderRadius: 12, marginBottom: 20 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{selectedBook.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{selectedBook.author}</div>
@@ -239,28 +240,28 @@ export default function BookClub() {
                 <div style={{ display: 'grid', gridTemplateColumns: modeCol, gap: 8, marginBottom: 20 }}>
                   {STUDY_MODES.map(m => (
                     <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
-                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(217,164,65,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? '#D9A441' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
+                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(217,164,65,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
                       <div style={{ fontSize: 16 }}>{m.icon}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? '#D9A441' : 'var(--text)', marginTop: 4 }}>{m.label}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? T.accent : 'var(--text)', marginTop: 4 }}>{m.label}</div>
                       <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
                     </button>
                   ))}
                 </div>
 
                 <button onClick={handleDeepDive} disabled={loading}
-                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : '#D9A441', color: loading ? 'var(--dim)' : '#fff', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : '#fff', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                   {loading
                     ? 'Generating…'
                     : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
                   }
                 </button>
 
-                {loading && <ThinkingDots color="#D9A441" />}
+                {loading && <ThinkingDots color={T.accent} />}
 
                 {result && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                      <div style={{ fontSize: 9, color: '#D9A441', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
+                      <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
                         {STUDY_MODES.find(m => m.id === mode)?.icon} {STUDY_MODES.find(m => m.id === mode)?.label}
                       </div>
                       <button onClick={() => navigator.clipboard?.writeText(result)}
@@ -268,7 +269,7 @@ export default function BookClub() {
                         Copy
                       </button>
                     </div>
-                    <MD text={result} color="#D9A441" />
+                    <MD text={result} color={T.accent} />
                   </div>
                 )}
               </div>

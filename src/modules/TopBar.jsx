@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { NAV_ITEMS } from '../constants.js';
@@ -52,7 +53,7 @@ export default function TopBar() {
       {filtered.map((s, i) => (
         <div key={i} onClick={() => { setActiveModule(s.module); setSearchQuery(''); setSearchFocused(false); }}
           style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: i < filtered.length - 1 ? '1px solid var(--bord2)' : 'none' }}>
-          <span style={{ fontSize: 9, color: s.type === 'project' ? '#D9A441' : 'var(--accent, #D9A441)', background: s.type === 'project' ? 'rgba(217,164,65,0.12)' : 'var(--accent-glow, rgba(217,164,65,0.1))', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
+          <span style={{ fontSize: 9, color: s.type === 'project' ? T.accent : 'var(--accent, #D9A441)', background: s.type === 'project' ? 'rgba(217,164,65,0.12)' : 'var(--accent-glow, rgba(217,164,65,0.1))', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
           <span style={{ fontSize: 13, color: 'var(--text-b)' }}>{s.label}</span>
         </div>
       ))}
@@ -65,7 +66,7 @@ export default function TopBar() {
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 40, position: 'relative' }}>
         <div style={{ height: 54, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#1A130A', fontFamily: "'Newsreader', serif", flexShrink: 0 }}>FR</div>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0 }}>FR</div>
           </div>
           <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: `1.5px solid ${searchFocused ? 'var(--accent, #D9A441)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 12px', transition: 'border-color 0.15s', boxShadow: searchFocused ? '0 0 0 3px var(--accent-glow, rgba(217,164,65,0.1))' : 'none' }}>
@@ -79,7 +80,7 @@ export default function TopBar() {
                 style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-b)', fontFamily: 'inherit', minWidth: 0 }}
               />
               {voiceOk && (
-                <span onClick={() => toggleVoice(t => setSearchQuery(t))} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? '#C4553D' : 'var(--dim)', flexShrink: 0 }}>
+                <span onClick={() => toggleVoice(t => setSearchQuery(t))} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>
                   🎙️
                 </span>
               )}
@@ -112,7 +113,7 @@ export default function TopBar() {
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0, marginRight: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: '#1A130A', fontFamily: "'Newsreader', serif", flexShrink: 0, boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))' }}>FR</div>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0, boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))' }}>FR</div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1, whiteSpace: 'nowrap' }}>The Film Room</div>
             <div style={{ fontSize: 8, letterSpacing: 2.5, color: 'var(--accent, #D9A441)', textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>Intelligence</div>
@@ -133,7 +134,7 @@ export default function TopBar() {
               style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text)', fontFamily: 'inherit' }}
             />
             {voiceOk && (
-              <span onClick={() => toggleVoice(t => setSearchQuery(t))} title={voiceListening ? 'Stop' : 'Voice search'} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? '#C4553D' : 'var(--dim)', flexShrink: 0 }}>🎙️</span>
+              <span onClick={() => toggleVoice(t => setSearchQuery(t))} title={voiceListening ? 'Stop' : 'Voice search'} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>🎙️</span>
             )}
             {searchQuery
               ? <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>Ask AI →</span>

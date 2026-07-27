@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useEffect, useCallback } from 'react';
 
 // Gates the whole app behind ACCESS_CODE. Checks the signed cookie on mount,
@@ -96,7 +97,7 @@ function LockScreen({ onUnlock }) {
           style={{
             width: '100%', padding: '13px', borderRadius: 8, border: 'none', cursor: busy || !code.trim() ? 'default' : 'pointer',
             background: busy || !code.trim() ? 'var(--surf2, var(--surface))' : 'var(--accent, #D9A441)',
-            color: busy || !code.trim() ? 'var(--chalk-dim, var(--muted))' : '#1A130A',
+            color: busy || !code.trim() ? 'var(--chalk-dim, var(--muted))' : T.canvas,
             fontSize: 14, fontWeight: 700, fontFamily: 'inherit', minHeight: 44,
           }}
         >

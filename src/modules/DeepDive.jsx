@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, timeAgo, DEPTH_META } from '../utils.js';
@@ -7,7 +8,7 @@ import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import { GoingDeepBanner } from './shared/DepthControls.jsx';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 const DEPTHS = ['deep', 'expert']; // a dive is always a heavy, sourced tier
 
 export default function DeepDive() {
@@ -123,7 +124,7 @@ export default function DeepDive() {
             ))}
           </div>
           <button onClick={build} disabled={!topicInput.trim() || running}
-            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !running ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !running ? '#1A130A' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: topicInput.trim() && !running ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !running ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !running ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: topicInput.trim() && !running ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
             ⚡ Build Deep Dive →
           </button>
           <div style={{ fontSize: 9.5, color: 'var(--dim)', marginTop: 8, textAlign: 'center' }}>Pulls live sources and cites as it goes — takes longer than a quick answer.</div>
@@ -219,7 +220,7 @@ export default function DeepDive() {
               placeholder="Add a new angle (e.g. regulatory risk in the EU)…"
               style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 12, color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none' }} />
             <button onClick={keepGoingAngle} disabled={!angle.trim()}
-              style={{ padding: '9px 14px', background: angle.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: angle.trim() ? '#1A130A' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: angle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>Add</button>
+              style={{ padding: '9px 14px', background: angle.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: angle.trim() ? T.canvas : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: angle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>Add</button>
           </div>
           <div onClick={keepGoingRefresh}
             style={{ padding: '9px 12px', textAlign: 'center', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>

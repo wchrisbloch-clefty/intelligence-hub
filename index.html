@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#111A16" />
+  <meta name="theme-color" content="#F7F8FA" />
   <title>The Film Room — Intelligence Hub</title>
   <!-- PWA: installable, Film-Room themed, standalone on iPad/phone -->
   <link rel="manifest" href="/manifest.json" />
@@ -16,41 +16,146 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      /* ── The Film Room token system ── */
-      --ink:            #111A16;   /* chalkboard background — warm pine-charcoal */
-      --surface:        #18231E;   /* raised card tone */
-      --chalk:          #F2EFE6;   /* primary text — warm off-white */
-      --chalk-dim:      #9BA69B;   /* secondary text */
-      --accent:         #D9A441;   /* single confident brass — active/progress/CTA only */
-      --line:           #2A362F;   /* hairline dividers */
 
-      /* Derived / legacy aliases (whole app reads these) */
+  <!-- No-flash: set data-theme before first paint, or the page paints light
+       then snaps to dark on hydrate. Must run before the stylesheet below. -->
+  <script>
+    (function(){try{
+      var s=localStorage.getItem('fr-theme');
+      var t=(s==='light'||s==='dark')?s:(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+      document.documentElement.setAttribute('data-theme',t);
+      var m=document.querySelector('meta[name="theme-color"]');
+      if(m)m.setAttribute('content',t==='dark'?'#0D1117':'#F7F8FA');
+    }catch(e){}})();
+  </script>
+
+  <style>
+    /* ═══ LIGHT — the default ═══════════════════════════════════════════════
+       Names are inherited from the Film Room build. A few now read backwards
+       (--ink is a light page, --chalk is dark text) but renaming them would
+       mean touching 1,400 call sites for zero behavior change. They're aliases;
+       the values are what matter. */
+    :root {
+      color-scheme: light;
+
+      --ink:            #F7F8FA;   /* page — a step below cards, so cards lift */
+      --surface:        #FFFFFF;   /* card */
+      --chalk:          #0B1220;   /* primary text — near-black, never #000 */
+      --chalk-dim:      #4A5568;   /* secondary text */
+      --accent:         #1B5FD9;   /* the single blue. Actions and state only. */
+      --line:           #E3E8EF;   /* hairline */
+
       --bg:            var(--ink);
-      --bg-alt:        #0D140F;
-      --bg-nav:        #0F1712;
-      --surf2:         #1F2C25;
+      --bg-alt:        #EFF2F6;
+      --bg-nav:        #FFFFFF;
+      --surf2:         #F1F4F8;
       --border:        var(--line);
-      --bord2:         rgba(242,239,230,0.06);
-      --border-dim:    rgba(242,239,230,0.03);
-      --overlay:       rgba(9,14,11,0.86);
+      --bord2:         rgba(11,18,32,0.08);
+      --border-dim:    rgba(11,18,32,0.04);
+      --overlay:       rgba(11,18,32,0.45);
       --text:          var(--chalk);
-      --text-b:        #DCD9CE;
-      --text-c:        #C4C2B6;
+      --text-b:        #1F2937;
+      --text-c:        #374151;
       --muted:         var(--chalk-dim);
-      --subtle:        #7C877C;
-      --dim:           #5E685E;
-      --u-bubble:      #1F2C25;
-      --u-bubble-b:    #2A362F;
-      --u-bubble-text: #DCD9CE;
-      --scrollbar:     #2A362F;
-      --scrollbar-h:   #3A4740;
-      --accent-glow:   rgba(217,164,65,0.12);
-      --accent2:       #B8862E;
+      --subtle:        #6B7686;
+      --dim:           #8A94A6;
+      --u-bubble:      #EBF2FE;
+      --u-bubble-b:    #BBD2F8;
+      --u-bubble-text: #0B1220;
+      --scrollbar:     #CBD3DF;
+      --scrollbar-h:   #A9B4C4;
+      --accent-glow:   rgba(27,95,217,0.10);
+      --accent2:       #164BAE;
       --gold:          var(--accent);
-      --green:         #86A67A;
-      --red:           #C4553D;
+      --green:         #0F7B6C;
+      --red:           #B3261E;
+
+      /* ── Provenance tiers ──────────────────────────────────────────────
+         Trust, not attention. Engagement counts never render in these. */
+      --tier-verified: #0F7B6C;
+      --tier-reported: #1B5FD9;
+      --tier-inferred: #9A6700;
+      --tier-uncited:  #8A94A6;
+
+      /* ── Semantic aliases for new code ─────────────────────────────────
+         Same values, honest names. Write these going forward; the legacy
+         names above stay so nothing has to be rewritten at once. */
+      --canvas:         var(--ink);
+      --surface-raised: var(--surface);
+      --surface-sunken: var(--bg-alt);
+      --rule:           var(--line);
+      --rule-strong:    #CBD3DF;
+      --text-primary:   var(--chalk);
+      --text-secondary: var(--chalk-dim);
+      --text-tertiary:  var(--dim);
+      --text-inverse:   #FFFFFF;
+      --accent-hover:   var(--accent2);
+      --accent-wash:    var(--u-bubble);
+      --accent-border:  var(--u-bubble-b);
+      --on-accent:      #FFFFFF;
+      --positive:       var(--green);
+      --caution:        #9A6700;
+      --negative:       var(--red);
+
+      --shadow-sm: 0 1px 2px rgba(11,18,32,0.05);
+      --shadow-md: 0 2px 8px rgba(11,18,32,0.07);
+      --shadow-lg: 0 8px 28px rgba(11,18,32,0.10);
+
+      --font-display: 'Newsreader', Georgia, serif;
+      --font-sans:    'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono:    ui-monospace, 'SF Mono', Menlo, monospace;
+
+      --radius-sm: 4px; --radius: 8px; --radius-lg: 12px;
+      --read-max: 68ch;
+    }
+
+    /* ═══ DARK ══════════════════════════════════════════════════════════════
+       Not an inversion. Shadows stop working, so elevation moves to surface
+       luminance. The accent lifts to hold its weight. Text stops short of
+       pure white — #FFF on near-black glares. */
+    [data-theme="dark"] {
+      color-scheme: dark;
+
+      --ink:            #0D1117;
+      --surface:        #161B22;
+      --chalk:          #E6EAF0;
+      --chalk-dim:      #A0AAB8;
+      --accent:         #5B9BFF;
+      --line:           #2A3140;
+
+      --bg-alt:        #090D13;
+      --bg-nav:        #12171F;
+      --surf2:         #1C2330;
+      --bord2:         rgba(230,234,240,0.08);
+      --border-dim:    rgba(230,234,240,0.04);
+      --overlay:       rgba(5,8,13,0.86);
+      --text-b:        #D3DAE4;
+      --text-c:        #BAC3D0;
+      --subtle:        #7B8696;
+      --dim:           #6B7686;
+      --u-bubble:      #12233F;
+      --u-bubble-b:    #24406B;
+      --u-bubble-text: #E6EAF0;
+      --scrollbar:     #2A3140;
+      --scrollbar-h:   #3B4453;
+      --accent-glow:   rgba(91,155,255,0.14);
+      --accent2:       #7DB0FF;
+      --green:         #3FD0B8;
+      --red:           #F2726B;
+
+      --tier-verified: #3FD0B8;
+      --tier-reported: #5B9BFF;
+      --tier-inferred: #E3B341;
+      --tier-uncited:  #6B7686;
+
+      --rule-strong:   #3B4453;
+      --text-inverse:  #0B1220;
+      --on-accent:     #0B1220;
+      --caution:       #E3B341;
+
+      --shadow-sm: none;
+      --shadow-md: none;
+      --shadow-lg: 0 8px 28px rgba(0,0,0,0.5);
     }
 
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -58,25 +163,28 @@
     body {
       background: var(--bg);
       color: var(--text-b);
-      font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: var(--font-sans);
       -webkit-font-smoothing: antialiased;
       overflow: hidden;
+      transition: background 120ms ease, color 120ms ease;
     }
+
     ::-webkit-scrollbar { width: 3px; height: 3px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 2px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-h); }
 
-    /* Visible keyboard focus — accessibility */
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
-    @keyframes pulse { 0%,100%{opacity:.35;transform:scale(.85)} 50%{opacity:1;transform:scale(1.1)} }
+    /* Animations — kept from the prior build; modules depend on these names.
+       glow now reads var(--accent-glow) so it re-tints with the theme. */
+    @keyframes pulse  { 0%,100%{opacity:.35;transform:scale(.85)} 50%{opacity:1;transform:scale(1.1)} }
     @keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes riseIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-    @keyframes slideRight { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
-    @keyframes slideInRight { from{opacity:0;transform:translateX(100%)} to{opacity:1;transform:translateX(0)} }
-    @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(217,164,65,.05)} 50%{box-shadow:0 0 36px rgba(217,164,65,.12)} }
-    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes riseIn { from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:translateY(0)} }
+    @keyframes slideRight   { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes slideInRight { from{opacity:0;transform:translateX(100%)}  to{opacity:1;transform:translateX(0)} }
+    @keyframes glow  { 0%,100%{box-shadow:0 0 20px var(--accent-glow)} 50%{box-shadow:0 0 36px var(--accent-glow)} }
+    @keyframes spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
     @keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
     @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
     .shimmer {
@@ -89,33 +197,42 @@
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
-        animation-duration: 0.001ms !important;
+        animation-duration: .01ms !important;
         animation-iteration-count: 1 !important;
-        transition-duration: 0.001ms !important;
+        transition-duration: .01ms !important;
         scroll-behavior: auto !important;
       }
       .rise { opacity: 1; }
     }
+
+    /* ═══ THREE LAYOUTS, NOT ONE SQUEEZED ═══════════════════════════════════ */
+    .fr-shell { min-height: 100dvh; display: grid;
+                grid-template-columns: 1fr; grid-template-areas: "main"; }
+    .fr-sidebar { display: none; }
+    .fr-main    { grid-area: main; padding: 16px;
+                  padding-bottom: calc(64px + env(safe-area-inset-bottom)); }
+    .fr-tabbar  { position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
+                  background: var(--bg-nav); border-top: 1px solid var(--border);
+                  padding-bottom: env(safe-area-inset-bottom); }
+    .fr-rail    { display: none; }
+
+    @media (min-width: 768px) {           /* iPad */
+      .fr-shell   { grid-template-columns: 240px 1fr; grid-template-areas: "sidebar main"; }
+      .fr-sidebar { display: block; grid-area: sidebar;
+                    border-right: 1px solid var(--border); background: var(--bg-nav); }
+      .fr-main    { padding: 24px; padding-bottom: 24px; }
+      .fr-tabbar  { display: none; }
+    }
+
+    @media (min-width: 1024px) {          /* desktop — source rail appears */
+      .fr-shell { grid-template-columns: 240px minmax(0,1fr) 300px;
+                  grid-template-areas: "sidebar main rail";
+                  max-width: 1280px; margin: 0 auto; }
+      .fr-rail  { display: block; grid-area: rail;
+                  border-left: 1px solid var(--border); padding: 24px; }
+      .fr-main  { padding: 32px; }
+    }
   </style>
-  <!-- Prevent flash of wrong theme on load -->
-  <script>
-    (function() {
-      if (localStorage.getItem('aether-theme') !== 'light') return;
-      var vars = {
-        '--ink': '#EDE9E0', '--surface': '#F6F3EC', '--chalk': '#1E2A22',
-        '--chalk-dim': '#5E685E', '--accent': '#B8862E', '--line': 'rgba(30,42,34,0.12)',
-        '--bg-alt': '#E4DED2', '--bg-nav': '#F6F3EC', '--surf2': '#E7E1D5',
-        '--bord2': 'rgba(30,42,34,0.08)', '--border-dim': 'rgba(30,42,34,0.04)',
-        '--overlay': 'rgba(30,30,20,0.4)', '--text-b': '#2E3A32', '--text-c': '#3E4A42',
-        '--subtle': '#6B746A', '--dim': '#98A098', '--u-bubble': '#E7E1D5',
-        '--u-bubble-b': '#D6CFC0', '--u-bubble-text': '#2E3A32', '--scrollbar': '#D6CFC0',
-        '--scrollbar-h': '#C4BCAC', '--accent-glow': 'rgba(184,134,46,0.10)',
-        '--accent2': '#8A6420', '--green': '#5A7A4A', '--red': '#B04A32'
-      };
-      var r = document.documentElement.style;
-      for (var k in vars) r.setProperty(k, vars[k]);
-    })();
-  </script>
 </head>
 <body>
   <div id="root"></div>

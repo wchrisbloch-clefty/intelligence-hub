@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
@@ -215,7 +216,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
               <div style={{ display: 'flex', gap: 6 }}>
                 {voiceOk && (
                   <button onClick={() => toggleVoice((t) => setInput(t))}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? '#C4553D' : 'var(--border)'}`, background: listening ? '#C4553D10' : 'transparent', color: listening ? '#C4553D' : 'var(--dim)', fontSize: 12, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
+                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? T.negative : 'var(--border)'}`, background: listening ? withAlpha(T.negative, 6) : 'transparent', color: listening ? T.negative : 'var(--dim)', fontSize: 12, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
                     {listening ? '⏹ Stop' : '🎙️ Voice'}
                   </button>
                 )}

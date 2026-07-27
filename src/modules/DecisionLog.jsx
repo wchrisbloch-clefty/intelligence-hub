@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
@@ -8,13 +9,13 @@ const DECISIONS_KEY = 'aether_decisions';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#D9A441';
+const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
 
 const STATUS_META = {
-  thinking: { label: 'Thinking',    color: '#D9A441' },
-  decided:  { label: 'Decided',     color: '#D9A441' },
+  thinking: { label: 'Thinking',    color: T.accent },
+  decided:  { label: 'Decided',     color: T.accent },
   closed:   { label: 'Archived',    color: 'var(--dim)' },
 };
 
@@ -290,7 +291,7 @@ export default function DecisionLog() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {d.status === 'thinking' && (
                           <div onClick={() => updateStatus(d.id, 'decided')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: '#D9A44115', border: '1px solid #D9A44130', color: '#D9A441', minHeight: isMobile ? 44 : 34 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: T.accent, minHeight: isMobile ? 44 : 34 }}>
                             ✓ Mark Decided
                           </div>
                         )}

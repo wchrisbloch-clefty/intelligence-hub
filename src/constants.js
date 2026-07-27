@@ -1,3 +1,4 @@
+import { T } from './theme';
 // Thin identity — used in Research Hub and truth-first contexts.
 // No teaching style, no forced connections — lets the analysis breathe.
 export const CB_IDENTITY = `You are CB's Intelligence System — research analyst, truth-seeker, and knowledge hub.
@@ -55,44 +56,44 @@ CROSS-REFERENCE RULE: Always connect to CB's mental model library. Make connecti
 export const CB_SPINE = CB_LEARNING_SPINE;
 
 export const KNOWN_BOOKS = [
-  { title: "Extreme Ownership", author: "Jocko Willink", type: "leadership", color: "#9BA69B" },
-  { title: "Chip War", author: "Chris Miller", type: "systems", color: "#9BA69B" },
-  { title: "The New Map", author: "Daniel Yergin", type: "systems", color: "#9BA69B" },
-  { title: "Winning", author: "Jack Welch", type: "business", color: "#9BA69B" },
-  { title: "Never Split the Difference", author: "Chris Voss", type: "negotiation", color: "#9BA69B" },
-  { title: "The Tipping Point", author: "Malcolm Gladwell", type: "systems", color: "#9BA69B" },
-  { title: "Greenlights", author: "Matthew McConaughey", type: "memoir", color: "#9BA69B" },
-  { title: "Fortitude", author: "Dan Crenshaw", type: "stoic", color: "#9BA69B" },
-  { title: "Coffee Bean", author: "Jon Gordon", type: "stoic", color: "#9BA69B" },
-  { title: "Essays of Warren Buffett", author: "Warren Buffett", type: "business", color: "#9BA69B" },
-  { title: "7 Habits of Highly Effective People", author: "Stephen Covey", type: "leadership", color: "#9BA69B" },
-  { title: "Tools of Titans", author: "Tim Ferriss", type: "business", color: "#9BA69B" },
-  { title: "Transfluence", author: "Walt Rakowich", type: "leadership", color: "#9BA69B" },
-  { title: "Influence", author: "Robert Cialdini", type: "negotiation", color: "#9BA69B" },
-  { title: "The Snowball Effect", author: "Alice Schroeder", type: "business", color: "#9BA69B" },
-  { title: "Power of Positive Leadership", author: "Jon Gordon", type: "leadership", color: "#9BA69B" },
-  { title: "A Life Well Played", author: "Arnold Palmer", type: "memoir", color: "#9BA69B" },
-  { title: "Laws of Human Nature", author: "Robert Greene", type: "negotiation", color: "#9BA69B" },
-  { title: "Man's Search for Meaning", author: "Viktor Frankl", type: "stoic", color: "#9BA69B" },
-  { title: "Thinking Fast and Slow", author: "Daniel Kahneman", type: "systems", color: "#9BA69B" },
+  { title: "Extreme Ownership", author: "Jocko Willink", type: "leadership", color: T.textSecondary },
+  { title: "Chip War", author: "Chris Miller", type: "systems", color: T.textSecondary },
+  { title: "The New Map", author: "Daniel Yergin", type: "systems", color: T.textSecondary },
+  { title: "Winning", author: "Jack Welch", type: "business", color: T.textSecondary },
+  { title: "Never Split the Difference", author: "Chris Voss", type: "negotiation", color: T.textSecondary },
+  { title: "The Tipping Point", author: "Malcolm Gladwell", type: "systems", color: T.textSecondary },
+  { title: "Greenlights", author: "Matthew McConaughey", type: "memoir", color: T.textSecondary },
+  { title: "Fortitude", author: "Dan Crenshaw", type: "stoic", color: T.textSecondary },
+  { title: "Coffee Bean", author: "Jon Gordon", type: "stoic", color: T.textSecondary },
+  { title: "Essays of Warren Buffett", author: "Warren Buffett", type: "business", color: T.textSecondary },
+  { title: "7 Habits of Highly Effective People", author: "Stephen Covey", type: "leadership", color: T.textSecondary },
+  { title: "Tools of Titans", author: "Tim Ferriss", type: "business", color: T.textSecondary },
+  { title: "Transfluence", author: "Walt Rakowich", type: "leadership", color: T.textSecondary },
+  { title: "Influence", author: "Robert Cialdini", type: "negotiation", color: T.textSecondary },
+  { title: "The Snowball Effect", author: "Alice Schroeder", type: "business", color: T.textSecondary },
+  { title: "Power of Positive Leadership", author: "Jon Gordon", type: "leadership", color: T.textSecondary },
+  { title: "A Life Well Played", author: "Arnold Palmer", type: "memoir", color: T.textSecondary },
+  { title: "Laws of Human Nature", author: "Robert Greene", type: "negotiation", color: T.textSecondary },
+  { title: "Man's Search for Meaning", author: "Viktor Frankl", type: "stoic", color: T.textSecondary },
+  { title: "Thinking Fast and Slow", author: "Daniel Kahneman", type: "systems", color: T.textSecondary },
 ];
 
 export const TYPE_META = {
-  leadership: { icon: "🎯", label: "Leadership", color: "#9BA69B" },
-  systems:    { icon: "⚙️", label: "Systems/Macro", color: "#9BA69B" },
-  business:   { icon: "📈", label: "Business", color: "#9BA69B" },
-  negotiation:{ icon: "🤝", label: "Negotiation", color: "#9BA69B" },
-  memoir:     { icon: "📖", label: "Memoir", color: "#9BA69B" },
-  stoic:      { icon: "🪨", label: "Stoic/Character", color: "#9BA69B" },
-  fiction:    { icon: "🎭", label: "Fiction", color: "#9BA69B" },
-  other:      { icon: "📚", label: "General", color: "#9BA69B" },
+  leadership: { icon: "🎯", label: "Leadership", color: T.textSecondary },
+  systems:    { icon: "⚙️", label: "Systems/Macro", color: T.textSecondary },
+  business:   { icon: "📈", label: "Business", color: T.textSecondary },
+  negotiation:{ icon: "🤝", label: "Negotiation", color: T.textSecondary },
+  memoir:     { icon: "📖", label: "Memoir", color: T.textSecondary },
+  stoic:      { icon: "🪨", label: "Stoic/Character", color: T.textSecondary },
+  fiction:    { icon: "🎭", label: "Fiction", color: T.textSecondary },
+  other:      { icon: "📚", label: "General", color: T.textSecondary },
 };
 
 export const ENTRY_MODES = [
-  { id: "book",     icon: "📚", label: "Book",          desc: "Full package, read-along, reference, or open discussion.", color: "#9BA69B" },
-  { id: "document", icon: "📄", label: "Document",      desc: "PDF, Word, Excel, PowerPoint, image, or web link.",       color: "#9BA69B" },
-  { id: "topic",    icon: "🎓", label: "Topic / Course", desc: "Name any subject. I build a structured course.",          color: "#9BA69B" },
-  { id: "youtube",  icon: "▶️", label: "YouTube",       desc: "Paste a URL. I extract the transcript and teach you.",    color: "#9BA69B" },
+  { id: "book",     icon: "📚", label: "Book",          desc: "Full package, read-along, reference, or open discussion.", color: T.textSecondary },
+  { id: "document", icon: "📄", label: "Document",      desc: "PDF, Word, Excel, PowerPoint, image, or web link.",       color: T.textSecondary },
+  { id: "topic",    icon: "🎓", label: "Topic / Course", desc: "Name any subject. I build a structured course.",          color: T.textSecondary },
+  { id: "youtube",  icon: "▶️", label: "YouTube",       desc: "Paste a URL. I extract the transcript and teach you.",    color: T.textSecondary },
 ];
 
 export const SESSION_MODES = [
@@ -104,23 +105,23 @@ export const SESSION_MODES = [
 ];
 
 export const NAV_ITEMS = [
-  { id: "home",      label: "Home",       desc: "Dashboard & daily brief",   accent: '#D9A441' },
-  { id: "learn",     label: "Learn",      desc: "AI-powered study sessions", accent: '#D9A441' },
-  { id: "ladder",    label: "Ladder",     desc: "Structured learning path",  accent: '#D9A441' },
-  { id: "books",     label: "Books",      desc: "Deep reading mode",         accent: '#D9A441' },
-  { id: "research",  label: "Research",   desc: "Truth-first analysis",      accent: '#D9A441' },
-  { id: "deepdive",  label: "Deep Dive",  desc: "Sourced research files",    accent: '#D9A441' },
-  { id: "translate", label: "Translate",  desc: "25+ languages",             accent: '#D9A441' },
-  { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: '#D9A441' },
-  { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: '#D9A441' },
-  { id: "vault",     label: "Vault",      desc: "Knowledge base",            accent: '#D9A441' },
-  { id: "studio",    label: "Studio",     desc: "Generate deliverables",     accent: '#D9A441' },
-  { id: "growth",    label: "Growth",     desc: "Goals & synthesis",         accent: '#D9A441' },
-  { id: "inbox",     label: "Inbox",      desc: "Save & analyze content",    accent: '#D9A441' },
-  { id: "decisions", label: "Decisions",  desc: "Decision journal",          accent: '#D9A441' },
-  { id: "coach",     label: "Coach",      desc: "AI accountability coach",   accent: '#D9A441' },
-  { id: "ted",       label: "TED",        desc: "Curated talks, AI briefed", accent: '#D9A441' },
-  { id: "quiz",      label: "Quiz",       desc: "Self-assessment & gaps",    accent: '#D9A441' },
+  { id: "home",      label: "Home",       desc: "Dashboard & daily brief",   accent: T.accent },
+  { id: "learn",     label: "Learn",      desc: "AI-powered study sessions", accent: T.accent },
+  { id: "ladder",    label: "Ladder",     desc: "Structured learning path",  accent: T.accent },
+  { id: "books",     label: "Books",      desc: "Deep reading mode",         accent: T.accent },
+  { id: "research",  label: "Research",   desc: "Truth-first analysis",      accent: T.accent },
+  { id: "deepdive",  label: "Deep Dive",  desc: "Sourced research files",    accent: T.accent },
+  { id: "translate", label: "Translate",  desc: "25+ languages",             accent: T.accent },
+  { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: T.accent },
+  { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: T.accent },
+  { id: "vault",     label: "Vault",      desc: "Knowledge base",            accent: T.accent },
+  { id: "studio",    label: "Studio",     desc: "Generate deliverables",     accent: T.accent },
+  { id: "growth",    label: "Growth",     desc: "Goals & synthesis",         accent: T.accent },
+  { id: "inbox",     label: "Inbox",      desc: "Save & analyze content",    accent: T.accent },
+  { id: "decisions", label: "Decisions",  desc: "Decision journal",          accent: T.accent },
+  { id: "coach",     label: "Coach",      desc: "AI accountability coach",   accent: T.accent },
+  { id: "ted",       label: "TED",        desc: "Curated talks, AI briefed", accent: T.accent },
+  { id: "quiz",      label: "Quiz",       desc: "Self-assessment & gaps",    accent: T.accent },
 ];
 
 export const CHAT_MODES = [
@@ -132,18 +133,18 @@ export const CHAT_MODES = [
 ];
 
 export const PROJECT_CATEGORIES = {
-  finance:  { label: "Finance",  color: "#9BA69B", icon: "💰" },
-  business: { label: "Business", color: "#9BA69B", icon: "📊" },
-  health:   { label: "Health",   color: "#9BA69B", icon: "⚡" },
-  learning: { label: "Learning", color: "#9BA69B", icon: "📚" },
-  other:    { label: "Other",    color: "#9BA69B", icon: "🎯" },
+  finance:  { label: "Finance",  color: T.textSecondary, icon: "💰" },
+  business: { label: "Business", color: T.textSecondary, icon: "📊" },
+  health:   { label: "Health",   color: T.textSecondary, icon: "⚡" },
+  learning: { label: "Learning", color: T.textSecondary, icon: "📚" },
+  other:    { label: "Other",    color: T.textSecondary, icon: "🎯" },
 };
 
 export const PROJECT_STATUSES = [
-  { id: "planning",    label: "Planning",    color: "#9BA69B" },
-  { id: "active",      label: "Active",      color: "#9BA69B" },
-  { id: "review",      label: "Review",      color: "#9BA69B" },
-  { id: "done",        label: "Done",        color: "#9BA69B" },
+  { id: "planning",    label: "Planning",    color: T.textSecondary },
+  { id: "active",      label: "Active",      color: T.textSecondary },
+  { id: "review",      label: "Review",      color: T.textSecondary },
+  { id: "done",        label: "Done",        color: T.textSecondary },
 ];
 
 export const ACCEPT_TYPES = ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.heic,.mp3,.m4a,.wav,.ogg,.mp4,.mov";
@@ -223,14 +224,14 @@ export const NOTES_KEY    = "aether_notes_v1";
 export const RESEARCH_KEY = "aether_research_v1";
 
 export const CONTENT_TYPES = [
-  { id: 'nonfiction',  label: 'Non-Fiction / Business', icon: '📊', color: '#9BA69B', examples: 'Business, finance, science, self-help' },
-  { id: 'fiction',     label: 'Literary Fiction',       icon: '📖', color: '#9BA69B', examples: 'Novels, short stories, literary works' },
-  { id: 'scifi',       label: 'Sci-Fi / Fantasy',       icon: '🚀', color: '#9BA69B', examples: 'Science fiction, fantasy, speculative' },
-  { id: 'history',     label: 'History / Biography',    icon: '🏛', color: '#9BA69B', examples: 'History, biography, memoir' },
-  { id: 'academic',    label: 'Academic / Textbook',    icon: '🎓', color: '#9BA69B', examples: 'Textbooks, research papers, higher ed' },
-  { id: 'reference',   label: 'Reference / Technical',  icon: '📋', color: '#9BA69B', examples: 'Legal, medical, technical manuals' },
-  { id: 'training',    label: 'Training / Professional',icon: '💼', color: '#9BA69B', examples: 'Corporate training, certifications' },
-  { id: 'philosophy',  label: 'Philosophy / Theory',    icon: '🧠', color: '#9BA69B', examples: 'Philosophy, critical theory, ethics' },
+  { id: 'nonfiction',  label: 'Non-Fiction / Business', icon: '📊', color: T.textSecondary, examples: 'Business, finance, science, self-help' },
+  { id: 'fiction',     label: 'Literary Fiction',       icon: '📖', color: T.textSecondary, examples: 'Novels, short stories, literary works' },
+  { id: 'scifi',       label: 'Sci-Fi / Fantasy',       icon: '🚀', color: T.textSecondary, examples: 'Science fiction, fantasy, speculative' },
+  { id: 'history',     label: 'History / Biography',    icon: '🏛', color: T.textSecondary, examples: 'History, biography, memoir' },
+  { id: 'academic',    label: 'Academic / Textbook',    icon: '🎓', color: T.textSecondary, examples: 'Textbooks, research papers, higher ed' },
+  { id: 'reference',   label: 'Reference / Technical',  icon: '📋', color: T.textSecondary, examples: 'Legal, medical, technical manuals' },
+  { id: 'training',    label: 'Training / Professional',icon: '💼', color: T.textSecondary, examples: 'Corporate training, certifications' },
+  { id: 'philosophy',  label: 'Philosophy / Theory',    icon: '🧠', color: T.textSecondary, examples: 'Philosophy, critical theory, ethics' },
 ];
 
 export const READER_GOALS = [
@@ -255,70 +256,6 @@ export const READING_PROGRESS_OPTIONS = [
   { id: 'reference', label: 'Reference Lookup', icon: '🔍' },
 ];
 
-// The Film Room — chalkboard dark: warm pine-charcoal, chalk text, one brass accent
-export const THEME_DARK = {
-  '--ink':           '#111A16',
-  '--surface':       '#18231E',
-  '--chalk':         '#F2EFE6',
-  '--chalk-dim':     '#9BA69B',
-  '--accent':        '#D9A441',
-  '--line':          '#2A362F',
-  '--bg':            '#111A16',
-  '--bg-alt':        '#0D140F',
-  '--bg-nav':        '#0F1712',
-  '--surf2':         '#1F2C25',
-  '--border':        '#2A362F',
-  '--bord2':         'rgba(242,239,230,0.06)',
-  '--border-dim':    'rgba(242,239,230,0.03)',
-  '--overlay':       'rgba(9,14,11,0.86)',
-  '--text':          '#F2EFE6',
-  '--text-b':        '#DCD9CE',
-  '--text-c':        '#C4C2B6',
-  '--muted':         '#9BA69B',
-  '--subtle':        '#7C877C',
-  '--dim':           '#5E685E',
-  '--u-bubble':      '#1F2C25',
-  '--u-bubble-b':    '#2A362F',
-  '--u-bubble-text': '#DCD9CE',
-  '--scrollbar':     '#2A362F',
-  '--scrollbar-h':   '#3A4740',
-  '--accent-glow':   'rgba(217,164,65,0.12)',
-  '--accent2':       '#B8862E',
-  '--gold':          '#D9A441',
-  '--green':         '#86A67A',
-  '--red':           '#C4553D',
-};
-
-// The Film Room — daylight: warm chalk-paper, pine ink, deeper brass accent
-export const THEME_LIGHT = {
-  '--ink':           '#EDE9E0',
-  '--surface':       '#F6F3EC',
-  '--chalk':         '#1E2A22',
-  '--chalk-dim':     '#5E685E',
-  '--accent':        '#B8862E',
-  '--line':          'rgba(30,42,34,0.12)',
-  '--bg':            '#EDE9E0',
-  '--bg-alt':        '#E4DED2',
-  '--bg-nav':        '#F6F3EC',
-  '--surf2':         '#E7E1D5',
-  '--border':        'rgba(30,42,34,0.12)',
-  '--bord2':         'rgba(30,42,34,0.08)',
-  '--border-dim':    'rgba(30,42,34,0.04)',
-  '--overlay':       'rgba(30,30,20,0.40)',
-  '--text':          '#1E2A22',
-  '--text-b':        '#2E3A32',
-  '--text-c':        '#3E4A42',
-  '--muted':         '#5E685E',
-  '--subtle':        '#6B746A',
-  '--dim':           '#98A098',
-  '--u-bubble':      '#E7E1D5',
-  '--u-bubble-b':    '#D6CFC0',
-  '--u-bubble-text': '#2E3A32',
-  '--scrollbar':     '#D6CFC0',
-  '--scrollbar-h':   '#C4BCAC',
-  '--accent-glow':   'rgba(184,134,46,0.10)',
-  '--accent2':       '#8A6420',
-  '--gold':          '#B8862E',
-  '--green':         '#5A7A4A',
-  '--red':           '#B04A32',
-};
+// Theme tokens now live in index.html (:root / [data-theme="dark"]) and are
+// driven by src/theme.js via the data-theme attribute. The old THEME_DARK /
+// THEME_LIGHT inline-var maps were removed when the app moved to that system.

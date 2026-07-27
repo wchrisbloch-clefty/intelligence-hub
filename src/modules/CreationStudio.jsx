@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildCreationPrompt, CREATION_KINDS } from '../utils.js';
@@ -8,7 +9,7 @@ import { loadSession } from '../lib/sessions.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT = '#D9A441';
+const ACCENT = T.accent;
 
 // Serialize a saved object into source text for the generator.
 function serializeSource(src) {
@@ -121,7 +122,7 @@ export default function CreationStudio() {
       </div>
 
       <button onClick={generate} disabled={!source || loading}
-        style={{ width: '100%', padding: '13px', background: source && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: source && !loading ? '#1A130A' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: source && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 20 }}>
+        style={{ width: '100%', padding: '13px', background: source && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: source && !loading ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: source && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 20 }}>
         {loading ? 'Generating…' : source ? `Generate ${CREATION_KINDS.find(k => k.id === kind)?.label} →` : 'Pick a source first'}
       </button>
 

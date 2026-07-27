@@ -1,3 +1,4 @@
+import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveNotes, callClaude, uid } from '../utils.js';
@@ -8,8 +9,8 @@ const FLASHCARDS_KEY = 'aether_flashcards';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Modal, ThinkingDots } from './shared/Common.jsx';
 
-const VAULT_ACCENT  = '#D9A441';
-const NOTE_COLORS   = ['#D9A441', '#D9A441', '#D9A441', '#D9A441', '#D9A441', '#D9A441'];
+const VAULT_ACCENT  = T.accent;
+const NOTE_COLORS   = [T.accent, T.accent, T.accent, T.accent, T.accent, T.accent];
 
 const EXPORT_FORMATS = [
   { id: 'linkedin',  icon: '💼', label: 'LinkedIn Post',     desc: 'Engaging professional post with hook, body, CTA' },
@@ -79,7 +80,7 @@ function FlashCards({ onCreateFromNote }) {
       <div style={{ fontSize: 10, color: 'var(--dim)', textAlign: 'center', marginBottom: 20 }}>
         Card {(studyIdx % due.length) + 1} of {due.length} · {cards.filter(c => c.dueDate <= Date.now()).length} due today
       </div>
-      <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? '#D9A44140' : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
+      <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? withAlpha(T.accent, 25) : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: VAULT_ACCENT, textTransform: 'uppercase', marginBottom: 12 }}>{revealed ? 'Answer' : 'Question'}</div>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', lineHeight: 1.5 }}>
           {revealed ? studyCard?.back : studyCard?.front}
@@ -92,10 +93,10 @@ function FlashCards({ onCreateFromNote }) {
       </div>
       {revealed && (
         <div style={{ display: 'flex', gap: 12 }}>
-          <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#C4553D15', border: '1px solid #C4553D40', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#C4553D', cursor: 'pointer' }}>
+          <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.negative, 8), border: '1px solid #C4553D40', borderRadius: 10, fontSize: 12, fontWeight: 700, color: T.negative, cursor: 'pointer' }}>
             ✕ Hard — review again
           </div>
-          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: '#D9A44115', border: '1px solid #D9A44140', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#D9A441', cursor: 'pointer' }}>
+          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.accent, 8), border: '1px solid #D9A44140', borderRadius: 10, fontSize: 12, fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
             ✓ Got it — {Math.min(Math.round((studyCard?.interval || 1) * (studyCard?.easeFactor || 2.5)), 30)}d
           </div>
         </div>
@@ -323,7 +324,7 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
             {note.tags?.map(t => <Badge key={t} color={note.color}>{t}</Badge>)}
           </div>
         </div>
-        <div onClick={onDelete} style={{ fontSize: 10, color: '#C4553D', padding: '5px 10px', border: '1px solid #C4553D40', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
+        <div onClick={onDelete} style={{ fontSize: 10, color: T.negative, padding: '5px 10px', border: '1px solid #C4553D40', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
       </div>
       <div style={{ fontSize: 13, lineHeight: 1.85, color: 'var(--text-c)', whiteSpace: 'pre-wrap', marginBottom: 24 }}>{note.content}</div>
       {note.connections?.length > 0 && (
@@ -379,7 +380,7 @@ export default function MasteryVault() {
   const [activeNote, setActiveNote] = useState(null);
   const [showNew,    setShowNew]    = useState(false);
   const [filterTag,  setFilterTag]  = useState('all');
-  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: '#D9A441' });
+  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: T.accent });
   const [tagInput,   setTagInput]   = useState('');
 
   const updateNotes = async (updated) => {
@@ -391,7 +392,7 @@ export default function MasteryVault() {
     if (!newNote.title.trim()) return;
     const note = { id: uid(), ...newNote, createdAt: Date.now() };
     await updateNotes([note, ...notes]);
-    setNewNote({ title: '', content: '', tags: [], connections: [], color: '#D9A441' });
+    setNewNote({ title: '', content: '', tags: [], connections: [], color: T.accent });
     setTagInput('');
     setShowNew(false);
   };
@@ -540,7 +541,7 @@ export default function MasteryVault() {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
               {topics.slice(0, 10).map(t => (
                 <div key={t} onClick={() => setNewNote(p => ({ ...p, connections: p.connections.includes(t) ? p.connections.filter(x => x !== t) : [...p.connections, t] }))}
-                  style={{ fontSize: 9, padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? '#D9A441' : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? '#D9A441' : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? '#D9A44115' : 'transparent' }}>
+                  style={{ fontSize: 9, padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? T.accent : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? T.accent : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? withAlpha(T.accent, 8) : 'transparent' }}>
                   {t}
                 </div>
               ))}

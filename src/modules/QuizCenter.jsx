@@ -1,3 +1,4 @@
+import { T } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildQuizPrompt } from '../utils.js';
@@ -8,7 +9,7 @@ import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
-const ACCENT        = '#D9A441';
+const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.08)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
 
@@ -139,7 +140,7 @@ export default function QuizCenter() {
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
                   <div style={{ fontSize: 10, color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: h.score / h.total >= 0.7 ? '#D9A441' : h.score / h.total >= 0.5 ? ACCENT : '#C4553D' }}>
+                <div style={{ fontSize: 18, fontWeight: 800, color: h.score / h.total >= 0.7 ? T.accent : h.score / h.total >= 0.5 ? ACCENT : T.negative }}>
                   {h.score}/{h.total}
                 </div>
               </div>
@@ -155,7 +156,7 @@ export default function QuizCenter() {
     const score   = last?.score || 0;
     const total   = last?.total || 1;
     const pct     = Math.round((score / total) * 100);
-    const scoreColor = pct >= 70 ? '#D9A441' : pct >= 50 ? ACCENT : '#C4553D';
+    const scoreColor = pct >= 70 ? T.accent : pct >= 50 ? ACCENT : T.negative;
 
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>

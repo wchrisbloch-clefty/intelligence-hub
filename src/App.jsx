@@ -1,6 +1,8 @@
+import { T, withAlpha } from './theme';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loadGraph, loadProjects, loadNotes, loadResearch, saveProjects, uid } from './utils.js';
-import { NAV_ITEMS, THEME_DARK, THEME_LIGHT } from './constants.js';
+import { NAV_ITEMS } from './constants.js';
+import { getTheme, applyTheme } from './theme.js';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
@@ -26,11 +28,6 @@ import QuizCenter from './modules/QuizCenter.jsx';
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
-function applyThemeVars(vars) {
-  const root = document.documentElement.style;
-  Object.entries(vars).forEach(([k, v]) => root.setProperty(k, v));
-}
-
 export default function App() {
   const [activeModule,     setActiveModule]    = useState('home');
   const [chatOpen,         setChatOpen]         = useState(false);
@@ -43,7 +40,7 @@ export default function App() {
   const [research, setResearch] = useState([]);
   const [loaded,   setLoaded]   = useState(false);
 
-  const [theme, setTheme] = useState(() => localStorage.getItem('aether-theme') || 'dark');
+  const [theme, setTheme] = useState(getTheme);
   const [pendingArtifact, setPendingArtifact] = useState(null);
   const [newChatNonce, setNewChatNonce] = useState(0); // bump → session-aware surfaces start fresh
   const [captureRoute, setCaptureRoute] = useState(null);   // last routed intent, consumed by target module
@@ -53,8 +50,7 @@ export default function App() {
   const { isMobile, isTablet, isPhone, isDesktop, isWide } = useViewport();
 
   useEffect(() => {
-    applyThemeVars(theme === 'light' ? THEME_LIGHT : THEME_DARK);
-    localStorage.setItem('aether-theme', theme);
+    applyTheme(theme); // sets data-theme + persists fr-theme + updates theme-color
   }, [theme]);
 
   useEffect(() => {
@@ -230,7 +226,7 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
           <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {projects.map(p => (
               <div key={p.id} onClick={() => setSelectedId(p.id)}
-                style={{ padding: '10px 12px', background: selectedId === p.id ? `${p.color || '#D9A441'}15` : 'var(--bg)', border: `1px solid ${selectedId === p.id ? (p.color || '#D9A441') + '50' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
+                style={{ padding: '10px 12px', background: selectedId === p.id ? withAlpha(p.color || T.accent, 8) : 'var(--bg)', border: `1px solid ${selectedId === p.id ? withAlpha(p.color || T.accent, 31) : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
                 <div style={{ fontSize: 16 }}>{p.emoji}</div>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
@@ -242,7 +238,7 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
-              style={{ flex: 2, padding: '10px', background: selectedId ? '#D9A441' : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              style={{ flex: 2, padding: '10px', background: selectedId ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
               Save to Project →
             </button>
           </div>
