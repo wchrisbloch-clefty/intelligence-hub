@@ -1,10 +1,42 @@
-import { T } from '../theme';
-import { useState, useRef } from 'react';
+import { T, withAlpha } from '../theme';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { NAV_ITEMS } from '../constants.js';
+import { getSyncStatus, subscribeSync } from '../lib/storage.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import NavIcon from './shared/NavIcon.jsx';
 import { Sun, Moon, MessageSquare, X, Search, PenSquare, Sparkles } from 'lucide-react';
+
+// Global storage-sync indicator. Hidden entirely when everything's syncing —
+// no chrome when all is well. Shows a caution chip for local-only (503) and a
+// negative chip for a genuine sync error (5xx / network). `compact` renders a
+// bare dot for the tight mobile header.
+function SyncChip({ compact = false }) {
+  const [status, setStatus] = useState(getSyncStatus());
+  useEffect(() => subscribeSync(setStatus), []);
+  if (status === 'synced') return null;
+
+  const local = status === 'local-only';
+  const color = local ? 'var(--caution)' : 'var(--negative)';
+  const label = local ? 'Local only — not syncing' : 'Not syncing — server error';
+  const title = local
+    ? 'Storage is not syncing to the server (not configured). Changes are saved on this device only.'
+    : 'A server write failed. Recent changes may not be synced across devices.';
+
+  if (compact) {
+    return (
+      <span title={`${label}. ${title}`}
+        style={{ width: 9, height: 9, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 0 3px ${withAlpha(color, 18)}` }} />
+    );
+  }
+  return (
+    <div title={title}
+      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color, padding: '5px 11px', background: withAlpha(color, 12), border: `1px solid ${withAlpha(color, 35)}`, borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0 }}>
+      <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+      {label}
+    </div>
+  );
+}
 
 export default function TopBar() {
   const {
@@ -87,6 +119,7 @@ export default function TopBar() {
             </div>
             {dropdown}
           </div>
+          <SyncChip compact />
           <button onClick={toggleTheme} style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none' }}>
             {theme === 'dark' ? <Sun size={14} color="var(--muted)" /> : <Moon size={14} color="var(--muted)" />}
           </button>
@@ -145,6 +178,8 @@ export default function TopBar() {
         </div>
 
         <div style={{ flex: 1 }} />
+
+        <SyncChip />
 
         {/* Stats */}
         {streak > 0 && (
