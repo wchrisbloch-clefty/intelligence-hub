@@ -485,8 +485,8 @@ function notifyAuthExpired() {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
 }
 
-export async function callClaude({ system, messages, maxTokens = 4096, searchEnabled = false, onToken }) {
-  const body = { system, messages, max_tokens: maxTokens, stream: !!onToken };
+export async function callClaude({ system, messages, maxTokens = 4096, searchEnabled = false, onToken, job = 'default', onProvider }) {
+  const body = { system, messages, max_tokens: maxTokens, stream: !!onToken, job };
   if (searchEnabled) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
 
   const res = await fetch('/api/chat', {
@@ -502,6 +502,7 @@ export async function callClaude({ system, messages, maxTokens = 4096, searchEna
   if (!onToken) {
     const data = await res.json().catch(() => ({ error: 'AI request failed — retry' }));
     if (!res.ok || data.error) throw new Error(data.error || 'AI request failed — retry');
+    if (data.provider) onProvider?.(data.provider);
     return data.text || 'No response.';
   }
 
@@ -528,6 +529,8 @@ export async function callClaude({ system, messages, maxTokens = 4096, searchEna
         if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
           full += evt.delta.text;
           onToken(evt.delta.text);
+        } else if (evt.type === 'provider') {
+          onProvider?.(evt.provider);
         } else if (evt.type === 'error') {
           throw new Error(evt.error?.message || 'AI request failed — retry');
         }

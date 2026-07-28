@@ -7,7 +7,7 @@
 //
 // Triggered by Vercel Cron (GET, `Authorization: Bearer <CRON_SECRET>`) —
 // schedule "0 14 1 * *" is declared in vercel.json.
-import { readState, writeState, callAnthropic, requireCron, KEYS, RECAP_MODEL, CB_IDENTITY } from './_recap.js';
+import { readState, writeState, callRecapAI, requireCron, KEYS, CB_IDENTITY } from './_recap.js';
 
 // An Anthropic generation exceeds the default function timeout.
 export const config = { maxDuration: 300 };
@@ -125,14 +125,15 @@ async function generateReview() {
     notes: summarizeNotes(state[KEYS.NOTES]),
   });
 
-  const content = await callAnthropic({ system: CB_IDENTITY, user: prompt, maxTokens: 3200 });
+  const { text, provider, model } = await callRecapAI({ system: CB_IDENTITY, user: prompt, maxTokens: 3200 });
 
   const record = {
     type: 'monthly_review',
     generatedAt: Date.now(),
     generatedAtISO: new Date().toISOString(),
-    model: RECAP_MODEL,
-    content,
+    provider,
+    model,
+    content: text,
   };
   await writeState(KEYS.MONTHLY_REVIEW, record);
   return record;

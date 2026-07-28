@@ -5,6 +5,7 @@ import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, ti
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
 import { gradeTopic } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
+import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import { GoingDeepBanner } from './shared/DepthControls.jsx';
 
@@ -47,14 +48,18 @@ export default function DeepDive() {
     setRunning(true); setStream(''); setError('');
     try {
       const system = buildDeepDiveSystem(targetDive.topic, targetDive.category, targetDive.depth, focus || null);
+      let provider = '';
+      const needsWeb = depthNeedsWeb(targetDive.depth);
       const text = await callClaude({
         system,
         messages: [{ role: 'user', content: userMsg }],
-        searchEnabled: depthNeedsWeb(targetDive.depth),
+        searchEnabled: needsWeb,
+        job: needsWeb ? 'web' : 'reason',
         maxTokens: 4096,
         onToken: (t) => setStream(s => s + t),
+        onProvider: (p) => { provider = p; },
       });
-      const section = { id: uid(), title, kind, content: text, sources: extractSources(text), createdAt: Date.now() };
+      const section = { id: uid(), title, kind, content: text, sources: extractSources(text), provider, createdAt: Date.now() };
       const updated = addSection(targetDive, section);
       setDive(updated); refresh();
       // Feed into spaced repetition so the dive resurfaces and compounds.
@@ -179,7 +184,10 @@ export default function DeepDive() {
       {/* Sections */}
       {dive.sections.map((s, i) => (
         <div key={s.id} style={{ marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
-          <div style={{ fontSize: 8, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Pass {i + 1} · {s.title}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+            <div style={{ fontSize: 8, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>Pass {i + 1} · {s.title}</div>
+            <ProviderTag provider={s.provider} />
+          </div>
           <MD text={s.content} color={ACCENT} />
         </div>
       ))}
