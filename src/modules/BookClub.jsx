@@ -8,6 +8,7 @@ import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 const BOOKCLUB_KEY = 'aether_bookclub';
 const SEEDED_KEY   = 'aether_bookclub_seeded';
 import MD from './shared/MD.jsx';
+import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const STUDY_MODES = [
@@ -62,6 +63,7 @@ export default function BookClub() {
   const [selectedBook, setSelectedBook] = useState(null);
   const [mode,         setMode]         = useState('overview');
   const [result,       setResult]       = useState('');
+  const [resultProvider, setResultProvider] = useState('');
   const [loading,      setLoading]      = useState(false);
 
   // Stored library is the single source of truth (built-ins + custom). KNOWN_BOOKS
@@ -170,11 +172,14 @@ export default function BookClub() {
     if (!selectedBook) return;
     setLoading(true);
     setResult('');
+    setResultProvider('');
     try {
       const reply = await callClaude({
         system: CB_LEARNING_SPINE,
         messages: [{ role: 'user', content: PROMPTS[modeId](selectedBook) }],
         maxTokens: 1400,
+        job: 'reason',
+        onProvider: setResultProvider,
       });
       setResult(reply);
     } catch {
@@ -390,8 +395,11 @@ export default function BookClub() {
                 {result && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                      <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
-                        {STUDY_MODES.find(m => m.id === mode)?.icon} {STUDY_MODES.find(m => m.id === mode)?.label}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
+                          {STUDY_MODES.find(m => m.id === mode)?.icon} {STUDY_MODES.find(m => m.id === mode)?.label}
+                        </div>
+                        <ProviderTag provider={resultProvider} />
                       </div>
                       <button onClick={() => navigator.clipboard?.writeText(result)}
                         style={{ fontSize: 9, padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>

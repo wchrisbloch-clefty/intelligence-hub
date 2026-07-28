@@ -7,7 +7,7 @@
 //
 // Triggered by Vercel Cron (GET, `Authorization: Bearer <CRON_SECRET>`) —
 // schedule "0 13 * * 5" is declared in vercel.json.
-import { readState, writeState, callAnthropic, requireCron, KEYS, RECAP_MODEL, CB_IDENTITY } from './_recap.js';
+import { readState, writeState, callRecapAI, requireCron, KEYS, CB_IDENTITY } from './_recap.js';
 
 // An Anthropic generation exceeds the default function timeout.
 export const config = { maxDuration: 300 };
@@ -103,14 +103,15 @@ async function generateRecap() {
     notes: summarizeNotes(state[KEYS.NOTES]),
   });
 
-  const content = await callAnthropic({ system: CB_IDENTITY, user: prompt, maxTokens: 2200 });
+  const { text, provider, model } = await callRecapAI({ system: CB_IDENTITY, user: prompt, maxTokens: 2200 });
 
   const record = {
     type: 'weekly_recap',
     generatedAt: Date.now(),
     generatedAtISO: new Date().toISOString(),
-    model: RECAP_MODEL,
-    content,
+    provider,
+    model,
+    content: text,
   };
   await writeState(KEYS.WEEKLY_RECAP, record);
   return record;

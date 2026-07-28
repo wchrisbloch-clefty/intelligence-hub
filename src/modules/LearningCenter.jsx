@@ -13,6 +13,7 @@ import {
 } from '../utils.js';
 import { recordQuizResult } from '../lib/reviews.js';
 import MD from './shared/MD.jsx';
+import ProviderTag from './shared/ProviderTag.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
 
@@ -96,8 +97,9 @@ export default function LearningCenter() {
         : buildSystem(entryMode, sessionMode, context, graph);
       // Deep/Expert reading depth grounds itself in live sources — auto-enable web.
       const useWeb = searchEnabled || (entryMode === 'reading' && depthNeedsWeb(depthLevel));
-      const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, onToken: (t) => setStream(s => s + t) });
-      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
+      let provider = '';
+      const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, job: useWeb ? 'web' : 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
+      setMessages(prev => [...prev, { role: 'assistant', content: reply, provider }]);
     } catch (e) {
       setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
     }
@@ -151,8 +153,9 @@ export default function LearningCenter() {
       const system = eMode === 'reading'
         ? buildReadingSystem({ contentType: cType, goal, depth, progress, content: ctx, graph })
         : buildSystem(eMode, sMode, ctx, graph);
-      const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }], onToken: (t) => setStream(s => s + t) });
-      setMessages([{ role: 'assistant', content: reply }]);
+      let provider = '';
+      const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }], job: 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
+      setMessages([{ role: 'assistant', content: reply, provider }]);
     } catch {
       setMessages([{ role: 'assistant', content: 'Ready. What would you like to explore?' }]);
     }
@@ -623,9 +626,12 @@ export default function LearningCenter() {
                 <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '85%', fontSize: 13, lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
               ) : (
                 <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: '100%' }}>
-                  <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 10 }}>
-                    {entryMode === 'reading' ? `${currentContentType.label} · ${DEPTH_LEVELS.find(d => d.id === depthLevel)?.label}` : 'CB Intelligence'}
-                    {searchEnabled ? ' · 🔍 Web' : ''}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                    <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase' }}>
+                      {entryMode === 'reading' ? `${currentContentType.label} · ${DEPTH_LEVELS.find(d => d.id === depthLevel)?.label}` : 'CB Intelligence'}
+                      {searchEnabled ? ' · 🔍 Web' : ''}
+                    </div>
+                    <ProviderTag provider={msg.provider} />
                   </div>
                   <MD text={msg.content} color={accentColor} />
                 </div>

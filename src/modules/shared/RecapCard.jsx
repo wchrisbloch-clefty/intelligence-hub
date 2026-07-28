@@ -64,6 +64,7 @@ export default function RecapCard() {
   const current = recaps[active];
   const body = current.data?.content || current.data?.text || current.data?.markdown || '';
   const generated = current.data?.generatedAt || current.data?.createdAt;
+  const provider = current.data?.provider;
 
   return (
     <div style={S.card}>
@@ -106,6 +107,12 @@ export default function RecapCard() {
               <>
                 <span style={{ color: 'var(--border)' }}>·</span>
                 <span>{relTime(generated)}</span>
+              </>
+            )}
+            {provider && (
+              <>
+                <span style={{ color: 'var(--border)' }}>·</span>
+                <span style={{ color: 'var(--text-tertiary)' }}>via {provider}</span>
               </>
             )}
           </div>

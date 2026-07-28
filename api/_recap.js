@@ -5,8 +5,10 @@
 // state from Upstash, call Anthropic, and write a recap record back to Upstash.
 // This module centralizes the parts they share so neither route duplicates them.
 import { store } from './_lib.js';
+import { callAI } from './_providers.js';
 
-// Model matches the app's client-side callClaude (src/utils.js).
+// Recaps prefer Claude (the 'reason' job leads with it) but no longer die when
+// Claude is unavailable — that's the failure that broke the weekly recap.
 export const RECAP_MODEL = 'claude-sonnet-4-6';
 
 // Storage keys — must match src/constants.js.
@@ -60,35 +62,18 @@ export async function writeState(key, value) {
   await store.set(key, JSON.stringify(value));
 }
 
-// ─── ANTHROPIC ──────────────────────────────────────────────────────────────
-export async function callAnthropic({ system, user, maxTokens = 2000 }) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('Missing ANTHROPIC_API_KEY.');
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: RECAP_MODEL,
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: 'user', content: user }],
-    }),
+// ─── AI (cascade, Claude-first) ──────────────────────────────────────────────
+// Returns { text, provider, model }. Prefers Claude via the 'reason' job, then
+// falls through the chain. Throws only if every provider is down/unconfigured.
+export async function callRecapAI({ system, user, maxTokens = 2000 }) {
+  const r = await callAI({
+    job: 'reason',
+    system,
+    messages: [{ role: 'user', content: user }],
+    maxTokens,
   });
-
-  const data = await res.json();
-  if (!res.ok || data.error) {
-    throw new Error(data?.error?.message || `Anthropic API error (${res.status})`);
-  }
-  return (data.content || [])
-    .filter((b) => b.type === 'text')
-    .map((b) => b.text)
-    .join('\n')
-    .trim();
+  if (!r || !r.text) throw new Error('All AI providers failed or none configured.');
+  return r;
 }
 
 // ─── CRON AUTH ──────────────────────────────────────────────────────────────
