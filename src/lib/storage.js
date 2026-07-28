@@ -29,6 +29,40 @@ function onAuthExpired() {
   if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('ih-auth-expired'));
 }
 
+// ── Sync status ─────────────────────────────────────────────────────────────
+// The server outcome of writes used to be swallowed, so a session where storage
+// returned 503 for every write looked identical to one that was syncing fine.
+// Track it explicitly and let the UI subscribe:
+//   'synced'     — server writes are landing
+//   'local-only' — storage isn't configured server-side (503 no_storage);
+//                  writes stay on this device, which is an expected state
+//   'error'      — a server write failed (5xx / network); data may not be syncing
+let syncStatus = 'synced';
+const syncListeners = new Set();
+
+export function getSyncStatus() { return syncStatus; }
+
+export function subscribeSync(fn) {
+  syncListeners.add(fn);
+  return () => syncListeners.delete(fn);
+}
+
+function setSyncStatus(next) {
+  if (next === syncStatus) return;
+  syncStatus = next;
+  syncListeners.forEach((fn) => { try { fn(next); } catch {} });
+}
+
+// Map a fetch Response / thrown error to a write result, updating sync status.
+// 401 is left to the auth flow and does not change sync status.
+function resultFromResponse(r) {
+  if (r.status === 401) { onAuthExpired(); return { ok: false, code: 'auth_expired', status: 401 }; }
+  if (r.status === 503) { setSyncStatus('local-only'); return { ok: false, code: 'no_storage', status: 503 }; }
+  if (!r.ok) { setSyncStatus('error'); return { ok: false, code: 'server_error', status: r.status }; }
+  setSyncStatus('synced');
+  return { ok: true };
+}
+
 export const storage = {
   async get(key) {
     try {
@@ -43,6 +77,8 @@ export const storage = {
     return lsGet(key);
   },
 
+  // Keeps the optimistic local write, but returns the server outcome instead of
+  // discarding it: { ok:true } | { ok:false, code, status }.
   async set(key, value) {
     lsSet(key, value); // optimistic local write
     try {
@@ -52,8 +88,11 @@ export const storage = {
         credentials: 'same-origin',
         body: JSON.stringify({ key, value }),
       });
-      if (r.status === 401) onAuthExpired();
-    } catch {}
+      return resultFromResponse(r);
+    } catch {
+      setSyncStatus('error');
+      return { ok: false, code: 'network', status: 0 };
+    }
   },
 
   async delete(key) {
@@ -62,8 +101,11 @@ export const storage = {
       const r = await fetch(`/api/storage?key=${encodeURIComponent(key)}`, {
         method: 'DELETE', credentials: 'same-origin',
       });
-      if (r.status === 401) onAuthExpired();
-    } catch {}
+      return resultFromResponse(r);
+    } catch {
+      setSyncStatus('error');
+      return { ok: false, code: 'network', status: 0 };
+    }
   },
 
   async list(prefix = '') {
@@ -87,10 +129,16 @@ export function readLocal(key, fallback) {
   catch { return fallback; }
 }
 
+// Returns the write promise so callers can await and react to the outcome —
+// resolves to { localOk, ok, code?, status? }. `localOk` is whether the
+// synchronous on-device write succeeded (false = quota/blocked → data lost);
+// the rest is the server outcome. Existing fire-and-forget callers ignore the
+// return and keep working unchanged (the promise never rejects).
 export function writeThrough(key, value) {
   const s = JSON.stringify(value);
-  try { localStorage.setItem(key, s); } catch {}
-  storage.set(key, s); // fire-and-forget server sync
+  let localOk = true;
+  try { localStorage.setItem(key, s); } catch { localOk = false; }
+  return storage.set(key, s).then((r) => ({ localOk, ...r }));
 }
 
 export async function hydrate(key) {

@@ -1,11 +1,12 @@
 import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { callClaude } from '../utils.js';
+import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
-import { CB_LEARNING_SPINE, KNOWN_BOOKS } from '../constants.js';
+import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
+const SEEDED_KEY   = 'aether_bookclub_seeded';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -17,6 +18,32 @@ const STUDY_MODES = [
   { id: 'quiz',      label: 'Socratic Quiz',  icon: '🎯', desc: 'Test and deepen understanding' },
   { id: 'discuss',   label: 'Discussion',     icon: '🤝', desc: 'Critical conversation about the book' },
 ];
+
+// Type → theme token. Uses tier + accent tokens from src/theme.js (no new hex),
+// so the `type` field finally reads as colour instead of a dead grey.
+const TYPE_COLOR = {
+  leadership:  T.accent,
+  business:    T.positive,
+  systems:     T.tierReported,
+  negotiation: T.caution,
+  memoir:      T.tierInferred,
+  stoic:       T.tierUncited,
+  fiction:     T.tierVerified,
+  other:       T.textSecondary,
+};
+const typeColor = (t) => TYPE_COLOR[t] || T.textSecondary;
+const TYPE_IDS = Object.keys(TYPE_META);
+
+const BLANK_FORM = { title: '', author: '', note: '', type: 'other' };
+
+// Dedupe/identity key — lowercased title + author.
+const keyOf = (b) => `${b.title || ''}|${b.author || ''}`.toLowerCase().trim();
+// Ensure every entry carries a stable id for CRUD.
+const withId = (b) => (b.id ? b : { ...b, id: uid() });
+// The 20 built-ins, tagged, used only as a seed.
+const seedBooks = () => KNOWN_BOOKS.map((b) => ({
+  id: uid(), title: b.title, author: b.author, type: b.type || 'other', builtin: true,
+}));
 
 const PROMPTS = {
   overview:  (b) => `Give me a master-level executive overview of "${b.title}" by ${b.author}. Lead with the central thesis in one sentence. Then: 5 key insights, the strongest evidence, what critics miss, and the single most important takeaway for CB (Houston BD professional building passive income and longevity). Format with clear headers. Be decisive.`,
@@ -36,49 +63,107 @@ export default function BookClub() {
   const [mode,         setMode]         = useState('overview');
   const [result,       setResult]       = useState('');
   const [loading,      setLoading]      = useState(false);
-  const [addTitle,     setAddTitle]     = useState('');
-  const [addAuthor,    setAddAuthor]    = useState('');
-  const [addNote,      setAddNote]      = useState('');
-  const [customBooks,  setCustomBooks]  = useState(() => readLocal(BOOKCLUB_KEY, []));
 
-  // Cross-device: pull the server copy after mount.
-  useEffect(() => { hydrate(BOOKCLUB_KEY).then(r => { if (Array.isArray(r)) setCustomBooks(r); }); }, []);
+  // Stored library is the single source of truth (built-ins + custom). KNOWN_BOOKS
+  // is only a seed.
+  const [books,     setBooks]     = useState(() => readLocal(BOOKCLUB_KEY, []).map(withId));
+  const [saveError, setSaveError] = useState('');
+  const [saving,    setSaving]    = useState(false);
 
-  const allBooks = [...KNOWN_BOOKS, ...customBooks];
+  // Edit form doubles as the add form. editingId = null → adding.
+  const [form,      setForm]      = useState(BLANK_FORM);
+  const [editingId, setEditingId] = useState(null);
+
+  // Seed on first run + migrate custom-only libraries. Guarded by SEEDED_KEY so
+  // it can never double-seed (or resurrect a built-in the user deleted).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      let lib    = readLocal(BOOKCLUB_KEY, null);
+      let seeded = readLocal(SEEDED_KEY, false);
+      // Server copy is authoritative when present (cross-device).
+      const [remoteLib, remoteSeeded] = await Promise.all([hydrate(BOOKCLUB_KEY), hydrate(SEEDED_KEY)]);
+      if (Array.isArray(remoteLib)) lib = remoteLib;
+      if (remoteSeeded === true) seeded = true;
+      lib = (Array.isArray(lib) ? lib : []).map(withId);
+
+      if (!seeded) {
+        if (lib.length === 0) {
+          lib = seedBooks();                       // fresh install
+        } else if (!lib.some((b) => b.builtin)) {
+          // Existing custom-only library — merge the seed in, don't overwrite.
+          const present = new Set(lib.map(keyOf));
+          lib = [...lib, ...seedBooks().filter((s) => !present.has(keyOf(s)))];
+        }
+        writeThrough(BOOKCLUB_KEY, lib);           // fire-and-forget seed write
+        writeThrough(SEEDED_KEY, true);
+      }
+      if (!cancelled) setBooks(lib);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
   const filtered = search
-    ? allBooks.filter(b => `${b.title} ${b.author}`.toLowerCase().includes(search.toLowerCase()))
-    : allBooks;
+    ? books.filter((b) => `${b.title} ${b.author}`.toLowerCase().includes(search.toLowerCase()))
+    : books;
 
-  const saveCustom = (updated) => {
-    setCustomBooks(updated);
-    writeThrough(BOOKCLUB_KEY, updated);
-  };
-
-  const addBook = () => {
-    if (!addTitle.trim()) return;
-    const book = { title: addTitle.trim(), author: addAuthor.trim() || 'Unknown', type: 'other', color: T.accent, custom: true, note: addNote.trim() };
-    saveCustom([...customBooks, book]);
-    setAddTitle(''); setAddAuthor(''); setAddNote('');
-    setTab('library');
-  };
-
-  const removeCustom = (i) => saveCustom(customBooks.filter((_, j) => j !== i));
-
-  const handleDeepDive = async () => {
-    if (!selectedBook) return;
-    setLoading(true);
-    setResult('');
-    try {
-      const reply = await callClaude({
-        system: CB_LEARNING_SPINE,
-        messages: [{ role: 'user', content: PROMPTS[mode](selectedBook) }],
-        maxTokens: 1400,
-      });
-      setResult(reply);
-    } catch {
-      setResult('Unable to generate — check connection and try again.');
+  // Persist-first: await the write and only commit to state if the on-device
+  // write succeeded, so a failed save surfaces an error instead of showing a
+  // book that vanishes on refresh. Server-sync degradation (503/5xx) is handled
+  // by the global TopBar indicator, not blocked here. Returns true on success.
+  const persist = async (next) => {
+    setSaving(true);
+    const r = await writeThrough(BOOKCLUB_KEY, next);
+    setSaving(false);
+    if (!r.localOk) {
+      setSaveError('Could not save your library — on-device storage is full or blocked. Your change was not persisted.');
+      return false;
     }
-    setLoading(false);
+    setBooks(next);
+    setSaveError('');
+    return true;
+  };
+
+  const openAdd = () => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('add'); };
+  const openEdit = (book) => {
+    setEditingId(book.id);
+    setForm({ title: book.title, author: book.author, note: book.note || '', type: book.type || 'other' });
+    setSaveError('');
+    setTab('add');
+  };
+
+  const saveBook = async () => {
+    if (!form.title.trim() || saving) return;
+    const fields = {
+      title:  form.title.trim(),
+      author: form.author.trim() || 'Unknown',
+      note:   form.note.trim(),
+      type:   form.type || 'other',
+    };
+    const next = editingId
+      ? books.map((b) => (b.id === editingId ? { ...b, ...fields } : b))
+      : [...books, { id: uid(), builtin: false, ...fields }];
+    if (await persist(next)) {
+      setForm(BLANK_FORM);
+      setEditingId(null);
+      setTab('library');
+    }
+  };
+
+  const removeBook = async (book) => {
+    if (saving) return;
+    if (!window.confirm(`Remove "${book.title}" from your library?`)) return;
+    if (selectedBook?.id === book.id) { setSelectedBook(null); setResult(''); }
+    await persist(books.filter((b) => b.id !== book.id));
+  };
+
+  // Re-add any missing built-ins without touching custom entries or edits.
+  const restoreDefaults = async () => {
+    if (saving) return;
+    const present = new Set(books.map(keyOf));
+    const additions = seedBooks().filter((s) => !present.has(keyOf(s)));
+    if (additions.length === 0) { setSaveError(''); return; }
+    await persist([...books, ...additions]);
   };
 
   const handleDeepDiveFor = async (modeId) => {
@@ -97,6 +182,7 @@ export default function BookClub() {
     }
     setLoading(false);
   };
+  const handleDeepDive = () => handleDeepDiveFor(mode);
 
   const pad     = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
   const gridCol = isPhone ? 'repeat(2,1fr)' : isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)';
@@ -118,9 +204,9 @@ export default function BookClub() {
 
       {/* Tab bar */}
       <div style={{ padding: `0 ${pad}`, display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
-        {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: tab === t.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: tab === t.id ? T.accent : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+        {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: editingId ? '✎ Edit Book' : '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
+          <button key={t.id} onClick={() => (t.id === 'add' ? (editingId ? setTab('add') : openAdd()) : setTab(t.id))}
+            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? T.accent : 'var(--border)'}`, background: tab === t.id ? withAlpha(T.accent, 10) : 'transparent', color: tab === t.id ? T.accent : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
             {t.label}
           </button>
         ))}
@@ -128,12 +214,26 @@ export default function BookClub() {
 
       <div style={{ padding: `0 ${pad}` }}>
 
+        {/* Save error — visible wherever the user is. */}
+        {saveError && (
+          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 12, fontWeight: 600 }}>
+            ⚠ {saveError}
+          </div>
+        )}
+
         {/* ── LIBRARY TAB ──────────────────────────────────────────── */}
         {tab === 'library' && (
           <div>
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search by title or author..."
-              style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', marginBottom: 16 }} />
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+              <input value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Search by title or author..."
+                style={{ flex: 1, minWidth: 180, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+              <button onClick={restoreDefaults} disabled={saving}
+                title="Re-add the 20 built-in books that aren't in your library. Custom books are untouched."
+                style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--muted)', fontSize: 12, fontWeight: 600, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                ↻ Restore default library
+              </button>
+            </div>
 
             <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
               {filtered.length} Books · Click to Deep Dive
@@ -145,32 +245,41 @@ export default function BookClub() {
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
                   {search ? `No books match "${search}"` : 'No books in your library yet.'}
                 </div>
-                <button onClick={() => { setSearch(''); setTab('add'); }}
-                  style={{ padding: '9px 20px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <button onClick={openAdd}
+                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   + Add a Book
                 </button>
               </div>
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: gridCol, gap: 10 }}>
-              {filtered.map((book, i) => {
-                const isSelected = selectedBook?.title === book.title;
+              {filtered.map((book) => {
+                const isSelected = selectedBook?.id === book.id;
+                const c = typeColor(book.type);
                 return (
-                  <div key={i}
+                  <div key={book.id}
                     onClick={() => { setSelectedBook(book); setMode('overview'); setResult(''); setTab('dive'); }}
-                    style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? T.accent : withAlpha(book.color || T.accent, 13)}`, borderTop: `3px solid ${book.color || T.accent}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
-                    <div style={{ fontSize: 9, color: book.color || T.accent, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
-                      {book.type || 'General'}
+                    style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? T.accent : withAlpha(c, 13)}`, borderTop: `3px solid ${c}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
+                    <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                      {TYPE_META[book.type]?.label || book.type || 'General'}
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4 }}>{book.title}</div>
                     <div style={{ fontSize: 10, color: 'var(--muted)' }}>{book.author}</div>
-                    {book.custom && (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                        <div style={{ fontSize: 8, color: T.accent, fontWeight: 700 }}>CUSTOM</div>
-                        <div onClick={(e) => { e.stopPropagation(); const idx = customBooks.findIndex(b => b.title === book.title); if (idx !== -1) removeCustom(idx); }}
-                          style={{ fontSize: 9, color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px' }}>✕</div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <div style={{ fontSize: 8, color: 'var(--dim)', fontWeight: 700, letterSpacing: 0.5 }}>
+                        {book.builtin ? 'BUILT-IN' : 'CUSTOM'}
                       </div>
-                    )}
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        <button onClick={(e) => { e.stopPropagation(); openEdit(book); }}
+                          title="Edit"
+                          style={{ fontSize: 10, color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✎</button>
+                        <button onClick={(e) => { e.stopPropagation(); removeBook(book); }}
+                          title="Remove"
+                          style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✕</button>
+                      </div>
+                    </div>
+
                     {book.note && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
                     <div style={{ marginTop: 10, fontSize: 9, color: T.accent, fontWeight: 700 }}>🤿 Deep Dive →</div>
                   </div>
@@ -180,32 +289,52 @@ export default function BookClub() {
           </div>
         )}
 
-        {/* ── ADD BOOK TAB ─────────────────────────────────────────── */}
+        {/* ── ADD / EDIT BOOK TAB ──────────────────────────────────── */}
         {tab === 'add' && (
           <div style={{ maxWidth: 520 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 16 }}>
+              {editingId ? 'Edit Book' : 'Add a Book'}
+            </div>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Book Title *</label>
-              <input value={addTitle} onChange={e => setAddTitle(e.target.value)}
+              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. The Lean Startup"
                 style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Author</label>
-              <input value={addAuthor} onChange={e => setAddAuthor(e.target.value)}
+              <input value={form.author} onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
                 placeholder="e.g. Eric Ries"
                 style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Category</label>
+              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+                {TYPE_IDS.map(id => (
+                  <option key={id} value={id}>{TYPE_META[id]?.label || id}</option>
+                ))}
+              </select>
+            </div>
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
-              <textarea value={addNote} onChange={e => setAddNote(e.target.value)}
+              <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 placeholder="Why you're reading it, key questions, context..."
                 rows={3}
                 style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
-            <button onClick={addBook} disabled={!addTitle.trim()}
-              style={{ padding: '11px 24px', background: addTitle.trim() ? T.accent : 'var(--surf2)', color: addTitle.trim() ? '#fff' : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: addTitle.trim() ? 'pointer' : 'default', fontFamily: 'inherit' }}>
-              Add to Library
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={saveBook} disabled={!form.title.trim() || saving}
+                style={{ padding: '11px 24px', background: form.title.trim() && !saving ? T.accent : 'var(--surf2)', color: form.title.trim() && !saving ? T.onAccent : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: form.title.trim() && !saving ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add to Library'}
+              </button>
+              {editingId && (
+                <button onClick={() => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('library'); }}
+                  style={{ padding: '11px 20px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -217,14 +346,14 @@ export default function BookClub() {
                 <div style={{ fontSize: 32, marginBottom: 12 }}>📖</div>
                 <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Select a book from the Library to deep dive</div>
                 <button onClick={() => setTab('library')}
-                  style={{ padding: '9px 20px', background: T.accent, color: '#fff', borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Browse Library
                 </button>
               </div>
             ) : (
               <div>
                 {/* Selected book header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid #D9A44130`, borderLeft: `3px solid ${selectedBook.color || T.accent}`, borderRadius: 12, marginBottom: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid ${withAlpha(typeColor(selectedBook.type), 30)}`, borderLeft: `3px solid ${typeColor(selectedBook.type)}`, borderRadius: 12, marginBottom: 20 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{selectedBook.title}</div>
                     <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{selectedBook.author}</div>
@@ -240,7 +369,7 @@ export default function BookClub() {
                 <div style={{ display: 'grid', gridTemplateColumns: modeCol, gap: 8, marginBottom: 20 }}>
                   {STUDY_MODES.map(m => (
                     <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
-                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? 'rgba(217,164,65,0.12)' : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
+                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? withAlpha(T.accent, 12) : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
                       <div style={{ fontSize: 16 }}>{m.icon}</div>
                       <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? T.accent : 'var(--text)', marginTop: 4 }}>{m.label}</div>
                       <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
@@ -249,7 +378,7 @@ export default function BookClub() {
                 </div>
 
                 <button onClick={handleDeepDive} disabled={loading}
-                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : '#fff', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                   {loading
                     ? 'Generating…'
                     : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
