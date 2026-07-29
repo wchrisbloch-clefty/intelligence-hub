@@ -1,12 +1,13 @@
 import {
   Home, GraduationCap, BookMarked, Telescope, Globe,
   Layers, Mic2, Archive, TrendingUp, Inbox,
-  Scale, Compass, PlayCircle, ClipboardList, Route, Microscope, Wand2,
+  Scale, Compass, PlayCircle, ClipboardList, Route, Microscope, Wand2, Landmark,
 } from 'lucide-react';
 
 const MAP = {
   home:      Home,
   learn:     GraduationCap,
+  academy:   Landmark,
   ladder:    Route,
   books:     BookMarked,
   research:  Telescope,

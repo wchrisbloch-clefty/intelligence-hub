@@ -10,6 +10,7 @@ import NavIcon from './modules/shared/NavIcon.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
 import LearningLadder from './modules/LearningLadder.jsx';
+import Academy from './modules/Academy.jsx';
 import BookClub from './modules/BookClub.jsx';
 import ResearchHub from './modules/ResearchHub.jsx';
 import DeepDive from './modules/DeepDive.jsx';
@@ -114,6 +115,7 @@ export default function App() {
   const modules = {
     home:      <HomeDashboard />,
     learn:     <LearningCenter />,
+    academy:   <Academy />,
     ladder:    <LearningLadder />,
     books:     <BookClub />,
     research:  <ResearchHub />,
