@@ -90,3 +90,37 @@ export function removeReview(topicId) {
 export function dueReviews(index = loadIndex(), now = Date.now()) {
   return index.filter(r => r.dueAt <= now).sort((a, b) => a.dueAt - b.dueAt);
 }
+
+// ── Flashcards (aether_flashcards) ──────────────────────────────────────────
+// MasteryVault holds the cards and studies them; nothing used to write to them,
+// so the Vault was always empty. createCard is the single entry point every
+// learning module pushes to — manually via an "Add to Vault" affordance and
+// automatically from quiz misses and Academy confirm-ledger items. New cards
+// enter SM-2 immediately (due now), matching the Vault's card schema plus
+// provenance (source / module / topic) so a card traces back to where it came
+// from.
+const FLASH = 'aether_flashcards';
+const cardId = () => 'card_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const norm = (s) => String(s || '').trim();
+
+export function loadCards() { return readLocal(FLASH, []); }
+export async function hydrateCards() { const r = await hydrate(FLASH); return Array.isArray(r) ? r : undefined; }
+
+// Returns { ok, created, card, reason } — created:false with reason:'duplicate'
+// when a card with the same front already exists, so callers can say so.
+export function createCard({ front, back, source = null, module = null, topic = null } = {}) {
+  const f = norm(front), b = norm(back);
+  if (!f || !b) return { ok: false, created: false, reason: 'empty' };
+  const cards = loadCards();
+  const dup = cards.find((c) => norm(c.front).toLowerCase() === f.toLowerCase());
+  if (dup) return { ok: true, created: false, reason: 'duplicate', card: dup };
+  const card = {
+    id: cardId(), front: f, back: b,
+    source, module, topic,
+    interval: 1, easeFactor: 2.5, dueDate: Date.now(), reviews: 0, createdAt: Date.now(),
+  };
+  writeThrough(FLASH, [card, ...cards]);   // enters SM-2 immediately (due now)
+  return { ok: true, created: true, card };
+}
+
+export function cardCount() { return loadCards().length; }

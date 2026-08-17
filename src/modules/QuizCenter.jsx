@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildQuizPrompt } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
-import { recordQuizResult } from '../lib/reviews.js';
+import { recordQuizResult, createCard } from '../lib/reviews.js';
+import { logConcept } from '../lib/graph.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
@@ -55,7 +56,7 @@ Be direct. No padding. CB-style.`;
 }
 
 export default function QuizCenter() {
-  const { isMobile, graph, setChatPrefill, setChatOpen } = useApp();
+  const { isMobile, graph, setGraph, setChatPrefill, setChatOpen } = useApp();
   const [view,       setView]       = useState('pick');  // pick | quiz | result | history
   const [topic,      setTopic]      = useState(null);
   const [questions,  setQuestions]  = useState([]);
@@ -108,6 +109,12 @@ export default function QuizCenter() {
     // Schedule a spaced-repetition review for this topic.
     const reviewId = topic.id === 'custom' ? topic.label.toLowerCase().replace(/\s+/g, '_') : topic.id;
     recordQuizResult({ topicId: reviewId, topicLabel: topic.label, results });
+    // Connect the quizzed topic into the graph — right and wrong both count,
+    // a miss is signal — and turn each missed MC question into a review card.
+    const { graph: g } = await logConcept({ topic: topic.label, source: topic.label, module: 'quiz', confidence: mcTotal ? Math.round((mcCorrect / mcTotal) * 10) : null });
+    if (g) setGraph(g);
+    results.filter(r => r.type === 'mc' && !r.correct).forEach(r =>
+      createCard({ front: r.question, back: `Correct: ${r.model}${r.explanation ? ' — ' + r.explanation : ''}`, source: topic.label, module: 'quiz', topic: topic.label }));
     setView('result');
     setGapLoading(true);
     try {

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
+import { logConcept } from '../lib/graph.js';
 import { CB_IDENTITY } from '../constants.js';
 
 const INBOX_KEY = 'aether_inbox';
@@ -23,6 +24,9 @@ const FILTERS = [
 
 const TYPE_ICON  = { article: '📰', video: '▶️', social: '💬', note: '📝' };
 const TYPE_COLOR = { article: T.accent, video: T.accent, social: T.accent, note: T.accent };
+
+// Capture lineage — what a saved item became, for the traceable trail.
+const DERIVED_LABEL = { vault: '🏛 Vault note', deepdive: '🔬 Deep Dive', research: '🔭 Research', project: '🚀 Project', books: '📚 Book', note: '📝 Note' };
 
 function detectType(url) {
   if (!url) return 'note';
@@ -92,9 +96,13 @@ export default function ContentInbox() {
         summary,
         savedAt:      Date.now(),
         inVault:      false,
+        derivedInto:  [],   // capture lineage — what this item became
       };
       const updated = [item, ...items];
       persist(updated);
+      // Captured content is a concept observation too — connects the inbox into
+      // the same graph as research and study.
+      logConcept({ topic: item.title, source: item.title, module: 'inbox', refs: item.url ? [item.url] : [] });
       setUrl(''); setText(''); setTitle('');
       setTab('inbox');
       setExpandedId(item.id);
@@ -119,7 +127,10 @@ export default function ContentInbox() {
     const updated = [note, ...notes];
     setNotes(updated);
     await saveNotes(updated);
-    persist(items.map(i => i.id === item.id ? { ...i, inVault: true } : i));
+    // Record the lineage: this captured item became a Vault note.
+    persist(items.map(i => i.id === item.id
+      ? { ...i, inVault: true, derivedInto: [...(i.derivedInto || []), { module: 'vault', id: note.id, at: Date.now() }] }
+      : i));
   };
 
   const copyToClipboard = (id, text) => {
@@ -242,6 +253,17 @@ export default function ContentInbox() {
                           <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
                           {item.inVault && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: T.accent, fontWeight: 600 }}>✓ Vaulted</span>}
                         </div>
+                        {/* Capture lineage — the trail of what this became */}
+                        {item.derivedInto?.length > 0 && (
+                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
+                            <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, color: 'var(--dim)' }}>Became</span>
+                            {item.derivedInto.map((d, di) => (
+                              <span key={di} style={{ fontSize: 'var(--fs-sm)', padding: '2px 8px', borderRadius: 12, background: withAlpha(T.accent, 10), color: T.accent, fontWeight: 600 }}>
+                                {DERIVED_LABEL[d.module] || d.module}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                         <div

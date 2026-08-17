@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, timeAgo, DEPTH_META } from '../utils.js';
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
 import { gradeTopic } from '../lib/reviews.js';
+import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -64,6 +65,9 @@ export default function DeepDive() {
       setDive(updated); refresh();
       // Feed into spaced repetition so the dive resurfaces and compounds.
       gradeTopic(`deepdive_${updated.id}`, 4, { topicLabel: updated.topic });
+      // Each pass records the dive topic as a concept, with any sources it
+      // pulled as refs — so a deep dive connects to everything on the subject.
+      logConcept({ topic: updated.topic, source: updated.topic, module: 'deepdive', confidence: 6, refs: (section.sources || []).map(s => s.url || s).filter(Boolean).slice(0, 6) });
       return updated;
     } catch {
       setError('Research pass failed — try again.');
