@@ -18,6 +18,7 @@ import DeepDive from './modules/DeepDive.jsx';
 import TranslatorHub from './modules/TranslatorHub.jsx';
 import ProjectsOS from './modules/ProjectsOS.jsx';
 import MasteryVault from './modules/MasteryVault.jsx';
+import Skills from './modules/Skills.jsx';
 import GrowthTools from './modules/GrowthTools.jsx';
 import PodcastHub from './modules/PodcastHub.jsx';
 import ContentInbox from './modules/ContentInbox.jsx';
@@ -147,6 +148,7 @@ export default function App() {
     translate: <TranslatorHub />,
     projects:  <ProjectsOS />,
     podcast:   <PodcastHub />,
+    skills:    <Skills />,
     vault:     <MasteryVault />,
     growth:    <GrowthTools />,
     inbox:     <ContentInbox />,

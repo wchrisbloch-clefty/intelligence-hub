@@ -5,6 +5,7 @@ import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, ti
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
 import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
+import AskChip from './shared/AskChip.jsx';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -178,7 +179,10 @@ export default function DeepDive() {
         </div>
       </div>
 
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{dive.topic}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{dive.topic}</div>
+        <AskChip type="deepdive" object={dive} />
+      </div>
       <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 18px' }}>
         {DEPTH_META[dive.depth]?.label || dive.depth}{dive.category ? ` · ${dive.category}` : ''} · {dive.sections.length} pass{dive.sections.length === 1 ? '' : 'es'} · certified: cited + confidence-flagged
       </div>

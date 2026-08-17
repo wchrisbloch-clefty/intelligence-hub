@@ -81,6 +81,36 @@ nobody; now they feed a shared graph and a shared card deck.
   or the graph rollup, drillable. Mounted on **Home** and in the **Ask layer**
   (`ChatPanel` empty state).
 
+## Skills, study guides, and the Claude bridge (Phase 3)
+
+- **Skills** (`src/modules/Skills.jsx`, `src/lib/skills.js`) — a mode in the
+  Skills container (`skills`, ahead of vault/growth). A skill is a tracked topic
+  with a *confidence trajectory*, derived from each concept's per-observation
+  confidence history in the graph: current level, trend (sparkline), what moved
+  it, review pressure (cards/reviews due), and a decaying flag when neglected
+  >21 days. User-definable via `aether_skills_v1`; module chips link back to
+  where the skill is built.
+- **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
+  is appended to every prompt. "Generate Study Guide" runs `job:'reason'` at
+  4k tokens for thesis → frameworks → worked example (in-lens) → application
+  prompts → field summary, parses a trailing `---CARDS---` JSON block into Vault
+  cards, and "Send to Studio" hands the guide to Creation Studio (new `guide`
+  source kind) to format + download.
+- **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
+  `toContext(type, object)` serializer per type (book, project, note, deepdive,
+  decision, skill, inbox). `<AskChip type object />` opens the Ask layer
+  pre-loaded with the object + its graph neighbors. Wired on all seven types.
+- **MCP bridge** (`api/mcp.js`, `api/_mcp.js`, `api/export.js`) — the Claude
+  connector. JSON-RPC over POST (`initialize`/`tools/list`/`tools/call`),
+  gated by an **`MCP_TOKEN`** bearer, **fails closed** when the token is unset,
+  and never returns `ACCESS_CODE`, provider keys, or Upstash creds. Tools:
+  `search_knowledge`, `get_concept`, `log_concept`, `add_note`,
+  `create_flashcard`, `add_to_inbox`, `get_projects`, `get_recap`. `api/export`
+  is a token-gated read-only JSON snapshot (graph/projects/skills/recaps).
+  **Connect from claude.ai → Connectors → Add custom connector:** URL
+  `https://<deployment>/api/mcp`, Bearer = the `MCP_TOKEN` set in Vercel. Set
+  `MCP_TOKEN` in the Vercel project env to enable the bridge (unset = off).
+
 ## Scheduled recaps + editable library + storage honesty
 
 Three-part effort. **Sequencing matters: storage layer (Part 3) → book library

@@ -17,6 +17,7 @@ function inferCategory(labelRaw = '') {
 }
 import { Badge, Label, Modal, ThinkingDots } from './shared/Common.jsx';
 import MD from './shared/MD.jsx';
+import AskChip from './shared/AskChip.jsx';
 
 // Adds default workspace fields to old or new projects
 const def = p => ({
@@ -199,6 +200,7 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
                 <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
                 {proj.priority === 'high' && <Badge color={T.accent}>high priority</Badge>}
                 {proj.milestones.length > 0 && <Badge color={proj.color}>{pct}%</Badge>}
+                <AskChip type="project" object={proj} />
               </div>
             </div>
           </div>

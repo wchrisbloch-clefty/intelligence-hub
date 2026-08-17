@@ -115,6 +115,7 @@ export const NAV_ITEMS = [
   { id: "translate", label: "Translate",  desc: "25+ languages",             accent: T.accent },
   { id: "projects",  label: "Projects",   desc: "Track & ship goals",        accent: T.accent },
   { id: "podcast",   label: "Podcasts",   desc: "AI episode summaries",      accent: T.accent },
+  { id: "skills",    label: "Skills",     desc: "Confidence trajectories",   accent: T.accent },
   { id: "vault",     label: "Vault",      desc: "Knowledge base",            accent: T.accent },
   { id: "studio",    label: "Studio",     desc: "Generate deliverables",     accent: T.accent },
   { id: "growth",    label: "Growth",     desc: "Goals & synthesis",         accent: T.accent },
@@ -136,7 +137,7 @@ export const CONTAINERS = [
   { id: "home",     label: "Home",     verb: "Orient",      modes: ["home"] },
   { id: "learn",    label: "Learn",    verb: "Absorb",      modes: ["learn", "academy", "ladder", "books", "deepdive", "ted", "podcast", "translate", "quiz"] },
   { id: "research", label: "Research", verb: "Investigate", modes: ["research", "inbox"] },
-  { id: "skills",   label: "Skills",   verb: "Practice",    modes: ["vault", "growth"] },
+  { id: "skills",   label: "Skills",   verb: "Practice",    modes: ["skills", "vault", "growth"] },
   { id: "projects", label: "Projects", verb: "Execute",     modes: ["projects", "decisions"] },
   { id: "studio",   label: "Studio",   verb: "Produce",     modes: ["studio"] },
 ];

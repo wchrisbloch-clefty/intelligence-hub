@@ -14,6 +14,9 @@ const ACCENT = T.accent;
 // Serialize a saved object into source text for the generator.
 function serializeSource(src) {
   if (!src) return null;
+  // A pre-generated document handed straight in (e.g. a BookClub study guide),
+  // carrying its own text so it's immediately formattable + downloadable here.
+  if (src.kind === 'guide') return { title: src.title || 'Study Guide', text: src.text || '' };
   if (src.kind === 'deepdive') {
     const d = loadDive(src.id); if (!d) return null;
     const body = d.sections.map(s => `## ${s.title}\n${s.content}`).join('\n\n');

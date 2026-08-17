@@ -8,6 +8,7 @@ import { CB_IDENTITY } from '../constants.js';
 const DECISIONS_KEY = 'aether_decisions';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import AskChip from './shared/AskChip.jsx';
 
 const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.07)';
@@ -253,6 +254,7 @@ export default function DecisionLog() {
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                        <AskChip type="decision" object={d} />
                         <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', display: 'inline-block', transform: `rotate(${expanded ? 180 : 0}deg)`, transition: 'transform 0.2s' }}>▼</span>
                         <div onClick={e => { e.stopPropagation(); remove(d.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                       </div>
