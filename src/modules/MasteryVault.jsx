@@ -8,6 +8,7 @@ import { CB_IDENTITY } from '../constants.js';
 const FLASHCARDS_KEY = 'aether_flashcards';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Modal, ThinkingDots } from './shared/Common.jsx';
+import AskChip from './shared/AskChip.jsx';
 
 const VAULT_ACCENT  = T.accent;
 const NOTE_COLORS   = [T.accent, T.accent, T.accent, T.accent, T.accent, T.accent];
@@ -316,6 +317,7 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
         <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Vault</div>
         <div onClick={onCardCreate} style={{ fontSize: 'var(--fs-sm)', padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
+        <AskChip type="note" object={note} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
         <div>

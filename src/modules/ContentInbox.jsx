@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
+import AskChip from './shared/AskChip.jsx';
 import { CB_IDENTITY } from '../constants.js';
 
 const INBOX_KEY = 'aether_inbox';
@@ -298,6 +299,7 @@ export default function ContentInbox() {
                           style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: T.accent, cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
                           🚀 Save to Project
                         </div>
+                        <AskChip type="inbox" object={item} style={{ minHeight: isMobile ? 40 : undefined }} />
                       </div>
                     </div>
                   )}
