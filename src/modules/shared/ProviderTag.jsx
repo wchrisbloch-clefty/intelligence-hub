@@ -4,7 +4,7 @@
 export default function ProviderTag({ provider, style }) {
   if (!provider) return null;
   return (
-    <span style={{ fontSize: 10, color: 'var(--text-tertiary)', letterSpacing: 0.2, fontWeight: 500, ...style }}>
+    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', letterSpacing: 0.2, fontWeight: 500, ...style }}>
       via {provider}
     </span>
   );

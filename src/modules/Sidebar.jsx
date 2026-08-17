@@ -40,7 +40,7 @@ export default function Sidebar({ collapsed, onToggle }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          fontSize: 16,
+          fontSize: 'var(--fs-lg)',
           fontWeight: 700,
           color: T.canvas,
           flexShrink: 0,
@@ -50,7 +50,7 @@ export default function Sidebar({ collapsed, onToggle }) {
 
         {!collapsed && (
           <div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1 }}>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1 }}>
               The Film Room
             </div>
             <div style={{ fontSize: 9, letterSpacing: 2.5, color: 'var(--accent, #D9A441)', textTransform: 'uppercase', marginTop: 3 }}>
@@ -98,9 +98,9 @@ export default function Sidebar({ collapsed, onToggle }) {
                   borderRadius: '0 3px 3px 0',
                 }} />
               )}
-              <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>{item.icon}</span>
+              <span style={{ fontSize: 'var(--fs-lg)', flexShrink: 0, lineHeight: 1, userSelect: 'none' }}>{item.icon}</span>
               {!collapsed && (
-                <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>
+                <span style={{ fontSize: 'var(--fs-base)', fontWeight: active ? 700 : 500, whiteSpace: 'nowrap' }}>
                   {item.label}
                 </span>
               )}
@@ -118,8 +118,8 @@ export default function Sidebar({ collapsed, onToggle }) {
             { value: topicCount, label: '📚' },
           ].map(s => (
             <div key={s.label} style={{ flex: 1, background: 'var(--bg)', borderRadius: 6, padding: '5px 3px', textAlign: 'center' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -150,9 +150,9 @@ export default function Sidebar({ collapsed, onToggle }) {
           display: 'inline-block',
           transition: 'transform 0.22s',
           transform: collapsed ? 'rotate(0deg)' : 'rotate(180deg)',
-          fontSize: 14,
+          fontSize: 'var(--fs-lg)',
         }}>›</span>
-        {!collapsed && <span style={{ fontSize: 10, letterSpacing: 0.5 }}>Collapse</span>}
+        {!collapsed && <span style={{ fontSize: 'var(--fs-sm)', letterSpacing: 0.5 }}>Collapse</span>}
       </button>
     </nav>
   );

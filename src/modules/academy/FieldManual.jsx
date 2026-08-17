@@ -119,7 +119,7 @@ export default function FieldManual() {
 function Shelf({ state, pad, isMobile, onOpen, onField, onLedger }) {
   return (
     <div style={{ maxWidth: 1000, margin: '0 auto', padding: `4px ${pad} 60px` }}>
-      <div style={{ fontSize: 12, color: 'var(--muted)', margin: '0 0 22px' }}>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '0 0 22px' }}>
         Field-ready manuals. Every claim is tiered; unverified claims are gated out of customer-facing use until you resolve them.
       </div>
 
@@ -132,14 +132,14 @@ function Shelf({ state, pad, isMobile, onOpen, onField, onLedger }) {
           return (
             <div key={ladder.id} style={card()}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 26, lineHeight: 1 }}>{ladder.emoji || '🪜'}</div>
+                <div style={{ fontSize: 'var(--fs-2xl)', lineHeight: 1 }}>{ladder.emoji || '🪜'}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{ladder.title}</div>
-                  <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 2 }}>{ladder.domain}</div>
+                  <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{ladder.title}</div>
+                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{ladder.domain}</div>
                 </div>
                 <ProgressRing done={ready} total={total} />
               </div>
-              {ladder.subtitle && <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>{ladder.subtitle}</div>}
+              {ladder.subtitle && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>{ladder.subtitle}</div>}
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                 <MetaPill>{total} levels</MetaPill>
                 <MetaPill>{ready}/{total} field-ready</MetaPill>
@@ -170,8 +170,8 @@ function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, o
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
         <H1>{ladder.emoji} {ladder.title}</H1>
       </div>
-      <div style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 6px' }}>{ladder.summary}</div>
-      <div style={{ fontSize: 10, color: 'var(--dim)', marginBottom: 16 }}>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 6px' }}>{ladder.summary}</div>
+      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 16 }}>
         Last verified {ladder.lastVerified}
         {stale != null && stale > STALE_DAYS && <span style={{ color: 'var(--caution)', fontWeight: 700 }}> · ⚠ {stale} days old — re-verify market figures</span>}
       </div>
@@ -188,17 +188,17 @@ function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, o
         const openConf = levelOpenConfirms(ladder, l, state).length;
         return (
           <div key={l.id} onClick={() => onOpen(l.id)} style={{ ...card(), marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: ACCENT, width: 28, flexShrink: 0 }}>L{i + 1}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: ACCENT, width: 28, flexShrink: 0 }}>L{i + 1}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
                 {l.tag && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, color: 'var(--dim)', textTransform: 'uppercase' }}>{l.tag}</span>}
               </div>
-              <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2, lineHeight: 1.45 }}>{l.sub}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2, lineHeight: 1.45 }}>{l.sub}</div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <StatusBadge status={status} score={p.bestScore} />
-              {openConf > 0 && <div style={{ fontSize: 9, color: 'var(--negative)', marginTop: 4, fontWeight: 700 }}>{openConf} unverified</div>}
+              {openConf > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--negative)', marginTop: 4, fontWeight: 700 }}>{openConf} unverified</div>}
             </div>
           </div>
         );
@@ -241,8 +241,8 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
     <div style={{ maxWidth: 820, margin: '0 auto', padding: `18px ${pad} 80px` }}>
       <BackRow onBack={onBack} label={ladder.title} />
       <H1>{level.title}</H1>
-      <div style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 8px' }}>{level.sub}</div>
-      <div style={{ fontSize: 10, color: 'var(--dim)', marginBottom: 18 }}>~{level.minutes} min</div>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 8px' }}>{level.sub}</div>
+      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 18 }}>~{level.minutes} min</div>
 
       {openConfirms.length > 0 && (
         <div style={band('var(--negative)')}>
@@ -292,7 +292,7 @@ function BlockView({ block, ladder, state }) {
       </div>
       {renderBlockBody(block)}
       {gatedOpen && confirm && (
-        <div style={{ fontSize: 10, color: 'var(--negative)', marginTop: 8, lineHeight: 1.5, borderTop: `1px solid ${withAlpha('var(--negative)', 30)}`, paddingTop: 6 }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--negative)', marginTop: 8, lineHeight: 1.5, borderTop: `1px solid ${withAlpha('var(--negative)', 30)}`, paddingTop: 6 }}>
           <b>Why gated:</b> {confirm.why}
         </div>
       )}
@@ -307,17 +307,17 @@ function renderBlockBody(b) {
     case 'h':
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          {b.n && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, fontWeight: 700, color: ACCENT, background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 30)}`, borderRadius: 5, padding: '1px 6px' }}>{b.n}</span>}
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{b.t}</span>
+          {b.n && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', fontWeight: 700, color: ACCENT, background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 30)}`, borderRadius: 5, padding: '1px 6px' }}>{b.n}</span>}
+          <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{b.t}</span>
         </div>
       );
     case 'p':
-      return <HTML html={b.html} style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-c)' }} />;
+      return <HTML html={b.html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--text-c)' }} />;
     case 'ul':
       return (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {(b.items || []).map((it, i) => (
-            <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 12.5, lineHeight: 1.6, color: 'var(--text-c)' }}>
+            <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 'var(--fs-base)', lineHeight: 1.6, color: 'var(--text-c)' }}>
               <span style={{ color: ACCENT, flexShrink: 0 }}>▸</span>
               <HTML html={it} />
             </li>
@@ -331,15 +331,15 @@ function renderBlockBody(b) {
       }[b.tone] || ACCENT;
       return (
         <div style={{ background: withAlpha(tone, 8), border: `1px solid ${withAlpha(tone, 32)}`, borderLeft: `3px solid ${tone}`, borderRadius: 8, padding: '11px 14px' }}>
-          {b.title && <div style={{ fontSize: 11, fontWeight: 800, color: tone, marginBottom: 5, letterSpacing: 0.2 }}>{b.title}</div>}
-          <HTML html={b.html} style={{ fontSize: 12.5, lineHeight: 1.65, color: 'var(--text-c)' }} />
+          {b.title && <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: tone, marginBottom: 5, letterSpacing: 0.2 }}>{b.title}</div>}
+          <HTML html={b.html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--text-c)' }} />
         </div>
       );
     }
     case 'table':
       return (
         <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 11.5 }}>
+          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 'var(--fs-base)'}}>
             <thead>
               <tr>{(b.head || []).map((h, i) => <th key={i} style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--muted)', fontWeight: 700, background: 'var(--surf2)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}><HTML html={h} /></th>)}</tr>
             </thead>
@@ -356,8 +356,8 @@ function renderBlockBody(b) {
         <div style={{ display: 'grid', gap: 6 }}>
           {(b.pairs || []).map(([term, meaning], i) => (
             <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 160px) 1fr', gap: 10, alignItems: 'start', padding: '8px 10px', background: 'var(--surf2)', borderRadius: 7 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }} dangerouslySetInnerHTML={{ __html: term }} />
-              <div style={{ fontSize: 12, color: 'var(--text-c)', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: meaning }} />
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }} dangerouslySetInnerHTML={{ __html: term }} />
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: meaning }} />
             </div>
           ))}
         </div>
@@ -367,10 +367,10 @@ function renderBlockBody(b) {
         <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
           {(b.stages || []).map((s, i) => (
             <div key={i} style={{ minWidth: 150, flexShrink: 0, background: s.us ? withAlpha(ACCENT, 14) : 'var(--surface)', border: `1px solid ${s.us ? withAlpha(ACCENT, 45) : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 9, color: 'var(--dim)' }}>{s.n}</div>
-              <div style={{ fontSize: 12, fontWeight: 800, color: s.us ? ACCENT : 'var(--text)', marginTop: 2 }}>{s.nm}</div>
-              {s.v && <div style={{ fontSize: 9, color: 'var(--muted)', marginTop: 2 }}>{s.v}</div>}
-              {s.d && <div style={{ fontSize: 10, color: 'var(--text-c)', marginTop: 5, lineHeight: 1.45 }}>{s.d}</div>}
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{s.n}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: s.us ? ACCENT : 'var(--text)', marginTop: 2 }}>{s.nm}</div>
+              {s.v && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>{s.v}</div>}
+              {s.d && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', marginTop: 5, lineHeight: 1.45 }}>{s.d}</div>}
             </div>
           ))}
         </div>
@@ -379,8 +379,8 @@ function renderBlockBody(b) {
       return (
         <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
           <div style={{ padding: '10px 14px', background: 'var(--surf2)', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{b.title}</div>
-            {b.sub && <div style={{ fontSize: 10, color: 'var(--muted)', marginTop: 2 }}>{b.sub}</div>}
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>{b.title}</div>
+            {b.sub && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>{b.sub}</div>}
           </div>
           <div style={{ padding: '12px 14px', display: 'grid', gap: 10 }}>
             {b.win && <BCRow color="var(--caution)" label="Where they win" html={b.win} />}
@@ -388,7 +388,7 @@ function renderBlockBody(b) {
               <div>
                 <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--positive)', marginBottom: 4 }}>Where we win</div>
                 <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                  {b.ours.map((o, i) => <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 12, lineHeight: 1.55, color: 'var(--text-c)' }}><span style={{ color: 'var(--positive)', flexShrink: 0 }}>▸</span><HTML html={o} /></li>)}
+                  {b.ours.map((o, i) => <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 'var(--fs-base)', lineHeight: 1.55, color: 'var(--text-c)' }}><span style={{ color: 'var(--positive)', flexShrink: 0 }}>▸</span><HTML html={o} /></li>)}
                 </ul>
               </div>
             )}
@@ -400,9 +400,9 @@ function renderBlockBody(b) {
     case 'math':
       return (
         <div style={{ background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', fontFamily: 'var(--font-mono)' }}>
-          {b.title && <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>{b.title}</div>}
-          {(b.lines || []).map((ln, i) => <div key={i} style={{ fontSize: 11.5, color: 'var(--text-c)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{ln || ' '}</div>)}
-          {b.result && <div style={{ fontSize: 12, color: ACCENT, fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{b.result}</div>}
+          {b.title && <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>{b.title}</div>}
+          {(b.lines || []).map((ln, i) => <div key={i} style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{ln || ' '}</div>)}
+          {b.result && <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{b.result}</div>}
         </div>
       );
     default:
@@ -414,7 +414,7 @@ function BCRow({ color, label, html }) {
   return (
     <div>
       <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color, marginBottom: 4 }}>{label}</div>
-      <HTML html={html} style={{ fontSize: 12, lineHeight: 1.55, color: 'var(--text-c)' }} />
+      <HTML html={html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.55, color: 'var(--text-c)' }} />
     </div>
   );
 }
@@ -425,10 +425,10 @@ function RecallCard({ card }) {
   return (
     <div onClick={() => setFlip((f) => !f)} style={{ minHeight: 84, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
       {!flip ? (
-        <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{front}</div>
+        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{front}</div>
       ) : (
         <>
-          <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.5, marginBottom: 6 }}>{back}</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5, marginBottom: 6 }}>{back}</div>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}><TierChip tier={tier} /></div>
         </>
       )}
@@ -465,7 +465,7 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
       <SectionLabel style={{ marginTop: 0 }}>Quiz · {total} questions · optional</SectionLabel>
       {level.quiz.map((q, i) => (
         <div key={i} style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }} dangerouslySetInnerHTML={{ __html: `${i + 1}. ${q.q}` }} />
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }} dangerouslySetInnerHTML={{ __html: `${i + 1}. ${q.q}` }} />
           <div style={{ display: 'grid', gap: 6 }}>
             {q.opts.map((opt, oi) => {
               const chosen = answers[i] === oi;
@@ -479,20 +479,20 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
                 : chosen ? ACCENT : 'var(--border)';
               return (
                 <div key={oi} onClick={() => !submitted && setAnswers((a) => ({ ...a, [i]: oi }))}
-                  style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${bd}`, background: bg, cursor: submitted ? 'default' : 'pointer', fontSize: 12, color: 'var(--text-c)' }}
+                  style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${bd}`, background: bg, cursor: submitted ? 'default' : 'pointer', fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}
                   dangerouslySetInnerHTML={{ __html: opt }} />
               );
             })}
           </div>
-          {submitted && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, borderLeft: `2px solid ${answers[i] === q.a ? 'var(--positive)' : 'var(--negative)'}`, paddingLeft: 8 }}>{q.e}</div>}
+          {submitted && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, borderLeft: `2px solid ${answers[i] === q.a ? 'var(--positive)' : 'var(--negative)'}`, paddingLeft: 8 }}>{q.e}</div>}
         </div>
       ))}
       {!submitted ? (
         <Action onClick={submit} disabled={Object.keys(answers).length < total} primary>Submit ({Object.keys(answers).length}/{total})</Action>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: pct >= 80 ? 'var(--positive)' : 'var(--caution)' }}>{correct}/{total} · {pct}%</div>
-          <div style={{ fontSize: 11, color: 'var(--muted)' }}>{pct >= 80 ? 'Passing. Resolve any open confirms to reach Field Ready.' : 'Below 80%. Read back and try again — no limit.'}</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: pct >= 80 ? 'var(--positive)' : 'var(--caution)' }}>{correct}/{total} · {pct}%</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>{pct >= 80 ? 'Passing. Resolve any open confirms to reach Field Ready.' : 'Below 80%. Read back and try again — no limit.'}</div>
           <Action onClick={retry}>Try again</Action>
         </div>
       )}
@@ -510,8 +510,8 @@ function FieldMode({ ladder, state, onExit, isPhone }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto', padding: `18px ${isPhone ? '16px' : '24px'} 40px` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, maxWidth: 640, margin: '0 auto 14px' }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>⚡ Field Mode — {ladder.title}</div>
-        <div onClick={scenario ? () => setPick(null) : onExit} style={{ fontSize: 22, color: 'var(--dim)', cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</div>
+        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>⚡ Field Mode — {ladder.title}</div>
+        <div onClick={scenario ? () => setPick(null) : onExit} style={{ fontSize: 'var(--fs-xl)', color: 'var(--dim)', cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</div>
       </div>
 
       {openC > 0 && (
@@ -526,10 +526,10 @@ function FieldMode({ ladder, state, onExit, isPhone }) {
           {scenarios.map((s) => (
             <div key={s.id} onClick={() => setPick(s.id)} style={{ ...card(), cursor: 'pointer', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{s.label}</div>
-                {s.sub && <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{s.sub}</div>}
+                <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>{s.label}</div>
+                {s.sub && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 2 }}>{s.sub}</div>}
               </div>
-              <span style={{ color: ACCENT, fontSize: 18 }}>→</span>
+              <span style={{ color: ACCENT, fontSize: 'var(--fs-xl)'}}>→</span>
             </div>
           ))}
         </div>
@@ -543,15 +543,15 @@ function FieldMode({ ladder, state, onExit, isPhone }) {
 function FieldCard({ scenario }) {
   return (
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 16 }}>{scenario.label}</div>
+      <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 16 }}>{scenario.label}</div>
 
       <FieldSection label="Open with" color={ACCENT}>
-        <div style={{ fontSize: 17, lineHeight: 1.5, color: 'var(--text)' }}>{scenario.open}</div>
+        <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.open}</div>
       </FieldSection>
 
       <div style={{ background: withAlpha('var(--positive)', 12), border: `1px solid ${withAlpha('var(--positive)', 40)}`, borderLeft: '4px solid var(--positive)', borderRadius: 10, padding: '14px 16px', margin: '14px 0' }}>
         <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--positive)', marginBottom: 6 }}>Kill shot</div>
-        <div style={{ fontSize: 17, lineHeight: 1.5, color: 'var(--text)', fontWeight: 600 }}>{scenario.kill}</div>
+        <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)', fontWeight: 600 }}>{scenario.kill}</div>
       </div>
 
       <FieldSection label="Objections — tap to reveal">
@@ -563,7 +563,7 @@ function FieldCard({ scenario }) {
       {scenario.ask && (
         <div style={{ background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 40)}`, borderRadius: 10, padding: '14px 16px', marginTop: 14 }}>
           <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 6 }}>The ask</div>
-          <div style={{ fontSize: 16, lineHeight: 1.5, color: 'var(--text)' }}>{scenario.ask}</div>
+          <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.ask}</div>
         </div>
       )}
     </div>
@@ -574,9 +574,9 @@ function Objection({ obj }) {
   const [open, setOpen] = useState(false);
   return (
     <div onClick={() => setOpen((o) => !o)} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', cursor: 'pointer', minHeight: 44 }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{obj.q}</div>
-      {open && <div style={{ fontSize: 15, lineHeight: 1.5, color: 'var(--text-c)', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--bord2)' }}>{obj.a}</div>}
-      {!open && <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 4 }}>tap for the response</div>}
+      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>{obj.q}</div>
+      {open && <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text-c)', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--bord2)' }}>{obj.a}</div>}
+      {!open && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 4 }}>tap for the response</div>}
     </div>
   );
 }
@@ -595,7 +595,7 @@ function ConfirmLedger({ state, onResolve, onReopen, onExit, pad }) {
     <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <BackRow onBack={onExit} label="Back" />
       <H1>Confirm Ledger</H1>
-      <div style={{ fontSize: 12, color: 'var(--muted)', margin: '4px 0 20px' }}>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 20px' }}>
         Every unverified claim across all packs. A claim is not customer-safe until an owner is assigned and it is resolved. This is a safety label — it never blocks reading or quizzing.
       </div>
       {rows.map(({ ladder, c, status, owner }) => <LedgerRow key={`${ladder.id}-${c.id}`} ladder={ladder} c={c} status={status} owner={owner} onResolve={onResolve} onReopen={onReopen} />)}
@@ -610,19 +610,19 @@ function LedgerRow({ ladder, c, status, owner, onResolve, onReopen }) {
     <div style={{ ...card(), marginBottom: 10, borderLeft: `3px solid ${open ? 'var(--negative)' : 'var(--positive)'}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
         <span style={pill(open ? 'var(--negative)' : 'var(--positive)')}>{open ? 'OPEN' : 'RESOLVED'}</span>
-        <span style={{ fontSize: 9, color: 'var(--dim)', fontWeight: 700 }}>{ladder.title}</span>
+        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', fontWeight: 700 }}>{ladder.title}</span>
       </div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{c.claim}</div>
-      <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>{c.why}</div>
+      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{c.claim}</div>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>{c.why}</div>
       {open ? (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="Owner (who verifies this)"
-            style={{ flex: 1, minWidth: 160, padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+            style={{ flex: 1, minWidth: 160, padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
           <Action onClick={() => val.trim() && onResolve(ladder.id, c.id, val)} disabled={!val.trim()} primary>Resolve</Action>
         </div>
       ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--muted)' }}>Owner: <b style={{ color: 'var(--text-c)' }}>{owner || '—'}</b></div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>Owner: <b style={{ color: 'var(--text-c)' }}>{owner || '—'}</b></div>
           <Action onClick={() => onReopen(ladder.id, c.id)}>Reopen</Action>
         </div>
       )}
@@ -670,20 +670,20 @@ function SocraticDrill({ ladder, level, onClose }) {
     <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div style={{ width: '100%', maxWidth: 640, maxHeight: '88vh', background: 'var(--surface)', borderRadius: '16px 16px 0 0', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--text)' }}>🎯 Socratic Drill — {level.title}</div>
-          <div onClick={onClose} style={{ fontSize: 18, color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>🎯 Socratic Drill — {level.title}</div>
+          <div onClick={onClose} style={{ fontSize: 'var(--fs-xl)', color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {messages.map((m, i) => (
             <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', background: m.role === 'user' ? 'var(--u-bubble)' : 'var(--bg)', border: `1px solid ${m.role === 'user' ? 'var(--u-bubble-b)' : 'var(--border)'}`, borderRadius: 12, padding: '10px 14px' }}>
-              {m.role === 'user' ? <div style={{ fontSize: 13, color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color={ACCENT} />}
+              {m.role === 'user' ? <div style={{ fontSize: 'var(--fs-base)', color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color={ACCENT} />}
             </div>
           ))}
           {loading && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}>{stream ? <MD text={stream + '▍'} color={ACCENT} /> : <ThinkingDots color={ACCENT} />}</div>}
         </div>
         <div style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
           <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Your answer…"
-            style={{ flex: 1, padding: '10px 14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+            style={{ flex: 1, padding: '10px 14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
           <Action onClick={() => send()} disabled={!input.trim() || loading} primary>Send</Action>
         </div>
       </div>
@@ -697,21 +697,21 @@ const pill = (color) => ({ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, tex
 const band = (color) => ({ background: withAlpha(color, 10), border: `1px solid ${withAlpha(color, 40)}`, borderRadius: 10, padding: '10px 14px', fontSize: 11.5, lineHeight: 1.55, color: 'var(--text-c)', marginBottom: 16 });
 
 const Eyebrow = ({ children }) => <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{children}</div>;
-const H1 = ({ children }) => <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>{children}</div>;
+const H1 = ({ children }) => <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>{children}</div>;
 const SectionLabel = ({ children, style }) => <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--dim)', textTransform: 'uppercase', fontWeight: 700, margin: '22px 0 10px', ...style }}>{children}</div>;
-const MetaPill = ({ children }) => <span style={{ fontSize: 10, color: 'var(--muted)', background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 20, padding: '2px 9px', fontWeight: 600 }}>{children}</span>;
+const MetaPill = ({ children }) => <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 20, padding: '2px 9px', fontWeight: 600 }}>{children}</span>;
 
 function Action({ children, onClick, primary, disabled }) {
   return (
     <button onClick={onClick} disabled={disabled}
-      style={{ padding: '8px 14px', borderRadius: 8, border: primary ? 'none' : '1px solid var(--border)', background: disabled ? 'var(--surf2)' : primary ? ACCENT : 'transparent', color: disabled ? 'var(--dim)' : primary ? 'var(--on-accent)' : 'var(--muted)', fontSize: 12, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+      style={{ padding: '8px 14px', borderRadius: 8, border: primary ? 'none' : '1px solid var(--border)', background: disabled ? 'var(--surf2)' : primary ? ACCENT : 'transparent', color: disabled ? 'var(--dim)' : primary ? 'var(--on-accent)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
       {children}
     </button>
   );
 }
 
 function BackRow({ onBack, label }) {
-  return <div onClick={onBack} style={{ fontSize: 12, color: ACCENT, cursor: 'pointer', fontWeight: 700, marginBottom: 14, display: 'inline-block' }}>← {label}</div>;
+  return <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700, marginBottom: 14, display: 'inline-block' }}>← {label}</div>;
 }
 
 function StatusBadge({ status, score }) {
@@ -723,7 +723,7 @@ function StatusBadge({ status, score }) {
   };
   const m = map[status] || map['not-started'];
   const ready = status === 'field-ready';
-  return <span style={{ fontSize: 10, fontWeight: 800, color: ready ? 'var(--on-accent)' : m.color, background: ready ? 'var(--positive)' : withAlpha(m.color, 12), border: `1px solid ${withAlpha(m.color, 35)}`, borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap' }}>{ready ? '✓ Field Ready' : m.label}</span>;
+  return <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, color: ready ? 'var(--on-accent)' : m.color, background: ready ? 'var(--positive)' : withAlpha(m.color, 12), border: `1px solid ${withAlpha(m.color, 35)}`, borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap' }}>{ready ? '✓ Field Ready' : m.label}</span>;
 }
 
 function ProgressRing({ done, total }) {
@@ -742,11 +742,11 @@ function ConfirmDialog({ title, body, confirmLabel, onConfirm, onCancel }) {
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
       <div style={{ width: '100%', maxWidth: 380, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>{title}</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 18 }}>{body}</div>
+        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>{title}</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 18 }}>{body}</div>
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <Action onClick={onCancel}>Cancel</Action>
-          <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--negative)', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{confirmLabel}</button>
+          <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--negative)', color: '#fff', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{confirmLabel}</button>
         </div>
       </div>
     </div>

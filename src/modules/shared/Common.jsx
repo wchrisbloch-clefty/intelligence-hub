@@ -3,7 +3,7 @@ import { T } from '../../theme';
 
 export function Btn({ children, onClick, color = T.accent, disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
   const pad = { sm: '7px 14px', md: '11px 18px', lg: '14px 22px' }[size];
-  const fs = { sm: 11, md: 12, lg: 13 }[size];
+  const fs = { sm: 'var(--fs-sm)', md: 'var(--fs-base)', lg: 'var(--fs-base)' }[size];
   const base = { padding: pad, borderRadius: 10, fontSize: fs, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', transition: 'all 0.15s', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, ...extraStyle };
 
   if (variant === 'fill') return (
@@ -30,7 +30,7 @@ export function Input({ label, value, onChange, placeholder, type = 'text', styl
       {label && <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>}
       <input
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', ...extraStyle }}
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', ...extraStyle }}
       />
     </div>
   );
@@ -42,7 +42,7 @@ export function Textarea({ label, value, onChange, placeholder, rows = 3, style:
       {label && <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>}
       <textarea
         value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', ...extraStyle }}
+        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', ...extraStyle }}
       />
     </div>
   );
@@ -101,8 +101,8 @@ export function Modal({ children, onClose, title, accent = T.accent, width = 520
       <div style={{ width: '100%', maxWidth: width, background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: 16, overflow: 'hidden', animation: 'fadeUp 0.2s ease' }}>
         {title && (
           <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-            <div onClick={onClose} style={{ fontSize: 16, color: 'var(--subtle)', cursor: 'pointer', padding: '0 4px' }}>✕</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{title}</div>
+            <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer', padding: '0 4px' }}>✕</div>
           </div>
         )}
         <div style={{ padding: 20 }}>{children}</div>
@@ -117,8 +117,8 @@ export function BottomSheet({ children, onClose, title, accent = T.accent }) {
       <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: '16px 16px 0 0', padding: '20px 20px 40px', animation: 'fadeUp 0.2s ease' }}>
         {title && (
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-            <div onClick={onClose} style={{ fontSize: 14, color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{title}</div>
+            <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
           </div>
         )}
         {children}

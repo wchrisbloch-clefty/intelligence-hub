@@ -95,11 +95,11 @@ function ResearchBoard() {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{cards.length} research cards</div>
-          <div style={{ fontSize: 10, color: 'var(--dim)' }}>Collect signals → analyze → synthesize → extract insights</div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{cards.length} research cards</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Collect signals → analyze → synthesize → extract insights</div>
         </div>
         {cards.length > 0 && (
-          <div onClick={synthesizeAll} style={{ padding: '7px 16px', background: T.accent, borderRadius: 9, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
+          <div onClick={synthesizeAll} style={{ padding: '7px 16px', background: T.accent, borderRadius: 9, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
             {synLoading ? '⟳ Synthesizing…' : '✦ AI Synthesize All'}
           </div>
         )}
@@ -109,7 +109,7 @@ function ResearchBoard() {
         <div style={{ background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 12, padding: '16px 18px', marginBottom: 20 }}>
           <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
           <MD text={synthesis} color={T.accent} />
-          <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 10, color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
+          <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
         </div>
       )}
 
@@ -119,34 +119,34 @@ function ResearchBoard() {
           return (
             <div key={col.id} style={{ background: 'var(--surface)', border: `1px solid ${col.color}25`, borderRadius: 12, padding: '12px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${col.color}25` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: col.color }}>{col.icon} {col.label}</div>
-                <span style={{ fontSize: 10, color: 'var(--dim)' }}>{colCards.length}</span>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: col.color }}>{col.icon} {col.label}</div>
+                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{colCards.length}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 10, minHeight: 60 }}>
                 {colCards.map(card => (
                   <div key={card.id} style={{ background: 'var(--bg)', border: `1px solid ${col.color}20`, borderRadius: 8, padding: '9px 10px' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-b)', lineHeight: 1.45, marginBottom: 6, wordBreak: 'break-word' }}>
+                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)', lineHeight: 1.45, marginBottom: 6, wordBreak: 'break-word' }}>
                       {card.type === 'url'
                         ? <span onClick={() => window.open(card.content, '_blank')} style={{ color: 'var(--accent,#D9A441)', cursor: 'pointer', textDecoration: 'underline' }}>{card.content.slice(0, 50)}…</span>
                         : card.content.slice(0, 120) + (card.content.length > 120 ? '…' : '')
                       }
                     </div>
                     {cardAnalysis[card.id] && (
-                      <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 6, padding: '6px 8px', background: `${col.color}10`, borderRadius: 6, borderLeft: `2px solid ${col.color}` }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 6, padding: '6px 8px', background: `${col.color}10`, borderRadius: 6, borderLeft: `2px solid ${col.color}` }}>
                         <MD text={cardAnalysis[card.id]} color={col.color} />
                       </div>
                     )}
                     {analyzingId === card.id && (
-                      <div style={{ fontSize: 10, color: col.color, marginBottom: 6 }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: col.color, marginBottom: 6 }}>
                         <ThinkingDots color={col.color} />
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      {colIdx > 0 && <span onClick={() => moveCard(card.id, -1)} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '1px 5px' }}>←</span>}
-                      {colIdx < BOARD_COLS.length - 1 && <span onClick={() => moveCard(card.id, 1)} style={{ fontSize: 11, color: col.color, cursor: 'pointer', padding: '1px 5px' }}>→</span>}
-                      <span onClick={() => analyzeCard(card)} style={{ fontSize: 9, color: col.color, cursor: 'pointer', padding: '1px 6px', border: `1px solid ${col.color}40`, borderRadius: 4, marginLeft: 2 }}>✦ AI</span>
-                      <span onClick={() => removeCard(card.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', marginLeft: 'auto', padding: '1px 4px' }}>✕</span>
+                      {colIdx > 0 && <span onClick={() => moveCard(card.id, -1)} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '1px 5px' }}>←</span>}
+                      {colIdx < BOARD_COLS.length - 1 && <span onClick={() => moveCard(card.id, 1)} style={{ fontSize: 'var(--fs-base)', color: col.color, cursor: 'pointer', padding: '1px 5px' }}>→</span>}
+                      <span onClick={() => analyzeCard(card)} style={{ fontSize: 'var(--fs-sm)', color: col.color, cursor: 'pointer', padding: '1px 6px', border: `1px solid ${col.color}40`, borderRadius: 4, marginLeft: 2 }}>✦ AI</span>
+                      <span onClick={() => removeCard(card.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', marginLeft: 'auto', padding: '1px 4px' }}>✕</span>
                     </div>
                   </div>
                 ))}
@@ -158,15 +158,15 @@ function ResearchBoard() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addCard(col.id); } }}
                     placeholder="Text or URL… (Enter to save)"
                     rows={2}
-                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${col.color}40`, borderRadius: 7, padding: '7px 10px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', marginBottom: 6 }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${col.color}40`, borderRadius: 7, padding: '7px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', marginBottom: 6 }} />
                   <div style={{ display: 'flex', gap: 5 }}>
-                    <div onClick={() => addCard(col.id)} style={{ flex: 1, padding: '5px', textAlign: 'center', background: col.color, borderRadius: 6, fontSize: 10, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Add</div>
-                    <div onClick={() => { setAdding(null); setDraft(''); }} style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 10, color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
+                    <div onClick={() => addCard(col.id)} style={{ flex: 1, padding: '5px', textAlign: 'center', background: col.color, borderRadius: 6, fontSize: 'var(--fs-sm)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Add</div>
+                    <div onClick={() => { setAdding(null); setDraft(''); }} style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
                   </div>
                 </div>
               ) : (
                 <div onClick={() => { setAdding(col.id); setDraft(''); }}
-                  style={{ padding: '6px', border: `1px dashed ${col.color}40`, borderRadius: 7, textAlign: 'center', fontSize: 10, color: 'var(--dim)', cursor: 'pointer', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px', border: `1px dashed ${col.color}40`, borderRadius: 7, textAlign: 'center', fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', transition: 'all 0.12s' }}>
                   + Add
                 </div>
               )}
@@ -282,17 +282,17 @@ export default function ResearchHub() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Deep Intelligence Search</div>
-          <div style={{ fontSize: 11, color: 'var(--subtle)' }}>CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
+          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Deep Intelligence Search</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
         </div>
-        <div onClick={() => setShowNewThread(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Thread</div>
+        <div onClick={() => setShowNewThread(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Thread</div>
       </div>
 
       {/* View switcher: Threads | Board */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {[{ id: false, label: '💬 Threads' }, { id: true, label: '🗂 Research Board' }].map(v => (
           <div key={String(v.id)} onClick={() => setBoardView(v.id)}
-            style={{ padding: '7px 16px', fontSize: 12, fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? T.accent : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? T.accent : 'var(--muted)', transition: 'all 0.12s' }}>
             {v.label}
           </div>
         ))}
@@ -302,17 +302,17 @@ export default function ResearchHub() {
 
       {!boardView && <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 14, padding: '14px 18px', marginBottom: 12 }}>
-          <span style={{ fontSize: 16, color: T.accent }}>🔭</span>
+          <span style={{ fontSize: 'var(--fs-lg)', color: T.accent }}>🔭</span>
           <input value={newQuery} onChange={e => setNewQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
             placeholder="Research a topic, question, or opportunity..."
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 14, color: 'var(--text-b)', fontFamily: 'inherit' }} />
-          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
-          {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 11, fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
+            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-lg)', color: 'var(--text-b)', fontFamily: 'inherit' }} />
+          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+          {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {SEARCH_SUGGESTIONS.map(s => (
-            <div key={s} onClick={() => startThread(s)} style={{ fontSize: 10, padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer' }}>{s}</div>
+            <div key={s} onClick={() => startThread(s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer' }}>{s}</div>
           ))}
         </div>
       </div>}
@@ -320,22 +320,22 @@ export default function ResearchHub() {
       {!boardView && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 280px', gap: 24 }}>
         <div>
           <Label color={T.accent}>Research Threads</Label>
-          {research.length === 0 && <div style={{ fontSize: 12, color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
+          {research.length === 0 && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
           {research.map(t => (
             <Card key={t.id} color={T.accent} onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{t.title}</div>
-                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{t.title}</div>
+                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 10 }}>
                   <Badge color={t.status === 'active' ? T.accent : 'var(--subtle)'}>{t.status}</Badge>
-                  <div onClick={e => { e.stopPropagation(); deleteThread(t.id); }} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                  <div onClick={e => { e.stopPropagation(); deleteThread(t.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                 </div>
               </div>
               {t.tags?.length > 0 && (
                 <div style={{ display: 'flex', gap: 5 }}>
-                  {t.tags.map(tag => <span key={tag} style={{ fontSize: 8, color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{tag}</span>)}
+                  {t.tags.map(tag => <span key={tag} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{tag}</span>)}
                 </div>
               )}
             </Card>
@@ -349,13 +349,13 @@ export default function ResearchHub() {
               onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}
               style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 7, cursor: 'pointer' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: s.color }}>{s.name}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: s.color }}>{s.name}</div>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   <Badge color={s.color}>{s.type}</Badge>
-                  <span style={{ fontSize: 10, color: 'var(--dim)' }}>→</span>
+                  <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>→</span>
                 </div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 4 }}>{s.domain} · click to research</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 4 }}>{s.domain} · click to research</div>
             </div>
           ))}
         </div>
@@ -365,8 +365,8 @@ export default function ResearchHub() {
         <Modal title="New Research Thread" accent={T.accent} onClose={() => setShowNewThread(false)}>
           <Textarea value={newQuery} onChange={setNewQuery} placeholder="What do you want to research? Be specific — the more context, the better the response." rows={4} />
           <div style={{ display: 'flex', gap: 8 }}>
-            <div onClick={() => setShowNewThread(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-            <div onClick={() => newQuery.trim() && startThread(newQuery)} style={{ flex: 2, padding: '11px', background: T.accent, borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: '#fff', cursor: 'pointer' }}>Research →</div>
+            <div onClick={() => setShowNewThread(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
+            <div onClick={() => newQuery.trim() && startThread(newQuery)} style={{ flex: 2, padding: '11px', background: T.accent, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>Research →</div>
           </div>
         </Modal>
       )}
@@ -379,11 +379,11 @@ export default function ResearchHub() {
       <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <div onClick={() => setActiveThread(null)} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 4 }}>← Research Hub</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', maxWidth: 500 }}>{thread?.title}</div>
+            <div onClick={() => setActiveThread(null)} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 4 }}>← Research Hub</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', maxWidth: 500 }}>{thread?.title}</div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 9, padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           </div>
         </div>
       </div>
@@ -392,7 +392,7 @@ export default function ResearchHub() {
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: 18, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '80%', fontSize: 13, lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
+              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '80%', fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '94%', width: '100%' }}>
                 <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
@@ -419,9 +419,9 @@ export default function ResearchHub() {
           <textarea value={searchInput} onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(activeThread, research, searchInput, messages); } }}
             rows={1} placeholder="Follow-up question, contrarian challenge, or deeper dive..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => sendMessage(activeThread, research, searchInput, messages)} disabled={!searchInput.trim() || loading}
-            style={{ padding: '10px 16px', background: searchInput.trim() ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 10, color: searchInput.trim() ? '#fff' : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
+            style={{ padding: '10px 16px', background: searchInput.trim() ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 10, color: searchInput.trim() ? '#fff' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
         </div>
       </div>
     </div>
@@ -431,6 +431,6 @@ export default function ResearchHub() {
 function Textarea({ value, onChange, placeholder, rows = 3 }) {
   return (
     <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14 }} />
+      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14 }} />
   );
 }

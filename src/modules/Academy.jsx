@@ -39,7 +39,7 @@ export default function Academy() {
       {/* Shell header + mode picker (styled like BookClub's tab bar) */}
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: `20px ${pad} 0` }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Learning</div>
-        <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>Academy</div>
+        <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>Academy</div>
 
         <div style={{ display: 'flex', gap: 8, margin: '16px 0 4px', borderBottom: '1px solid var(--border)', paddingBottom: 12, flexWrap: 'wrap' }}>
           {MODES.map((m) => {
@@ -47,13 +47,13 @@ export default function Academy() {
             return (
               <button key={m.id} onClick={() => selectMode(m.id)}
                 title={m.desc}
-                style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 12, fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36, display: 'flex', alignItems: 'center', gap: 6 }}>
+                style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36, display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span>{m.icon}</span> {m.label}
               </button>
             );
           })}
         </div>
-        <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 10 }}>{active.desc}</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 10 }}>{active.desc}</div>
       </div>
 
       <div style={{ marginTop: 8 }}>

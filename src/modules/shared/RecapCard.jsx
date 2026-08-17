@@ -94,7 +94,7 @@ export default function RecapCard() {
           <div style={{ color: 'var(--text-b)', marginBottom: 6 }}>
             No {current.label.toLowerCase()} yet.
           </div>
-          <div style={{ color: 'var(--dim)', fontSize: 12, lineHeight: 1.6 }}>
+          <div style={{ color: 'var(--dim)', fontSize: 'var(--fs-base)', lineHeight: 1.6 }}>
             {current.cadence}. The first one generates on the next scheduled run,
             then lands here automatically.
           </div>
@@ -159,15 +159,15 @@ const S = {
   tabs: { display: 'flex', gap: 4 },
   tab: {
     background: 'transparent', border: 'none', borderBottom: '2px solid transparent',
-    padding: '4px 8px', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+    padding: '4px 8px', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer',
     fontFamily: 'inherit', transition: 'color 120ms ease',
   },
   meta: {
     display: 'flex', gap: 6, alignItems: 'center',
-    fontSize: 11, color: 'var(--dim)', marginBottom: 12,
+    fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 12,
   },
-  body: { position: 'relative', fontSize: 14, lineHeight: 1.65 },
-  empty: { padding: '20px 0 4px', fontSize: 13 },
+  body: { position: 'relative', fontSize: 'var(--fs-lg)', lineHeight: 1.65 },
+  empty: { padding: '20px 0 4px', fontSize: 'var(--fs-base)'},
   fade: {
     position: 'absolute', left: 20, right: 20, bottom: 16,
     paddingTop: 40,
@@ -177,7 +177,7 @@ const S = {
   more: {
     background: 'transparent', border: '1px solid var(--border)',
     borderRadius: 'var(--radius)', padding: '6px 14px',
-    color: 'var(--accent)', fontSize: 12, fontWeight: 600,
+    color: 'var(--accent)', fontSize: 'var(--fs-base)', fontWeight: 600,
     cursor: 'pointer', fontFamily: 'inherit',
   },
 };

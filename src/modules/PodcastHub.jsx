@@ -93,25 +93,25 @@ function PodCard({ ep, idx, onSaveToVault }) {
     <div style={{ background: 'var(--surface)', border: `1px solid ${aiPanel ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px', transition: 'border-color 0.15s' }}>
       {/* Header row */}
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{idx + 1}</div>
+        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{idx + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, marginBottom: 3, letterSpacing: 0.3 }}>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: ACCENT, marginBottom: 3, letterSpacing: 0.3 }}>
             {ep.emoji} {ep.show}
           </div>
           <div
             onClick={() => ep.link && window.open(ep.link, '_blank')}
-            style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 5, cursor: ep.link ? 'pointer' : 'default', transition: 'color 0.1s' }}
+            style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 5, cursor: ep.link ? 'pointer' : 'default', transition: 'color 0.1s' }}
             onMouseEnter={e => { if (ep.link) e.target.style.color = ACCENT; }}
             onMouseLeave={e => e.target.style.color = 'var(--text)'}
           >
             {ep.title}
           </div>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {ep.pubDate && <span style={{ fontSize: 10, color: 'var(--dim)' }}>{fmtPodDate(ep.pubDate)}</span>}
-            {ep.duration && <span style={{ fontSize: 10, color: 'var(--dim)' }}>⏱ {fmtDuration(ep.duration)}</span>}
+            {ep.pubDate && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{fmtPodDate(ep.pubDate)}</span>}
+            {ep.duration && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>⏱ {fmtDuration(ep.duration)}</span>}
           </div>
           {ep.desc && (
-            <div style={{ fontSize: 11, color: 'var(--muted)', lineHeight: 1.55, marginTop: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.55, marginTop: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
               {ep.desc}
             </div>
           )}
@@ -125,7 +125,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
             {aiTabs.map(t => (
               <div key={t.id} onClick={() => handleAI(t.id)}
-                style={{ padding: '4px 10px', fontSize: 10, fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, color: aiPanel === t.id ? ACCENT : 'var(--subtle)', background: aiPanel === t.id ? ACCENT_BG : 'transparent', transition: 'all 0.12s' }}>
+                style={{ padding: '4px 10px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, color: aiPanel === t.id ? ACCENT : 'var(--subtle)', background: aiPanel === t.id ? ACCENT_BG : 'transparent', transition: 'all 0.12s' }}>
                 {t.label}
               </div>
             ))}
@@ -142,11 +142,11 @@ function PodCard({ ep, idx, onSaveToVault }) {
                     <MD text={aiCache[aiPanel]} color={ACCENT} />
                     {!vaulted && (
                       <div onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }}
-                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
+                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
                         🏛 Save to Vault
                       </div>
                     )}
-                    {vaulted && <div style={{ marginTop: 10, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>}
+                    {vaulted && <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>}
                   </>
                 : null
             }
@@ -158,7 +158,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: aiPanel ? 0 : 2 }}>
         {ep.link && (
           <button onClick={() => window.open(ep.link, '_blank')}
-            style={{ padding: '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${ACCENT}`, borderRadius: 6, background: ACCENT, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.1s' }}
+            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT}`, borderRadius: 6, background: ACCENT, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.1s' }}
             onMouseEnter={e => e.target.style.opacity = '0.85'}
             onMouseLeave={e => e.target.style.opacity = '1'}>
             ▶ Listen
@@ -166,13 +166,13 @@ function PodCard({ ep, idx, onSaveToVault }) {
         )}
         {aiTabs.map(t => (
           <button key={t.id} onClick={() => handleAI(t.id)} disabled={aiLoading && aiPanel === t.id && !aiCache[t.id]}
-            style={{ padding: '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: aiPanel === t.id ? ACCENT_BG : 'transparent', color: aiPanel === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: aiPanel === t.id ? ACCENT_BG : 'transparent', color: aiPanel === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
             {t.shortLabel} {aiLoading && aiPanel === t.id && !aiCache[t.id] ? '…' : aiPanel === t.id ? 'Hide' : t.id === 'summary' ? 'Summary' : t.id === 'takeaways' ? 'Takeaways' : 'Deep Dive'}
           </button>
         ))}
         {ttsSupported && (
           <button onClick={handleReadAloud}
-            style={{ padding: '5px 12px', fontSize: 10, fontWeight: 600, border: `1px solid ${reading ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: reading ? ACCENT_BG : 'transparent', color: reading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.12s' }}>
+            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${reading ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: reading ? ACCENT_BG : 'transparent', color: reading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.12s' }}>
             {reading
               ? <><span style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 10 }}>
                   {[0,1,2,3,4].map(i => <span key={i} style={{ width: 2, background: ACCENT, borderRadius: 1, animation: `bar${i % 3} 0.8s ${i * 0.12}s ease-in-out infinite`, height: [6,10,8,12,7][i] }} />)}
@@ -290,12 +290,12 @@ export default function PodcastHub() {
     return (
       <div onClick={() => setActivePod(isAll ? null : (isActive ? null : pod))}
         style={{ padding: '10px 12px', background: isActive ? ACCENT_BG : 'var(--surface)', border: `1px solid ${isActive ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.12s', marginBottom: 6 }}>
-        <span style={{ fontSize: 16, flexShrink: 0 }}>{isAll ? '🎙️' : pod.emoji}</span>
+        <span style={{ fontSize: 'var(--fs-lg)', flexShrink: 0 }}>{isAll ? '🎙️' : pod.emoji}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: isActive ? ACCENT : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: isActive ? ACCENT : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {isAll ? 'All Shows' : pod.name}
           </div>
-          <div style={{ fontSize: 9, color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {isAll ? `${PODCAST_FEEDS.length} podcasts · latest first` : loading ? 'Loading…' : latest ? latest.title.slice(0, 38) + '…' : 'No episodes yet'}
           </div>
         </div>
@@ -311,7 +311,7 @@ export default function PodcastHub() {
         const isActive = pod === null ? !activePod : activePod?.name === pod.name;
         return (
           <div key={i} onClick={() => setActivePod(pod === null ? null : (isActive ? null : pod))}
-            style={{ flexShrink: 0, padding: '6px 12px', fontSize: 10, fontWeight: 600, borderRadius: 20, border: `1px solid ${isActive ? ACCENT : 'var(--border)'}`, background: isActive ? ACCENT_BG : 'var(--surface)', color: isActive ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+            style={{ flexShrink: 0, padding: '6px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 20, border: `1px solid ${isActive ? ACCENT : 'var(--border)'}`, background: isActive ? ACCENT_BG : 'var(--surface)', color: isActive ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
             {pod === null ? '🎙️ All' : `${pod.emoji} ${pod.name}`}
           </div>
         );
@@ -325,15 +325,15 @@ export default function PodcastHub() {
       <div style={{ fontSize: 28, flexShrink: 0 }}>{activePod ? activePod.emoji : '🎙️'}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 8, letterSpacing: 4, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub · Podcast Feed</div>
-        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
           {activePod ? activePod.name : 'All Podcasts'}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
           {activePod ? `Hosted by ${activePod.host}` : `${PODCAST_FEEDS.length} shows · AI summaries · read-aloud`}
         </div>
       </div>
       {anyLoading && (
-        <div style={{ fontSize: 9, color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff', animation: 'pulse 1.2s infinite ease-in-out' }} />
           Loading
         </div>
@@ -355,10 +355,10 @@ export default function PodcastHub() {
           {allEps.slice(0, 6).map((ep, i) => (
             <div key={i} onClick={() => ep.link && window.open(ep.link, '_blank')}
               style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--bord2)', cursor: ep.link ? 'pointer' : 'default' }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--border)', minWidth: 16, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{i + 1}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--border)', minWidth: 16, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{i + 1}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ep.title}</div>
-                <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2 }}>{ep.show} · {fmtPodDate(ep.pubDate)}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ep.title}</div>
+                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{ep.show} · {fmtPodDate(ep.pubDate)}</div>
               </div>
             </div>
           ))}
@@ -373,8 +373,8 @@ export default function PodcastHub() {
       {displayEps.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           {anyLoading
-            ? <><div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 16 }}>Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color={ACCENT} /></>
-            : <><div style={{ fontSize: 36, marginBottom: 12 }}>🎙️</div><div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 6 }}>No episodes loaded yet</div><div style={{ fontSize: 11, color: 'var(--dim)' }}>Episodes load in the background. Check back in a moment.</div></>
+            ? <><div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 16 }}>Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color={ACCENT} /></>
+            : <><div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>🎙️</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No episodes loaded yet</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Episodes load in the background. Check back in a moment.</div></>
           }
         </div>
       )}
@@ -405,12 +405,12 @@ export default function PodcastHub() {
         <div
           onClick={() => setPasteOpen(o => !o)}
           style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', background: 'var(--surface)', border: `1px solid ${pasteOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: pasteOpen ? '10px 10px 0 0' : 10, cursor: 'pointer', transition: 'all 0.15s' }}>
-          <span style={{ fontSize: 14 }}>📋</span>
+          <span style={{ fontSize: 'var(--fs-lg)'}}>📋</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Paste & Analyze</div>
-            <div style={{ fontSize: 10, color: 'var(--dim)' }}>Enter a podcast URL or paste transcript/show notes — get instant AI analysis</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Paste & Analyze</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Enter a podcast URL or paste transcript/show notes — get instant AI analysis</div>
           </div>
-          <span style={{ fontSize: 11, color: 'var(--subtle)', transition: 'transform 0.2s', transform: pasteOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
+          <span style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', transition: 'transform 0.2s', transform: pasteOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
         </div>
 
         {pasteOpen && (
@@ -419,15 +419,15 @@ export default function PodcastHub() {
               value={pasteUrl}
               onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); }}
               placeholder="Podcast episode URL (optional) — e.g. https://podcasts.apple.com/… or Spotify link"
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }}
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }}
             />
-            <div style={{ fontSize: 10, color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
             <textarea
               value={pasteText}
               onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); }}
               placeholder="Paste podcast transcript, episode description, show notes, or any text here..."
               rows={5}
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 12 }}
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 12 }}
             />
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
               {[
@@ -436,19 +436,19 @@ export default function PodcastHub() {
                 { id: 'deepdive',  label: '📄 Deep Dive', short: '📄' },
               ].map(btn => (
                 <button key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteHasContent || (pasteLoading && pasteMode !== btn.id)}
-                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteLoading && pasteMode === btn.id ? `${btn.short} Analyzing…` : btn.label}
                 </button>
               ))}
               {ttsGlobal && (
                 <button onClick={handlePasteReadAloud} disabled={!pasteHasContent && !pasteResult}
-                  style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteReading ? '⏹ Stop' : '🔊 Read Aloud'}
                 </button>
               )}
               {pasteHasContent && (
                 <button onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); }}
-                  style={{ padding: '6px 10px', fontSize: 10, border: '1px solid var(--border)', borderRadius: 7, background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
+                  style={{ padding: '6px 10px', fontSize: 'var(--fs-sm)', border: '1px solid var(--border)', borderRadius: 7, background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
                   Clear
                 </button>
               )}
@@ -463,10 +463,10 @@ export default function PodcastHub() {
                     <MD text={pasteResult} color={ACCENT} />
                     {!pasteVaulted
                       ? <div onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
-                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 10, fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
+                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
                           🏛 Save to Vault
                         </div>
-                      : <div style={{ marginTop: 10, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>
+                      : <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>
                     }
                   </>
                 )}

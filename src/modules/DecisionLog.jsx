@@ -126,17 +126,17 @@ export default function DecisionLog() {
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
         <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Decision Log</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Decisions That Compound</div>
-        <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
+        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Decisions That Compound</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
       </div>
 
       {/* Review due banner */}
       {reviewDue.length > 0 && (
         <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 18 }}>⏰</span>
+          <span style={{ fontSize: 'var(--fs-xl)'}}>⏰</span>
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: ACCENT }}>{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
-            <div style={{ fontSize: 10, color: 'var(--dim)' }}>How did they turn out? Record the outcome to build your pattern library.</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: ACCENT }}>{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>How did they turn out? Record the outcome to build your pattern library.</div>
           </div>
         </div>
       )}
@@ -150,7 +150,7 @@ export default function DecisionLog() {
         ].map(t => (
           <div key={t.id}
             onClick={() => t.id === 'patterns' ? analyzePatterns() : setTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 12, fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
             {t.label}
           </div>
         ))}
@@ -162,40 +162,40 @@ export default function DecisionLog() {
           <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
             onKeyDown={e => { if (e.key === 'Enter' && form.title.trim()) addDecision(); }}
             placeholder="Decision title (e.g. 'Take on the new contract')"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, fontWeight: 700, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 12, minHeight: isMobile ? 44 : undefined }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', fontWeight: 700, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 12, minHeight: isMobile ? 44 : undefined }} />
 
           <textarea value={form.context} onChange={e => setForm(p => ({ ...p, context: e.target.value }))}
             placeholder="Context — what's the situation? What's at stake? What constraints exist?"
             rows={3}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
 
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Options — click radio to mark your chosen option</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Options — click radio to mark your chosen option</div>
           {form.options.map((opt, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
               <div onClick={() => setForm(p => ({ ...p, chosen: i }))}
                 style={{ width: isMobile ? 22 : 18, height: isMobile ? 22 : 18, borderRadius: '50%', border: `2px solid ${form.chosen === i ? ACCENT : 'var(--border)'}`, background: form.chosen === i ? ACCENT : 'transparent', flexShrink: 0, cursor: 'pointer', transition: 'all 0.12s' }} />
               <input value={opt} onChange={e => setOption(i, e.target.value)}
                 placeholder={`Option ${i + 1}${i === 0 ? ' (required)' : ' (optional)'}`}
-                style={{ flex: 1, background: 'var(--bg)', border: `1px solid ${form.chosen === i ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, padding: isMobile ? '12px 14px' : '8px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', minHeight: isMobile ? 44 : undefined }} />
+                style={{ flex: 1, background: 'var(--bg)', border: `1px solid ${form.chosen === i ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, padding: isMobile ? '12px 14px' : '8px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', minHeight: isMobile ? 44 : undefined }} />
             </div>
           ))}
 
           <textarea value={form.reasoning} onChange={e => setForm(p => ({ ...p, reasoning: e.target.value }))}
             placeholder="Your reasoning — why this option? Mental models? Long-game view?"
             rows={3}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginTop: 14, marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginTop: 14, marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             {[{ id: 'thinking', label: '🤔 Still Deciding' }, { id: 'decided', label: '✅ Already Decided' }].map(s => (
               <div key={s.id} onClick={() => setForm(p => ({ ...p, status: s.id }))}
-                style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 11, fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.status === s.id ? ACCENT : 'var(--border)'}`, background: form.status === s.id ? ACCENT_BG : 'transparent', color: form.status === s.id ? ACCENT : 'var(--subtle)', transition: 'all 0.12s', minHeight: isMobile ? 44 : 34 }}>
+                style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.status === s.id ? ACCENT : 'var(--border)'}`, background: form.status === s.id ? ACCENT_BG : 'transparent', color: form.status === s.id ? ACCENT : 'var(--subtle)', transition: 'all 0.12s', minHeight: isMobile ? 44 : 34 }}>
                 {s.label}
               </div>
             ))}
           </div>
 
           <button onClick={addDecision} disabled={!form.title.trim()}
-            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: form.title.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 12, fontWeight: 700, color: form.title.trim() ? '#000' : 'var(--dim)', cursor: form.title.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: form.title.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: form.title.trim() ? '#000' : 'var(--dim)', cursor: form.title.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
             Log Decision →
           </button>
         </div>
@@ -211,11 +211,11 @@ export default function DecisionLog() {
               ? <>
                   <MD text={patterns} color={ACCENT} />
                   <div onClick={() => { setPatterns(''); analyzePatterns(); }}
-                    style={{ marginTop: 14, fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
+                    style={{ marginTop: 14, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
                     Refresh analysis
                   </div>
                 </>
-              : <div style={{ fontSize: 12, color: 'var(--dim)' }}>Log at least 3 decisions to unlock pattern analysis.</div>
+              : <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Log at least 3 decisions to unlock pattern analysis.</div>
           }
         </div>
       )}
@@ -225,10 +225,10 @@ export default function DecisionLog() {
         <>
           {decisions.length === 0 && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>⚖️</div>
-              <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 6 }}>No Decisions Logged</div>
-              <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 20 }}>Log every significant decision — big and small. The compound insight comes from reviewing them over time.</div>
-              <div onClick={() => setTab('new')} style={{ display: 'inline-block', padding: '10px 22px', background: ACCENT, borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Log First Decision →</div>
+              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>⚖️</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No Decisions Logged</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Log every significant decision — big and small. The compound insight comes from reviewing them over time.</div>
+              <div onClick={() => setTab('new')} style={{ display: 'inline-block', padding: '10px 22px', background: ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Log First Decision →</div>
             </div>
           )}
 
@@ -244,17 +244,17 @@ export default function DecisionLog() {
                   <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : d.id)}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 5, lineHeight: 1.3 }}>{d.title}</div>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 5, lineHeight: 1.3 }}>{d.title}</div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{ fontSize: isMobile ? 10 : 9, padding: '2px 8px', background: `${meta.color}15`, color: meta.color, borderRadius: 4, fontWeight: 600 }}>{meta.label}</span>
-                          <span style={{ fontSize: 10, color: 'var(--dim)' }}>{new Date(d.createdAt).toLocaleDateString()}</span>
-                          {days !== null && <span style={{ fontSize: 10, color: 'var(--dim)' }}>{days}d since decision</span>}
-                          {reviewReady && <span style={{ fontSize: isMobile ? 10 : 9, color: ACCENT, fontWeight: 700 }}>⏰ Review ready</span>}
+                          <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 8px', background: `${meta.color}15`, color: meta.color, borderRadius: 4, fontWeight: 600 }}>{meta.label}</span>
+                          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(d.createdAt).toLocaleDateString()}</span>
+                          {days !== null && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{days}d since decision</span>}
+                          {reviewReady && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>⏰ Review ready</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                        <span style={{ fontSize: 10, color: 'var(--subtle)', display: 'inline-block', transform: `rotate(${expanded ? 180 : 0}deg)`, transition: 'transform 0.2s' }}>▼</span>
-                        <div onClick={e => { e.stopPropagation(); remove(d.id); }} style={{ fontSize: 11, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', display: 'inline-block', transform: `rotate(${expanded ? 180 : 0}deg)`, transition: 'transform 0.2s' }}>▼</span>
+                        <div onClick={e => { e.stopPropagation(); remove(d.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                       </div>
                     </div>
                   </div>
@@ -264,7 +264,7 @@ export default function DecisionLog() {
                       {d.context && (
                         <div style={{ marginBottom: 12 }}>
                           <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Context</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.7 }}>{d.context}</div>
+                          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{d.context}</div>
                         </div>
                       )}
 
@@ -273,9 +273,9 @@ export default function DecisionLog() {
                           <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Options</div>
                           {d.options.map((opt, i) => (
                             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, padding: '7px 12px', background: i === d.chosen ? ACCENT_BG : 'var(--bg)', border: `1px solid ${i === d.chosen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8 }}>
-                              <span style={{ fontSize: 12, color: i === d.chosen ? ACCENT : 'var(--dim)' }}>{i === d.chosen ? '✓' : '○'}</span>
-                              <span style={{ fontSize: 11, color: i === d.chosen ? 'var(--text)' : 'var(--muted)', flex: 1 }}>{opt}</span>
-                              {i === d.chosen && <span style={{ fontSize: isMobile ? 10 : 9, color: ACCENT, fontWeight: 700 }}>CHOSEN</span>}
+                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? ACCENT : 'var(--dim)' }}>{i === d.chosen ? '✓' : '○'}</span>
+                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? 'var(--text)' : 'var(--muted)', flex: 1 }}>{opt}</span>
+                              {i === d.chosen && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>CHOSEN</span>}
                             </div>
                           ))}
                         </div>
@@ -284,26 +284,26 @@ export default function DecisionLog() {
                       {d.reasoning && (
                         <div style={{ marginBottom: 14 }}>
                           <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Reasoning</div>
-                          <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.7 }}>{d.reasoning}</div>
+                          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{d.reasoning}</div>
                         </div>
                       )}
 
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {d.status === 'thinking' && (
                           <div onClick={() => updateStatus(d.id, 'decided')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: T.accent, minHeight: isMobile ? 44 : 34 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: T.accent, minHeight: isMobile ? 44 : 34 }}>
                             ✓ Mark Decided
                           </div>
                         )}
                         {d.status !== 'closed' && (
                           <div onClick={() => updateStatus(d.id, 'closed')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 600, borderRadius: 7, cursor: 'pointer', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--subtle)', minHeight: isMobile ? 44 : 34 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 7, cursor: 'pointer', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--subtle)', minHeight: isMobile ? 44 : 34 }}>
                             Archive
                           </div>
                         )}
                         {!decisionAI[d.id] && (
                           <div onClick={() => analyzeDecision(d)}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 10, fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
                             {decisionAILoading === d.id ? <><ThinkingDots color={ACCENT} /> Analyzing…</> : '✦ Get AI Feedback'}
                           </div>
                         )}
@@ -314,7 +314,7 @@ export default function DecisionLog() {
                           <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Decision Analysis</div>
                           <MD text={decisionAI[d.id]} color={ACCENT} />
                           <div onClick={() => setDecisionAI(prev => { const n = { ...prev }; delete n[d.id]; return n; })}
-                            style={{ marginTop: 10, fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
+                            style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
                             Clear analysis
                           </div>
                         </div>

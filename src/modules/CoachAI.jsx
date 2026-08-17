@@ -98,22 +98,22 @@ export default function CoachAI() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
               {currentTone.icon} {currentTone.label} Mode
             </div>
-            <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 3 }}>{currentTone.desc}</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 3 }}>{currentTone.desc}</div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             <div onClick={() => setSessionsOpen(true)} title="Saved sessions"
-              style={{ fontSize: 10, padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
+              style={{ fontSize: 'var(--fs-sm)', padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
               🗂 Sessions
             </div>
             <div onClick={startNewSession}
-              style={{ fontSize: 10, padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--dim)', cursor: 'pointer' }}>
+              style={{ fontSize: 'var(--fs-sm)', padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--dim)', cursor: 'pointer' }}>
               ✎ New
             </div>
             <div onClick={() => setSettingsOpen(o => !o)}
-              style={{ fontSize: 10, padding: '5px 12px', border: `1px solid ${settingsOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 7, color: settingsOpen ? ACCENT : 'var(--subtle)', cursor: 'pointer', background: settingsOpen ? ACCENT_BG : 'transparent', fontWeight: 600, transition: 'all 0.12s' }}>
+              style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: `1px solid ${settingsOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 7, color: settingsOpen ? ACCENT : 'var(--subtle)', cursor: 'pointer', background: settingsOpen ? ACCENT_BG : 'transparent', fontWeight: 600, transition: 'all 0.12s' }}>
               ⚙ Coach Type
             </div>
           </div>
@@ -123,7 +123,7 @@ export default function CoachAI() {
         <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {TOPICS.map(t => (
             <div key={t.id} onClick={() => setTopic(t.id)}
-              style={{ flexShrink: 0, padding: '4px 11px', fontSize: 10, fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+              style={{ flexShrink: 0, padding: '4px 11px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
               {t.icon} {t.label}
             </div>
           ))}
@@ -133,18 +133,18 @@ export default function CoachAI() {
       {/* ── Settings Panel ─────────────────────────────────────────────────── */}
       {settingsOpen && (
         <div style={{ background: 'var(--surf2)', borderBottom: '1px solid var(--bord2)', padding: '14px 20px', flexShrink: 0 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Choose Your Coach Type</div>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Choose Your Coach Type</div>
           <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 8 }}>
             {TONES.map(t => (
               <div key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); startNewSession(); }}
                 style={{ padding: '12px', background: tone === t.id ? ACCENT_BG : 'var(--surface)', border: `1px solid ${tone === t.id ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s', textAlign: 'center' }}>
-                <div style={{ fontSize: 24, marginBottom: 5 }}>{t.icon}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
-                <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
+                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 5 }}>{t.icon}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
+                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 10, textAlign: 'center' }}>Switching coach type starts a new session.</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 10, textAlign: 'center' }}>Switching coach type starts a new session.</div>
         </div>
       )}
 
@@ -153,14 +153,14 @@ export default function CoachAI() {
 
         {messages.length === 0 && (
           <div style={{ maxWidth: 500, margin: '0 auto', padding: '24px 0 0', textAlign: 'center' }}>
-            <div style={{ fontSize: 44, marginBottom: 12 }}>{currentTone.icon}</div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{currentTone.label} Mode · {currentTopic.label}</div>
+            <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>{currentTone.icon}</div>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{currentTone.label} Mode · {currentTopic.label}</div>
             <div style={{ fontSize: 11, color: 'var(--dim)', lineHeight: 1.75, marginBottom: 28 }}>{currentTone.desc}</div>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Start with a check-in</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left' }}>
               {CHECKIN_PROMPTS.slice(0, 5).map(p => (
                 <div key={p} onClick={() => send(p)}
-                  style={{ fontSize: 11, padding: '10px 14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, color: 'var(--muted)', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.1s', minHeight: 44, display: 'flex', alignItems: 'center' }}>
+                  style={{ fontSize: 'var(--fs-base)', padding: '10px 14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, color: 'var(--muted)', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.1s', minHeight: 44, display: 'flex', alignItems: 'center' }}>
                   {p}
                 </div>
               ))}
@@ -171,7 +171,7 @@ export default function CoachAI() {
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: 16, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 16px', animation: 'fadeUp 0.15s ease' }}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '10px 14px', maxWidth: '85%', fontSize: 13, lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>
+              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '10px 14px', maxWidth: '85%', fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>
                 {msg.content}
               </div>
             ) : (
@@ -181,7 +181,7 @@ export default function CoachAI() {
                     {currentTone.icon} {currentTone.label} · {currentTopic.label}
                   </div>
                   <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}
-                    style={{ fontSize: 9, color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                    style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
                     + Save to Project
                   </div>
                 </div>
@@ -208,7 +208,7 @@ export default function CoachAI() {
           <div style={{ display: 'flex', gap: 5, overflowX: 'auto', marginBottom: 8, paddingBottom: 2, scrollbarWidth: 'none' }}>
             {CHECKIN_PROMPTS.slice(5).map(p => (
               <div key={p} onClick={() => send(p)}
-                style={{ fontSize: 9, padding: '3px 10px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                style={{ fontSize: 'var(--fs-sm)', padding: '3px 10px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {p.length > 42 ? p.slice(0, 42) + '…' : p}
               </div>
             ))}
@@ -218,9 +218,9 @@ export default function CoachAI() {
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
             rows={1} placeholder="Be honest. The AI can handle it."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 14 : 13, outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
           <button onClick={() => send(input)} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
         </div>
       </div>
     </div>

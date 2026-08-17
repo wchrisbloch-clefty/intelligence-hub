@@ -199,10 +199,10 @@ export default function BookClub() {
       {/* Header */}
       <div style={{ padding: `${pad} ${pad} 0`, marginBottom: 20 }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub</div>
-        <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
+        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
           📖 Book Club
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 5 }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 5 }}>
           Research, deep dive, and master any book with AI — connected to CB's mental model library
         </div>
       </div>
@@ -211,7 +211,7 @@ export default function BookClub() {
       <div style={{ padding: `0 ${pad}`, display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
         {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: editingId ? '✎ Edit Book' : '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
           <button key={t.id} onClick={() => (t.id === 'add' ? (editingId ? setTab('add') : openAdd()) : setTab(t.id))}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? T.accent : 'var(--border)'}`, background: tab === t.id ? withAlpha(T.accent, 10) : 'transparent', color: tab === t.id ? T.accent : 'var(--muted)', fontSize: 12, fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? T.accent : 'var(--border)'}`, background: tab === t.id ? withAlpha(T.accent, 10) : 'transparent', color: tab === t.id ? T.accent : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
             {t.label}
           </button>
         ))}
@@ -221,7 +221,7 @@ export default function BookClub() {
 
         {/* Save error — visible wherever the user is. */}
         {saveError && (
-          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 12, fontWeight: 600 }}>
+          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-base)', fontWeight: 600 }}>
             ⚠ {saveError}
           </div>
         )}
@@ -232,10 +232,10 @@ export default function BookClub() {
             <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
               <input value={search} onChange={e => setSearch(e.target.value)}
                 placeholder="Search by title or author..."
-                style={{ flex: 1, minWidth: 180, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ flex: 1, minWidth: 180, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
               <button onClick={restoreDefaults} disabled={saving}
                 title="Re-add the 20 built-in books that aren't in your library. Custom books are untouched."
-                style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--muted)', fontSize: 12, fontWeight: 600, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
                 ↻ Restore default library
               </button>
             </div>
@@ -246,12 +246,12 @@ export default function BookClub() {
 
             {filtered.length === 0 && (
               <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 14 }}>
-                <div style={{ fontSize: 28, marginBottom: 10 }}>📚</div>
-                <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 14 }}>
+                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>📚</div>
+                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 14 }}>
                   {search ? `No books match "${search}"` : 'No books in your library yet.'}
                 </div>
                 <button onClick={openAdd}
-                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   + Add a Book
                 </button>
               </div>
@@ -268,25 +268,25 @@ export default function BookClub() {
                     <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
                       {TYPE_META[book.type]?.label || book.type || 'General'}
                     </div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4 }}>{book.title}</div>
-                    <div style={{ fontSize: 10, color: 'var(--muted)' }}>{book.author}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4 }}>{book.title}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{book.author}</div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                      <div style={{ fontSize: 8, color: 'var(--dim)', fontWeight: 700, letterSpacing: 0.5 }}>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', fontWeight: 700, letterSpacing: 0.5 }}>
                         {book.builtin ? 'BUILT-IN' : 'CUSTOM'}
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button onClick={(e) => { e.stopPropagation(); openEdit(book); }}
                           title="Edit"
-                          style={{ fontSize: 10, color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✎</button>
+                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✎</button>
                         <button onClick={(e) => { e.stopPropagation(); removeBook(book); }}
                           title="Remove"
-                          style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✕</button>
+                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✕</button>
                       </div>
                     </div>
 
-                    {book.note && <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
-                    <div style={{ marginTop: 10, fontSize: 9, color: T.accent, fontWeight: 700 }}>🤿 Deep Dive →</div>
+                    {book.note && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
+                    <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent, fontWeight: 700 }}>🤿 Deep Dive →</div>
                   </div>
                 );
               })}
@@ -297,45 +297,45 @@ export default function BookClub() {
         {/* ── ADD / EDIT BOOK TAB ──────────────────────────────────── */}
         {tab === 'add' && (
           <div style={{ maxWidth: 520 }}>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 16 }}>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 16 }}>
               {editingId ? 'Edit Book' : 'Add a Book'}
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Book Title *</label>
+              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Book Title *</label>
               <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
                 placeholder="e.g. The Lean Startup"
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Author</label>
+              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Author</label>
               <input value={form.author} onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
                 placeholder="e.g. Eric Ries"
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
             </div>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Category</label>
+              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Category</label>
               <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
                 {TYPE_IDS.map(id => (
                   <option key={id} value={id}>{TYPE_META[id]?.label || id}</option>
                 ))}
               </select>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
+              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
               <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 placeholder="Why you're reading it, key questions, context..."
                 rows={3}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button onClick={saveBook} disabled={!form.title.trim() || saving}
-                style={{ padding: '11px 24px', background: form.title.trim() && !saving ? T.accent : 'var(--surf2)', color: form.title.trim() && !saving ? T.onAccent : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: form.title.trim() && !saving ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+                style={{ padding: '11px 24px', background: form.title.trim() && !saving ? T.accent : 'var(--surf2)', color: form.title.trim() && !saving ? T.onAccent : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: form.title.trim() && !saving ? 'pointer' : 'default', fontFamily: 'inherit' }}>
                 {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add to Library'}
               </button>
               {editingId && (
                 <button onClick={() => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('library'); }}
-                  style={{ padding: '11px 20px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 9, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '11px 20px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 9, fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Cancel
                 </button>
               )}
@@ -348,10 +348,10 @@ export default function BookClub() {
           <div>
             {!selectedBook ? (
               <div style={{ padding: '24px', background: 'var(--surface)', borderRadius: 14, border: '1px dashed var(--border)', textAlign: 'center' }}>
-                <div style={{ fontSize: 32, marginBottom: 12 }}>📖</div>
-                <div style={{ fontSize: 13, color: 'var(--muted)', marginBottom: 16 }}>Select a book from the Library to deep dive</div>
+                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 12 }}>📖</div>
+                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 16 }}>Select a book from the Library to deep dive</div>
                 <button onClick={() => setTab('library')}
-                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                   Browse Library
                 </button>
               </div>
@@ -360,11 +360,11 @@ export default function BookClub() {
                 {/* Selected book header */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid ${withAlpha(typeColor(selectedBook.type), 30)}`, borderLeft: `3px solid ${typeColor(selectedBook.type)}`, borderRadius: 12, marginBottom: 20 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>{selectedBook.title}</div>
-                    <div style={{ fontSize: 11, color: 'var(--muted)', marginTop: 2 }}>{selectedBook.author}</div>
+                    <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)' }}>{selectedBook.title}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 2 }}>{selectedBook.author}</div>
                   </div>
                   <button onClick={() => { setSelectedBook(null); setResult(''); }}
-                    style={{ fontSize: 10, color: 'var(--dim)', padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--bg)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--bg)', cursor: 'pointer', fontFamily: 'inherit' }}>
                     Change
                   </button>
                 </div>
@@ -375,15 +375,15 @@ export default function BookClub() {
                   {STUDY_MODES.map(m => (
                     <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
                       style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? withAlpha(T.accent, 12) : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
-                      <div style={{ fontSize: 16 }}>{m.icon}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: mode === m.id ? T.accent : 'var(--text)', marginTop: 4 }}>{m.label}</div>
-                      <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
+                      <div style={{ fontSize: 'var(--fs-lg)'}}>{m.icon}</div>
+                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: mode === m.id ? T.accent : 'var(--text)', marginTop: 4 }}>{m.label}</div>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
                     </button>
                   ))}
                 </div>
 
                 <button onClick={handleDeepDive} disabled={loading}
-                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 13, fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
                   {loading
                     ? 'Generating…'
                     : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
@@ -402,7 +402,7 @@ export default function BookClub() {
                         <ProviderTag provider={resultProvider} />
                       </div>
                       <button onClick={() => navigator.clipboard?.writeText(result)}
-                        style={{ fontSize: 9, padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                        style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
                         Copy
                       </button>
                     </div>

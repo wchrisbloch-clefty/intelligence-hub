@@ -1,12 +1,13 @@
 import { T, withAlpha } from './theme';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loadGraph, loadProjects, loadNotes, loadResearch, saveProjects, uid } from './utils.js';
-import { NAV_ITEMS } from './constants.js';
+import { CONTAINERS, containerOfMode } from './constants.js';
+import { readLocal, writeThrough } from './lib/storage.js';
 import { getTheme, applyTheme } from './theme.js';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
-import NavIcon from './modules/shared/NavIcon.jsx';
+import { SideNav, BottomNav, ModeChips } from './modules/shared/ContainerNav.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
 import LearningLadder from './modules/LearningLadder.jsx';
@@ -21,7 +22,6 @@ import GrowthTools from './modules/GrowthTools.jsx';
 import PodcastHub from './modules/PodcastHub.jsx';
 import ContentInbox from './modules/ContentInbox.jsx';
 import DecisionLog from './modules/DecisionLog.jsx';
-import CoachAI from './modules/CoachAI.jsx';
 import CreationStudio from './modules/CreationStudio.jsx';
 import TEDHub from './modules/TEDHub.jsx';
 import QuizCenter from './modules/QuizCenter.jsx';
@@ -30,7 +30,8 @@ const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
 export default function App() {
-  const [activeModule,     setActiveModule]    = useState('home');
+  const [activeModule,     setActiveModuleRaw]  = useState('home');
+  const [navModes,         setNavModes]         = useState(() => readLocal('aether_nav_v1', {}));
   const [chatOpen,         setChatOpen]         = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
   const [chatPrefill,      setChatPrefill]      = useState('');
@@ -64,6 +65,29 @@ export default function App() {
 
   const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
 
+  // Navigation. Modes and legacy module ids are the same strings, so every
+  // existing setActiveModule('<moduleId>') deep-link still works. Two special
+  // cases: 'coach' has no screen anymore — it opens the global Ask layer; and
+  // each container remembers the last mode you were on inside it.
+  const setActiveModule = (id) => {
+    if (id === 'coach') { setChatOpen(true); return; }   // Coach → Ask layer
+    setActiveModuleRaw(id);
+    const container = containerOfMode(id);
+    setNavModes(prev => {
+      if (prev[container] === id) return prev;
+      const next = { ...prev, [container]: id };
+      writeThrough('aether_nav_v1', next);               // fire-and-forget; local write is optimistic
+      return next;
+    });
+  };
+  // Selecting a container jumps to its last-used mode (or its first).
+  const openContainer = (containerId) => {
+    const c = CONTAINERS.find(x => x.id === containerId);
+    if (!c) return;
+    const remembered = navModes[containerId];
+    setActiveModule(c.modes.includes(remembered) ? remembered : c.modes[0]);
+  };
+
   // Global "New chat": start a fresh session in the current module's chat
   // surface. For non-chat modules, open the global Intelligence Chat fresh.
   const triggerNewChat = () => {
@@ -95,7 +119,7 @@ export default function App() {
   };
 
   const ctx = {
-    activeModule, setActiveModule,
+    activeModule, setActiveModule, openContainer,
     chatOpen,     setChatOpen,
     searchQuery,  setSearchQuery,
     chatPrefill,  setChatPrefill,
@@ -127,7 +151,6 @@ export default function App() {
     growth:    <GrowthTools />,
     inbox:     <ContentInbox />,
     decisions: <DecisionLog />,
-    coach:     <CoachAI />,
     studio:    <CreationStudio />,
     ted:       <TEDHub />,
     quiz:      <QuizCenter />,
@@ -138,20 +161,28 @@ export default function App() {
       <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
         <TopBar />
 
-        <main style={{
-          flex: 1,
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          paddingRight: (!isMobile && chatOpen) ? 360 : 0,
-          transition: 'padding-right 0.22s ease',
-        }}>
-          {/* Orchestrated entrance: each view rises 8px + fades on mount */}
-          <div key={activeModule} className="rise">
-            {modules[activeModule] || <HomeDashboard />}
-          </div>
-        </main>
+        {/* Body row: container rail (≥768) + scrolling content, capped at
+            1280 on desktop. Mobile drops the rail for the bottom bar. */}
+        <div style={{ flex: 1, display: 'flex', minHeight: 0, width: '100%', maxWidth: isDesktop ? 1280 : '100%', margin: '0 auto' }}>
+          {!isMobile && <SideNav />}
+          <main style={{
+            flex: 1,
+            minWidth: 0,
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            paddingRight: (!isMobile && chatOpen) ? 360 : 0,
+            transition: 'padding-right 0.22s ease',
+          }}>
+            {/* Container's modes, as a scrollable chip row under the header */}
+            <ModeChips />
+            {/* Orchestrated entrance: each view rises 8px + fades on mount */}
+            <div key={activeModule} className="rise">
+              {modules[activeModule] || <HomeDashboard />}
+            </div>
+          </main>
+        </div>
 
-        {isMobile && <BottomNav activeModule={activeModule} setActiveModule={setActiveModule} isPhone={isPhone} />}
+        {isMobile && <BottomNav />}
         <ChatPanel />
         {pendingArtifact && (
           <SaveToProjectModal
@@ -166,49 +197,6 @@ export default function App() {
   );
 }
 
-function BottomNav({ activeModule, setActiveModule, isPhone }) {
-  return (
-    <nav style={{
-      height: isPhone ? 58 : 64,
-      background: 'var(--surface)',
-      borderTop: '1px solid var(--border)',
-      display: 'flex',
-      overflowX: 'auto',
-      scrollbarWidth: 'none',
-      flexShrink: 0,
-      zIndex: 30,
-    }}>
-      {NAV_ITEMS.map(item => {
-        const active = activeModule === item.id;
-        return (
-          <button key={item.id} onClick={() => setActiveModule(item.id)}
-            style={{
-              minWidth: isPhone ? 52 : 62,
-              flex: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 3,
-              border: 'none',
-              borderTop: `2px solid ${active ? (item.accent || 'var(--accent, #D9A441)') : 'transparent'}`,
-              background: 'transparent',
-              color: active ? (item.accent || 'var(--accent, #D9A441)') : 'var(--muted)',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              outline: 'none',
-              transition: 'color 0.12s',
-              padding: '0 2px',
-            }}>
-            <NavIcon id={item.id} size={isPhone ? 18 : 16} strokeWidth={active ? 2.2 : 1.8} />
-            {!isPhone && <span style={{ fontSize: 8, fontWeight: active ? 700 : 500, letterSpacing: 0.3, whiteSpace: 'nowrap' }}>{item.label}</span>}
-          </button>
-        );
-      })}
-    </nav>
-  );
-}
-
 function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
   const [selectedId, setSelectedId] = useState(
     projects.find(p => p.status === 'active')?.id || projects[0]?.id || null
@@ -218,18 +206,18 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
       onClick={e => e.target === e.currentTarget && onClose()}>
       <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
         <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>Save to Project</div>
-          <div onClick={onClose} style={{ fontSize: 14, color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Save to Project</div>
+          <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
         </div>
         <div style={{ padding: 18 }}>
-          <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 14 }}>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 14 }}>
             Saving: <span style={{ color: 'var(--text-b)', fontWeight: 600 }}>{artifact.title || 'AI Output'}</span>
           </div>
           <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {projects.map(p => (
               <div key={p.id} onClick={() => setSelectedId(p.id)}
                 style={{ padding: '10px 12px', background: selectedId === p.id ? withAlpha(p.color || T.accent, 8) : 'var(--bg)', border: `1px solid ${selectedId === p.id ? withAlpha(p.color || T.accent, 31) : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ fontSize: 16 }}>{p.emoji}</div>
+                <div style={{ fontSize: 'var(--fs-lg)'}}>{p.emoji}</div>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
                   <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{p.status}</div>
@@ -238,9 +226,9 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
             ))}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
             <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
-              style={{ flex: 2, padding: '10px', background: selectedId ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 11, fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+              style={{ flex: 2, padding: '10px', background: selectedId ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
               Save to Project →
             </button>
           </div>
@@ -253,7 +241,7 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
 function LoadingScreen() {
   return (
     <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 30, fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
+      <div style={{ fontSize: 'var(--fs-2xl)', fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
       <div style={{ display: 'flex', gap: 5 }}>
         {[0, 1, 2].map(i => (
           <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #D9A441)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />

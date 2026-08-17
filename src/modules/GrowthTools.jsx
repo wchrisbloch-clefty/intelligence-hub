@@ -108,8 +108,8 @@ export default function GrowthTools() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ marginBottom: 28 }}>
         <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Growth & Synthesis</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Compounding Dashboard</div>
-        <div style={{ fontSize: 11, color: 'var(--subtle)' }}>Goals · Skills · Synthesis · Certifications</div>
+        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Compounding Dashboard</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Goals · Skills · Synthesis · Certifications</div>
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
@@ -120,9 +120,9 @@ export default function GrowthTools() {
           { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: T.accent, icon: '⏱' },
         ].map(s => (
           <Card key={s.label} color={s.color} style={{ padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 20, marginBottom: 6 }}>{s.icon}</div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: s.color, fontFamily: "'Newsreader', serif" }}>{s.value}</div>
-            <div style={{ fontSize: isMobile ? 10 : 9, color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+            <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 6 }}>{s.icon}</div>
+            <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: s.color, fontFamily: "'Newsreader', serif" }}>{s.value}</div>
+            <div style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
           </Card>
         ))}
       </div>
@@ -130,7 +130,7 @@ export default function GrowthTools() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
         {tabs.map(t => (
           <div key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 11, fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? T.accent : 'var(--subtle)', cursor: 'pointer', borderBottom: activeTab === t.id ? '2px solid #D9A441' : '2px solid transparent', marginBottom: -1 }}>
+            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? T.accent : 'var(--subtle)', cursor: 'pointer', borderBottom: activeTab === t.id ? '2px solid #D9A441' : '2px solid transparent', marginBottom: -1 }}>
             {t.label}
           </div>
         ))}
@@ -144,18 +144,18 @@ export default function GrowthTools() {
             return (
               <Card key={g.id} color={g.color} style={{ padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }} onClick={() => getGoalAI(g)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div style={{ fontSize: 24 }}>{g.icon}</div>
+                  <div style={{ fontSize: 'var(--fs-2xl)'}}>{g.icon}</div>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
-                    <div style={{ fontSize: 9, color: isExpanded ? g.color : 'var(--dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: isExpanded ? g.color : 'var(--dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</div>
                   </div>
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{g.label}</div>
-                <div style={{ fontSize: 11, color: 'var(--subtle)', marginBottom: 14 }}>{g.current}{g.unit} / {g.target}{g.unit}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{g.label}</div>
+                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 14 }}>{g.current}{g.unit} / {g.target}{g.unit}</div>
                 <div style={{ background: 'var(--border)', borderRadius: 4, height: 6, marginBottom: 8 }}>
                   <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${g.color}, ${g.color}80)`, borderRadius: 4, transition: 'width 0.5s' }} />
                 </div>
-                <div style={{ fontSize: 10, color: g.color, marginBottom: isExpanded ? 12 : 0 }}>{pct}% to goal · tap for AI insights</div>
+                <div style={{ fontSize: 'var(--fs-sm)', color: g.color, marginBottom: isExpanded ? 12 : 0 }}>{pct}% to goal · tap for AI insights</div>
                 {isExpanded && (
                   <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${g.color}20` }} onClick={e => e.stopPropagation()}>
                     {goalAILoading === g.id
@@ -164,7 +164,7 @@ export default function GrowthTools() {
                         ? <MD text={goalAI[g.id]} color={g.color} />
                         : null}
                     <div onClick={() => { setChatPrefill(`Help me make progress on my goal: ${g.label}. I'm at ${g.current}${g.unit} out of ${g.target}${g.unit}.`); setChatOpen(true); }}
-                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: `${g.color}10`, border: `1px solid ${g.color}30`, borderRadius: 7, fontSize: 10, fontWeight: 600, color: g.color, cursor: 'pointer' }}>
+                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: `${g.color}10`, border: `1px solid ${g.color}30`, borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 600, color: g.color, cursor: 'pointer' }}>
                       💬 Ask CB AI about this goal
                     </div>
                   </div>
@@ -185,11 +185,11 @@ export default function GrowthTools() {
                 <div key={s.name} onClick={() => getSkillAI(s)}
                   style={{ padding: '12px 16px', background: 'var(--surface)', border: `1px solid ${isExp ? s.color + '60' : s.color + '20'}`, borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ fontSize: 9, color: s.growth.startsWith('+') ? T.accent : 'var(--subtle)' }}>{s.growth}</div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: s.color }}>{s.level}/10</div>
-                      <div style={{ fontSize: 9, color: isExp ? s.color : 'var(--dim)', transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</div>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: s.growth.startsWith('+') ? T.accent : 'var(--subtle)' }}>{s.growth}</div>
+                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: s.color }}>{s.level}/10</div>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: isExp ? s.color : 'var(--dim)', transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</div>
                     </div>
                   </div>
                   <div style={{ background: 'var(--border)', borderRadius: 2, height: 3, marginBottom: isExp ? 12 : 0 }}>
@@ -209,8 +209,8 @@ export default function GrowthTools() {
             })}
           </div>
           <div style={{ marginTop: 16, padding: '12px 16px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44120', borderRadius: 10 }}>
-            <div style={{ fontSize: 10, color: T.accent, marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>
-            <div style={{ fontSize: 12, color: 'var(--text-c)' }}>AI/Technology (currently 4/10) — highest asymmetric upside given your BD + real estate focus. A BD professional fluent in AI tools is a rare, compounding edge.</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: T.accent, marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>AI/Technology (currently 4/10) — highest asymmetric upside given your BD + real estate focus. A BD professional fluent in AI tools is a rare, compounding edge.</div>
           </div>
         </div>
       )}
@@ -220,9 +220,9 @@ export default function GrowthTools() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
               <Label>Growth Synthesis</Label>
-              <div style={{ fontSize: 11, color: 'var(--subtle)', marginTop: -6 }}>AI-generated · Based on your learning history, projects, and goals</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginTop: -6 }}>AI-generated · Based on your learning history, projects, and goals</div>
             </div>
-            <div onClick={generateSynthesis} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            <div onClick={generateSynthesis} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               {synthLoading ? '...' : '⚡ Generate'}
             </div>
           </div>
@@ -240,10 +240,10 @@ export default function GrowthTools() {
           )}
           {!synthesis && !synthLoading && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>⚡</div>
-              <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 6 }}>Get your Growth Synthesis</div>
-              <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 20, maxWidth: 360, margin: '0 auto 20px' }}>AI analysis of what's compounding in your favor, your biggest gap, and the highest-leverage action for the next 90 days.</div>
-              <div onClick={generateSynthesis} style={{ display: 'inline-block', padding: '11px 22px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 12, fontWeight: 700, color: '#000', cursor: 'pointer' }}>Generate Synthesis →</div>
+              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>⚡</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>Get your Growth Synthesis</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20, maxWidth: 360, margin: '0 auto 20px' }}>AI analysis of what's compounding in your favor, your biggest gap, and the highest-leverage action for the next 90 days.</div>
+              <div onClick={generateSynthesis} style={{ display: 'inline-block', padding: '11px 22px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Generate Synthesis →</div>
             </div>
           )}
           {topics.length > 0 && (
@@ -252,14 +252,14 @@ export default function GrowthTools() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {topics.filter(t => t.confidence >= 7).slice(0, 5).map(t => (
                   <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-c)' }}>✓ {t.title}</div>
-                    <div style={{ fontSize: 10, color: T.accent }}>Strong ({t.confidence}/10)</div>
+                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>✓ {t.title}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: T.accent }}>Strong ({t.confidence}/10)</div>
                   </div>
                 ))}
                 {topics.filter(t => t.confidence < 5).slice(0, 3).map(t => (
                   <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid #C4553D20', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 12, color: 'var(--text-c)' }}>⚠ {t.title}</div>
-                    <div style={{ fontSize: 10, color: T.accent }}>Needs work ({t.confidence}/10)</div>
+                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>⚠ {t.title}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: T.accent }}>Needs work ({t.confidence}/10)</div>
                   </div>
                 ))}
               </div>
@@ -273,12 +273,12 @@ export default function GrowthTools() {
           <Label>Certifications & Credentials</Label>
           {CERTS.map(c => (
             <div key={c.name} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${c.color}20`, borderRadius: 10, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
               <Badge color={c.color}>{c.status}</Badge>
             </div>
           ))}
           <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 10, cursor: 'pointer', textAlign: 'center', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 11, color: 'var(--subtle)' }}>+ Add certification or credential</div>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>+ Add certification or credential</div>
           </div>
         </div>
       )}
