@@ -83,7 +83,7 @@ export default function CreationStudio() {
     return (
       <div onClick={() => { setSource({ kind: k, id: item.id, title: item.topic }); setResult(''); }}
         style={{ padding: '10px 12px', marginBottom: 6, borderRadius: 9, cursor: 'pointer', border: `1px solid ${sel ? ACCENT : 'var(--border)'}`, background: sel ? 'var(--accent-glow)' : 'var(--surface)' }}>
-        <div style={{ fontSize: 12, fontWeight: 600, color: sel ? ACCENT : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.topic}</div>
+        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: sel ? ACCENT : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.topic}</div>
         <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 }}>{k === 'deepdive' ? 'Deep Dive' : 'Ladder'}</div>
       </div>
     );
@@ -92,13 +92,13 @@ export default function CreationStudio() {
   return (
     <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Turn knowledge into deliverables</div>
-      <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Creation Studio</div>
-      <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 20 }}>Generate a document, slide outline, or study guide from any saved Deep Dive or ladder.</div>
+      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Creation Studio</div>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Generate a document, slide outline, or study guide from any saved Deep Dive or ladder.</div>
 
       {/* Source */}
       <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>1 · Pick a source</div>
       {dives.length === 0 && ladders.length === 0 ? (
-        <div style={{ padding: '18px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 11, color: 'var(--dim)', marginBottom: 20 }}>
+        <div style={{ padding: '18px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>
           No Deep Dives or ladders yet. Build one, then come back to turn it into a deliverable.
         </div>
       ) : (
@@ -114,15 +114,15 @@ export default function CreationStudio() {
         {CREATION_KINDS.map(k => (
           <div key={k.id} onClick={() => setKind(k.id)}
             style={{ padding: '14px', borderRadius: 10, cursor: 'pointer', border: `1px solid ${kind === k.id ? ACCENT : 'var(--border)'}`, background: kind === k.id ? 'var(--accent-glow)' : 'var(--surface)' }}>
-            <div style={{ fontSize: 22, marginBottom: 6 }}>{k.icon}</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: kind === k.id ? ACCENT : 'var(--text)', marginBottom: 2 }}>{k.label}</div>
-            <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.4 }}>{k.desc}</div>
+            <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 6 }}>{k.icon}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: kind === k.id ? ACCENT : 'var(--text)', marginBottom: 2 }}>{k.label}</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{k.desc}</div>
           </div>
         ))}
       </div>
 
       <button onClick={generate} disabled={!source || loading}
-        style={{ width: '100%', padding: '13px', background: source && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: source && !loading ? T.canvas : 'var(--dim)', fontSize: 13, fontWeight: 800, cursor: source && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 20 }}>
+        style={{ width: '100%', padding: '13px', background: source && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: source && !loading ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: source && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 20 }}>
         {loading ? 'Generating…' : source ? `Generate ${CREATION_KINDS.find(k => k.id === kind)?.label} →` : 'Pick a source first'}
       </button>
 
@@ -132,8 +132,8 @@ export default function CreationStudio() {
             <div style={{ fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>{CREATION_KINDS.find(k => k.id === kind)?.label} · {source?.title}</div>
             {result && !loading && (
               <div style={{ display: 'flex', gap: 8 }}>
-                <div onClick={copy} style={{ fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px' }}>{copied ? '✓ Copied' : 'Copy'}</div>
-                <div onClick={download} style={{ fontSize: 10, color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 6, padding: '3px 9px', fontWeight: 700 }}>↓ .md</div>
+                <div onClick={copy} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px' }}>{copied ? '✓ Copied' : 'Copy'}</div>
+                <div onClick={download} style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 6, padding: '3px 9px', fontWeight: 700 }}>↓ .md</div>
               </div>
             )}
           </div>

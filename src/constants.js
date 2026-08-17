@@ -125,6 +125,33 @@ export const NAV_ITEMS = [
   { id: "quiz",      label: "Quiz",       desc: "Self-assessment & gaps",    accent: T.accent },
 ];
 
+// ── Containers ────────────────────────────────────────────────────────────
+// The 18 modules collapse into 6 verb-grouped containers. Each module keeps
+// its id and becomes a *mode* inside its container — nothing is deleted, and
+// every legacy `setActiveModule('<moduleId>')` deep-link still resolves,
+// because the mode ids ARE the old module ids. The container a mode lives in
+// is derived (see containerOfMode). Coach is intentionally absent — it stops
+// being a tab and becomes the global Ask layer.
+export const CONTAINERS = [
+  { id: "home",     label: "Home",     verb: "Orient",      modes: ["home"] },
+  { id: "learn",    label: "Learn",    verb: "Absorb",      modes: ["learn", "academy", "ladder", "books", "deepdive", "ted", "podcast", "translate", "quiz"] },
+  { id: "research", label: "Research", verb: "Investigate", modes: ["research", "inbox"] },
+  { id: "skills",   label: "Skills",   verb: "Practice",    modes: ["vault", "growth"] },
+  { id: "projects", label: "Projects", verb: "Execute",     modes: ["projects", "decisions"] },
+  { id: "studio",   label: "Studio",   verb: "Produce",     modes: ["studio"] },
+];
+
+// Mobile bottom bar shows five; the sixth+ live under "More".
+export const BOTTOM_NAV_IDS = ["home", "learn", "skills", "research"];
+
+// Per-mode metadata (label / desc / accent), keyed by mode id.
+export const MODE_META = Object.fromEntries(NAV_ITEMS.map((n) => [n.id, n]));
+
+// Which container owns a given mode id. Falls back to Home so an unknown or
+// relocated legacy id never lands nowhere.
+export const containerOfMode = (modeId) =>
+  CONTAINERS.find((c) => c.modes.includes(modeId))?.id || "home";
+
 export const CHAT_MODES = [
   { id: "synthesis", label: "Synthesis",       icon: "⚡", desc: "Connect ideas across everything you know" },
   { id: "socratic",  label: "Socratic",        icon: "🧠", desc: "Question-driven active recall" },

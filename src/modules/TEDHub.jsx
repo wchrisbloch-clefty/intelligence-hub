@@ -127,7 +127,7 @@ function RelevanceDot({ score }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
       <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-      <span style={{ fontSize: 10, fontWeight: 700, color }}>{score}/10</span>
+      <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color }}>{score}/10</span>
     </div>
   );
 }
@@ -171,27 +171,27 @@ Be blunt. CB-style. No fluff.`;
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{talk.title}</div>
-            <div style={{ fontSize: 11, color: 'var(--muted)' }}>{talk.speaker} · {talk.year} · {talk.duration}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{talk.title}</div>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>{talk.speaker} · {talk.year} · {talk.duration}</div>
           </div>
           <RelevanceDot score={talk.relevance} />
         </div>
 
-        <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.5, marginBottom: 10 }}>{talk.relevanceNote}</div>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.5, marginBottom: 10 }}>{talk.relevanceNote}</div>
 
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
           {talk.tags.map(t => (
-            <span key={t} style={{ fontSize: 9, padding: '2px 7px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 4, color: ACCENT, fontWeight: 600 }}>{t}</span>
+            <span key={t} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 4, color: ACCENT, fontWeight: 600 }}>{t}</span>
           ))}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <a href={talk.url} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, padding: '6px 12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
+            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
             ▶ Watch
           </a>
           <button onClick={analyze}
-            style={{ fontSize: 11, padding: '6px 12px', background: expanded && analysis ? 'var(--surf2)' : 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-b)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flex: 1, textAlign: 'left' }}>
+            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: expanded && analysis ? 'var(--surf2)' : 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-b)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flex: 1, textAlign: 'left' }}>
             {loading ? 'Analyzing…' : analysis ? (expanded ? 'Hide analysis' : 'Show analysis') : 'Analyze talk'}
           </button>
         </div>
@@ -201,7 +201,7 @@ Be blunt. CB-style. No fluff.`;
         <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
           {loading ? (
             <div>
-              <div style={{ fontSize: 10, color: ACCENT, marginBottom: 8 }}>Generating CB-style brief…</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: ACCENT, marginBottom: 8 }}>Generating CB-style brief…</div>
               <ThinkingDots color={ACCENT} />
             </div>
           ) : (
@@ -209,11 +209,11 @@ Be blunt. CB-style. No fluff.`;
               <MD text={analysis} color={ACCENT} />
               {!vaulted && (
                 <button onClick={saveToVault}
-                  style={{ marginTop: 12, fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-c)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  style={{ marginTop: 12, fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-c)', cursor: 'pointer', fontFamily: 'inherit' }}>
                   🏛 Save to Vault
                 </button>
               )}
-              {vaulted && <div style={{ marginTop: 8, fontSize: 10, color: T.accent }}>✓ Saved to Vault</div>}
+              {vaulted && <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>}
             </>
           )}
         </div>
@@ -248,10 +248,10 @@ export default function TEDHub() {
       {/* Header */}
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)' }}>
         <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Thought Leadership</div>
-        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>
+        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>
           TED Intelligence Hub
         </div>
-        <div style={{ fontSize: 11, color: 'var(--dim)' }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>
           {CURATED_TALKS.length} curated talks · scored for CB's interests · AI analysis on demand
         </div>
       </div>
@@ -261,10 +261,10 @@ export default function TEDHub() {
         <input
           value={search} onChange={e => setSearch(e.target.value)}
           placeholder="Search talks or speakers…"
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
         />
         <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 11, color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}>
+          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}>
           <option value="relevance">Sort: Relevance</option>
           <option value="year">Sort: Newest</option>
         </select>
@@ -274,7 +274,7 @@ export default function TEDHub() {
       <div style={{ padding: `10px ${pad}`, display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', borderBottom: '1px solid var(--bord2)' }}>
         {TOPIC_FILTERS.map(f => (
           <div key={f.id} onClick={() => setTopicFilter(f.id)}
-            style={{ flexShrink: 0, padding: '5px 12px', fontSize: 10, fontWeight: 600, borderRadius: 14, cursor: 'pointer', transition: 'all 0.12s', border: `1px solid ${topicFilter === f.id ? ACCENT_BORDER : 'var(--border)'}`, background: topicFilter === f.id ? ACCENT_BG : 'transparent', color: topicFilter === f.id ? ACCENT : 'var(--subtle)' }}>
+            style={{ flexShrink: 0, padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, cursor: 'pointer', transition: 'all 0.12s', border: `1px solid ${topicFilter === f.id ? ACCENT_BORDER : 'var(--border)'}`, background: topicFilter === f.id ? ACCENT_BG : 'transparent', color: topicFilter === f.id ? ACCENT : 'var(--subtle)' }}>
             {f.label}
           </div>
         ))}
@@ -283,7 +283,7 @@ export default function TEDHub() {
       {/* Talks grid */}
       <div style={{ padding: `16px ${pad}`, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
         {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 12 }}>
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
             No talks match your filter.
           </div>
         ) : (
@@ -295,14 +295,14 @@ export default function TEDHub() {
 
       {/* Add your own */}
       <div style={{ margin: `0 ${pad} 20px`, padding: '16px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center' }}>
-        <div style={{ fontSize: 11, color: 'var(--muted)', marginBottom: 6 }}>Want to analyze a specific TED talk or YouTube talk?</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 6 }}>Want to analyze a specific TED talk or YouTube talk?</div>
         <div onClick={() => {
           setChatPrefill('Analyze this TED talk for me: ');
           setChatOpen(true);
-        }} style={{ fontSize: 11, color: ACCENT, fontWeight: 700, cursor: 'pointer' }}>
+        }} style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700, cursor: 'pointer' }}>
           Open AI Chat to analyze any talk URL →
         </div>
-        <div onClick={() => setActiveModule('podcast')} style={{ fontSize: 11, color: 'var(--subtle)', fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>
+        <div onClick={() => setActiveModule('podcast')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>
           Or go to Podcast Hub to paste a URL
         </div>
       </div>

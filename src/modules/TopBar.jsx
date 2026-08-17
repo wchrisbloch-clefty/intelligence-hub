@@ -1,10 +1,8 @@
 import { T, withAlpha } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
-import { NAV_ITEMS } from '../constants.js';
 import { getSyncStatus, subscribeSync } from '../lib/storage.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
-import NavIcon from './shared/NavIcon.jsx';
 import { Sun, Moon, MessageSquare, X, Search, PenSquare, Sparkles } from 'lucide-react';
 
 // Global storage-sync indicator. Hidden entirely when everything's syncing —
@@ -31,7 +29,7 @@ function SyncChip({ compact = false }) {
   }
   return (
     <div title={title}
-      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 600, color, padding: '5px 11px', background: withAlpha(color, 12), border: `1px solid ${withAlpha(color, 35)}`, borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0 }}>
+      style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-base)', fontWeight: 600, color, padding: '5px 11px', background: withAlpha(color, 12), border: `1px solid ${withAlpha(color, 35)}`, borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0 }}>
       <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
       {label}
     </div>
@@ -40,7 +38,7 @@ function SyncChip({ compact = false }) {
 
 export default function TopBar() {
   const {
-    activeModule, setActiveModule,
+    setActiveModule,
     graph, chatOpen, setChatOpen,
     searchQuery, setSearchQuery,
     setChatPrefill, triggerNewChat, focusCapture,
@@ -75,18 +73,18 @@ export default function TopBar() {
       {showAiRow && (
         <div onClick={handleSearchSubmit}
           style={{ padding: '11px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', background: 'var(--accent-glow, rgba(217,164,65,0.06))', borderBottom: filtered.length ? '1px solid var(--bord2)' : 'none' }}>
-          <span style={{ fontSize: 14, color: 'var(--accent, #D9A441)', lineHeight: 1 }}>✦</span>
+          <span style={{ fontSize: 'var(--fs-lg)', color: 'var(--accent, #D9A441)', lineHeight: 1 }}>✦</span>
           <div>
-            <div style={{ fontSize: 12, color: 'var(--accent, #D9A441)', fontWeight: 700 }}>Ask AI: "{searchQuery}"</div>
-            <div style={{ fontSize: 10, color: 'var(--dim)', marginTop: 2 }}>Open Intelligence Chat · Press ↵</div>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent, #D9A441)', fontWeight: 700 }}>Ask AI: "{searchQuery}"</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>Open Intelligence Chat · Press ↵</div>
           </div>
         </div>
       )}
       {filtered.map((s, i) => (
         <div key={i} onClick={() => { setActiveModule(s.module); setSearchQuery(''); setSearchFocused(false); }}
           style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', borderBottom: i < filtered.length - 1 ? '1px solid var(--bord2)' : 'none' }}>
-          <span style={{ fontSize: 9, color: s.type === 'project' ? T.accent : 'var(--accent, #D9A441)', background: s.type === 'project' ? 'rgba(217,164,65,0.12)' : 'var(--accent-glow, rgba(217,164,65,0.1))', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
-          <span style={{ fontSize: 13, color: 'var(--text-b)' }}>{s.label}</span>
+          <span style={{ fontSize: 'var(--fs-sm)', color: s.type === 'project' ? T.accent : 'var(--accent, #D9A441)', background: s.type === 'project' ? 'rgba(217,164,65,0.12)' : 'var(--accent-glow, rgba(217,164,65,0.1))', padding: '2px 7px', borderRadius: 4, textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>{s.type}</span>
+          <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)' }}>{s.label}</span>
         </div>
       ))}
     </div>
@@ -98,7 +96,7 @@ export default function TopBar() {
       <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 40, position: 'relative' }}>
         <div style={{ height: 54, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 10 }}>
           <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0 }}>FR</div>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0 }}>FR</div>
           </div>
           <div style={{ flex: 1, position: 'relative', minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg)', border: `1.5px solid ${searchFocused ? 'var(--accent, #D9A441)' : 'var(--border)'}`, borderRadius: 10, padding: '8px 12px', transition: 'border-color 0.15s', boxShadow: searchFocused ? '0 0 0 3px var(--accent-glow, rgba(217,164,65,0.1))' : 'none' }}>
@@ -109,10 +107,10 @@ export default function TopBar() {
                 onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
                 onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
                 placeholder="Ask anything..."
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-b)', fontFamily: 'inherit', minWidth: 0 }}
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-base)', color: 'var(--text-b)', fontFamily: 'inherit', minWidth: 0 }}
               />
               {voiceOk && (
-                <span onClick={() => toggleVoice(t => setSearchQuery(t))} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>
+                <span onClick={() => toggleVoice(t => setSearchQuery(t))} style={{ fontSize: 'var(--fs-base)', cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>
                   🎙️
                 </span>
               )}
@@ -129,7 +127,7 @@ export default function TopBar() {
           <button onClick={triggerNewChat} title="New chat" style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, outline: 'none', color: 'var(--muted)' }}>
             <PenSquare size={14} />
           </button>
-          <button onClick={() => setChatOpen(o => !o)} style={{ height: 34, padding: '0 12px', borderRadius: 8, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+          <button onClick={() => setChatOpen(o => !o)} style={{ height: 34, padding: '0 12px', borderRadius: 8, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
             {chatOpen ? <X size={14} /> : <MessageSquare size={14} />}
           </button>
         </div>
@@ -141,14 +139,15 @@ export default function TopBar() {
   return (
     <header style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', flexShrink: 0, zIndex: 40, position: 'relative' }}>
 
-      {/* Row 1 — Logo + Search + Actions */}
-      <div style={{ height: 58, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, borderBottom: '1px solid var(--bord2)' }}>
+      {/* Logo + Search + Actions. Container navigation now lives in the
+          left rail (SideNav); this header is chrome + the global Ask bar. */}
+      <div style={{ height: 58, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16 }}>
 
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 9, flexShrink: 0, marginRight: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0, boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))' }}>FR</div>
+          <div style={{ width: 32, height: 32, borderRadius: 9, background: 'var(--accent, #D9A441)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: T.canvas, fontFamily: "'Newsreader', serif", flexShrink: 0, boxShadow: '0 2px 12px var(--accent-glow, rgba(217,164,65,0.2))' }}>FR</div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1, whiteSpace: 'nowrap' }}>The Film Room</div>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, color: 'var(--chalk, var(--text))', fontFamily: "'Newsreader', serif", letterSpacing: -0.3, lineHeight: 1, whiteSpace: 'nowrap' }}>The Film Room</div>
             <div style={{ fontSize: 8, letterSpacing: 2.5, color: 'var(--accent, #D9A441)', textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>Intelligence</div>
           </div>
         </div>
@@ -164,14 +163,14 @@ export default function TopBar() {
               onBlur={() => setTimeout(() => setSearchFocused(false), 150)}
               onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
               placeholder="Ask anything — AI-powered intelligence search..."
-              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text)', fontFamily: 'inherit' }}
+              style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit' }}
             />
             {voiceOk && (
-              <span onClick={() => toggleVoice(t => setSearchQuery(t))} title={voiceListening ? 'Stop' : 'Voice search'} style={{ fontSize: 13, cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>🎙️</span>
+              <span onClick={() => toggleVoice(t => setSearchQuery(t))} title={voiceListening ? 'Stop' : 'Voice search'} style={{ fontSize: 'var(--fs-base)', cursor: 'pointer', color: voiceListening ? T.negative : 'var(--dim)', flexShrink: 0 }}>🎙️</span>
             )}
             {searchQuery
-              ? <span onClick={handleSearchSubmit} style={{ fontSize: 11, color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>Ask AI →</span>
-              : <kbd style={{ fontSize: 9, color: 'var(--dim)', background: 'var(--surf2)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 5, flexShrink: 0, fontFamily: 'inherit' }}>↵</kbd>
+              ? <span onClick={handleSearchSubmit} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent, #D9A441)', cursor: 'pointer', fontWeight: 700, flexShrink: 0, letterSpacing: 0.2 }}>Ask AI →</span>
+              : <kbd style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', background: 'var(--surf2)', border: '1px solid var(--border)', padding: '2px 6px', borderRadius: 5, flexShrink: 0, fontFamily: 'inherit' }}>↵</kbd>
             }
           </div>
           {dropdown}
@@ -183,13 +182,13 @@ export default function TopBar() {
 
         {/* Stats */}
         {streak > 0 && (
-          <div style={{ fontSize: 11, color: 'var(--text-c)', padding: '5px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', padding: '5px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
             <span>🔥</span><span style={{ fontWeight: 600 }}>{streak}d</span>
           </div>
         )}
         {totalHours > 0 && (
-          <div style={{ fontSize: 11, color: 'var(--text-c)', padding: '5px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ color: 'var(--dim)', fontSize: 10 }}>◷</span><span style={{ fontWeight: 600 }}>{totalHours}h</span>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', padding: '5px 11px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 20, whiteSpace: 'nowrap', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: 'var(--dim)', fontSize: 'var(--fs-sm)'}}>◷</span><span style={{ fontWeight: 600 }}>{totalHours}h</span>
           </div>
         )}
 
@@ -205,46 +204,10 @@ export default function TopBar() {
           <PenSquare size={15} strokeWidth={1.8} />
         </button>
 
-        <button onClick={() => setChatOpen(o => !o)} style={{ padding: '0 16px', height: 36, borderRadius: 9, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, transition: 'all 0.15s', letterSpacing: 0.2 }}>
+        <button onClick={() => setChatOpen(o => !o)} style={{ padding: '0 16px', height: 36, borderRadius: 9, background: chatOpen ? 'var(--accent, #D9A441)' : 'var(--bg)', border: `1px solid ${chatOpen ? 'transparent' : 'var(--border)'}`, color: chatOpen ? '#000' : 'var(--text-b)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', display: 'flex', alignItems: 'center', gap: 7, flexShrink: 0, transition: 'all 0.15s', letterSpacing: 0.2 }}>
           {chatOpen ? <><X size={13} strokeWidth={2.5} /> Close</> : <><MessageSquare size={13} strokeWidth={1.8} /> AI Chat</>}
         </button>
       </div>
-
-      {/* Row 2 — Navigation tabs */}
-      <nav style={{ height: 42, display: 'flex', alignItems: 'stretch', overflowX: 'auto', scrollbarWidth: 'none', padding: '0 16px', gap: 0 }}>
-        {NAV_ITEMS.map(item => {
-          const active = activeModule === item.id;
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveModule(item.id)}
-              title={item.desc}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6,
-                padding: '0 14px',
-                border: 'none',
-                borderBottom: `2px solid ${active ? (item.accent || 'var(--accent, #D9A441)') : 'transparent'}`,
-                background: 'transparent',
-                color: active ? (item.accent || 'var(--accent, #D9A441)') : 'var(--muted)',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                fontSize: 12,
-                fontWeight: active ? 700 : 500,
-                whiteSpace: 'nowrap',
-                transition: 'color 0.12s, border-color 0.12s',
-                flexShrink: 0,
-                letterSpacing: 0.1,
-                outline: 'none',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.color = 'var(--text-b)'; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.color = 'var(--muted)'; }}
-            >
-              <NavIcon id={item.id} size={13} strokeWidth={active ? 2.2 : 1.8} />
-              {item.label}
-            </button>
-          );
-        })}
-      </nav>
     </header>
   );
 }

@@ -33,12 +33,12 @@ function LangSelector({ label, value, onChange }) {
   return (
     <div style={{ position: 'relative', minWidth: 0 }}>
       <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', padding: '9px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 40 }}>
+        style={{ width: '100%', padding: '9px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 40 }}>
         <div>
-          <div style={{ fontSize: 9, color: 'var(--dim)', marginBottom: 2 }}>{label}</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 2 }}>{label}</div>
           <div style={{ color: 'var(--text)' }}>{display}</div>
         </div>
-        <span style={{ fontSize: 10, color: 'var(--dim)', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
@@ -54,7 +54,7 @@ function LangSelector({ label, value, onChange }) {
               {/* Variants or single option */}
               {(lang.variants && lang.variants.length > 1 ? lang.variants : [{ code: lang.code, label: `${lang.flag} ${lang.label}` }]).map(v => (
                 <div key={v.code} onClick={() => { onChange(v.code); setOpen(false); }}
-                  style={{ padding: lang.variants && lang.variants.length > 1 ? '8px 14px 8px 24px' : '8px 14px', fontSize: 12, color: value === v.code ? 'var(--accent,#D9A441)' : 'var(--text-b)', cursor: 'pointer', background: value === v.code ? 'var(--accent-glow,rgba(217,164,65,0.08))' : 'transparent', fontWeight: value === v.code ? 600 : 400, borderBottom: '1px solid var(--bord2)' }}>
+                  style={{ padding: lang.variants && lang.variants.length > 1 ? '8px 14px 8px 24px' : '8px 14px', fontSize: 'var(--fs-base)', color: value === v.code ? 'var(--accent,#D9A441)' : 'var(--text-b)', cursor: 'pointer', background: value === v.code ? 'var(--accent-glow,rgba(217,164,65,0.08))' : 'transparent', fontWeight: value === v.code ? 600 : 400, borderBottom: '1px solid var(--bord2)' }}>
                   {v.label}
                 </div>
               ))}
@@ -167,10 +167,10 @@ Provide only the translation. No preamble, no explanation unless a cultural note
       {/* Header */}
       <div style={{ padding: `${pad} ${pad} 0`, marginBottom: 20 }}>
         <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub</div>
-        <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
+        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
           🌐 Translator
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', marginTop: 5 }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 5 }}>
           All languages · Country dialects · Voice input · Document paste
         </div>
       </div>
@@ -181,7 +181,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', marginBottom: 20, paddingBottom: 2 }}>
           {QUICK_PAIRS.map(p => (
             <button key={p.label} onClick={() => { setFromLang(p.from); setToLang(p.to); setOutput(''); }}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: fromLang === p.from && toLang === p.to ? 'rgba(217,164,65,0.1)' : 'transparent', color: fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 11, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: fromLang === p.from && toLang === p.to ? 'rgba(217,164,65,0.1)' : 'transparent', color: fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
               {p.label}
             </button>
           ))}
@@ -191,7 +191,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr auto 1fr' : '1fr 40px 1fr', gap: isMobile ? 8 : 12, alignItems: 'center', marginBottom: 16 }}>
           <LangSelector label="From" value={fromLang} onChange={setFromLang} />
           <button onClick={swap}
-            style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 16, cursor: 'pointer', color: 'var(--text-b)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 'var(--fs-lg)', cursor: 'pointer', color: 'var(--text-b)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             ⇄
           </button>
           <LangSelector label="To" value={toLang} onChange={setToLang} />
@@ -201,7 +201,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
         <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 16 }}>
           {TRANSLATION_MODES.map(m => (
             <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 11, fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
               {m.icon} {m.label}
             </button>
           ))}
@@ -212,16 +212,16 @@ Provide only the translation. No preamble, no explanation unless a cultural note
           {/* Input */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bord2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(fromLang)}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(fromLang)}</div>
               <div style={{ display: 'flex', gap: 6 }}>
                 {voiceOk && (
                   <button onClick={() => toggleVoice((t) => setInput(t))}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? T.negative : 'var(--border)'}`, background: listening ? withAlpha(T.negative, 6) : 'transparent', color: listening ? T.negative : 'var(--dim)', fontSize: 12, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
+                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? T.negative : 'var(--border)'}`, background: listening ? withAlpha(T.negative, 6) : 'transparent', color: listening ? T.negative : 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', outline: 'none', minHeight: 28 }}>
                     {listening ? '⏹ Stop' : '🎙️ Voice'}
                   </button>
                 )}
                 <button onClick={() => fileRef.current?.click()}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', outline: 'none', minHeight: 28 }}>
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', outline: 'none', minHeight: 28 }}>
                   📎 File
                 </button>
                 <input ref={fileRef} type="file" accept=".txt,.csv,.md" style={{ display: 'none' }} onChange={handleFile} />
@@ -231,29 +231,29 @@ Provide only the translation. No preamble, no explanation unless a cultural note
               value={input} onChange={e => setInput(e.target.value)}
               onPaste={handlePaste}
               placeholder="Type, paste, or upload text to translate… (Excel/TSV auto-formats to table)"
-              style={{ width: '100%', minHeight: 160, padding: '14px', background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.7 }}
+              style={{ width: '100%', minHeight: 160, padding: '14px', background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 'var(--fs-base)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.7 }}
             />
             <div style={{ padding: '8px 14px', borderTop: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 10, color: 'var(--dim)' }}>{input.length} chars</div>
-              <button onClick={() => setInput('')} style={{ fontSize: 10, color: 'var(--dim)', padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 5, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}>Clear</button>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{input.length} chars</div>
+              <button onClick={() => setInput('')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 5, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}>Clear</button>
             </div>
           </div>
 
           {/* Output */}
           <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bord2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(toLang)}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(toLang)}</div>
               {output && (
                 <button onClick={() => navigator.clipboard?.writeText(output)}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 28 }}>
+                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 28 }}>
                   Copy
                 </button>
               )}
             </div>
-            <div style={{ minHeight: 160, padding: '14px', fontSize: 13, color: 'var(--text)', lineHeight: 1.7 }}>
+            <div style={{ minHeight: 160, padding: '14px', fontSize: 'var(--fs-base)', color: 'var(--text)', lineHeight: 1.7 }}>
               {loading ? (
                 <div>
-                  <div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 10, fontStyle: 'italic' }}>Translating…</div>
+                  <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 10, fontStyle: 'italic' }}>Translating…</div>
                   <ThinkingDots />
                 </div>
               ) : output ? (
@@ -267,7 +267,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
 
         {/* Translate button */}
         <button onClick={translate} disabled={loading || !input.trim()}
-          style={{ padding: '12px 32px', background: loading || !input.trim() ? 'var(--surf2)' : 'var(--accent,#D9A441)', color: loading || !input.trim() ? 'var(--dim)' : '#000', borderRadius: 10, border: 'none', fontSize: 14, fontWeight: 800, cursor: loading || !input.trim() ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 24 }}>
+          style={{ padding: '12px 32px', background: loading || !input.trim() ? 'var(--surf2)' : 'var(--accent,#D9A441)', color: loading || !input.trim() ? 'var(--dim)' : '#000', borderRadius: 10, border: 'none', fontSize: 'var(--fs-lg)', fontWeight: 800, cursor: loading || !input.trim() ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 24 }}>
           {loading ? 'Translating…' : `🌐 Translate`}
         </button>
 
@@ -280,11 +280,11 @@ Provide only the translation. No preamble, no explanation unless a cultural note
                 <div key={i} onClick={() => { setInput(h.fullInput || ''); setOutput(h.full); setFromLang(h.fromCode || fromLang); setToLang(h.toCode || toLang); }}
                   style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer' }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 9, color: 'var(--accent,#D9A441)', fontWeight: 700 }}>{h.from} → {h.to}</span>
-                    <span style={{ fontSize: 9, color: 'var(--dim)' }}>·</span>
-                    <span style={{ fontSize: 9, color: 'var(--dim)' }}>{h.mode}</span>
+                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent,#D9A441)', fontWeight: 700 }}>{h.from} → {h.to}</span>
+                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>·</span>
+                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{h.mode}</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.5 }}>{h.input}</div>
+                  <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5 }}>{h.input}</div>
                 </div>
               ))}
             </div>

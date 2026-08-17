@@ -71,10 +71,10 @@ function LockScreen({ onUnlock }) {
   return (
     <div style={screenWrap}>
       <form onSubmit={submit} style={{ width: '100%', maxWidth: 340, textAlign: 'center' }}>
-        <div style={{ fontFamily: "'Newsreader', serif", fontSize: 30, fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5, marginBottom: 6 }}>
+        <div style={{ fontFamily: "'Newsreader', serif", fontSize: 'var(--fs-2xl)', fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5, marginBottom: 6 }}>
           The Film Room
         </div>
-        <div style={{ fontSize: 12, color: 'var(--chalk-dim, var(--muted))', marginBottom: 28 }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim, var(--muted))', marginBottom: 28 }}>
           Enter your access code to study the tape.
         </div>
         <input
@@ -86,11 +86,11 @@ function LockScreen({ onUnlock }) {
           style={{
             width: '100%', boxSizing: 'border-box', textAlign: 'center', letterSpacing: 3,
             background: 'var(--surface)', border: `1px solid ${error ? 'var(--red, #C4553D)' : 'var(--line, var(--border))'}`,
-            borderRadius: 8, padding: '13px 16px', color: 'var(--chalk, var(--text))', fontSize: 15,
+            borderRadius: 8, padding: '13px 16px', color: 'var(--chalk, var(--text))', fontSize: 'var(--fs-lg)',
             outline: 'none', fontFamily: 'inherit', marginBottom: 14,
           }}
         />
-        {error && <div style={{ fontSize: 12, color: 'var(--red, #C4553D)', marginBottom: 14 }}>{error}</div>}
+        {error && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--red, #C4553D)', marginBottom: 14 }}>{error}</div>}
         <button
           type="submit"
           disabled={busy || !code.trim()}
@@ -98,7 +98,7 @@ function LockScreen({ onUnlock }) {
             width: '100%', padding: '13px', borderRadius: 8, border: 'none', cursor: busy || !code.trim() ? 'default' : 'pointer',
             background: busy || !code.trim() ? 'var(--surf2, var(--surface))' : 'var(--accent, #D9A441)',
             color: busy || !code.trim() ? 'var(--chalk-dim, var(--muted))' : T.canvas,
-            fontSize: 14, fontWeight: 700, fontFamily: 'inherit', minHeight: 44,
+            fontSize: 'var(--fs-lg)', fontWeight: 700, fontFamily: 'inherit', minHeight: 44,
           }}
         >
           {busy ? 'Checking…' : 'Enter'}

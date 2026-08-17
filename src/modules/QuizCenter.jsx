@@ -127,20 +127,20 @@ export default function QuizCenter() {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div onClick={() => setView('pick')} style={{ fontSize: 12, color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Back</div>
-          <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Quiz History</div>
+          <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Back</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Quiz History</div>
         </div>
         {history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 12 }}>No quizzes completed yet.</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>No quizzes completed yet.</div>
         ) : (
           history.map(h => (
             <div key={h.id} style={{ padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
-                  <div style={{ fontSize: 10, color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
+                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 800, color: h.score / h.total >= 0.7 ? T.accent : h.score / h.total >= 0.5 ? ACCENT : T.negative }}>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: h.score / h.total >= 0.7 ? T.accent : h.score / h.total >= 0.5 ? ACCENT : T.negative }}>
                   {h.score}/{h.total}
                 </div>
               </div>
@@ -161,15 +161,15 @@ export default function QuizCenter() {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px 24px 20px', marginBottom: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 48, fontWeight: 800, color: scoreColor, marginBottom: 4 }}>{pct}%</div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{score}/{total} correct · {topic?.label}</div>
-          <div style={{ fontSize: 11, color: 'var(--dim)' }}>{pct >= 70 ? 'Strong foundation.' : pct >= 50 ? 'Gaps identified — see analysis below.' : 'Significant room to deepen — this is the signal.'}</div>
+          <div style={{ fontSize: 'var(--fs-3xl)', fontWeight: 800, color: scoreColor, marginBottom: 4 }}>{pct}%</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{score}/{total} correct · {topic?.label}</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>{pct >= 70 ? 'Strong foundation.' : pct >= 50 ? 'Gaps identified — see analysis below.' : 'Significant room to deepen — this is the signal.'}</div>
         </div>
 
         <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Gap Analysis</div>
           {gapLoading ? (
-            <div><div style={{ fontSize: 11, color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color={ACCENT} /></div>
+            <div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color={ACCENT} /></div>
           ) : (
             <MD text={gapReport} color={ACCENT} />
           )}
@@ -177,17 +177,17 @@ export default function QuizCenter() {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <div onClick={() => startQuiz(topic)}
-            style={{ flex: 1, padding: '12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: ACCENT, cursor: 'pointer' }}>
+            style={{ flex: 1, padding: '12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: ACCENT, cursor: 'pointer' }}>
             Retry Quiz
           </div>
           <div onClick={() => setView('pick')}
-            style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text-b)', cursor: 'pointer' }}>
+            style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-b)', cursor: 'pointer' }}>
             New Topic
           </div>
         </div>
         {gapReport && (
           <div onClick={() => { setChatPrefill(`Let's go deeper on ${topic?.label}. Based on my quiz gaps, help me build a study plan and explain the key concepts I'm missing.`); setChatOpen(true); }}
-            style={{ marginTop: 10, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 600, color: 'var(--subtle)', cursor: 'pointer' }}>
+            style={{ marginTop: 10, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--subtle)', cursor: 'pointer' }}>
             ✦ Deep Dive with AI →
           </div>
         )}
@@ -200,14 +200,14 @@ export default function QuizCenter() {
       <div style={{ maxWidth: 680, margin: '0 auto', padding: `20px ${pad} 60px` }}>
         {generating || questions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: 13, color: 'var(--dim)', marginBottom: 16 }}>Building your {topic?.label} quiz…</div>
+            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 16 }}>Building your {topic?.label} quiz…</div>
             <ThinkingDots color={ACCENT} />
           </div>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div onClick={() => setView('pick')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
-              <div style={{ fontSize: 11, color: ACCENT, fontWeight: 700 }}>{topic?.label}</div>
+              <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700 }}>{topic?.label}</div>
             </div>
             <QuizMode questions={questions} color={ACCENT} onComplete={onQuizDone} />
           </>
@@ -224,16 +224,16 @@ export default function QuizCenter() {
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Self-Assessment</div>
-          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
+          <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
             Knowledge Check
           </div>
-          <div style={{ fontSize: 11, color: 'var(--dim)', marginTop: 4 }}>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 4 }}>
             Find gaps. Deepen signal. AI generates 6 questions calibrated to CB.
           </div>
         </div>
         {history.length > 0 && (
           <div onClick={() => setView('history')}
-            style={{ fontSize: 10, padding: '5px 12px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
+            style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
             History ({history.length})
           </div>
         )}
@@ -246,7 +246,7 @@ export default function QuizCenter() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {graphTopics.map(t => (
                 <div key={t.title} onClick={() => startQuiz({ id: t.title.toLowerCase().replace(/\s+/g, '_'), label: t.title, icon: '📚', desc: `Your tracked topic — ${t.sessions} sessions` })}
-                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 11, fontWeight: 600, color: 'var(--accent, #D9A441)' }}>
+                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--accent, #D9A441)' }}>
                   📚 {t.title} · {t.confidence}/10
                 </div>
               ))}
@@ -261,25 +261,25 @@ export default function QuizCenter() {
               style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.12s' }}
               onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
               onMouseLeave={e => e.currentTarget.style.borderColor = ACCENT_BORDER}>
-              <div style={{ fontSize: 22, marginBottom: 8 }}>{t.icon}</div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{t.label}</div>
-              <div style={{ fontSize: 10, color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
+              <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 8 }}>{t.icon}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{t.label}</div>
+              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
             </div>
           ))}
         </div>
 
         <div style={{ padding: '16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Custom Topic</div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Custom Topic</div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
               value={customTopic} onChange={e => setCustomTopic(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && customTopic.trim() && startQuiz({ id: 'custom', label: customTopic.trim(), icon: '🎯', desc: 'Custom quiz' })}
               placeholder="Type any topic (e.g. ERCOT energy markets, Chip War geopolitics…)"
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
             />
             <button onClick={() => customTopic.trim() && startQuiz({ id: 'custom', label: customTopic.trim(), icon: '🎯', desc: 'Custom quiz' })}
               disabled={!customTopic.trim()}
-              style={{ padding: '8px 16px', background: customTopic.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: customTopic.trim() ? '#fff' : 'var(--dim)', fontSize: 12, fontWeight: 700, cursor: customTopic.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+              style={{ padding: '8px 16px', background: customTopic.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: customTopic.trim() ? '#fff' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: customTopic.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
               Quiz Me
             </button>
           </div>

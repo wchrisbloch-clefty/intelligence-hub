@@ -9,24 +9,24 @@ export function DepthConfirm({ topic, onQuick, onDeep, onClose }) {
   return (
     <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '16px 18px', marginBottom: 16, animation: 'fadeUp 0.15s ease' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-        <span style={{ fontSize: 16, lineHeight: 1.2 }}>⚡</span>
+        <span style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.2 }}>⚡</span>
         <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>This looks like a Deep Dive</div>
-          <div style={{ fontSize: 11.5, color: 'var(--muted)', lineHeight: 1.6, marginBottom: 12 }}>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>This looks like a Deep Dive</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 12 }}>
             I can pull live sources and build a structured, saveable brief{topic ? ` on "${topic}"` : ''} — it takes longer — or give you a quick take right now. Which?
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <div onClick={onDeep}
-              style={{ padding: '8px 14px', borderRadius: 8, background: ACCENT, color: T.canvas, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}>
+              style={{ padding: '8px 14px', borderRadius: 8, background: ACCENT, color: T.canvas, fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer' }}>
               ⚡ Build the Deep Dive
             </div>
             <div onClick={onQuick}
-              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>
+              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
               Quick take now
             </div>
             {onClose && (
               <div onClick={onClose}
-                style={{ padding: '8px 10px', color: 'var(--dim)', fontSize: 11, cursor: 'pointer' }}>
+                style={{ padding: '8px 10px', color: 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer' }}>
                 Cancel
               </div>
             )}
@@ -45,7 +45,7 @@ export function GoingDeepBanner({ depth = 'expert', note }) {
       <span style={{ fontSize: 14, animation: 'pulse 1.2s infinite ease-in-out' }}>🔦</span>
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11, fontWeight: 800, color: ACCENT, letterSpacing: 1, textTransform: 'uppercase' }}>Going Deep · {meta.label}</div>
-        <div style={{ fontSize: 10.5, color: 'var(--muted)', lineHeight: 1.5 }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.5 }}>
           {note || 'Pulling live sources and building your brief — this takes longer than a quick answer.'}
         </div>
       </div>

@@ -97,16 +97,16 @@ export default function ProjectsOS() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
           <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
-          <div style={{ fontSize: 11, color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
+          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
         </div>
-        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: T.accent, borderRadius: 10, fontSize: 11, fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
+        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: T.accent, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
       </div>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
         {[{ id: 'all', label: 'All', color: 'var(--subtle)' }, ...PROJECT_STATUSES].map(s => (
           <div key={s.id} onClick={() => setStatusFilter(s.id)}
-            style={{ padding: isMobile ? '9px 14px' : '5px 14px', fontSize: 10, border: `1px solid ${statusFilter === s.id ? s.color : 'var(--bord2)'}`, color: statusFilter === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: statusFilter === s.id ? `${s.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
+            style={{ padding: isMobile ? '9px 14px' : '5px 14px', fontSize: 'var(--fs-sm)', border: `1px solid ${statusFilter === s.id ? s.color : 'var(--bord2)'}`, color: statusFilter === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: statusFilter === s.id ? `${s.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
             {s.label} ({s.id === 'all' ? projects.length : projects.filter(p => p.status === s.id).length})
           </div>
         ))}
@@ -119,7 +119,7 @@ export default function ProjectsOS() {
             <div key={status.id}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <div style={{ fontSize: 9, letterSpacing: 2, color: status.color, textTransform: 'uppercase' }}>{status.label}</div>
-                <div style={{ fontSize: 10, color: 'var(--dim)', background: 'var(--surface)', borderRadius: 10, padding: '1px 7px' }}>{cols.length}</div>
+                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', background: 'var(--surface)', borderRadius: 10, padding: '1px 7px' }}>{cols.length}</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {cols.map(proj => {
@@ -131,16 +131,16 @@ export default function ProjectsOS() {
                     <div key={p.id} onClick={() => setActiveId(p.id)}
                       style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${p.color}20`, borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div style={{ fontSize: 18 }}>{p.emoji}</div>
+                        <div style={{ fontSize: 'var(--fs-xl)'}}>{p.emoji}</div>
                         <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
                       </div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.35 }}>{p.title}</div>
-                      <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</div>
+                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.35 }}>{p.title}</div>
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</div>
                       {p.milestones.length > 0 && (
                         <>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <div style={{ fontSize: 9, color: 'var(--dim)' }}>{done}/{p.milestones.length} milestones</div>
-                            <div style={{ fontSize: 9, color: p.color }}>{pct}%</div>
+                            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{done}/{p.milestones.length} milestones</div>
+                            <div style={{ fontSize: 'var(--fs-sm)', color: p.color }}>{pct}%</div>
                           </div>
                           <div style={{ background: 'var(--border)', borderRadius: 2, height: 2 }}>
                             <div style={{ width: `${pct}%`, height: '100%', background: p.color, borderRadius: 2 }} />
@@ -148,16 +148,16 @@ export default function ProjectsOS() {
                         </>
                       )}
                       <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        {p.artifacts?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>📎 {p.artifacts.length}</div>}
-                        {p.personas?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>👤 {p.personas.length}</div>}
-                        {p.process?.stages?.length > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>⚙ {p.process.stages.length} stages</div>}
-                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 8, color: T.accent }}>▲ HIGH</div>}
+                        {p.artifacts?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>📎 {p.artifacts.length}</div>}
+                        {p.personas?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>👤 {p.personas.length}</div>}
+                        {p.process?.stages?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>⚙ {p.process.stages.length} stages</div>}
+                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', color: T.accent }}>▲ HIGH</div>}
                       </div>
                     </div>
                   );
                 })}
                 {cols.length === 0 && (
-                  <div style={{ padding: '20px 12px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 10, color: 'var(--dim)' }}>
+                  <div style={{ padding: '20px 12px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>
                     {status.id === 'planning' ? 'Add a project' : 'Empty'}
                   </div>
                 )}
@@ -188,12 +188,12 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
     <div style={{ minHeight: '100%' }}>
       {/* Sticky header */}
       <div style={{ padding: isMobile ? '12px 16px 0' : '16px 28px 0', background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20 }}>
-        <div onClick={onBack} style={{ fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 10 }}>← All Projects</div>
+        <div onClick={onBack} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 10 }}>← All Projects</div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0 }}>
-            <div style={{ fontSize: 26, flexShrink: 0 }}>{proj.emoji}</div>
+            <div style={{ fontSize: 'var(--fs-2xl)', flexShrink: 0 }}>{proj.emoji}</div>
             <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: isPhone ? 15 : 18, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.2, marginBottom: 5 }}>{proj.title}</div>
+              <div style={{ fontSize: isPhone ? 'var(--fs-lg)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.2, marginBottom: 5 }}>{proj.title}</div>
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
                 <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
@@ -205,12 +205,12 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
           <div style={{ display: 'flex', gap: 5, flexShrink: 0, flexWrap: 'wrap' }}>
             {PROJECT_STATUSES.map(s => (
               <div key={s.id} onClick={() => onUpdate({ status: s.id })}
-                style={{ padding: '4px 9px', fontSize: 9, border: `1px solid ${proj.status === s.id ? s.color : 'var(--border)'}`, color: proj.status === s.id ? s.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: proj.status === s.id ? `${s.color}12` : 'transparent', whiteSpace: 'nowrap' }}>
+                style={{ padding: '4px 9px', fontSize: 'var(--fs-sm)', border: `1px solid ${proj.status === s.id ? s.color : 'var(--border)'}`, color: proj.status === s.id ? s.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: proj.status === s.id ? `${s.color}12` : 'transparent', whiteSpace: 'nowrap' }}>
                 {s.label}
               </div>
             ))}
             <div onClick={() => { if (confirm('Delete this project?')) onDelete(); }}
-              style={{ padding: '4px 9px', fontSize: 9, border: '1px solid #C4553D40', color: T.negative, borderRadius: 6, cursor: 'pointer' }}>
+              style={{ padding: '4px 9px', fontSize: 'var(--fs-sm)', border: '1px solid #C4553D40', color: T.negative, borderRadius: 6, cursor: 'pointer' }}>
               Delete
             </div>
           </div>
@@ -219,7 +219,7 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
         <div style={{ display: 'flex', gap: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {WORKSPACE_TABS.map(t => (
             <div key={t.id} onClick={() => setTab(t.id)}
-              style={{ padding: '8px 14px', fontSize: 11, fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? proj.color : 'var(--subtle)', borderBottom: `2px solid ${tab === t.id ? proj.color : 'transparent'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+              style={{ padding: '8px 14px', fontSize: 'var(--fs-base)', fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? proj.color : 'var(--subtle)', borderBottom: `2px solid ${tab === t.id ? proj.color : 'transparent'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
               {t.label}
             </div>
           ))}
@@ -279,18 +279,18 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
 
   return (
     <div>
-      {proj.description && <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 24 }}>{proj.description}</div>}
+      {proj.description && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 24 }}>{proj.description}</div>}
 
       {proj.milestones.length > 0 && (
         <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${proj.color}20`, borderRadius: 10, marginBottom: 24 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <Label>Progress</Label>
-            <div style={{ fontSize: 15, fontWeight: 800, color: proj.color, fontFamily: "'Newsreader', serif" }}>{pct}%</div>
+            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: proj.color, fontFamily: "'Newsreader', serif" }}>{pct}%</div>
           </div>
           <div style={{ background: 'var(--border)', borderRadius: 3, height: 5, marginBottom: 8 }}>
             <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${proj.color}, ${proj.color}80)`, borderRadius: 3, transition: 'width 0.5s' }} />
           </div>
-          <div style={{ fontSize: 10, color: 'var(--subtle)' }}>{done} of {proj.milestones.length} milestones complete</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{done} of {proj.milestones.length} milestones complete</div>
         </div>
       )}
 
@@ -300,19 +300,19 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
           <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: `1px solid ${m.done ? proj.color + '30' : 'var(--border)'}`, borderRadius: 8, marginBottom: 6 }}>
             <div onClick={() => toggleMilestone(m.id)}
               style={{ width: 15, height: 15, borderRadius: 4, border: `2px solid ${m.done ? proj.color : 'var(--dim)'}`, background: m.done ? proj.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, cursor: 'pointer' }}>
-              {m.done && <span style={{ fontSize: 7, color: '#000', fontWeight: 900 }}>✓</span>}
+              {m.done && <span style={{ fontSize: 'var(--fs-sm)', color: '#000', fontWeight: 900 }}>✓</span>}
             </div>
-            <div style={{ flex: 1, fontSize: 12, color: m.done ? 'var(--subtle)' : 'var(--text-b)', textDecoration: m.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{m.text}</div>
-            <div onClick={() => deleteMilestone(m.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
+            <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: m.done ? 'var(--subtle)' : 'var(--text-b)', textDecoration: m.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{m.text}</div>
+            <div onClick={() => deleteMilestone(m.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
           </div>
         ))}
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <input value={newMilestone} onChange={e => setNewMilestone(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addMilestone()}
             placeholder="Add milestone..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
           <button onClick={addMilestone}
-            style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Add</button>
         </div>
       </div>
 
@@ -321,7 +321,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
           <Label>Knowledge Connections</Label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 10, padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: T.accent, borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: T.accent, borderRadius: 20 }}>📚 {c}</div>
             ))}
           </div>
         </div>
@@ -330,7 +330,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
       {proj.blueOcean && (
         <div style={{ padding: '12px 14px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44130', borderRadius: 10, marginBottom: 24 }}>
           <Label color={T.accent}>🌊 Blue Ocean Insight</Label>
-          <div style={{ fontSize: 12, color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
+          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
         </div>
       )}
 
@@ -344,12 +344,12 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
             { id: 'nextmoves', label: '⚡ Top Moves This Week' },
           ].map(btn => (
             <div key={btn.id} onClick={() => runAI(btn.id)}
-              style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: `1px solid ${aiMode === btn.id ? proj.color : 'var(--border)'}`, borderRadius: 8, color: aiMode === btn.id ? proj.color : 'var(--subtle)', background: aiMode === btn.id ? `${proj.color}12` : 'var(--surface)', cursor: 'pointer' }}>
+              style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${aiMode === btn.id ? proj.color : 'var(--border)'}`, borderRadius: 8, color: aiMode === btn.id ? proj.color : 'var(--subtle)', background: aiMode === btn.id ? `${proj.color}12` : 'var(--surface)', cursor: 'pointer' }}>
               {btn.label}
             </div>
           ))}
           <div onClick={() => { setChatPrefill(`Help me with my project: ${proj.title}. ${proj.description}`); setChatOpen(true); }}
-            style={{ padding: '6px 13px', fontSize: 11, fontWeight: 600, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', background: 'var(--surface)', cursor: 'pointer' }}>
+            style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', background: 'var(--surface)', cursor: 'pointer' }}>
             💬 Ask AI
           </div>
         </div>
@@ -359,7 +359,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
               <div style={{ fontSize: 8, letterSpacing: 3, color: proj.color, textTransform: 'uppercase' }}>AI Output</div>
               {aiResult && !aiLoading && (
                 <div onClick={saveAiToFiles}
-                  style={{ fontSize: 9, color: proj.color, cursor: 'pointer', border: `1px solid ${proj.color}40`, borderRadius: 6, padding: '3px 9px' }}>
+                  style={{ fontSize: 'var(--fs-sm)', color: proj.color, cursor: 'pointer', border: `1px solid ${proj.color}40`, borderRadius: 6, padding: '3px 9px' }}>
                   + Save to Files
                 </div>
               )}
@@ -447,23 +447,23 @@ ${rawText.slice(0, 3000)}`;
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>Import a Process</div>
-          {hasProcess && <div onClick={() => setView('stages')} style={{ fontSize: 10, color: 'var(--subtle)', cursor: 'pointer' }}>← Back</div>}
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>Import a Process</div>
+          {hasProcess && <div onClick={() => setView('stages')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer' }}>← Back</div>}
         </div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 12 }}>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 12 }}>
           Paste any text — a book framework, sales methodology, your own notes, something you copied online. AI parses it into stages + steps you can customize and build out.
         </div>
         <textarea value={rawText} onChange={e => setRawText(e.target.value)}
           placeholder="Paste your process, playbook, framework, or methodology here..."
           rows={10}
-          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
-        {parseError && <div style={{ fontSize: 11, color: T.negative, marginBottom: 10 }}>{parseError}</div>}
+          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
+        {parseError && <div style={{ fontSize: 'var(--fs-base)', color: T.negative, marginBottom: 10 }}>{parseError}</div>}
         <div style={{ display: 'flex', gap: 8 }}>
           {hasProcess && (
-            <button onClick={() => setView('stages')} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--subtle)', fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={() => setView('stages')} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
           )}
           <button onClick={parseWithAI} disabled={parsing || !rawText.trim()}
-            style={{ flex: 2, padding: '11px', background: rawText.trim() && !parsing ? proj.color : 'var(--bord2)', border: 'none', borderRadius: 10, color: rawText.trim() && !parsing ? '#000' : 'var(--dim)', fontSize: 12, fontWeight: 700, cursor: rawText.trim() && !parsing ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            style={{ flex: 2, padding: '11px', background: rawText.trim() && !parsing ? proj.color : 'var(--bord2)', border: 'none', borderRadius: 10, color: rawText.trim() && !parsing ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: rawText.trim() && !parsing ? 'pointer' : 'default', fontFamily: 'inherit' }}>
             {parsing ? 'Parsing with AI...' : '⚡ Parse into Stages'}
           </button>
         </div>
@@ -475,30 +475,30 @@ ${rawText.slice(0, 3000)}`;
   if (!hasProcess) {
     return (
       <div>
-        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Build Your BD Process</div>
-        <div style={{ fontSize: 12, color: 'var(--muted)', lineHeight: 1.7, marginBottom: 20 }}>
+        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Build Your BD Process</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 20 }}>
           No process defined yet. Import one from a framework you've read, paste in your own notes, or build stage by stage from scratch.
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 24 }}>
           <div onClick={() => setView('import')}
             style={{ padding: '20px', background: 'var(--surface)', border: `1px solid ${proj.color}30`, borderRadius: 12, cursor: 'pointer', textAlign: 'center' }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>📋</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Import a Process</div>
-            <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5 }}>Paste any framework, playbook, or methodology — AI structures it into actionable stages.</div>
+            <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>📋</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Import a Process</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>Paste any framework, playbook, or methodology — AI structures it into actionable stages.</div>
           </div>
           <div onClick={() => saveStages([{ id: uid(), name: 'Stage 1 — Prospect', description: 'Define and find ideal prospects', steps: [] }])}
             style={{ padding: '20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', textAlign: 'center' }}>
-            <div style={{ fontSize: 28, marginBottom: 8 }}>🧱</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Build from Scratch</div>
-            <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5 }}>Add stages and steps manually. Define your own phases as you build the process.</div>
+            <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>🧱</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Build from Scratch</div>
+            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>Add stages and steps manually. Define your own phases as you build the process.</div>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input value={newStageName} onChange={e => setNewStageName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addStage()}
             placeholder="Or type a stage name to add directly..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
-          <button onClick={addStage} style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Add Stage</button>
+            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
+          <button onClick={addStage} style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Add Stage</button>
         </div>
       </div>
     );
@@ -512,10 +512,10 @@ ${rawText.slice(0, 3000)}`;
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>BD Process</div>
-          <div style={{ fontSize: 10, color: 'var(--subtle)' }}>{stages.length} stages · {doneSteps}/{totalSteps} steps complete</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>BD Process</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{stages.length} stages · {doneSteps}/{totalSteps} steps complete</div>
         </div>
-        <div onClick={() => setView('import')} style={{ fontSize: 10, color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px' }}>
+        <div onClick={() => setView('import')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px' }}>
           Re-import / Edit
         </div>
       </div>
@@ -525,33 +525,33 @@ ${rawText.slice(0, 3000)}`;
           <div style={{ background: 'var(--border)', borderRadius: 3, height: 4, marginBottom: 4 }}>
             <div style={{ width: `${Math.round((doneSteps / totalSteps) * 100)}%`, height: '100%', background: proj.color, borderRadius: 3, transition: 'width 0.4s' }} />
           </div>
-          <div style={{ fontSize: 9, color: 'var(--subtle)' }}>{Math.round((doneSteps / totalSteps) * 100)}% process complete</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{Math.round((doneSteps / totalSteps) * 100)}% process complete</div>
         </div>
       )}
 
       {stages.map((stage, idx) => (
         <div key={stage.id} style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--surface)', borderLeft: `3px solid ${proj.color}`, border: `1px solid var(--border)`, borderRadius: 10 }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: proj.color, minWidth: 18, marginTop: 1 }}>{idx + 1}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: proj.color, minWidth: 18, marginTop: 1 }}>{idx + 1}</div>
             <div style={{ flex: 1 }}>
               {editingId === stage.id ? (
                 <div>
                   <input value={stage.name} onChange={e => updateStage(stage.id, { name: e.target.value })}
                     onBlur={() => setEditingId(null)} autoFocus
-                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${proj.color}`, borderRadius: 6, padding: '6px 9px', color: 'var(--text)', fontSize: 12, fontWeight: 700, outline: 'none', fontFamily: 'inherit', marginBottom: 6, boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${proj.color}`, borderRadius: 6, padding: '6px 9px', color: 'var(--text)', fontSize: 'var(--fs-base)', fontWeight: 700, outline: 'none', fontFamily: 'inherit', marginBottom: 6, boxSizing: 'border-box' }} />
                   <input value={stage.description} onChange={e => updateStage(stage.id, { description: e.target.value })}
                     placeholder="Stage description (optional)..."
-                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 9px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 9px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
                 </div>
               ) : (
                 <div onClick={() => setEditingId(stage.id)} style={{ cursor: 'pointer' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: stage.description ? 2 : 0 }}>{stage.name}</div>
-                  {stage.description && <div style={{ fontSize: 10, color: 'var(--subtle)', lineHeight: 1.5 }}>{stage.description}</div>}
-                  {!stage.description && <div style={{ fontSize: 9, color: 'var(--dim)' }}>click to edit description</div>}
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: stage.description ? 2 : 0 }}>{stage.name}</div>
+                  {stage.description && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>{stage.description}</div>}
+                  {!stage.description && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>click to edit description</div>}
                 </div>
               )}
             </div>
-            <div onClick={() => deleteStage(stage.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
+            <div onClick={() => deleteStage(stage.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
           </div>
 
           <div style={{ marginBottom: 8 }}>
@@ -559,10 +559,10 @@ ${rawText.slice(0, 3000)}`;
               <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border-dim)' }}>
                 <div onClick={() => toggleStep(stage.id, step.id)}
                   style={{ width: 13, height: 13, borderRadius: 3, border: `2px solid ${step.done ? proj.color : 'var(--dim)'}`, background: step.done ? proj.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, cursor: 'pointer' }}>
-                  {step.done && <span style={{ fontSize: 7, color: '#000', fontWeight: 900 }}>✓</span>}
+                  {step.done && <span style={{ fontSize: 'var(--fs-sm)', color: '#000', fontWeight: 900 }}>✓</span>}
                 </div>
-                <div style={{ flex: 1, fontSize: 11, color: step.done ? 'var(--dim)' : 'var(--text-b)', textDecoration: step.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{step.text}</div>
-                <div onClick={() => deleteStep(stage.id, step.id)} style={{ fontSize: 9, color: 'var(--dim)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>✕</div>
+                <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: step.done ? 'var(--dim)' : 'var(--text-b)', textDecoration: step.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{step.text}</div>
+                <div onClick={() => deleteStep(stage.id, step.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>✕</div>
               </div>
             ))}
           </div>
@@ -571,9 +571,9 @@ ${rawText.slice(0, 3000)}`;
             <input value={newStepText[stage.id] || ''} onChange={e => setNewStepText(p => ({ ...p, [stage.id]: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && addStep(stage.id)}
               placeholder="Add a step..."
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit' }} />
+              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
             <button onClick={() => addStep(stage.id)}
-              style={{ padding: '6px 11px', background: `${proj.color}20`, border: `1px solid ${proj.color}40`, borderRadius: 6, color: proj.color, fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+</button>
+              style={{ padding: '6px 11px', background: `${proj.color}20`, border: `1px solid ${proj.color}40`, borderRadius: 6, color: proj.color, fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>+</button>
           </div>
         </div>
       ))}
@@ -582,9 +582,9 @@ ${rawText.slice(0, 3000)}`;
         <input value={newStageName} onChange={e => setNewStageName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addStage()}
           placeholder="Add a new stage..."
-          style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit' }} />
+          style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
         <button onClick={addStage}
-          style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>+ Stage</button>
+          style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>+ Stage</button>
       </div>
     </div>
   );
@@ -606,12 +606,12 @@ function NotesTab({ proj, onUpdate }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <Label>Project Notes</Label>
-        <div style={{ fontSize: 9, color: saved ? T.accent : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
+        <div style={{ fontSize: 'var(--fs-sm)', color: saved ? T.accent : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
       </div>
       <textarea value={text} onChange={e => handleChange(e.target.value)}
         placeholder="Write anything here — meeting notes, ideas, strategy, call summaries, observations, next steps, frameworks you're trying...&#10;&#10;Auto-saves as you type."
-        style={{ width: '100%', minHeight: 440, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.75, boxSizing: 'border-box' }} />
-      <div style={{ marginTop: 8, fontSize: 9, color: 'var(--dim)' }}>
+        style={{ width: '100%', minHeight: 440, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.75, boxSizing: 'border-box' }} />
+      <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>
         {text.length.toLocaleString()} chars · {text.split(/\s+/).filter(Boolean).length} words
       </div>
     </div>
@@ -675,16 +675,16 @@ function FilesTab({ proj, onUpdate }) {
         onDrop={async e => { e.preventDefault(); setDragging(false); await handleFiles(e.dataTransfer.files); }}
         onClick={() => fileInputRef.current?.click()}
         style={{ border: `2px dashed ${dragging ? proj.color : 'var(--border)'}`, borderRadius: 12, padding: '28px', textAlign: 'center', marginBottom: 16, cursor: 'pointer', background: dragging ? `${proj.color}08` : 'var(--surface)', transition: 'all 0.15s' }}>
-        <div style={{ fontSize: 26, marginBottom: 6 }}>{uploading ? '⏳' : '📁'}</div>
-        <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-b)', marginBottom: 3 }}>{uploading ? 'Uploading...' : 'Drop files here or click to upload'}</div>
-        <div style={{ fontSize: 10, color: 'var(--subtle)' }}>PDF, Word, Excel, images, text — max 4MB per file</div>
+        <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 6 }}>{uploading ? '⏳' : '📁'}</div>
+        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-b)', marginBottom: 3 }}>{uploading ? 'Uploading...' : 'Drop files here or click to upload'}</div>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>PDF, Word, Excel, images, text — max 4MB per file</div>
         <input ref={fileInputRef} type="file" multiple accept={ACCEPT_TYPES} style={{ display: 'none' }}
           onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
         <div onClick={() => setShowNote(!showNote)}
-          style={{ fontSize: 11, color: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 13px', cursor: 'pointer' }}>
+          style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 13px', cursor: 'pointer' }}>
           + Add Note / Paste Text
         </div>
       </div>
@@ -692,20 +692,20 @@ function FilesTab({ proj, onUpdate }) {
       {showNote && (
         <div style={{ padding: '14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 18 }}>
           <input value={noteTitle} onChange={e => setNoteTitle(e.target.value)} placeholder="Title..."
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', marginBottom: 8, boxSizing: 'border-box' }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', marginBottom: 8, boxSizing: 'border-box' }} />
           <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)}
             placeholder="Paste text, notes, or content here..." rows={5}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
+            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowNote(false)} style={{ flex: 1, padding: '9px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={addNote} style={{ flex: 2, padding: '9px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save to Project</button>
+            <button onClick={() => setShowNote(false)} style={{ flex: 1, padding: '9px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={addNote} style={{ flex: 2, padding: '9px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save to Project</button>
           </div>
         </div>
       )}
 
       {artifacts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 12 }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>📂</div>
+        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
+          <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>📂</div>
           No files or artifacts yet. Upload files, paste notes, or save AI outputs here — everything stays organized by project.
         </div>
       ) : (
@@ -715,29 +715,29 @@ function FilesTab({ proj, onUpdate }) {
             {[...artifacts].reverse().map(a => (
               <div key={a.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
                 <div style={{ padding: '11px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <div style={{ fontSize: 18, flexShrink: 0 }}>{typeIcon(a)}</div>
+                  <div style={{ fontSize: 'var(--fs-xl)', flexShrink: 0 }}>{typeIcon(a)}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{a.title}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{a.title}</div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                       <div style={{ fontSize: 8, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{a.type}</div>
-                      {a.source && <div style={{ fontSize: 8, color: 'var(--dim)' }}>· {a.source}</div>}
-                      {a.fileSize > 0 && <div style={{ fontSize: 8, color: 'var(--dim)' }}>· {fmtSize(a.fileSize)}</div>}
-                      <div style={{ fontSize: 8, color: 'var(--dim)' }}>· {timeAgo(a.createdAt)}</div>
+                      {a.source && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {a.source}</div>}
+                      {a.fileSize > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {fmtSize(a.fileSize)}</div>}
+                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {timeAgo(a.createdAt)}</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
                     {a.content && (
                       <div onClick={() => setExpanded(expanded === a.id ? null : a.id)}
-                        style={{ fontSize: 9, color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 7px' }}>
+                        style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 7px' }}>
                         {expanded === a.id ? 'collapse' : 'view'}
                       </div>
                     )}
-                    <div onClick={() => deleteArtifact(a.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '3px 5px' }}>✕</div>
+                    <div onClick={() => deleteArtifact(a.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '3px 5px' }}>✕</div>
                   </div>
                 </div>
                 {expanded === a.id && a.content && (
                   <div style={{ padding: '0 14px 14px 14px', borderTop: '1px solid var(--border-dim)' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text-c)', lineHeight: 1.65, marginTop: 10, whiteSpace: 'pre-wrap' }}>{a.content}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.65, marginTop: 10, whiteSpace: 'pre-wrap' }}>{a.content}</div>
                   </div>
                 )}
               </div>
@@ -803,16 +803,16 @@ function PersonasTab({ proj, onUpdate }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Personas & ICP</div>
-          <div style={{ fontSize: 10, color: 'var(--subtle)' }}>Ideal customer profiles · CRM connector slot built in</div>
+          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Personas & ICP</div>
+          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>Ideal customer profiles · CRM connector slot built in</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <div onClick={generating ? undefined : generateICP}
-            style={{ fontSize: 10, color: generating ? 'var(--dim)' : proj.color, border: `1px solid ${generating ? 'var(--border)' : proj.color + '50'}`, borderRadius: 8, padding: '6px 11px', cursor: generating ? 'default' : 'pointer' }}>
+            style={{ fontSize: 'var(--fs-sm)', color: generating ? 'var(--dim)' : proj.color, border: `1px solid ${generating ? 'var(--border)' : proj.color + '50'}`, borderRadius: 8, padding: '6px 11px', cursor: generating ? 'default' : 'pointer' }}>
             {generating ? '...' : '✦ AI Generate'}
           </div>
           <div onClick={() => { setForm(blankPersona()); setEditId(null); setShowForm(true); }}
-            style={{ fontSize: 10, color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 11px', cursor: 'pointer' }}>
+            style={{ fontSize: 'var(--fs-sm)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 11px', cursor: 'pointer' }}>
             + Add Persona
           </div>
         </div>
@@ -820,7 +820,7 @@ function PersonasTab({ proj, onUpdate }) {
 
       {showForm && (
         <div style={{ padding: '16px', background: 'var(--surface)', border: `1px solid ${proj.color}30`, borderRadius: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{editId ? 'Edit Persona' : 'New Persona'}</div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{editId ? 'Edit Persona' : 'New Persona'}</div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
             {[
               { key: 'name',     label: 'Persona Name / Type',   ph: 'e.g. Mid-market CFO, Owner-operator' },
@@ -831,7 +831,7 @@ function PersonasTab({ proj, onUpdate }) {
               <div key={f.key}>
                 <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</div>
                 <input value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph}
-                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
               </div>
             ))}
           </div>
@@ -844,36 +844,36 @@ function PersonasTab({ proj, onUpdate }) {
             <div key={f.key} style={{ marginBottom: 10 }}>
               <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</div>
               <textarea value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph} rows={2}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }} />
+                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }} />
             </div>
           ))}
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>CRM Reference <span style={{ color: 'var(--dim)', textTransform: 'none', letterSpacing: 0 }}>(future connector)</span></div>
             <input value={form.crmRef || ''} onChange={e => setF({ crmRef: e.target.value })}
               placeholder="ID, link, or ref for your CRM — Salesforce, HubSpot, etc."
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--bord2)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 11, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--bord2)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
           </div>
           <div style={{ marginBottom: 14 }}>
             <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 6 }}>Status</div>
             <div style={{ display: 'flex', gap: 6 }}>
               {PERSONA_STATUSES.map(s => (
                 <div key={s.id} onClick={() => setF({ status: s.id })}
-                  style={{ padding: '5px 11px', fontSize: 9, border: `1px solid ${form.status === s.id ? s.color : 'var(--border)'}`, color: form.status === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: form.status === s.id ? `${s.color}15` : 'transparent' }}>
+                  style={{ padding: '5px 11px', fontSize: 'var(--fs-sm)', border: `1px solid ${form.status === s.id ? s.color : 'var(--border)'}`, color: form.status === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: form.status === s.id ? `${s.color}15` : 'transparent' }}>
                   {s.label}
                 </div>
               ))}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setShowForm(false); setEditId(null); setForm(blankPersona()); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 11, cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={savePersona} style={{ flex: 2, padding: '10px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save Persona</button>
+            <button onClick={() => { setShowForm(false); setEditId(null); setForm(blankPersona()); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button onClick={savePersona} style={{ flex: 2, padding: '10px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save Persona</button>
           </div>
         </div>
       )}
 
       {personas.length === 0 && !showForm ? (
-        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 12 }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>👤</div>
+        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
+          <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>👤</div>
           No personas yet. Add your ICPs to focus your BD — or let AI generate them based on your project.
         </div>
       ) : (
@@ -884,36 +884,36 @@ function PersonasTab({ proj, onUpdate }) {
               <div key={p.id} style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${st.color}25`, borderRadius: 12 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{p.name || '(unnamed)'}</div>
-                    {p.role && <div style={{ fontSize: 10, color: 'var(--subtle)' }}>{p.role}{p.company ? ` · ${p.company}` : ''}</div>}
-                    {p.industry && <div style={{ fontSize: 9, color: 'var(--dim)' }}>{p.industry}</div>}
+                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{p.name || '(unnamed)'}</div>
+                    {p.role && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{p.role}{p.company ? ` · ${p.company}` : ''}</div>}
+                    {p.industry && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{p.industry}</div>}
                   </div>
                   <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                     <Badge color={st.color}>{st.label}</Badge>
-                    <div onClick={() => editPersona(p)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✏</div>
-                    <div onClick={() => deletePersona(p.id)} style={{ fontSize: 10, color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✕</div>
+                    <div onClick={() => editPersona(p)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✏</div>
+                    <div onClick={() => deletePersona(p.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✕</div>
                   </div>
                 </div>
                 {p.painPoints && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: T.accent, textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-c)', lineHeight: 1.5 }}>{p.painPoints}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.painPoints}</div>
                   </div>
                 )}
                 {p.valueProp && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: proj.color, textTransform: 'uppercase', marginBottom: 3 }}>Value Prop</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-c)', lineHeight: 1.5 }}>{p.valueProp}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.valueProp}</div>
                   </div>
                 )}
                 {p.outreachAngle && (
                   <div style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 8, letterSpacing: 1.5, color: T.accent, textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
-                    <div style={{ fontSize: 10, color: 'var(--text-c)', lineHeight: 1.5 }}>{p.outreachAngle}</div>
+                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.outreachAngle}</div>
                   </div>
                 )}
                 {p.crmRef && (
-                  <div style={{ padding: '4px 8px', background: 'var(--bg)', border: '1px dashed var(--bord2)', borderRadius: 5, fontSize: 9, color: 'var(--dim)', marginTop: 6 }}>
+                  <div style={{ padding: '4px 8px', background: 'var(--bg)', border: '1px dashed var(--bord2)', borderRadius: 5, fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 6 }}>
                     🔌 CRM: {p.crmRef}
                   </div>
                 )}
@@ -932,21 +932,21 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
     <Modal title="New Project" accent={T.accent} onClose={onClose}>
       <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
         <input value={val.emoji} onChange={e => setVal(p => ({ ...p, emoji: e.target.value }))}
-          style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px', color: 'var(--text-b)', fontSize: 18, outline: 'none', textAlign: 'center' }} />
+          style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px', color: 'var(--text-b)', fontSize: 'var(--fs-xl)', outline: 'none', textAlign: 'center' }} />
         <input value={val.title} onChange={e => setVal(p => ({ ...p, title: e.target.value }))}
           onKeyDown={e => e.key === 'Enter' && val.title.trim() && onCreate()}
           placeholder="Project title..."
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 13, outline: 'none', fontFamily: 'inherit' }} />
+          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
       </div>
       <textarea value={val.description} onChange={e => setVal(p => ({ ...p, description: e.target.value }))}
         placeholder="What is this project about? What's the goal?" rows={3}
-        style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 12, outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }} />
+        style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }} />
       <div style={{ marginBottom: 14 }}>
         <Label>Category <span style={{ color: 'var(--dim)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>· optional, inferred</span></Label>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
           {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
             <div key={k} onClick={() => setVal(p => ({ ...p, category: k }))}
-              style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 10, border: `1px solid ${val.category === k ? v.color : 'var(--bord2)'}`, color: val.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: val.category === k ? `${v.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
+              style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', border: `1px solid ${val.category === k ? v.color : 'var(--bord2)'}`, color: val.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: val.category === k ? `${v.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
               {v.icon} {v.label}
             </div>
           ))}
@@ -957,16 +957,16 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {['high', 'medium', 'low'].map(p => (
             <div key={p} onClick={() => setVal(prev => ({ ...prev, priority: p }))}
-              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 10, color: val.priority === p ? T.accent : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
+              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-sm)', color: val.priority === p ? T.accent : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
               {p}
             </div>
           ))}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <div onClick={onClose} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 12, color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
+        <div onClick={onClose} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
         <div onClick={val.title.trim() ? onCreate : undefined}
-          style={{ flex: 2, padding: '11px', background: val.title.trim() ? T.accent : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 12, fontWeight: 700, color: val.title.trim() ? '#000' : 'var(--dim)', cursor: val.title.trim() ? 'pointer' : 'default' }}>
+          style={{ flex: 2, padding: '11px', background: val.title.trim() ? T.accent : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: val.title.trim() ? '#000' : 'var(--dim)', cursor: val.title.trim() ? 'pointer' : 'default' }}>
           Create Project →
         </div>
       </div>

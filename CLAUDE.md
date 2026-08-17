@@ -25,6 +25,33 @@ deployed on Vercel. Single user (CB).
   `[data-theme="dark"]`) plus `src/theme.js` (the `T` token bridge / `withAlpha`).
   **No hardcoded hex** — a 405-replacement codemod (`scripts/migrate-colors.mjs`)
   removed it all. Use tokens, never raw hex.
+- **Type + space scale** live in `index.html` `:root`: `--fs-xs…--fs-3xl`
+  (fluid `clamp()`, body is `--fs-base`), `--lh-tight/ui/read`, and an 8px
+  space ramp `--s1…--s8` (s2=8px … s8=48px). **No inline pixel `fontSize`** —
+  a codemod (`scripts/migrate-fontsize.mjs`) swept them all to `--fs-*`; use the
+  tokens. Eyebrow labels (uppercase + letter-spaced kickers) are the one thing
+  allowed below 13px and are left as small literals.
+
+## Navigation IA — 6 containers, modes inside (Phase 1)
+
+The 18 modules collapse into **6 verb-grouped containers** (`CONTAINERS` in
+`src/constants.js`): Home (Orient), Learn (Absorb), Research (Investigate),
+Skills (Practice), Projects (Execute), Studio (Produce). **Nothing was deleted
+— each module became a *mode*.** Mode ids ARE the old module ids, so every
+`setActiveModule('<moduleId>')` deep-link still resolves; the owning container
+is derived via `containerOfMode()`.
+- Nav surfaces live in `src/modules/shared/ContainerNav.jsx`: `SideNav`
+  (container rail, ≥768), `ModeChips` (a container's modes as a scrollable row
+  under the header), `BottomNav` (mobile: Home/Learn/Skills/Research/More; More
+  opens a sheet with every mode). `App.jsx` owns the shell + `openContainer`,
+  and remembers the last mode per container in `aether_nav_v1`.
+- **Coach is not a tab.** It routes to the global **Ask layer** (`ChatPanel`,
+  opened from the header "Ask anything" bar, prompts keyed to the current mode).
+  `setActiveModule('coach')` opens the chat. `CoachAI.jsx` is retained but
+  unrouted — Phase 3 folds its content into the Ask layer.
+- Layouts (`useViewport`): mobile `<768` single column + bottom bar + mode
+  chips; iPad `768–1023` sidebar + content, no bottom bar; desktop `≥1024`
+  240px sidebar + content, capped at 1280px.
 
 ## Scheduled recaps + editable library + storage honesty
 
