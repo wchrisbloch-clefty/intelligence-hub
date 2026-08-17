@@ -2,5 +2,8 @@
   "crons": [
     { "path": "/api/weekly-recap",   "schedule": "0 13 * * 5" },
     { "path": "/api/monthly-review", "schedule": "0 14 1 * *" }
+  ],
+  "rewrites": [
+    { "source": "/api/export", "destination": "/api/mcp?__export=1" }
   ]
 }

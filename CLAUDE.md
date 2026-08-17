@@ -100,16 +100,19 @@ nobody; now they feed a shared graph and a shared card deck.
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox). `<AskChip type object />` opens the Ask layer
   pre-loaded with the object + its graph neighbors. Wired on all seven types.
-- **MCP bridge** (`api/mcp.js`, `api/_mcp.js`, `api/export.js`) — the Claude
-  connector. JSON-RPC over POST (`initialize`/`tools/list`/`tools/call`),
-  gated by an **`MCP_TOKEN`** bearer, **fails closed** when the token is unset,
-  and never returns `ACCESS_CODE`, provider keys, or Upstash creds. Tools:
-  `search_knowledge`, `get_concept`, `log_concept`, `add_note`,
-  `create_flashcard`, `add_to_inbox`, `get_projects`, `get_recap`. `api/export`
-  is a token-gated read-only JSON snapshot (graph/projects/skills/recaps).
-  **Connect from claude.ai → Connectors → Add custom connector:** URL
-  `https://<deployment>/api/mcp`, Bearer = the `MCP_TOKEN` set in Vercel. Set
-  `MCP_TOKEN` in the Vercel project env to enable the bridge (unset = off).
+- **MCP bridge** (`api/mcp.js`, `api/_mcp.js`) — the Claude connector. JSON-RPC
+  over POST (`initialize`/`tools/list`/`tools/call`), gated by an **`MCP_TOKEN`**
+  bearer, **fails closed** when the token is unset, and never returns
+  `ACCESS_CODE`, provider keys, or Upstash creds. Tools: `search_knowledge`,
+  `get_concept`, `log_concept`, `add_note`, `create_flashcard`, `add_to_inbox`,
+  `get_projects`, `get_recap`. **`/api/export`** is a token-gated read-only JSON
+  snapshot (graph/projects/skills/recaps) — served by the same `mcp` function
+  via a `vercel.json` rewrite (`/api/export → /api/mcp?__export=1`) so the repo
+  stays under the **Hobby 12-Serverless-Function cap** (a separate `api/export.js`
+  pushed it to 13 and broke the deploy). **Connect from claude.ai → Connectors →
+  Add custom connector:** URL `https://<deployment>/api/mcp`, Bearer = the
+  `MCP_TOKEN` set in Vercel. Set `MCP_TOKEN` in the Vercel env to enable the
+  bridge (unset = off).
 
 ## Scheduled recaps + editable library + storage honesty
 

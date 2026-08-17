@@ -7,8 +7,8 @@
 //   Token: the MCP_TOKEN you set in Vercel (Bearer auth)
 //
 // Token-gated and fails closed (see requireMcpToken). Never exposes secrets.
-import { readBody } from './_lib.js';
-import { requireMcpToken, TOOLS, callTool } from './_mcp.js';
+import { readBody, storageConfigured } from './_lib.js';
+import { requireMcpToken, TOOLS, callTool, exportState } from './_mcp.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
 const SERVER_INFO = { name: 'intelligence-hub', version: '1.0.0' };
@@ -17,6 +17,23 @@ const rpcResult = (id, result) => ({ jsonrpc: '2.0', id, result });
 const rpcError = (id, code, message) => ({ jsonrpc: '2.0', id, error: { code, message } });
 
 export default async function handler(req, res) {
+  // /api/export rewrites here (Hobby plans cap Serverless Functions at 12, so
+  // the read-only snapshot rides on this same function). Token-gated, GET-only,
+  // never returns secrets.
+  let isExport = false;
+  try { isExport = new URL(req.url, 'http://x').searchParams.get('__export') === '1'; } catch {}
+  if (isExport) {
+    if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return res.status(405).json({ error: 'Method not allowed' }); }
+    if (!requireMcpToken(req, res)) return;
+    if (!storageConfigured()) return res.status(503).json({ error: 'Storage is not configured.' });
+    try {
+      res.setHeader('Cache-Control', 'no-store');
+      return res.status(200).json(await exportState());
+    } catch (e) {
+      return res.status(500).json({ error: `Export failed: ${e.message}` });
+    }
+  }
+
   // A GET is a friendly liveness probe (still token-gated) so a browser check
   // doesn't look broken; real traffic is POST JSON-RPC.
   if (req.method === 'GET') {
