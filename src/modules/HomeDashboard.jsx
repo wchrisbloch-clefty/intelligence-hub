@@ -9,6 +9,7 @@ import NavIcon from './shared/NavIcon.jsx';
 import DueReviews from './shared/DueReviews.jsx';
 import CaptureBar from './shared/CaptureBar.jsx';
 import RecapCard from './shared/RecapCard.jsx';
+import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { Brain, Rocket, Waves, BookOpen, Zap, Sparkles, Building2, Briefcase, TrendingUp, Activity, Globe, Radio, LayoutGrid, RefreshCw, X, ArrowRight } from 'lucide-react';
 import { getFeed, fmtCount, PLATFORM_META, TIER_META } from '../lib/adapters.js';
 
@@ -684,6 +685,11 @@ Be blunt. No hedging. One decisive line per bullet.`;
           {/* Weekly / Monthly recaps — generated server-side by the recap Edge Functions */}
           <div style={{ marginBottom: isMobile ? 16 : 20, marginLeft: isMobile ? -14 : 0, marginRight: isMobile ? -14 : 0 }}>
             <RecapCard />
+          </div>
+
+          {/* Connected knowledge — what your topics touch across every module */}
+          <div style={{ marginBottom: isMobile ? 16 : 20 }}>
+            <ConnectedKnowledge />
           </div>
 
           {/* Blue Ocean Signals — opportunity cards. Two-across on desktop,

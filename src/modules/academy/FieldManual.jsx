@@ -5,6 +5,8 @@ import { callClaude, logSession, uid } from '../../utils.js';
 import { CB_LEARNING_SPINE } from '../../constants.js';
 import { LADDERS, getLadder } from '../../data/ladders/index.js';
 import { readLocal, writeThrough } from '../../lib/storage.js';
+import { createCard } from '../../lib/reviews.js';
+import { logConcept } from '../../lib/graph.js';
 import MD from '../shared/MD.jsx';
 import { ThinkingDots } from '../shared/Common.jsx';
 
@@ -224,16 +226,10 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
   const [sent, setSent] = useState(false);
 
   const sendToVault = () => {
-    const existing = readLocal(FLASH_KEY, []);
-    const have = new Set(existing.map((c) => (c.front || '').toLowerCase().trim()));
-    const additions = (level.cards || [])
-      .filter(([front]) => !have.has((front || '').toLowerCase().trim()))
-      .map(([front, back, tier]) => ({
-        id: uid(), front, back, tier: tier || 'inferred',
-        interval: 1, easeFactor: 2.5, dueDate: Date.now(), reviews: 0,
-        createdAt: Date.now(), source: ladder.title,
-      }));
-    if (additions.length) writeThrough(FLASH_KEY, [...existing, ...additions]);
+    // Route through the shared card pipeline so cards dedupe by front and carry
+    // provenance (module + topic) back to this pack.
+    (level.cards || []).forEach(([front, back]) =>
+      createCard({ front, back, source: ladder.title, module: 'academy', topic: ladder.title }));
     setSent(true);
   };
 
@@ -448,12 +444,24 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
     setSubmitted(true);
     const missed = level.quiz.filter((q, i) => answers[i] !== q.a).map((q) => q.q.replace(/<[^>]+>/g, '').slice(0, 40));
     try {
-      const updated = await logSession(
+      await logSession(
         `${ladder.title} — ${level.title}`, 'academy', level.minutes,
         Math.round((correct / total) * 10),
         `${correct}/${total}${missed.length ? ' · missed: ' + missed.join(', ') : ''}`,
       );
-      if (updated) setGraph(updated);
+      // Connect this pack into the graph, and turn every miss into a review
+      // card — a miss is signal, so it should resurface.
+      const { graph: g } = await logConcept({ topic: ladder.title, source: ladder.title, module: 'academy', confidence: Math.round((correct / total) * 10) });
+      if (g) setGraph(g);
+      level.quiz.forEach((q, i) => {
+        if (answers[i] !== q.a) {
+          createCard({
+            front: q.q.replace(/<[^>]+>/g, ''),
+            back: `${q.opts[q.a]}${q.e ? ' — ' + q.e : ''}`.replace(/<[^>]+>/g, ''),
+            source: ladder.title, module: 'academy', topic: ladder.title,
+          });
+        }
+      });
     } catch { /* graph write is best-effort */ }
     onResult(pct);
   };

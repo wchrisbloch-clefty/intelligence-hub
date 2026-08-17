@@ -12,6 +12,7 @@ import {
   fetchArticle, detectCaptureType,
 } from '../utils.js';
 import { recordQuizResult } from '../lib/reviews.js';
+import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import QuizMode from './shared/QuizMode.jsx';
@@ -241,8 +242,11 @@ export default function LearningCenter() {
 
   const handleLogSession = async (conf, notes) => {
     const durationMin = sessionStart ? Math.round((Date.now() - sessionStart) / 60000) : 5;
-    const updated = await logSession(sessionTitle, entryMode, Math.max(durationMin, 1), conf, notes);
-    setGraph(updated);
+    await logSession(sessionTitle, entryMode, Math.max(durationMin, 1), conf, notes);
+    // Emit into the knowledge graph so this study session connects to the same
+    // topic wherever else it's touched (research, quiz, books).
+    const { graph: g } = await logConcept({ topic: sessionTitle, source: sessionTitle, module: 'learn', confidence: conf });
+    if (g) setGraph(g);
     setShowLogModal(false);
   };
 

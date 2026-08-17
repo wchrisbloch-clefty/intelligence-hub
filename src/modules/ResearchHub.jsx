@@ -2,6 +2,7 @@ import { T, withAlpha } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
+import { logConcept } from '../lib/graph.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { CB_IDENTITY } from '../constants.js';
 
@@ -230,6 +231,9 @@ export default function ResearchHub() {
     const updated = [thread, ...research];
     setResearch(updated);
     await saveResearch(updated);
+    // Record the research subject as a concept so it links to books, quizzes,
+    // and captured items on the same thread.
+    logConcept({ topic: thread.title, source: thread.title, module: 'research' });
     setActiveThread(thread.id);
     setMessages([]);
     setShowNewThread(false);

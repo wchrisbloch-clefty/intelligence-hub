@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
+import { createCard } from '../lib/reviews.js';
+import { logConcept } from '../lib/graph.js';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
@@ -64,6 +66,7 @@ export default function BookClub() {
   const [mode,         setMode]         = useState('overview');
   const [result,       setResult]       = useState('');
   const [resultProvider, setResultProvider] = useState('');
+  const [vaulted, setVaulted] = useState(false);
   const [loading,      setLoading]      = useState(false);
 
   // Stored library is the single source of truth (built-ins + custom). KNOWN_BOOKS
@@ -173,6 +176,7 @@ export default function BookClub() {
     setLoading(true);
     setResult('');
     setResultProvider('');
+    setVaulted(false);
     try {
       const reply = await callClaude({
         system: CB_LEARNING_SPINE,
@@ -182,6 +186,9 @@ export default function BookClub() {
         onProvider: setResultProvider,
       });
       setResult(reply);
+      // Record the book as a concept so it connects to research, quizzes, and
+      // notes on the same subject.
+      logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', refs: selectedBook.author ? [selectedBook.author] : [] });
     } catch {
       setResult('Unable to generate — check connection and try again.');
     }
@@ -401,10 +408,16 @@ export default function BookClub() {
                         </div>
                         <ProviderTag provider={resultProvider} />
                       </div>
-                      <button onClick={() => navigator.clipboard?.writeText(result)}
-                        style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                        Copy
-                      </button>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => { createCard({ front: `${selectedBook.title} — ${STUDY_MODES.find(m => m.id === mode)?.label}`, back: result.slice(0, 400), source: selectedBook.title, module: 'books', topic: selectedBook.title }); setVaulted(true); }}
+                          style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: vaulted ? withAlpha(T.accent, 12) : 'var(--bg)', border: `1px solid ${vaulted ? T.accent : 'var(--border)'}`, borderRadius: 6, color: vaulted ? T.accent : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                          {vaulted ? '✓ In Vault' : '+ Vault'}
+                        </button>
+                        <button onClick={() => navigator.clipboard?.writeText(result)}
+                          style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                          Copy
+                        </button>
+                      </div>
                     </div>
                     <MD text={result} color={T.accent} />
                   </div>

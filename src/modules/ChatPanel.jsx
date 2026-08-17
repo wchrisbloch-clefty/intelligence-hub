@@ -7,6 +7,7 @@ import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
+import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
 
 const QUICK_PROMPTS = {
@@ -122,6 +123,11 @@ export default function ChatPanel() {
                   </div>
                 ))}
               </div>
+            </div>
+            {/* The Ask layer surfaces the knowledge graph — what you've studied,
+                connected, tap to ask about any of it. */}
+            <div style={{ marginTop: 18, textAlign: 'left' }}>
+              <ConnectedKnowledge compact />
             </div>
           </div>
         )}

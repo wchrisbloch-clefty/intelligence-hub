@@ -53,6 +53,34 @@ is derived via `containerOfMode()`.
   chips; iPad `768–1023` sidebar + content, no bottom bar; desktop `≥1024`
   240px sidebar + content, capped at 1280px.
 
+## Knowledge graph + flashcards + lineage (Phase 2)
+
+The connective tissue. Modules used to each write one private key and read
+nobody; now they feed a shared graph and a shared card deck.
+- **`src/lib/graph.js`** is the knowledge graph, stored under
+  `graph.concepts` on `aether_graph_v1` (same key as topics/sessions, additive
+  namespace). `logConcept({topic,source,module,confidence,refs})` upserts a
+  concept and links concepts that share a source or ref; `getConcept`,
+  `relatedConcepts`, `conceptFootprint`, and `graphSummary` read it. Writes go
+  through `writeThrough` and are awaited — never swallowed. **Emitters:**
+  BookClub, DeepDive (per pass), LearningCenter, Academy (quiz pass),
+  QuizCenter (right *and* wrong — a miss is signal), ResearchHub,
+  ContentInbox, LearningLadder (rung completion).
+- **Flashcards** live on `aether_flashcards` (schema
+  `{id,front,back,module,topic,source,interval,easeFactor,dueDate,reviews,createdAt}`).
+  `createCard(...)` in `src/lib/reviews.js` is the single writer — dedupes by
+  `front`, enters SM-2 immediately (due now). Pushed manually via "Add to
+  Vault"/"+ Vault" affordances (BookClub output, Academy `sendToVault`, Vault
+  notes) and automatically from **quiz misses** (QuizCenter + Academy).
+  MasteryVault reads and studies the deck.
+- **Capture lineage:** inbox items carry `derivedInto:[{module,id,at}]`;
+  `saveToVault` records the Vault note it became and the item renders a
+  "Became →" trail (`ContentInbox`).
+- **`src/modules/shared/ConnectedKnowledge.jsx`** is the payoff panel — a
+  topic's cross-module footprint (modules touched, related concepts, sources)
+  or the graph rollup, drillable. Mounted on **Home** and in the **Ask layer**
+  (`ChatPanel` empty state).
+
 ## Scheduled recaps + editable library + storage honesty
 
 Three-part effort. **Sequencing matters: storage layer (Part 3) → book library

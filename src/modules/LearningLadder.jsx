@@ -6,6 +6,7 @@ import { CB_LEARNING_SPINE } from '../constants.js';
 import { loadIndex, hydrateIndex, loadLadder, hydrateLadder, saveLadder, removeLadder, buildLadder, completeModule } from '../lib/ladders.js';
 import useChatThread from '../hooks/useChatThread.js';
 import { recordQuizResult } from '../lib/reviews.js';
+import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -90,6 +91,8 @@ export default function LearningLadder() {
     if (pct >= PASS_PCT) {
       const updated = completeModule(ladder, mod.id);
       setLadder(updated); refreshIndex();
+      // Completing a rung records the ladder's subject as a concept.
+      logConcept({ topic: ladder.topic, source: ladder.topic, module: 'ladder', confidence: Math.round(pct / 10) });
       return { passed: true, pct };
     }
     return { passed: false, pct };
