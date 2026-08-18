@@ -498,7 +498,7 @@ export default function LearningCenter() {
         <div style={{ marginBottom: 14 }}>
           {uploadedFiles.map((f, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 'var(--fs-xl)'}}>{f.icon}</span>
+              <Icon name={f.icon} size="header" />
               <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
               <div onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer', fontSize: 'var(--fs-lg)'}}>✕</div>
             </div>
@@ -699,7 +699,7 @@ export default function LearningCenter() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 7 }}>
               {uploadedFiles.map((f, i) => (
                 <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44130', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {f.icon} {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
+                  <Icon name={f.icon} size={16} /> {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
                 </div>
               ))}
             </div>

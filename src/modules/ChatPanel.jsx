@@ -7,6 +7,7 @@ import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
 import Icon from './shared/Icon.jsx';
+import SaveToNotes from './shared/SaveToNotes.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
@@ -143,6 +144,9 @@ export default function ChatPanel() {
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
                 <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
                 <MD text={msg.content} color={T.accent} />
+                <div style={{ marginTop: 10 }}>
+                  <SaveToNotes title={msg.content.split('\n')[0].replace(/[#*>_`-]/g, '').trim().slice(0, 70)} content={msg.content} source={{ title: `Intelligence Chat · ${mode?.label || ''}`.trim(), tier: 'reported' }} label="Save to Notes" />
+                </div>
               </div>
             )}
           </div>
@@ -166,7 +170,7 @@ export default function ChatPanel() {
         <div style={{ padding: '6px 14px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {attachments.map((a, i) => (
             <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {a.icon} {a.name.slice(0, 14)}
+              <Icon name={a.icon} size={13} /> {a.name.slice(0, 14)}
               <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
             </div>
           ))}

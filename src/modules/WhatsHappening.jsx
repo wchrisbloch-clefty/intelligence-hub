@@ -4,6 +4,7 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
 import { getFeed, relTime } from '../lib/adapters.js';
 import Icon from './shared/Icon.jsx';
+import SaveToNotes from './shared/SaveToNotes.jsx';
 
 // "What's Happening" — the 7th container. One surface for what changed: a
 // discovery panel (stories your sources missed), a tiered feed, trending, and
@@ -56,6 +57,7 @@ export default function WhatsHappening() {
   const [manageOpen, setManageOpen] = useState(false);
   const [newSource, setNewSource] = useState('');
   const [seenAt] = useState(() => readLocal(SEEN_KEY, 0));
+  const [err, setErr] = useState('');
 
   const pad = isPhone ? '14px' : isMobile ? '16px' : '28px';
 
@@ -70,13 +72,36 @@ export default function WhatsHappening() {
       } catch { /* offline → curated only */ }
       setLive(items);
       setLoading(false);
+      // Stamp the watermark on view (returning users see the diff next time).
+      // A background timestamp — nothing to revert — but awaited, not discarded.
+      await writeThrough(SEEN_KEY, Date.now());
     })();
-    // Stamp the watermark on view (returning users see the diff next time).
-    writeThrough(SEEN_KEY, Date.now());
   }, []);
 
-  const persistSources = (next) => { setSources(next); writeThrough(SOURCES_KEY, next); };
-  const persistDismissed = (next) => { setDismissed(next); writeThrough(DISMISS_KEY, next); };
+  // Optimistic + honest, mirroring BookClub's persist(): apply, await, and on a
+  // failed on-device write revert and surface it. Server-only failures keep the
+  // local write and show on the global sync chip (storage-honesty contract).
+  const persistSources = async (next) => {
+    const prev = sources;
+    setSources(next);
+    const r = await writeThrough(SOURCES_KEY, next);
+    if (!r.localOk) { setSources(prev); setErr('Couldn’t save your sources — on-device storage is full or blocked.'); }
+    else setErr('');
+  };
+  const persistDismissed = async (next) => {
+    const prev = dismissed;
+    setDismissed(next);
+    const r = await writeThrough(DISMISS_KEY, next);
+    if (!r.localOk) { setDismissed(prev); setErr('Couldn’t save that dismissal.'); }
+    else setErr('');
+  };
+  const persistDensity = async (d) => {
+    const prev = density;
+    setDensity(d);
+    const r = await writeThrough(DENSITY_KEY, d);
+    if (!r.localOk) { setDensity(prev); setErr('Couldn’t save the density setting.'); }
+    else setErr('');
+  };
 
   const allItems = useMemo(() => [...live, ...CURATED], [live]);
   const categories = useMemo(() => ['All', ...Array.from(new Set(sources.map((s) => s.category)))], [sources]);
@@ -163,6 +188,10 @@ export default function WhatsHappening() {
         })}
       </div>
 
+      {err && (
+        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--negative) 40%, transparent)', background: 'color-mix(in srgb, var(--negative) 10%, transparent)', color: 'var(--negative)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>⚠ {err}</div>
+      )}
+
       {/* Discovery panel */}
       {DISCOVERY.length > 0 && (
         <div style={{ border: '1px solid var(--rule)', borderRadius: 12, padding: '14px 16px', marginBottom: 18, background: 'var(--surface)' }}>
@@ -191,7 +220,7 @@ export default function WhatsHappening() {
           return <button key={c} onClick={() => setFilter(c)} style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 20, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', minHeight: 34 }}>{c}</button>;
         })}
         <div style={{ flex: 1 }} />
-        <button onClick={() => { const d = compact ? 'comfortable' : 'compact'; setDensity(d); writeThrough(DENSITY_KEY, d); }} title="Density"
+        <button onClick={() => persistDensity(compact ? 'comfortable' : 'compact')} title="Density"
           style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'inherit' }}>
           <Icon name={compact ? 'Rows3' : 'Rows2'} size={14} /> {compact ? 'Compact' : 'Comfortable'}
         </button>
@@ -251,6 +280,7 @@ export default function WhatsHappening() {
                         <FeedAction icon="Microscope" label="Dive deeper" onClick={() => dive(it)} />
                         <FeedAction icon="Share2" label="Explore" onClick={() => explore(it)} />
                         <FeedAction icon="MessageSquare" label="Ask" onClick={() => ask(it)} />
+                        <SaveToNotes title={it.title} content={it.title} source={{ url: it.url, title: it.source, tier: it.tier }} label="Save" style={{ padding: '5px 10px' }} />
                         <FeedAction icon="X" label="Dismiss" onClick={() => dismiss(it)} muted />
                       </div>
                     )}

@@ -59,12 +59,23 @@ export default function HomeDashboard() {
   const { isMobile, isPhone, isTablet } = useApp();
   const [layout, setLayout] = useState(loadLayout);
   const [editing, setEditing] = useState(false);
+  const [err, setErr] = useState('');
 
   const pad = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
 
-  const save = (next) => { setLayout(next); writeThrough(LAYOUT_KEY, next); };
+  // Optimistic, but honest: apply locally, await the write, and if the on-device
+  // write didn't land (quota/blocked) revert and show it. Mirrors BookClub's
+  // persist(); server-only failures keep the local write and surface on the
+  // global sync chip per the storage-honesty contract.
+  const save = async (next) => {
+    const prev = layout;
+    setLayout(next);
+    const r = await writeThrough(LAYOUT_KEY, next);
+    if (!r.localOk) { setLayout(prev); setErr('Couldn’t save your layout — on-device storage is full or blocked.'); }
+    else setErr('');
+  };
   const toggleCollapse = (id) => save({ ...layout, collapsed: layout.collapsed.includes(id) ? layout.collapsed.filter((x) => x !== id) : [...layout.collapsed, id] });
   const hide = (id) => save({ ...layout, hidden: [...layout.hidden, id] });
   const show = (id) => save({ ...layout, hidden: layout.hidden.filter((x) => x !== id) });
@@ -98,6 +109,10 @@ export default function HomeDashboard() {
           <Icon name={editing ? 'Check' : 'Settings2'} size={15} /> {editing ? 'Done' : 'Customize'}
         </button>
       </div>
+
+      {err && (
+        <div style={{ marginBottom: 'var(--s5)', padding: '10px 14px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--negative) 40%, transparent)', background: 'color-mix(in srgb, var(--negative) 10%, transparent)', color: 'var(--negative)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>⚠ {err}</div>
+      )}
 
       {/* Capture — the fixed front door, never in the reorderable body */}
       <div style={{ marginBottom: 'var(--s5)' }}><CaptureBar /></div>

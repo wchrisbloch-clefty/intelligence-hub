@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
-import { saveNotes, uid } from '../utils.js';
+import { uid } from '../utils.js';
+import { NOTES_KEY } from '../constants.js';
+import { writeThrough } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
 import { createCard } from '../lib/reviews.js';
 import Icon from './shared/Icon.jsx';
@@ -16,10 +18,20 @@ export default function Notes() {
   const { notes, setNotes, isMobile, isPhone } = useApp();
   const [q, setQ] = useState('');
   const [composing, setComposing] = useState(false);
+  const [err, setErr] = useState('');
   const [form, setForm] = useState({ title: '', content: '', sourceUrl: '', sourceTitle: '', tier: 'reported' });
   const pad = isPhone ? '14px' : isMobile ? '16px' : '28px';
 
-  const save = async (next) => { setNotes(next); await saveNotes(next); };
+  // Optimistic + honest (mirrors BookClub's persist): apply, await, revert on a
+  // failed on-device write. Server-only failures surface on the global chip.
+  const save = async (next) => {
+    const prev = notes;
+    setNotes(next);
+    const r = await writeThrough(NOTES_KEY, next);
+    if (!r.localOk) { setNotes(prev); setErr('Couldn’t save your note — on-device storage is full or blocked.'); return false; }
+    setErr('');
+    return true;
+  };
 
   const create = async () => {
     if (!form.title.trim() && !form.content.trim()) return;
@@ -55,6 +67,10 @@ export default function Notes() {
           <Icon name="Plus" size={15} /> New note
         </button>
       </div>
+
+      {err && (
+        <div style={{ marginBottom: 14, padding: '10px 14px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--negative) 40%, transparent)', background: 'color-mix(in srgb, var(--negative) 10%, transparent)', color: 'var(--negative)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>⚠ {err}</div>
+      )}
 
       {/* Search */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 10, padding: '9px 13px', marginBottom: 16 }}>

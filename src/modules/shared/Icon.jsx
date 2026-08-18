@@ -9,23 +9,25 @@
 import {
   Activity, ArrowDown, ArrowRight, ArrowUp, BarChart3, Bookmark, BookMarked,
   BookOpen, Brain, Briefcase, Building2, CalendarClock, Check, ChevronDown,
-  ChevronUp, Circle, ClipboardList, Cog, Compass, Cpu, DollarSign, Drama,
-  Eye, EyeOff, FileText, Globe, GraduationCap, Handshake, Landmark, Layers,
-  Library, MapPin, MessageSquare, Microscope, Mountain, Newspaper, Package,
-  PenSquare, Play, Plus, Radio, RefreshCw, Rocket, Rows2, Rows3, Search,
-  Settings2, Share2, Sparkles, StickyNote, Target, TrendingUp, TrendingDown,
-  Waves, X, Zap,
+  ChevronUp, Circle, Clock, ClipboardList, Cog, Compass, Cpu, DollarSign, Drama,
+  Dumbbell, Eye, EyeOff, Feather, FileSpreadsheet, FileText, Flame, Globe,
+  GraduationCap, Handshake, Heart, Image, Inbox, Landmark, Layers, Library,
+  MapPin, MessageSquare, Microscope, Mountain, Newspaper, Package, Paperclip,
+  PenSquare, Play, Plus, Presentation, Radio, RefreshCw, Rocket, Rows2, Rows3,
+  Scale, Search, Settings2, Share2, Sparkles, Sprout, Stethoscope, StickyNote,
+  Target, TrendingUp, TrendingDown, Trophy, Waves, X, Zap,
 } from 'lucide-react';
 
 const REGISTRY = {
   Activity, ArrowDown, ArrowRight, ArrowUp, BarChart3, Bookmark, BookMarked,
-  BookOpen, Brain, Briefcase, Building2, CalendarClock, Check, ChevronDown,
+  BookOpen, Brain, Briefcase, Building2, CalendarClock, Check, Clock, ChevronDown,
   ChevronUp, Circle, ClipboardList, Cog, Compass, Cpu, DollarSign, Drama,
-  Eye, EyeOff, FileText, Globe, GraduationCap, Handshake, Landmark, Layers,
-  Library, MapPin, MessageSquare, Microscope, Mountain, Newspaper, Package,
-  PenSquare, Play, Plus, Radio, RefreshCw, Rocket, Rows2, Rows3, Search,
-  Settings2, Share2, Sparkles, StickyNote, Target, TrendingUp, TrendingDown,
-  Waves, X, Zap,
+  Dumbbell, Eye, EyeOff, Feather, FileSpreadsheet, FileText, Flame, Globe,
+  GraduationCap, Handshake, Heart, Image, Inbox, Landmark, Layers, Library,
+  MapPin, MessageSquare, Microscope, Mountain, Newspaper, Package, Paperclip,
+  PenSquare, Play, Plus, Presentation, Radio, RefreshCw, Rocket, Rows2, Rows3,
+  Scale, Search, Settings2, Share2, Sparkles, Sprout, Stethoscope, StickyNote,
+  Target, TrendingUp, TrendingDown, Trophy, Waves, X, Zap,
 };
 
 const SIZES = { inline: 16, header: 20, nav: 24 };

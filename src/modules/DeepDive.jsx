@@ -6,6 +6,7 @@ import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydra
 import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
+import SaveToNotes from './shared/SaveToNotes.jsx';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -192,9 +193,12 @@ export default function DeepDive() {
       {/* Sections */}
       {dive.sections.map((s, i) => (
         <div key={s.id} style={{ marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <div style={{ fontSize: 8, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>Pass {i + 1} · {s.title}</div>
             <ProviderTag provider={s.provider} />
+            <div style={{ marginLeft: 'auto' }}>
+              <SaveToNotes title={`${dive.topic} — ${s.title}`} content={s.content} source={{ title: dive.topic, tier: 'reported' }} label="Notes" />
+            </div>
           </div>
           <MD text={s.content} color={ACCENT} />
         </div>
