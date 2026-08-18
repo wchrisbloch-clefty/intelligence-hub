@@ -130,15 +130,25 @@ nobody; now they feed a shared graph and a shared card deck.
   (the shared ConnectedKnowledge panel). Module chips link back to where the
   skill is built.
 - **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
-  is appended to every prompt. "Generate Study Guide" runs `job:'reason'` at
-  4k tokens for thesis → frameworks → worked example (in-lens) → application
+  is appended to every prompt. The lens is **remembered per book** (`lensByBook`
+  map on **`aether_bookclub_lens`**, awaited/revert write) so a work-framed read
+  of one title doesn't reset the personal framing of another; `lens` is derived
+  from `selectedBook` (default `both`). "Generate Study Guide" runs `job:'reason'`
+  at 4k tokens for thesis → frameworks → worked example (in-lens) → application
   prompts → field summary, parses a trailing `---CARDS---` JSON block into Vault
   cards, and "Send to Studio" hands the guide to Creation Studio (new `guide`
-  source kind) to format + download.
+  source kind) to format + download. On generation, `extractFrameworks` pulls
+  each framework NAME out of the guide's `## Key Frameworks` section and
+  **`logConcept`s each one** (source = book title, so they interlink with the
+  book concept and surface in Connected Knowledge) — awaited in sequence so the
+  read-modify-writes don't clobber.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
-  decision, skill, inbox). `<AskChip type object />` opens the Ask layer
-  pre-loaded with the object + its graph neighbors. Wired on all seven types.
+  decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
+  pre-loaded with the object + its graph neighbors (`askPrefill`). Wired on all
+  the object types; **What's Happening feed items** route their "Ask" action
+  through `askPrefill('feed', item)` so a headline opens the chat with its own
+  context line plus any graph neighbors.
 - **MCP bridge** (`api/mcp.js`, `api/_mcp.js`) — the Claude connector. JSON-RPC
   over POST (`initialize`/`tools/list`/`tools/call`), gated by an **`MCP_TOKEN`**
   bearer, **fails closed** when the token is unset, and never returns

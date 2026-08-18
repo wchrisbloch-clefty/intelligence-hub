@@ -13,6 +13,7 @@ import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
 const SEEDED_KEY   = 'aether_bookclub_seeded';
+const LENS_KEY     = 'aether_bookclub_lens';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -78,6 +79,27 @@ A one-page, scannable field summary — the whole book in bullets he can reread 
 
 Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of exactly 6 self-quiz flashcards: [{"front":"question","back":"answer"}]. No prose after the marker.`;
 
+// Pull the framework NAMES out of the guide's "## Key Frameworks" section so each
+// one becomes its own concept in the graph, linked to the book by shared source.
+// Tolerant of the model's formatting: bullets, numbers, bold labels, or a
+// "Name — definition" line all resolve to the leading name.
+function extractFrameworks(body) {
+  const m = String(body || '').match(/##\s*Key Frameworks\b([\s\S]*?)(?:\n##\s|$)/i);
+  if (!m) return [];
+  const out = [];
+  for (const raw of m[1].split('\n')) {
+    const stripped = raw.trim().replace(/^([-*•]|\d+[.)])\s+/, '');   // drop bullet/number
+    let name =
+      (stripped.match(/^\*\*(.+?)\*\*/) || [])[1] ||                  // **Bold label**
+      (stripped.match(/^#{3,}\s*(.+)$/) || [])[1] ||                  // ### Heading
+      (stripped.match(/^(.+?)\s*[:—–-]\s+/) || [])[1] || '';          // Name: / Name — definition
+    name = name.replace(/\*\*/g, '').replace(/[:—–-]\s*$/, '').trim();
+    if (name.length >= 3 && name.length <= 60 && !/^why it matters/i.test(name)) out.push(name);
+    if (out.length >= 5) break;
+  }
+  return [...new Set(out)];
+}
+
 const PROMPTS = {
   overview:  (b) => `Give me a master-level executive overview of "${b.title}" by ${b.author}. Lead with the central thesis in one sentence. Then: 5 key insights, the strongest evidence, what critics miss, and the single most important takeaway for CB (Houston BD professional building passive income and longevity). Format with clear headers. Be decisive.`,
   concepts:  (b) => `Extract the 7 core mental models and frameworks from "${b.title}" by ${b.author}. For each: (1) Name and 1-sentence definition, (2) How the author uses it, (3) How CB can apply it immediately. Be concrete.`,
@@ -89,7 +111,9 @@ const PROMPTS = {
 
 export default function BookClub() {
   const { isMobile, isPhone, isTablet, isDesktop, openStudio } = useApp();
-  const [lens, setLens] = useState('both');
+  // Lens is remembered PER BOOK — a work-framed read of one title shouldn't
+  // reset the personal framing chosen for another. Stored as { [bookId]: lensId }.
+  const [lensByBook, setLensByBook] = useState(() => readLocal(LENS_KEY, {}));
   const [isGuide, setIsGuide] = useState(false);
   const [guideCards, setGuideCards] = useState(0);
 
@@ -137,6 +161,9 @@ export default function BookClub() {
         writeThrough(SEEDED_KEY, true);
       }
       if (!cancelled) setBooks(lib);
+      // Server copy of the per-book lens map is authoritative when present.
+      const remoteLens = await hydrate(LENS_KEY);
+      if (!cancelled && remoteLens && typeof remoteLens === 'object') setLensByBook(remoteLens);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -160,6 +187,18 @@ export default function BookClub() {
     setBooks(next);
     setSaveError('');
     return true;
+  };
+
+  // Per-book lens, defaulting to Both. Persist through the awaited/revert path so
+  // a failed on-device write doesn't silently drop the choice.
+  const lens = selectedBook ? (lensByBook[selectedBook.id] || 'both') : 'both';
+  const setBookLens = async (id) => {
+    if (!selectedBook) return;
+    const prev = lensByBook;
+    const next = { ...lensByBook, [selectedBook.id]: id };
+    setLensByBook(next);
+    const r = await writeThrough(LENS_KEY, next);
+    if (!r.localOk) setLensByBook(prev);
   };
 
   const openAdd = () => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('add'); };
@@ -256,6 +295,12 @@ export default function BookClub() {
       }
       setGuideCards(added);
       logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', confidence: 6, refs: selectedBook.author ? [selectedBook.author] : [] });
+      // Each framework the guide names becomes its own concept, sharing the book
+      // as source so they interlink and surface in Connected Knowledge. Awaited
+      // in sequence so the concurrent read-modify-writes don't clobber each other.
+      for (const fw of extractFrameworks(body)) {
+        await logConcept({ topic: fw, source: selectedBook.title, module: 'books', confidence: 5, refs: [selectedBook.title] });
+      }
     } catch {
       setResult('Unable to generate — check connection and try again.');
     }
@@ -485,7 +530,7 @@ export default function BookClub() {
                     {LENSES.map((l) => {
                       const on = lens === l.id;
                       return (
-                        <button key={l.id} onClick={() => setLens(l.id)} title={l.clause}
+                        <button key={l.id} onClick={() => setBookLens(l.id)} title={l.clause}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
                           <Icon name={l.icon} size={14} /> {l.label}
                         </button>

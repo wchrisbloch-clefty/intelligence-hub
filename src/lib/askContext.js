@@ -26,6 +26,8 @@ export function toContext(type, o = {}) {
       return `Skill: "${o.name}" — confidence ${o.confidence == null ? 'untracked' : `${o.confidence}/10`}, trend ${o.trend || 'flat'}. Studied in: ${(o.modules || []).join(', ') || '—'}.`;
     case 'inbox':
       return `Captured item: "${o.title}"${o.url ? ` (${o.url})` : ''}. ${clip(o.summary || o.snippet, 300)}`;
+    case 'feed':
+      return `Feed item: "${o.title}" — ${o.source || 'source'}${o.author ? ` · ${o.author}` : ''}${o.category ? ` (${o.category})` : ''}${o.tier ? `, ${o.tier}` : ''}.`;
     default:
       return typeof o === 'string' ? o : clip(JSON.stringify(o), 400);
   }
