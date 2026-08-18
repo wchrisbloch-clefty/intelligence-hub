@@ -151,14 +151,23 @@ nobody; now they feed a shared graph and a shared card deck.
   context line plus any graph neighbors.
 - **MCP bridge** (`api/mcp.js`, `api/_mcp.js`) — the Claude connector. JSON-RPC
   over POST (`initialize`/`tools/list`/`tools/call`), gated by an **`MCP_TOKEN`**
-  bearer, **fails closed** when the token is unset, and never returns
-  `ACCESS_CODE`, provider keys, or Upstash creds. Tools: `search_knowledge`,
-  `get_concept`, `log_concept`, `add_note`, `create_flashcard`, `add_to_inbox`,
-  `get_projects`, `get_recap`. **`/api/export`** is a token-gated read-only JSON
-  snapshot (graph/projects/skills/recaps) — served by the same `mcp` function
-  via a `vercel.json` rewrite (`/api/export → /api/mcp?__export=1`) so the repo
-  stays under the **Hobby 12-Serverless-Function cap** (a separate `api/export.js`
-  pushed it to 13 and broke the deploy). **Connect from claude.ai → Connectors →
+  bearer (timing-safe compare; the token is used only for the compare and is
+  never echoed), **fails closed** when the token is unset, and never returns
+  `ACCESS_CODE`, provider keys, or Upstash creds — every tool reads ONLY the
+  fixed `KEYS` allowlist (all `aether_*`/recap content), and no key is derived
+  from caller input, so an arbitrary secret key can't be requested. Tools:
+  `search_knowledge`, `get_concept`, `log_concept`, `add_note`,
+  `create_flashcard`, `add_to_inbox`, `get_projects`, **`get_skills`** (skills
+  as confidence trajectories — a server-side port of `lib/skills.js`),
+  `get_recap`. **Writes feed the graph:** `add_note` / `create_flashcard` /
+  `add_to_inbox` each `logConcept` after the write (awaited), same as the
+  in-app emitters, so MCP-captured items show in Connected Knowledge.
+  **`/api/export`** is a token-gated read-only JSON snapshot
+  (graph/skills/projects/**notes**/recaps) — there is NO `api/export.js` file;
+  it's served by the same `mcp` function (`exportState`) via a `vercel.json`
+  rewrite (`/api/export → /api/mcp?__export=1`) so the repo stays under the
+  **Hobby 12-Serverless-Function cap** (a separate `api/export.js` would be the
+  13th function and break the deploy). **Connect from claude.ai → Connectors →
   Add custom connector:** URL `https://<deployment>/api/mcp`, Bearer = the
   `MCP_TOKEN` set in Vercel. Set `MCP_TOKEN` in the Vercel env to enable the
   bridge (unset = off).

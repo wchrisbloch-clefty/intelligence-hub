@@ -108,6 +108,9 @@ async function addNote({ title, content, tags = [] }) {
   const notes = (await readJson(KEYS.NOTES, [])) || [];
   const note = { id: uid('note'), title: t || body.slice(0, 55), content: body, tags: Array.isArray(tags) ? tags : [], connections: [], color: 'var(--accent)', createdAt: Date.now(), source: 'mcp' };
   await writeJson(KEYS.NOTES, [note, ...notes]);
+  // Feed the graph so the note shows up in Connected Knowledge, same as the app's
+  // Notes.jsx does on save. Awaited after the note write (separate key).
+  await logConceptTool({ topic: note.title, source: note.title, module: 'notes', refs: note.tags });
   return { ok: true, id: note.id };
 }
 
@@ -118,6 +121,10 @@ async function createFlashcard({ front, back, source = 'mcp', topic = null }) {
   if (cards.some((c) => norm(c.front).toLowerCase() === f.toLowerCase())) return { ok: true, created: false, reason: 'duplicate' };
   const card = { id: uid('card'), front: f, back: b, source, module: 'mcp', topic, interval: 1, easeFactor: 2.5, dueDate: Date.now(), reviews: 0, createdAt: Date.now() };
   await writeJson(KEYS.FLASHCARDS, [card, ...cards]);
+  // A card's topic is a concept being studied — record it so it interlinks with
+  // whatever else touched the same subject.
+  const cardTopic = topic || f;
+  if (cardTopic) await logConceptTool({ topic: cardTopic, source: source || null, module: 'flashcards' });
   return { ok: true, created: true, id: card.id };
 }
 
@@ -127,7 +134,57 @@ async function addToInbox({ title, url = '', text = '' }) {
   const items = (await readJson(KEYS.INBOX, [])) || [];
   const item = { id: uid('item'), title: t, url: norm(url), snippet: norm(text).slice(0, 200), type: url ? 'article' : 'note', summary: '', savedAt: Date.now(), inVault: false, derivedInto: [], source: 'mcp' };
   await writeJson(KEYS.INBOX, [item, ...items]);
+  // Captured items feed the graph too (ContentInbox does the same in-app).
+  await logConceptTool({ topic: item.title, source: item.url || item.title, module: 'inbox' });
   return { ok: true, id: item.id };
+}
+
+// Skills as trajectories — a server-side port of src/lib/skills.js. A user skill
+// (aether_skills_v1: { name, concepts:[key], archived }) aggregates one OR MORE
+// graph concepts into one trajectory; every graph concept not claimed by a user
+// skill becomes an auto skill. Read-only: derives from the graph, never writes.
+async function getSkills({ includeArchived = false } = {}) {
+  const [graph, userSkills] = await Promise.all([readJson(KEYS.GRAPH, {}), readJson(KEYS.SKILLS, [])]);
+  const concepts = (graph && graph.concepts) || {};
+  const DAY = 86_400_000, DECAY_DAYS = 21, now = Date.now();
+  const avg = (xs) => (xs.length ? xs.reduce((n, x) => n + x, 0) / xs.length : 0);
+  const trendFrom = (s) => {
+    if (s.length < 2) return 'flat';
+    const h = Math.ceil(s.length / 2), older = avg(s.slice(0, h)), recent = avg(s.slice(h));
+    return recent > older + 0.3 ? 'up' : recent < older - 0.3 ? 'down' : 'flat';
+  };
+  const fromConcepts = (cs, base) => {
+    const withData = cs.filter(Boolean);
+    const points = withData
+      .flatMap((c) => (c.sources || []).filter((s) => typeof s.confidence === 'number').map((s) => ({ c: s.confidence, at: s.at })))
+      .sort((a, b) => a.at - b.at);
+    const confs = withData.map((c) => (typeof c.confidence === 'number' ? c.confidence : null)).filter((x) => x != null);
+    const lastSeen = withData.reduce((m, c) => Math.max(m, c.lastSeen || 0), 0) || null;
+    return {
+      ...base,
+      confidence: confs.length ? Math.round(avg(confs)) : null,
+      trend: trendFrom(points.map((p) => p.c)),
+      modules: [...new Set(withData.flatMap((c) => c.modules || []))],
+      observations: withData.reduce((n, c) => n + (c.observations || 0), 0),
+      lastSeen,
+      decaying: !!lastSeen && now - lastSeen > DECAY_DAYS * DAY,
+      concepts: withData.map((c) => c.topic),
+    };
+  };
+  const claimed = new Set();
+  const out = [];
+  for (const us of (Array.isArray(userSkills) ? userSkills : [])) {
+    if (us.archived && !includeArchived) { (us.concepts || []).forEach((k) => claimed.add(k)); continue; }
+    const keys = (us.concepts && us.concepts.length) ? us.concepts : [conceptKey(us.name)];
+    keys.forEach((k) => claimed.add(k));
+    out.push(fromConcepts(keys.map((k) => concepts[k]).filter(Boolean), { name: us.name, userDefined: true, archived: !!us.archived }));
+  }
+  for (const c of Object.values(concepts)) {
+    if (claimed.has(c.id)) continue;
+    out.push(fromConcepts([c], { name: c.topic, userDefined: false, archived: false }));
+  }
+  out.sort((a, b) => (b.confidence ?? -1) - (a.confidence ?? -1) || b.observations - a.observations);
+  return { count: out.length, skills: out };
 }
 
 async function getProjects() {
@@ -158,6 +215,8 @@ export const TOOLS = [
     inputSchema: { type: 'object', properties: { title: { type: 'string' }, url: { type: 'string' }, text: { type: 'string' } } }, handler: addToInbox },
   { name: 'get_projects', description: "List CB's projects with status and milestone progress.",
     inputSchema: { type: 'object', properties: {} }, handler: getProjects },
+  { name: 'get_skills', description: "List CB's skills as confidence trajectories: level, trend, the modules that built each, and whether it's decaying from neglect. Aggregates the knowledge graph plus his user-defined skills.",
+    inputSchema: { type: 'object', properties: { includeArchived: { type: 'boolean', description: 'Include archived user skills (default false).' } } }, handler: getSkills },
   { name: 'get_recap', description: 'Get the latest weekly recap or monthly review.',
     inputSchema: { type: 'object', properties: { period: { type: 'string', enum: ['weekly', 'monthly'] } } }, handler: getRecap },
 ];
@@ -171,10 +230,13 @@ export async function callTool(name, args) {
   return tool.handler(args || {});
 }
 
-// Full read-only snapshot for api/export — never includes secrets.
+// Full read-only snapshot for api/export — graph, skills, projects, notes, and
+// recaps. Reads ONLY the aether_* content keys below; it never touches
+// ACCESS_CODE, provider keys, or Upstash credentials, so no secret can appear.
 export async function exportState() {
-  const [graph, projects, skills, weekly, monthly] = await Promise.all([
+  const [graph, projects, skills, notes, weekly, monthly] = await Promise.all([
     readJson(KEYS.GRAPH, {}), readJson(KEYS.PROJECTS, []), readJson(KEYS.SKILLS, []),
+    readJson(KEYS.NOTES, []),
     readJson(KEYS.WEEKLY_RECAP, null), readJson(KEYS.MONTHLY_REVIEW, null),
   ]);
   return {
@@ -182,6 +244,7 @@ export async function exportState() {
     graph: { concepts: (graph && graph.concepts) || {}, topics: (graph && graph.topics) || {} },
     projects: projects || [],
     skills: skills || [],
+    notes: notes || [],
     recaps: { weekly: weekly || null, monthly: monthly || null },
   };
 }
