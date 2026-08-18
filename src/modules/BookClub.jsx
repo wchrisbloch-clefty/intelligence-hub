@@ -5,7 +5,10 @@ import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { createCard } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
+import { recommendBooks } from '../lib/bookRecs.js';
 import AskChip from './shared/AskChip.jsx';
+import Icon from './shared/Icon.jsx';
+import SaveToNotes from './shared/SaveToNotes.jsx';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
@@ -15,12 +18,12 @@ import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
 const STUDY_MODES = [
-  { id: 'overview',  label: 'Overview',       icon: '📋', desc: 'Executive summary + key thesis' },
-  { id: 'concepts',  label: 'Key Concepts',   icon: '🧠', desc: 'Core frameworks and mental models' },
-  { id: 'apply',     label: 'Apply to Work',  icon: '⚡', desc: 'Direct applications to your goals' },
-  { id: 'quotes',    label: 'Power Quotes',   icon: '💬', desc: 'Most impactful passages' },
-  { id: 'quiz',      label: 'Socratic Quiz',  icon: '🎯', desc: 'Test and deepen understanding' },
-  { id: 'discuss',   label: 'Discussion',     icon: '🤝', desc: 'Critical conversation about the book' },
+  { id: 'overview',  label: 'Overview',       icon: 'ClipboardList', desc: 'Executive summary + key thesis' },
+  { id: 'concepts',  label: 'Key Concepts',   icon: 'Brain', desc: 'Core frameworks and mental models' },
+  { id: 'apply',     label: 'Apply to Work',  icon: 'Zap', desc: 'Direct applications to your goals' },
+  { id: 'quotes',    label: 'Power Quotes',   icon: 'MessageSquare', desc: 'Most impactful passages' },
+  { id: 'quiz',      label: 'Socratic Quiz',  icon: 'Target', desc: 'Test and deepen understanding' },
+  { id: 'discuss',   label: 'Discussion',     icon: 'Handshake', desc: 'Critical conversation about the book' },
 ];
 
 // Type → theme token. Uses tier + accent tokens from src/theme.js (no new hex),
@@ -53,9 +56,9 @@ const seedBooks = () => KNOWN_BOOKS.map((b) => ({
 // chooses. The lens is appended to every prompt so examples land in the right
 // part of CB's life.
 const LENSES = [
-  { id: 'work',     icon: '💼', label: 'Work',     clause: "Frame everything through CB's professional world — BD pipeline, deals, revenue, career leverage. Use work examples." },
-  { id: 'personal', icon: '🌱', label: 'Personal', clause: "Frame everything through CB's personal world — health and longevity, family, character, money habits, personal growth. Use life examples." },
-  { id: 'both',     icon: '⚖️', label: 'Both',     clause: 'For each point give BOTH a work application (BD, deals, career) and a personal application (health, family, character).' },
+  { id: 'work',     icon: 'Briefcase', label: 'Work',     clause: "Frame everything through CB's professional world — BD pipeline, deals, revenue, career leverage. Use work examples." },
+  { id: 'personal', icon: 'Sprout', label: 'Personal', clause: "Frame everything through CB's personal world — health and longevity, family, character, money habits, personal growth. Use life examples." },
+  { id: 'both',     icon: 'Scale', label: 'Both',     clause: 'For each point give BOTH a work application (BD, deals, career) and a personal application (health, family, character).' },
 ];
 const lensClauseOf = (id) => LENSES.find((l) => l.id === id)?.clause || LENSES[2].clause;
 
@@ -315,6 +318,36 @@ export default function BookClub() {
               </button>
             </div>
 
+            {/* What to read next — graph-driven, each rec states its reason */}
+            {(() => {
+              const recs = recommendBooks({ library: books, lens });
+              if (recs.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--rule)', borderRadius: 12, background: 'var(--surface)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Icon name="Sparkles" size={16} style={{ color: 'var(--text-tertiary)' }} />
+                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase' }}>What to read next · {LENSES.find(l => l.id === lens)?.label} lens</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                    {recs.map((r) => (
+                      <div key={r.title} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)', border: '1px solid var(--rule)', borderRadius: 3, padding: '1px 6px' }}>{r.signal}</span>
+                          <button onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author, type: r.type }])}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                            <Icon name="Plus" size={13} /> Add
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{r.title}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{r.author}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>{r.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
               {filtered.length} Books · Click to Deep Dive
             </div>
@@ -454,7 +487,7 @@ export default function BookClub() {
                       return (
                         <button key={l.id} onClick={() => setLens(l.id)} title={l.clause}
                           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
-                          <span>{l.icon}</span> {l.label}
+                          <Icon name={l.icon} size={14} /> {l.label}
                         </button>
                       );
                     })}
@@ -471,7 +504,7 @@ export default function BookClub() {
                   {STUDY_MODES.map(m => (
                     <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
                       style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? withAlpha(T.accent, 12) : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
-                      <div style={{ fontSize: 'var(--fs-lg)'}}>{m.icon}</div>
+                      <Icon name={m.icon} size="header" style={{ color: mode === m.id ? T.accent : 'var(--text-tertiary)' }} />
                       <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: mode === m.id ? T.accent : 'var(--text)', marginTop: 4 }}>{m.label}</div>
                       <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
                     </button>
@@ -493,7 +526,7 @@ export default function BookClub() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
-                          {isGuide ? `📘 Study Guide · ${LENSES.find(l => l.id === lens)?.label} lens` : `${STUDY_MODES.find(m => m.id === mode)?.icon} ${STUDY_MODES.find(m => m.id === mode)?.label}`}
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isGuide ? <><Icon name="BookOpen" size={12} /> Study Guide · {LENSES.find(l => l.id === lens)?.label} lens</> : <><Icon name={STUDY_MODES.find(m => m.id === mode)?.icon} size={12} /> {STUDY_MODES.find(m => m.id === mode)?.label}</>}</span>
                         </div>
                         <ProviderTag provider={resultProvider} />
                       </div>
@@ -502,6 +535,7 @@ export default function BookClub() {
                           style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: vaulted ? withAlpha(T.accent, 12) : 'var(--bg)', border: `1px solid ${vaulted ? T.accent : 'var(--border)'}`, borderRadius: 6, color: vaulted ? T.accent : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
                           {vaulted ? '✓ In Vault' : '+ Vault'}
                         </button>
+                        <SaveToNotes title={`${selectedBook.title} — ${isGuide ? 'Study Guide' : STUDY_MODES.find(m => m.id === mode)?.label}`} content={result} source={{ title: selectedBook.title, tier: 'reported' }} label="Notes" />
                         <button onClick={() => navigator.clipboard?.writeText(result)}
                           style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
                           Copy

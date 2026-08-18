@@ -167,7 +167,7 @@ export async function fetchArticle(url) {
 // ─── FILE HELPERS ─────────────────────────────────────────────────────────
 export function getFileIcon(name = '') {
   const ext = name.split('.').pop().toLowerCase();
-  return { pdf:'📕', doc:'📝', docx:'📝', xls:'📊', xlsx:'📊', ppt:'📋', pptx:'📋', csv:'📊', txt:'📄', jpg:'🖼', jpeg:'🖼', png:'🖼', gif:'🖼', webp:'🖼', heic:'🖼' }[ext] || '📎';
+  return { pdf:'BookOpen', doc:'FileText', docx:'FileText', xls:'FileSpreadsheet', xlsx:'FileSpreadsheet', ppt:'Presentation', pptx:'Presentation', csv:'FileSpreadsheet', txt:'FileText', jpg:'Image', jpeg:'Image', png:'Image', gif:'Image', webp:'Image', heic:'Image' }[ext] || 'Paperclip';
 }
 export function getFileLabel(name = '') {
   const ext = name.split('.').pop().toLowerCase();

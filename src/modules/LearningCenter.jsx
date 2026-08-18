@@ -14,6 +14,7 @@ import {
 import { recordQuizResult } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
+import Icon from './shared/Icon.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
@@ -372,7 +373,7 @@ export default function LearningCenter() {
           <div key={t.id} onClick={() => setContentType(t.id)}
             style={{ padding: '12px 14px', borderRadius: 10, border: `1px solid ${contentType === t.id ? t.color : 'var(--bord2)'}`, background: contentType === t.id ? `${t.color}12` : 'var(--surface)', cursor: 'pointer' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <span style={{ fontSize: 'var(--fs-xl)'}}>{t.icon}</span>
+              <Icon name={t.icon} size="header" style={{ color: contentType === t.id ? t.color : 'var(--text-tertiary)' }} />
               <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: contentType === t.id ? t.color : 'var(--text)' }}>{t.label}</span>
             </div>
             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>{t.examples}</div>
@@ -398,7 +399,7 @@ export default function LearningCenter() {
         {READER_GOALS.map(g => (
           <div key={g.id} onClick={() => setReaderGoal(g.id)}
             style={{ padding: '11px 14px', borderRadius: 10, border: `1px solid ${readerGoal === g.id ? currentContentType.color : 'var(--bord2)'}`, background: readerGoal === g.id ? `${currentContentType.color}10` : 'var(--surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span style={{ fontSize: 'var(--fs-xl)'}}>{g.icon}</span>
+            <Icon name={g.icon} size="header" style={{ color: 'var(--text-tertiary)' }} />
             <div>
               <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: readerGoal === g.id ? currentContentType.color : 'var(--text)' }}>{g.label}</div>
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{g.desc}</div>
@@ -423,7 +424,7 @@ export default function LearningCenter() {
         {READING_PROGRESS_OPTIONS.map(p => (
           <div key={p.id} onClick={() => setReadingProgress(p.id)}
             style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${readingProgress === p.id ? currentContentType.color : 'var(--bord2)'}`, background: readingProgress === p.id ? `${currentContentType.color}15` : 'var(--surface)', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: readingProgress === p.id ? 700 : 400, color: readingProgress === p.id ? currentContentType.color : 'var(--subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span>{p.icon}</span> {p.label}
+            <Icon name={p.icon} size={16} /> {p.label}
           </div>
         ))}
       </div>
@@ -456,7 +457,7 @@ export default function LearningCenter() {
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{book.author}</div>
             </div>
             <div style={{ fontSize: 9, color: book.color, textAlign: 'right' }}>
-              <div style={{ fontSize: 14 }}>{TYPE_META[book.type]?.icon}</div>
+              <Icon name={TYPE_META[book.type]?.icon} size={16} style={{ color: book.color }} />
               <div style={{ marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' }}>{TYPE_META[book.type]?.label}</div>
             </div>
           </div>
@@ -497,7 +498,7 @@ export default function LearningCenter() {
         <div style={{ marginBottom: 14 }}>
           {uploadedFiles.map((f, i) => (
             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6 }}>
-              <span style={{ fontSize: 'var(--fs-xl)'}}>{f.icon}</span>
+              <Icon name={f.icon} size="header" />
               <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
               <div onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer', fontSize: 'var(--fs-lg)'}}>✕</div>
             </div>
@@ -587,13 +588,13 @@ export default function LearningCenter() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 3 }}>
-                {entryMode === 'reading' ? `${currentContentType.icon} ${currentContentType.label}` : `${sessionModeLabel?.icon} ${sessionModeLabel?.label}`}
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={entryMode === 'reading' ? currentContentType.icon : sessionModeLabel?.icon} size={14} /> {entryMode === 'reading' ? currentContentType.label : sessionModeLabel?.label}</span>
                 {sessionTitle ? ` · ${sessionTitle.slice(0, isMobile ? 24 : 40)}${sessionTitle.length > (isMobile ? 24 : 40) ? '...' : ''}` : ''}
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 {entryMode === 'reading' && (
                   <div style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: `${accentColor}15`, border: `1px solid ${accentColor}30`, borderRadius: 6, color: accentColor }}>
-                    {READER_GOALS.find(g => g.id === readerGoal)?.icon} {READER_GOALS.find(g => g.id === readerGoal)?.label}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={READER_GOALS.find(g => g.id === readerGoal)?.icon} size={13} /> {READER_GOALS.find(g => g.id === readerGoal)?.label}</span>
                   </div>
                 )}
                 <div onClick={() => setSearchEnabled(s => !s)}
@@ -620,7 +621,7 @@ export default function LearningCenter() {
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 200px' }}>
           {messages.length === 0 && !loading && (
             <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 10 }}>{entryMode === 'reading' ? currentContentType.icon : '📚'}</div>
+              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 10 }}><Icon name={entryMode === 'reading' ? currentContentType.icon : 'BookMarked'} size={28} style={{ color: 'var(--text-tertiary)' }} /></div>
               <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Initializing...</div>
             </div>
           )}
@@ -698,7 +699,7 @@ export default function LearningCenter() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 7 }}>
               {uploadedFiles.map((f, i) => (
                 <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44130', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {f.icon} {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
+                  <Icon name={f.icon} size={16} /> {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
                 </div>
               ))}
             </div>

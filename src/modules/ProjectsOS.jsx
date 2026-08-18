@@ -949,7 +949,7 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
           {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
             <div key={k} onClick={() => setVal(p => ({ ...p, category: k }))}
               style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', border: `1px solid ${val.category === k ? v.color : 'var(--bord2)'}`, color: val.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: val.category === k ? `${v.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
-              {v.icon} {v.label}
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={v.icon} size={14} /> {v.label}</span>
             </div>
           ))}
         </div>

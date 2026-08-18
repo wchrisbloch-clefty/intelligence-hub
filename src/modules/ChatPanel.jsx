@@ -6,6 +6,8 @@ import { buildSystem, processFiles } from '../utils.js';
 import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
+import Icon from './shared/Icon.jsx';
+import SaveToNotes from './shared/SaveToNotes.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
@@ -88,7 +90,7 @@ export default function ChatPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
-            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{mode?.icon} {mode?.label}</div>
+            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
@@ -100,7 +102,7 @@ export default function ChatPanel() {
           {CHAT_MODES.map(m => (
             <div key={m.id} onClick={() => setChatMode(m.id)} title={m.desc}
               style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? T.accent : 'var(--border)'}`, color: chatMode === m.id ? T.accent : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? withAlpha(T.accent, 6) : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {m.icon} {m.label}
+              <Icon name={m.icon} size={13} /> {m.label}
             </div>
           ))}
         </div>
@@ -142,6 +144,9 @@ export default function ChatPanel() {
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
                 <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
                 <MD text={msg.content} color={T.accent} />
+                <div style={{ marginTop: 10 }}>
+                  <SaveToNotes title={msg.content.split('\n')[0].replace(/[#*>_`-]/g, '').trim().slice(0, 70)} content={msg.content} source={{ title: `Intelligence Chat · ${mode?.label || ''}`.trim(), tier: 'reported' }} label="Save to Notes" />
+                </div>
               </div>
             )}
           </div>
@@ -165,7 +170,7 @@ export default function ChatPanel() {
         <div style={{ padding: '6px 14px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {attachments.map((a, i) => (
             <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-              {a.icon} {a.name.slice(0, 14)}
+              <Icon name={a.icon} size={13} /> {a.name.slice(0, 14)}
               <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
             </div>
           ))}

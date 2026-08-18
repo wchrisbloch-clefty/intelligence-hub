@@ -5,12 +5,13 @@ import { callClaude } from '../utils.js';
 import { CB_LEARNING_SPINE } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Btn, ThinkingDots } from './shared/Common.jsx';
+import Icon from './shared/Icon.jsx';
 
 const GOALS = [
-  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: T.accent, icon: '💰', horizon: '3-5 years' },
-  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: T.accent, icon: '⚡', horizon: 'Ongoing' },
-  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: T.accent, icon: '📊', horizon: '5 years' },
-  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: T.accent, icon: '📚', horizon: '2025' },
+  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: T.accent, icon: 'DollarSign', horizon: '3-5 years' },
+  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: T.accent, icon: 'Zap', horizon: 'Ongoing' },
+  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: T.accent, icon: 'BarChart3', horizon: '5 years' },
+  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: T.accent, icon: 'BookMarked', horizon: '2025' },
 ];
 
 const SKILLS = [
@@ -114,13 +115,13 @@ export default function GrowthTools() {
 
       <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
         {[
-          { label: 'Avg Confidence', value: avgConf + '/10', color: T.accent, icon: '🎯' },
-          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: T.accent, icon: '✓' },
-          { label: 'Streak', value: streak + 'd', color: T.accent, icon: '🔥' },
-          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: T.accent, icon: '⏱' },
+          { label: 'Avg Confidence', value: avgConf + '/10', color: T.accent, icon: 'Target' },
+          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: T.accent, icon: 'Check' },
+          { label: 'Streak', value: streak + 'd', color: T.accent, icon: 'Flame' },
+          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: T.accent, icon: 'Clock' },
         ].map(s => (
           <Card key={s.label} color={s.color} style={{ padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 6 }}>{s.icon}</div>
+            <div style={{ marginBottom: 6 }}><Icon name={s.icon} size="header" style={{ color: 'var(--text-tertiary)' }} /></div>
             <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: s.color, fontFamily: "'Newsreader', serif" }}>{s.value}</div>
             <div style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
           </Card>
@@ -144,7 +145,7 @@ export default function GrowthTools() {
             return (
               <Card key={g.id} color={g.color} style={{ padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }} onClick={() => getGoalAI(g)}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <div style={{ fontSize: 'var(--fs-2xl)'}}>{g.icon}</div>
+                  <Icon name={g.icon} size={24} style={{ color: 'var(--text-tertiary)' }} />
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
                     <div style={{ fontSize: 'var(--fs-sm)', color: isExpanded ? g.color : 'var(--dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</div>

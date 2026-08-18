@@ -5,6 +5,7 @@ import { callClaude, saveNotes, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
+import Icon from './shared/Icon.jsx';
 import { CB_IDENTITY } from '../constants.js';
 
 const INBOX_KEY = 'aether_inbox';
@@ -16,14 +17,14 @@ const ACCENT_BG     = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const FILTERS = [
-  { id: 'all',     label: 'All',      icon: '📥' },
-  { id: 'article', label: 'Articles', icon: '📰' },
-  { id: 'video',   label: 'Videos',   icon: '▶️' },
-  { id: 'social',  label: 'Social',   icon: '💬' },
-  { id: 'note',    label: 'Notes',    icon: '📝' },
+  { id: 'all',     label: 'All',      icon: 'Inbox' },
+  { id: 'article', label: 'Articles', icon: 'Newspaper' },
+  { id: 'video',   label: 'Videos',   icon: 'Play' },
+  { id: 'social',  label: 'Social',   icon: 'MessageSquare' },
+  { id: 'note',    label: 'Notes',    icon: 'StickyNote' },
 ];
 
-const TYPE_ICON  = { article: '📰', video: '▶️', social: '💬', note: '📝' };
+const TYPE_ICON  = { article: 'Newspaper', video: 'Play', social: 'MessageSquare', note: 'StickyNote' };
 const TYPE_COLOR = { article: T.accent, video: T.accent, social: T.accent, note: T.accent };
 
 // Capture lineage — what a saved item became, for the traceable trail.
@@ -218,7 +219,7 @@ export default function ContentInbox() {
               {FILTERS.map(f => (
                 <div key={f.id} onClick={() => setFilter(f.id)}
                   style={{ padding: '4px 12px', fontSize: 'var(--fs-sm)', borderRadius: 20, border: `1px solid ${filter === f.id ? ACCENT : 'var(--border)'}`, background: filter === f.id ? ACCENT_BG : 'transparent', color: filter === f.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontWeight: filter === f.id ? 700 : 400 }}>
-                  {f.icon} {f.label}
+                  <Icon name={f.icon} size={14} /> {f.label}
                 </div>
               ))}
             </div>
@@ -240,7 +241,7 @@ export default function ContentInbox() {
                 <div key={item.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
                   <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : item.id)}>
                     <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <span style={{ fontSize: 'var(--fs-xl)', flexShrink: 0 }}>{TYPE_ICON[item.type] || '📄'}</span>
+                      <Icon name={TYPE_ICON[item.type] || 'FileText'} size="header" style={{ flexShrink: 0, color: 'var(--text-tertiary)' }} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.3 }}>{item.title}</div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>

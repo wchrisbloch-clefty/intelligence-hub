@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import useChatThread from '../hooks/useChatThread.js';
 import { CB_IDENTITY } from '../constants.js';
 import MD from './shared/MD.jsx';
+import Icon from './shared/Icon.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -12,19 +13,19 @@ const ACCENT_BG     = 'rgba(217,164,65,0.08)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const TONES = [
-  { id: 'coach',     icon: '🏆', label: 'Coach',          desc: 'High-energy, goal-focused, celebrates wins, drives action' },
-  { id: 'mentor',    icon: '🦉', label: 'Mentor',         desc: 'Wise, calm, long-view perspective, shares frameworks' },
-  { id: 'stoic',     icon: '🪨', label: 'Stoic',          desc: 'Marcus Aurelius mode — adversity is data, discipline is freedom' },
-  { id: 'drill',     icon: '🎯', label: 'Drill Sergeant', desc: 'No excuses, Extreme Ownership, blunt unfiltered truth' },
-  { id: 'therapist', icon: '💙', label: 'Therapist',      desc: 'Reflective, curious, explores the "why" behind your choices' },
+  { id: 'coach',     icon: 'Trophy', label: 'Coach',          desc: 'High-energy, goal-focused, celebrates wins, drives action' },
+  { id: 'mentor',    icon: 'Feather', label: 'Mentor',         desc: 'Wise, calm, long-view perspective, shares frameworks' },
+  { id: 'stoic',     icon: 'Mountain', label: 'Stoic',          desc: 'Marcus Aurelius mode — adversity is data, discipline is freedom' },
+  { id: 'drill',     icon: 'Target', label: 'Drill Sergeant', desc: 'No excuses, Extreme Ownership, blunt unfiltered truth' },
+  { id: 'therapist', icon: 'Heart', label: 'Therapist',      desc: 'Reflective, curious, explores the "why" behind your choices' },
 ];
 
 const TOPICS = [
-  { id: 'all',      label: 'All Areas', icon: '⚡' },
-  { id: 'projects', label: 'Projects',  icon: '🚀' },
-  { id: 'learning', label: 'Learning',  icon: '📚' },
-  { id: 'finance',  label: 'Finance',   icon: '💰' },
-  { id: 'health',   label: 'Health',    icon: '⚕️' },
+  { id: 'all',      label: 'All Areas', icon: 'Zap' },
+  { id: 'projects', label: 'Projects',  icon: 'Rocket' },
+  { id: 'learning', label: 'Learning',  icon: 'BookMarked' },
+  { id: 'finance',  label: 'Finance',   icon: 'DollarSign' },
+  { id: 'health',   label: 'Health',    icon: 'Stethoscope' },
 ];
 
 const CHECKIN_PROMPTS = [
@@ -99,7 +100,7 @@ export default function CoachAI() {
           <div>
             <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
             <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
-              {currentTone.icon} {currentTone.label} Mode
+              <Icon name={currentTone.icon} size={14} /> {currentTone.label} Mode
             </div>
             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 3 }}>{currentTone.desc}</div>
           </div>
@@ -124,7 +125,7 @@ export default function CoachAI() {
           {TOPICS.map(t => (
             <div key={t.id} onClick={() => setTopic(t.id)}
               style={{ flexShrink: 0, padding: '4px 11px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
-              {t.icon} {t.label}
+              <Icon name={t.icon} size={14} /> {t.label}
             </div>
           ))}
         </div>
@@ -138,7 +139,7 @@ export default function CoachAI() {
             {TONES.map(t => (
               <div key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); startNewSession(); }}
                 style={{ padding: '12px', background: tone === t.id ? ACCENT_BG : 'var(--surface)', border: `1px solid ${tone === t.id ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s', textAlign: 'center' }}>
-                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 5 }}>{t.icon}</div>
+                <Icon name={t.icon} size={24} />
                 <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
                 <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
               </div>
@@ -153,7 +154,7 @@ export default function CoachAI() {
 
         {messages.length === 0 && (
           <div style={{ maxWidth: 500, margin: '0 auto', padding: '24px 0 0', textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>{currentTone.icon}</div>
+            <div style={{ marginBottom: 12 }}><Icon name={currentTone.icon} size={28} /></div>
             <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{currentTone.label} Mode · {currentTopic.label}</div>
             <div style={{ fontSize: 11, color: 'var(--dim)', lineHeight: 1.75, marginBottom: 28 }}>{currentTone.desc}</div>
             <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Start with a check-in</div>
@@ -178,7 +179,7 @@ export default function CoachAI() {
               <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                   <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase' }}>
-                    {currentTone.icon} {currentTone.label} · {currentTopic.label}
+                    <Icon name={currentTone.icon} size={14} /> {currentTone.label} · {currentTopic.label}
                   </div>
                   <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}
                     style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
