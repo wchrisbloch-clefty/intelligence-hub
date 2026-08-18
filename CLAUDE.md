@@ -123,8 +123,12 @@ nobody; now they feed a shared graph and a shared card deck.
   with a *confidence trajectory*, derived from each concept's per-observation
   confidence history in the graph: current level, trend (sparkline), what moved
   it, review pressure (cards/reviews due), and a decaying flag when neglected
-  >21 days. User-definable via `aether_skills_v1`; module chips link back to
-  where the skill is built.
+  >21 days. User skills (`aether_skills_v1`) are **add / rename / archive** and
+  **map to one-or-more graph concepts** (`skillSetConcepts`); `lib/skills.js`
+  transforms are pure (list in → list out) and `Skills.jsx` persists them with
+  the awaited/revert contract. "What moved it" drills into `conceptFootprint`
+  (the shared ConnectedKnowledge panel). Module chips link back to where the
+  skill is built.
 - **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
   is appended to every prompt. "Generate Study Guide" runs `job:'reason'` at
   4k tokens for thesis → frameworks → worked example (in-lens) → application
