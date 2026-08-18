@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../App.jsx';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
+import { askPrefill } from '../lib/askContext.js';
 import { getFeed, relTime } from '../lib/adapters.js';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
@@ -128,7 +129,7 @@ export default function WhatsHappening() {
   // Item actions
   const dive = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source, module: 'feed' }); applyRoute?.({ route: 'deepdive', topic: it.title }); };
   const explore = (it) => { setChatPrefill(`Explore what connects to: "${it.title}" (${it.category}). Pull the related concepts from my knowledge graph and show me the threads.`); setChatOpen(true); };
-  const ask = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source, module: 'feed' }); setChatPrefill(`From ${it.source}: "${it.title}". What does this mean for me, and what's the decisive move?`); setChatOpen(true); };
+  const ask = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source, module: 'feed' }); setChatPrefill(askPrefill('feed', it)); setChatOpen(true); };
   const dismiss = (it) => persistDismissed([...dismissed, it.id]);
 
   const addSource = () => { const n = newSource.trim(); if (!n) return; persistSources([...sources, { id: 'src_' + Date.now().toString(36), name: n, category: filter === 'All' ? 'General' : filter, enabled: true }]); setNewSource(''); };
