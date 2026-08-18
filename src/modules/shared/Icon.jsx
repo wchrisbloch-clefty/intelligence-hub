@@ -16,6 +16,7 @@ import {
   PenSquare, Play, Plus, Presentation, Radio, RefreshCw, Rocket, Rows2, Rows3,
   Scale, Search, Settings2, Share2, Sparkles, Sprout, Stethoscope, StickyNote,
   Target, TrendingUp, TrendingDown, Trophy, Waves, X, Zap,
+  AlertTriangle, Archive, ArchiveRestore, Minus, Pencil,
 } from 'lucide-react';
 
 const REGISTRY = {
@@ -28,6 +29,7 @@ const REGISTRY = {
   PenSquare, Play, Plus, Presentation, Radio, RefreshCw, Rocket, Rows2, Rows3,
   Scale, Search, Settings2, Share2, Sparkles, Sprout, Stethoscope, StickyNote,
   Target, TrendingUp, TrendingDown, Trophy, Waves, X, Zap,
+  AlertTriangle, Archive, ArchiveRestore, Minus, Pencil,
 };
 
 const SIZES = { inline: 16, header: 20, nav: 24 };
