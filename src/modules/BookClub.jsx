@@ -5,7 +5,9 @@ import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { createCard } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
+import { recommendBooks } from '../lib/bookRecs.js';
 import AskChip from './shared/AskChip.jsx';
+import Icon from './shared/Icon.jsx';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
@@ -314,6 +316,36 @@ export default function BookClub() {
                 ↻ Restore default library
               </button>
             </div>
+
+            {/* What to read next — graph-driven, each rec states its reason */}
+            {(() => {
+              const recs = recommendBooks({ library: books, lens });
+              if (recs.length === 0) return null;
+              return (
+                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--rule)', borderRadius: 12, background: 'var(--surface)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Icon name="Sparkles" size={16} style={{ color: 'var(--text-tertiary)' }} />
+                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase' }}>What to read next · {LENSES.find(l => l.id === lens)?.label} lens</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                    {recs.map((r) => (
+                      <div key={r.title} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                          <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)', border: '1px solid var(--rule)', borderRadius: 3, padding: '1px 6px' }}>{r.signal}</span>
+                          <button onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author, type: r.type }])}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                            <Icon name="Plus" size={13} /> Add
+                          </button>
+                        </div>
+                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{r.title}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{r.author}</div>
+                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>{r.reason}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
 
             <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
               {filtered.length} Books · Click to Deep Dive

@@ -78,34 +78,53 @@ export const KNOWN_BOOKS = [
   { title: "Thinking Fast and Slow", author: "Daniel Kahneman", type: "systems", color: T.textSecondary },
 ];
 
+// Curated candidate pool for "What to read next" — single user, no corpus, so
+// recommendations are seeded here (tagged by concept + type + lens) and the
+// Phase 2 graph takes over as it fills. `companionOf` seeds Companion picks.
+export const BOOK_CANDIDATES = [
+  { title: "The Prize", author: "Daniel Yergin", type: "systems", concepts: ["energy", "geopolitics", "oil"], lens: "work", companionOf: ["The New Map"] },
+  { title: "The Power Law", author: "Sebastian Mallaby", type: "business", concepts: ["venture", "asymmetric bets", "power law"], lens: "work" },
+  { title: "The Almanack of Naval Ravikant", author: "Eric Jorgenson", type: "business", concepts: ["wealth", "leverage", "compounding"], lens: "both" },
+  { title: "Outlive", author: "Peter Attia", type: "stoic", concepts: ["longevity", "vo2max", "healthspan"], lens: "personal" },
+  { title: "The Psychology of Money", author: "Morgan Housel", type: "business", concepts: ["money habits", "compounding", "behavior"], lens: "both" },
+  { title: "Pitch Anything", author: "Oren Klaff", type: "negotiation", concepts: ["negotiation", "framing", "deals"], lens: "work", companionOf: ["Never Split the Difference"] },
+  { title: "The Score Takes Care of Itself", author: "Bill Walsh", type: "leadership", concepts: ["leadership", "standards", "systems"], lens: "work", companionOf: ["Extreme Ownership"] },
+  { title: "Endure", author: "Alex Hutchinson", type: "stoic", concepts: ["endurance", "vo2max", "mental toughness"], lens: "personal", companionOf: ["Fortitude"] },
+  { title: "The Cold Start Problem", author: "Andrew Chen", type: "business", concepts: ["networks", "tipping point", "growth"], lens: "work", companionOf: ["The Tipping Point"] },
+  { title: "Same as Ever", author: "Morgan Housel", type: "systems", concepts: ["behavior", "risk", "long game"], lens: "both" },
+];
+
 export const TYPE_META = {
-  leadership: { icon: "🎯", label: "Leadership", color: T.textSecondary },
-  systems:    { icon: "⚙️", label: "Systems/Macro", color: T.textSecondary },
-  business:   { icon: "📈", label: "Business", color: T.textSecondary },
-  negotiation:{ icon: "🤝", label: "Negotiation", color: T.textSecondary },
-  memoir:     { icon: "📖", label: "Memoir", color: T.textSecondary },
-  stoic:      { icon: "🪨", label: "Stoic/Character", color: T.textSecondary },
-  fiction:    { icon: "🎭", label: "Fiction", color: T.textSecondary },
-  other:      { icon: "📚", label: "General", color: T.textSecondary },
+  leadership: { icon: "Target", label: "Leadership", color: T.textSecondary },
+  systems:    { icon: "Cog", label: "Systems/Macro", color: T.textSecondary },
+  business:   { icon: "TrendingUp", label: "Business", color: T.textSecondary },
+  negotiation:{ icon: "Handshake", label: "Negotiation", color: T.textSecondary },
+  memoir:     { icon: "BookOpen", label: "Memoir", color: T.textSecondary },
+  stoic:      { icon: "Mountain", label: "Stoic/Character", color: T.textSecondary },
+  fiction:    { icon: "Drama", label: "Fiction", color: T.textSecondary },
+  other:      { icon: "BookMarked", label: "General", color: T.textSecondary },
 };
 
 export const ENTRY_MODES = [
-  { id: "book",     icon: "📚", label: "Book",          desc: "Full package, read-along, reference, or open discussion.", color: T.textSecondary },
-  { id: "document", icon: "📄", label: "Document",      desc: "PDF, Word, Excel, PowerPoint, image, or web link.",       color: T.textSecondary },
-  { id: "topic",    icon: "🎓", label: "Topic / Course", desc: "Name any subject. I build a structured course.",          color: T.textSecondary },
-  { id: "youtube",  icon: "▶️", label: "YouTube",       desc: "Paste a URL. I extract the transcript and teach you.",    color: T.textSecondary },
+  { id: "book",     icon: "BookMarked", label: "Book",          desc: "Full package, read-along, reference, or open discussion.", color: T.textSecondary },
+  { id: "document", icon: "FileText", label: "Document",      desc: "PDF, Word, Excel, PowerPoint, image, or web link.",       color: T.textSecondary },
+  { id: "topic",    icon: "GraduationCap", label: "Topic / Course", desc: "Name any subject. I build a structured course.",          color: T.textSecondary },
+  { id: "youtube",  icon: "Play", label: "YouTube",       desc: "Paste a URL. I extract the transcript and teach you.",    color: T.textSecondary },
 ];
 
 export const SESSION_MODES = [
-  { id: "package",   icon: "📦", label: "Full Package",   desc: "Complete intelligence brief. Format negotiated first." },
-  { id: "readalong", icon: "📍", label: "Read Along",     desc: "Mid-book. I pre-map everything, work section by section." },
-  { id: "reference", icon: "🔍", label: "Deep Reference", desc: "Master-expert depth on specific concepts or frameworks." },
-  { id: "socratic",  icon: "🧠", label: "Socratic Mode",  desc: "I quiz you. You answer. I correct and build. Active recall." },
-  { id: "chat",      icon: "💬", label: "Open Discussion", desc: "Explore ideas, make connections. Most flexible." },
+  { id: "package",   icon: "Package", label: "Full Package",   desc: "Complete intelligence brief. Format negotiated first." },
+  { id: "readalong", icon: "MapPin", label: "Read Along",     desc: "Mid-book. I pre-map everything, work section by section." },
+  { id: "reference", icon: "Search", label: "Deep Reference", desc: "Master-expert depth on specific concepts or frameworks." },
+  { id: "socratic",  icon: "Brain", label: "Socratic Mode",  desc: "I quiz you. You answer. I correct and build. Active recall." },
+  { id: "chat",      icon: "MessageSquare", label: "Open Discussion", desc: "Explore ideas, make connections. Most flexible." },
 ];
 
 export const NAV_ITEMS = [
   { id: "home",      label: "Home",       desc: "Dashboard & daily brief",   accent: T.accent },
+  { id: "feed",      label: "What's Happening", desc: "What changed since you looked", accent: T.accent },
+  { id: "notes",     label: "Notes",      desc: "Saved thoughts with provenance", accent: T.accent },
+  { id: "recaps",    label: "Recaps",     desc: "Weekly & monthly reviews",  accent: T.accent },
   { id: "learn",     label: "Learn",      desc: "AI-powered study sessions", accent: T.accent },
   { id: "academy",   label: "Academy",    desc: "Field manuals & drills",    accent: T.accent },
   { id: "ladder",    label: "Ladder",     desc: "Structured learning path",  accent: T.accent },
@@ -134,12 +153,13 @@ export const NAV_ITEMS = [
 // is derived (see containerOfMode). Coach is intentionally absent — it stops
 // being a tab and becomes the global Ask layer.
 export const CONTAINERS = [
-  { id: "home",     label: "Home",     verb: "Orient",      modes: ["home"] },
-  { id: "learn",    label: "Learn",    verb: "Absorb",      modes: ["learn", "academy", "ladder", "books", "deepdive", "ted", "podcast", "translate", "quiz"] },
-  { id: "research", label: "Research", verb: "Investigate", modes: ["research", "inbox"] },
-  { id: "skills",   label: "Skills",   verb: "Practice",    modes: ["skills", "vault", "growth"] },
-  { id: "projects", label: "Projects", verb: "Execute",     modes: ["projects", "decisions"] },
-  { id: "studio",   label: "Studio",   verb: "Produce",     modes: ["studio"] },
+  { id: "home",     label: "Home",           verb: "Orient",      modes: ["home"] },
+  { id: "feed",     label: "What's Happening", verb: "Track",     modes: ["feed"] },
+  { id: "learn",    label: "Learn",          verb: "Absorb",      modes: ["learn", "academy", "ladder", "books", "deepdive", "ted", "podcast", "translate", "quiz"] },
+  { id: "research", label: "Research",       verb: "Investigate", modes: ["research", "notes", "inbox"] },
+  { id: "skills",   label: "Skills",         verb: "Practice",    modes: ["skills", "recaps", "vault", "growth"] },
+  { id: "projects", label: "Projects",       verb: "Execute",     modes: ["projects", "decisions"] },
+  { id: "studio",   label: "Studio",         verb: "Produce",     modes: ["studio"] },
 ];
 
 // Mobile bottom bar shows five; the sixth+ live under "More".
@@ -154,19 +174,19 @@ export const containerOfMode = (modeId) =>
   CONTAINERS.find((c) => c.modes.includes(modeId))?.id || "home";
 
 export const CHAT_MODES = [
-  { id: "synthesis", label: "Synthesis",       icon: "⚡", desc: "Connect ideas across everything you know" },
-  { id: "socratic",  label: "Socratic",        icon: "🧠", desc: "Question-driven active recall" },
-  { id: "reference", label: "Reference",       icon: "🔍", desc: "Master-expert depth on demand" },
-  { id: "advisor",   label: "Project Advisor", icon: "🚀", desc: "Apply your knowledge to active projects" },
-  { id: "truth",     label: "Truth Seeker",    icon: "🎯", desc: "Cut through noise, find the signal" },
+  { id: "synthesis", label: "Synthesis",       icon: "Zap", desc: "Connect ideas across everything you know" },
+  { id: "socratic",  label: "Socratic",        icon: "Brain", desc: "Question-driven active recall" },
+  { id: "reference", label: "Reference",       icon: "Search", desc: "Master-expert depth on demand" },
+  { id: "advisor",   label: "Project Advisor", icon: "Rocket", desc: "Apply your knowledge to active projects" },
+  { id: "truth",     label: "Truth Seeker",    icon: "Target", desc: "Cut through noise, find the signal" },
 ];
 
 export const PROJECT_CATEGORIES = {
-  finance:  { label: "Finance",  color: T.textSecondary, icon: "💰" },
-  business: { label: "Business", color: T.textSecondary, icon: "📊" },
-  health:   { label: "Health",   color: T.textSecondary, icon: "⚡" },
-  learning: { label: "Learning", color: T.textSecondary, icon: "📚" },
-  other:    { label: "Other",    color: T.textSecondary, icon: "🎯" },
+  finance:  { label: "Finance",  color: T.textSecondary, icon: "DollarSign" },
+  business: { label: "Business", color: T.textSecondary, icon: "BarChart3" },
+  health:   { label: "Health",   color: T.textSecondary, icon: "Zap" },
+  learning: { label: "Learning", color: T.textSecondary, icon: "BookMarked" },
+  other:    { label: "Other",    color: T.textSecondary, icon: "Target" },
 };
 
 export const PROJECT_STATUSES = [
@@ -240,11 +260,11 @@ export const LANGUAGES = [
 ];
 
 export const TRANSLATION_MODES = [
-  { id: 'standard',  label: 'Standard',   icon: '🌐', desc: 'Natural, fluent translation' },
-  { id: 'formal',    label: 'Formal',     icon: '👔', desc: 'Business / professional register' },
-  { id: 'casual',    label: 'Casual',     icon: '💬', desc: 'Everyday conversational tone' },
-  { id: 'literal',   label: 'Literal',    icon: '📖', desc: 'Word-for-word (for language study)' },
-  { id: 'localized', label: 'Localized',  icon: '🏘', desc: 'Local idioms & cultural expressions' },
+  { id: 'standard',  label: 'Standard',   icon: "Globe", desc: 'Natural, fluent translation' },
+  { id: 'formal',    label: 'Formal',     icon: "Briefcase", desc: 'Business / professional register' },
+  { id: 'casual',    label: 'Casual',     icon: "MessageSquare", desc: 'Everyday conversational tone' },
+  { id: 'literal',   label: 'Literal',    icon: "BookOpen", desc: 'Word-for-word (for language study)' },
+  { id: 'localized', label: 'Localized',  icon: "Building2", desc: 'Local idioms & cultural expressions' },
 ];
 export const STORAGE_KEY  = "aether_hub_v1";
 export const GRAPH_KEY    = "aether_graph_v1";
@@ -253,22 +273,22 @@ export const NOTES_KEY    = "aether_notes_v1";
 export const RESEARCH_KEY = "aether_research_v1";
 
 export const CONTENT_TYPES = [
-  { id: 'nonfiction',  label: 'Non-Fiction / Business', icon: '📊', color: T.textSecondary, examples: 'Business, finance, science, self-help' },
-  { id: 'fiction',     label: 'Literary Fiction',       icon: '📖', color: T.textSecondary, examples: 'Novels, short stories, literary works' },
-  { id: 'scifi',       label: 'Sci-Fi / Fantasy',       icon: '🚀', color: T.textSecondary, examples: 'Science fiction, fantasy, speculative' },
-  { id: 'history',     label: 'History / Biography',    icon: '🏛', color: T.textSecondary, examples: 'History, biography, memoir' },
-  { id: 'academic',    label: 'Academic / Textbook',    icon: '🎓', color: T.textSecondary, examples: 'Textbooks, research papers, higher ed' },
-  { id: 'reference',   label: 'Reference / Technical',  icon: '📋', color: T.textSecondary, examples: 'Legal, medical, technical manuals' },
-  { id: 'training',    label: 'Training / Professional',icon: '💼', color: T.textSecondary, examples: 'Corporate training, certifications' },
-  { id: 'philosophy',  label: 'Philosophy / Theory',    icon: '🧠', color: T.textSecondary, examples: 'Philosophy, critical theory, ethics' },
+  { id: 'nonfiction',  label: 'Non-Fiction / Business', icon: "BarChart3", color: T.textSecondary, examples: 'Business, finance, science, self-help' },
+  { id: 'fiction',     label: 'Literary Fiction',       icon: "BookOpen", color: T.textSecondary, examples: 'Novels, short stories, literary works' },
+  { id: 'scifi',       label: 'Sci-Fi / Fantasy',       icon: "Rocket", color: T.textSecondary, examples: 'Science fiction, fantasy, speculative' },
+  { id: 'history',     label: 'History / Biography',    icon: "Landmark", color: T.textSecondary, examples: 'History, biography, memoir' },
+  { id: 'academic',    label: 'Academic / Textbook',    icon: "GraduationCap", color: T.textSecondary, examples: 'Textbooks, research papers, higher ed' },
+  { id: 'reference',   label: 'Reference / Technical',  icon: "ClipboardList", color: T.textSecondary, examples: 'Legal, medical, technical manuals' },
+  { id: 'training',    label: 'Training / Professional',icon: "Briefcase", color: T.textSecondary, examples: 'Corporate training, certifications' },
+  { id: 'philosophy',  label: 'Philosophy / Theory',    icon: "Brain", color: T.textSecondary, examples: 'Philosophy, critical theory, ethics' },
 ];
 
 export const READER_GOALS = [
-  { id: 'master',  label: 'Master Deeply',    icon: '🎯', desc: 'Full comprehension and long-term retention' },
-  { id: 'exam',    label: 'Exam / Cert Prep', icon: '📝', desc: 'Test readiness, key concepts, likely questions' },
-  { id: 'apply',   label: 'Apply to Work',    icon: '⚡', desc: 'Extract frameworks for immediate application' },
-  { id: 'discuss', label: 'Discuss & Explore',icon: '💬', desc: 'Think out loud, debate, explore ideas' },
-  { id: 'quick',   label: 'Quick Take',       icon: '🔍', desc: 'Core ideas fast, no deep dive needed' },
+  { id: 'master',  label: 'Master Deeply',    icon: "Target", desc: 'Full comprehension and long-term retention' },
+  { id: 'exam',    label: 'Exam / Cert Prep', icon: "PenSquare", desc: 'Test readiness, key concepts, likely questions' },
+  { id: 'apply',   label: 'Apply to Work',    icon: "Zap", desc: 'Extract frameworks for immediate application' },
+  { id: 'discuss', label: 'Discuss & Explore',icon: "MessageSquare", desc: 'Think out loud, debate, explore ideas' },
+  { id: 'quick',   label: 'Quick Take',       icon: "Search", desc: 'Core ideas fast, no deep dive needed' },
 ];
 
 export const DEPTH_LEVELS = [
@@ -279,10 +299,10 @@ export const DEPTH_LEVELS = [
 ];
 
 export const READING_PROGRESS_OPTIONS = [
-  { id: 'start',     label: 'Just Starting',    icon: '📖' },
-  { id: 'mid',       label: 'Mid-Way',          icon: '🔖' },
-  { id: 'done',      label: 'Finished',         icon: '✓' },
-  { id: 'reference', label: 'Reference Lookup', icon: '🔍' },
+  { id: 'start',     label: 'Just Starting',    icon: "BookOpen" },
+  { id: 'mid',       label: 'Mid-Way',          icon: "Bookmark" },
+  { id: 'done',      label: 'Finished',         icon: "Check" },
+  { id: 'reference', label: 'Reference Lookup', icon: "Search" },
 ];
 
 // Theme tokens now live in index.html (:root / [data-theme="dark"]) and are

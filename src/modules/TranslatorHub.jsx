@@ -1,6 +1,7 @@
 import { T, withAlpha } from '../theme';
 import { useState, useRef } from 'react';
 import { useApp } from '../App.jsx';
+import Icon from './shared/Icon.jsx';
 import { callClaude } from '../utils.js';
 import { LANGUAGES, TRANSLATION_MODES } from '../constants.js';
 import MD from './shared/MD.jsx';
@@ -202,7 +203,7 @@ Provide only the translation. No preamble, no explanation unless a cultural note
           {TRANSLATION_MODES.map(m => (
             <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
               style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent,#D9A441)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
-              {m.icon} {m.label}
+              <Icon name={m.icon} size={14} /> {m.label}
             </button>
           ))}
         </div>

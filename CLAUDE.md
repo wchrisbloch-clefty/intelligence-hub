@@ -32,6 +32,41 @@ deployed on Vercel. Single user (CB).
   tokens. Eyebrow labels (uppercase + letter-spaced kickers) are the one thing
   allowed below 13px and are left as small literals.
 
+## Home feed rebuild + What's Happening + Notes (later phase)
+
+- **Home is a renderer over a section registry** (`src/modules/home/sections.js`
+  → `SECTIONS`). Each section (`DailyBrief`, `OpportunityCards`, `SignalFeed`,
+  `ActiveProjects`, `SkillSnapshot`, `ConnectedKnowledge`) is a self-contained
+  file in `src/modules/home/`. `HomeDashboard.jsx` renders them with per-section
+  **collapse + Customize** (reorder via up/down, show/hide, reset), persisted to
+  **`aether_home_layout`** through awaited `writeThrough`. The mastery radar is
+  gone from Home (lives in GrowthTools); **RecapCard moved to a `recaps` mode in
+  the Skills container** (`Recaps.jsx`, still reads `weekly_recap_latest` /
+  `monthly_review_latest`).
+- **7th container: What's Happening** (`feed`, `WhatsHappening.jsx`) — a "what
+  changed" surface: WHAT CHANGED header + live/cached state + Work/Personal/Both
+  lens, a `DISCOVERY` panel ("you may be missing this"), filter chips + density
+  toggle, a tiered feed (monogram, `--tier-*` chip — never engagement-derived —
+  4 actions: Dive deeper / Explore / Ask / Dismiss), a TRENDING NOW + TODAY'S
+  TOPICS rail (below the feed on mobile), user-managed sources
+  (**`aether_sources_v1`**), and a **`aether_feed_seen`** watermark for
+  "N new since last visit". Kept/dived items `logConcept`. Ships curated defaults
+  (no news backend); live adapter signals layer on top.
+- **Notes** (`notes` mode in Research, `Notes.jsx`) — `aether_notes_v1`, every
+  note keeps **provenance** (source url/title/tier), client-side full-text
+  search, `logConcept` on save (so notes show in Connected Knowledge), and
+  promote-to-flashcard via `createCard`.
+- **Book recs** — `src/lib/bookRecs.js` `recommendBooks({library,lens})` scores a
+  curated pool (`BOOK_CANDIDATES` in constants) against the graph into four
+  signal types (Adjacent / Gap / Companion / Lens), each with a one-line reason;
+  never renders a reasonless rec. Surfaced in BookClub's library.
+- **Icons + color restraint** — `src/modules/shared/Icon.jsx` renders a
+  lucide-react icon by **name** (explicit registry, never `import *`, or the
+  bundle balloons) at one size scale (16/20/24), inheriting `currentColor`. All
+  49 emoji `icon:` fields in `constants.js` are lucide names. Blue is reserved
+  for actions and current state; section headers, card borders, and eyebrows use
+  `--text-tertiary` / `--rule`.
+
 ## Navigation IA — 6 containers, modes inside (Phase 1)
 
 The 18 modules collapse into **6 verb-grouped containers** (`CONTAINERS` in

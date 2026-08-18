@@ -6,6 +6,7 @@ import { buildSystem, processFiles } from '../utils.js';
 import useChatThread from '../hooks/useChatThread.js';
 import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
+import Icon from './shared/Icon.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
@@ -88,7 +89,7 @@ export default function ChatPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
-            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>{mode?.icon} {mode?.label}</div>
+            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
@@ -100,7 +101,7 @@ export default function ChatPanel() {
           {CHAT_MODES.map(m => (
             <div key={m.id} onClick={() => setChatMode(m.id)} title={m.desc}
               style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? T.accent : 'var(--border)'}`, color: chatMode === m.id ? T.accent : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? withAlpha(T.accent, 6) : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
-              {m.icon} {m.label}
+              <Icon name={m.icon} size={13} /> {m.label}
             </div>
           ))}
         </div>

@@ -9,6 +9,9 @@ import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
 import { SideNav, BottomNav, ModeChips } from './modules/shared/ContainerNav.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
+import WhatsHappening from './modules/WhatsHappening.jsx';
+import Notes from './modules/Notes.jsx';
+import Recaps from './modules/Recaps.jsx';
 import LearningCenter from './modules/LearningCenter.jsx';
 import LearningLadder from './modules/LearningLadder.jsx';
 import Academy from './modules/Academy.jsx';
@@ -139,6 +142,9 @@ export default function App() {
 
   const modules = {
     home:      <HomeDashboard />,
+    feed:      <WhatsHappening />,
+    notes:     <Notes />,
+    recaps:    <Recaps />,
     learn:     <LearningCenter />,
     academy:   <Academy />,
     ladder:    <LearningLadder />,
