@@ -141,8 +141,11 @@ nobody; now they feed a shared graph and a shared card deck.
   trailing `---CARDS---` block of **8–10** self-quiz cards written to the Vault
   via `createCard`. **Applied Scenarios are grounded in CB's real context** —
   `buildStudyContext()` reads active projects (`aether_projects_v1`), tracked
-  skills (`buildSkills`), and recent deep dives (`loadIndex`) from the graph and
-  injects them so scenarios are about his actual work/life, never generic.
+  skills (`buildSkills`), recent deep dives (`loadIndex`), and the **top concepts
+  by observation count straight from the graph** (`allConcepts`) — the last turns
+  "you have a real-estate project" into "you've been going deep on demand charges
+  and 4CP" — and injects them so scenarios are about his actual work/life, never
+  generic.
   **Guides persist to `aether_study_guides_v1`** (keyed by book id,
   awaited/revert via `persistGuide`, hydrated from server) so a guide is
   regenerable but never lost on refresh — a "Saved study guide · <lens> · <date>
