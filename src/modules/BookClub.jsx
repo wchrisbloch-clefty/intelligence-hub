@@ -6,14 +6,17 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { createCard } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import { recommendBooks } from '../lib/bookRecs.js';
+import { buildSkills, levelFor } from '../lib/skills.js';
+import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
-import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META } from '../constants.js';
+import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META, PROJECTS_KEY } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
 const SEEDED_KEY   = 'aether_bookclub_seeded';
 const LENS_KEY     = 'aether_bookclub_lens';
+const STUDY_GUIDES_KEY = 'aether_study_guides_v1';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -63,21 +66,47 @@ const LENSES = [
 ];
 const lensClauseOf = (id) => LENSES.find((l) => l.id === id)?.clause || LENSES[2].clause;
 
-const buildGuidePrompt = (b, lensClause) => `Produce a complete STUDY GUIDE for "${b.title}" by ${b.author}, for CB (Houston BD professional; passive-income + longevity goals).
+// The study guide is grounded in CB's ACTUAL context — active projects, tracked
+// skills, and recent deep dives, pulled from the graph — so the Applied Scenarios
+// are about his real work and life, not generic illustrations. Returns '' when
+// nothing is tracked yet (the prompt then falls back to his known world).
+function buildStudyContext() {
+  const parts = [];
+  try {
+    const projects = (readLocal(PROJECTS_KEY, []) || [])
+      .filter((p) => p && ['active', 'planning'].includes(p.status))
+      .slice(0, 5)
+      .map((p) => `- ${p.title}${p.category ? ` (${p.category})` : ''}${p.description ? `: ${String(p.description).replace(/\s+/g, ' ').slice(0, 90)}` : ''}`);
+    if (projects.length) parts.push(`Active projects:\n${projects.join('\n')}`);
+  } catch {}
+  try {
+    const skills = buildSkills().filter((s) => s.confidence != null).slice(0, 6)
+      .map((s) => `- ${s.name} (${levelFor(s.confidence).label}, trend ${s.trend})`);
+    if (skills.length) parts.push(`Tracked skills:\n${skills.join('\n')}`);
+  } catch {}
+  try {
+    const dives = (loadDiveIndex() || []).slice(0, 5)
+      .map((d) => `- ${d.topic}${d.category ? ` (${d.category})` : ''}`);
+    if (dives.length) parts.push(`Recent deep dives:\n${dives.join('\n')}`);
+  } catch {}
+  return parts.join('\n\n');
+}
 
+const buildGuidePrompt = (b, lensClause, context) => `Produce a complete STUDY GUIDE for "${b.title}" by ${b.author}, for CB (Houston BD professional; passive-income + longevity goals).
+${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios. A generic example is a failure; every scenario must be about his real work or life:\n${context}\n` : ''}
 Use these exact ## sections in order:
 ## Core Thesis
-One tight paragraph — the book's central argument.
+The book's central argument in plain language — no jargon, one tight paragraph.
 ## Key Frameworks
-The 5 most important frameworks or mental models. Each: name, one-line definition, why it matters to CB.
-## Worked Example
-One concrete, fully worked example applying the book's central framework. ${lensClause}
+The 5 most important frameworks or mental models. For EACH: the name, a clear explanation, and one fully worked example. ${lensClause}
+## Applied Scenarios
+3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the project / skill / topic and show exactly how a framework from this book changes what he does next.
 ## Application Prompts
-6 sharp prompts CB can act on this week.
+5 concrete things CB can act on THIS WEEK.
 ## Field Summary
-A one-page, scannable field summary — the whole book in bullets he can reread in two minutes.
+A one-page, scannable field summary — the whole book in bullets he can reread before a meeting in two minutes.
 
-Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of exactly 6 self-quiz flashcards: [{"front":"question","back":"answer"}]. No prose after the marker.`;
+Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of 8 to 10 self-quiz flashcards: [{"front":"question","back":"answer"}]. No prose after the marker.`;
 
 // Pull the framework NAMES out of the guide's "## Key Frameworks" section so each
 // one becomes its own concept in the graph, linked to the book by shared source.
@@ -116,6 +145,11 @@ export default function BookClub() {
   const [lensByBook, setLensByBook] = useState(() => readLocal(LENS_KEY, {}));
   const [isGuide, setIsGuide] = useState(false);
   const [guideCards, setGuideCards] = useState(0);
+  // Generated study guides, keyed by book id, so a guide is never lost on refresh
+  // (regenerable, but persisted). { [bookId]: { bookId, bookTitle, lens, provider, body, cards, createdAt } }
+  const [guides, setGuides] = useState(() => readLocal(STUDY_GUIDES_KEY, {}));
+  const [guideErr, setGuideErr] = useState('');
+  const [guideLens, setGuideLens] = useState('both'); // lens the displayed guide was generated with
 
   const [tab,          setTab]          = useState('library'); // library | add | dive
   const [search,       setSearch]       = useState('');
@@ -161,9 +195,11 @@ export default function BookClub() {
         writeThrough(SEEDED_KEY, true);
       }
       if (!cancelled) setBooks(lib);
-      // Server copy of the per-book lens map is authoritative when present.
-      const remoteLens = await hydrate(LENS_KEY);
+      // Server copies of the per-book lens map + saved study guides are
+      // authoritative when present (cross-device).
+      const [remoteLens, remoteGuides] = await Promise.all([hydrate(LENS_KEY), hydrate(STUDY_GUIDES_KEY)]);
       if (!cancelled && remoteLens && typeof remoteLens === 'object') setLensByBook(remoteLens);
+      if (!cancelled && remoteGuides && typeof remoteGuides === 'object') setGuides(remoteGuides);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -275,17 +311,21 @@ export default function BookClub() {
   // guide is downloadable.
   const generateGuide = async () => {
     if (!selectedBook) return;
-    setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0);
+    setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens);
+    let provider = '';
     try {
       const reply = await callClaude({
         system: CB_LEARNING_SPINE,
-        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens)) }],
-        maxTokens: 4000,
+        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), buildStudyContext()) }],
+        // High ceiling — a real six-section guide plus 8–10 cards. The old 1500
+        // cap is why this produced stubs.
+        maxTokens: 6000,
         job: 'reason',
-        onProvider: setResultProvider,
+        onProvider: (p) => { provider = p; setResultProvider(p); },
       });
-      const [body, cardsRaw] = reply.split('---CARDS---');
-      setResult(body.trim());
+      const [rawBody, cardsRaw] = reply.split('---CARDS---');
+      const body = rawBody.trim();
+      setResult(body);
       let added = 0;
       if (cardsRaw) {
         try {
@@ -294,6 +334,9 @@ export default function BookClub() {
         } catch { /* no cards block — the guide still stands */ }
       }
       setGuideCards(added);
+      // Persist the guide so it survives a refresh (regenerable, never lost).
+      // Awaited/revert: a failed on-device write surfaces an error, doesn't vanish.
+      await persistGuide({ bookId: selectedBook.id, bookTitle: selectedBook.title, lens, provider, body, cards: added, createdAt: Date.now() });
       logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', confidence: 6, refs: selectedBook.author ? [selectedBook.author] : [] });
       // Each framework the guide names becomes its own concept, sharing the book
       // as source so they interlink and surface in Connected Knowledge. Awaited
@@ -305,6 +348,25 @@ export default function BookClub() {
       setResult('Unable to generate — check connection and try again.');
     }
     setLoading(false);
+  };
+
+  // Awaited/revert persistence for the study-guide map. Keeps the optimistic
+  // local write; reverts and reports if the on-device write fails.
+  const persistGuide = async (guide) => {
+    const prev = guides;
+    const next = { ...guides, [guide.bookId]: guide };
+    setGuides(next);
+    const r = await writeThrough(STUDY_GUIDES_KEY, next);
+    if (!r.localOk) { setGuides(prev); setGuideErr('Could not save the study guide on-device — it was not persisted.'); return false; }
+    setGuideErr('');
+    return true;
+  };
+
+  // Load a previously saved guide back into the reader without regenerating.
+  const savedGuide = selectedBook ? guides[selectedBook.id] : null;
+  const viewSavedGuide = () => {
+    if (!savedGuide) return;
+    setMode('guide'); setIsGuide(true); setResult(savedGuide.body); setResultProvider(savedGuide.provider || ''); setGuideCards(savedGuide.cards || 0); setVaulted(false); setGuideErr(''); setGuideLens(savedGuide.lens || 'both');
   };
 
   const sendGuideToStudio = () => {
@@ -539,9 +601,28 @@ export default function BookClub() {
                   </div>
                   <button onClick={generateGuide} disabled={loading}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: 'none', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 40 }}>
-                    📘 Generate Study Guide
+                    <Icon name="BookOpen" size={14} /> {savedGuide ? 'Regenerate Study Guide' : 'Generate Study Guide'}
                   </button>
                 </div>
+
+                {/* A saved guide is one click away — never lost on refresh. */}
+                {savedGuide && !(isGuide && result) && (
+                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '10px 14px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 10 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+                      <Icon name="BookOpen" size={14} style={{ color: T.accent }} />
+                      Saved study guide · {LENSES.find((l) => l.id === savedGuide.lens)?.label || 'Both'} lens · {new Date(savedGuide.createdAt).toLocaleDateString()}
+                    </span>
+                    <button onClick={viewSavedGuide}
+                      style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: 'transparent', border: `1px solid ${T.accent}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                      View guide
+                    </button>
+                  </div>
+                )}
+                {guideErr && (
+                  <div style={{ marginBottom: 16, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
+                    ⚠ {guideErr}
+                  </div>
+                )}
 
                 {/* Study mode grid */}
                 <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Choose Study Mode — click any to generate instantly</div>
@@ -556,13 +637,15 @@ export default function BookClub() {
                   ))}
                 </div>
 
-                <button onClick={handleDeepDive} disabled={loading}
-                  style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  {loading
-                    ? 'Generating…'
-                    : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
-                  }
-                </button>
+                {!isGuide && (
+                  <button onClick={handleDeepDive} disabled={loading}
+                    style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {loading
+                      ? 'Generating…'
+                      : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label || 'Overview'} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
+                    }
+                  </button>
+                )}
 
                 {loading && <ThinkingDots color={T.accent} />}
 
@@ -571,7 +654,7 @@ export default function BookClub() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isGuide ? <><Icon name="BookOpen" size={12} /> Study Guide · {LENSES.find(l => l.id === lens)?.label} lens</> : <><Icon name={STUDY_MODES.find(m => m.id === mode)?.icon} size={12} /> {STUDY_MODES.find(m => m.id === mode)?.label}</>}</span>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isGuide ? <><Icon name="BookOpen" size={12} /> Study Guide · {LENSES.find(l => l.id === guideLens)?.label} lens</> : <><Icon name={STUDY_MODES.find(m => m.id === mode)?.icon} size={12} /> {STUDY_MODES.find(m => m.id === mode)?.label}</>}</span>
                         </div>
                         <ProviderTag provider={resultProvider} />
                       </div>
