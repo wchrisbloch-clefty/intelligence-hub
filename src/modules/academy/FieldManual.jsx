@@ -226,6 +226,18 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
   const [drill, setDrill] = useState(false);
   const [sent, setSent] = useState(false);
 
+  // Feed the graph per CONCEPT (source = this pack) so each tool becomes its own
+  // trajectory in Skills — even on a read without a quiz. Guarded on level.concept
+  // so packs that don't name one (e.g. sofc-powerdeal) are unaffected. Fires once
+  // per level open.
+  useEffect(() => {
+    if (!level.concept) return;
+    (async () => {
+      const { graph: g } = await logConcept({ topic: level.concept, source: ladder.title, module: 'academy' });
+      if (g) setGraph?.(g);
+    })();
+  }, [level.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const sendToVault = () => {
     // Route through the shared card pipeline so cards dedupe by front and carry
     // provenance (module + topic) back to this pack.
@@ -453,22 +465,32 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
   const submit = async () => {
     setSubmitted(true);
     const missed = level.quiz.filter((q, i) => answers[i] !== q.a).map((q) => q.q.replace(/<[^>]+>/g, '').slice(0, 40));
+    const score10 = Math.round((correct / total) * 10);
+    // Session logging is telemetry — isolate it so a logging failure never drops
+    // the graph writes or the miss-cards below (they are the actual learning loop).
     try {
       await logSession(
-        `${ladder.title} — ${level.title}`, 'academy', level.minutes,
-        Math.round((correct / total) * 10),
+        `${ladder.title} — ${level.title}`, 'academy', level.minutes, score10,
         `${correct}/${total}${missed.length ? ' · missed: ' + missed.join(', ') : ''}`,
       );
+    } catch { /* telemetry is best-effort */ }
+    try {
       // Connect this pack into the graph, and turn every miss into a review
       // card — a miss is signal, so it should resurface.
-      const { graph: g } = await logConcept({ topic: ladder.title, source: ladder.title, module: 'academy', confidence: Math.round((correct / total) * 10) });
+      const { graph: g } = await logConcept({ topic: ladder.title, source: ladder.title, module: 'academy', confidence: score10 });
       if (g) setGraph(g);
+      // Per-concept confidence trajectory (source = pack, so it interlinks) —
+      // awaited after the ladder write so the read-modify-writes don't clobber.
+      if (level.concept) {
+        const { graph: g2 } = await logConcept({ topic: level.concept, source: ladder.title, module: 'academy', confidence: score10 });
+        if (g2) setGraph(g2);
+      }
       level.quiz.forEach((q, i) => {
         if (answers[i] !== q.a) {
           createCard({
             front: q.q.replace(/<[^>]+>/g, ''),
             back: `${q.opts[q.a]}${q.e ? ' — ' + q.e : ''}`.replace(/<[^>]+>/g, ''),
-            source: ladder.title, module: 'academy', topic: ladder.title,
+            source: ladder.title, module: 'academy', topic: level.concept || ladder.title,
           });
         }
       });
