@@ -133,15 +133,28 @@ nobody; now they feed a shared graph and a shared card deck.
   is appended to every prompt. The lens is **remembered per book** (`lensByBook`
   map on **`aether_bookclub_lens`**, awaited/revert write) so a work-framed read
   of one title doesn't reset the personal framing of another; `lens` is derived
-  from `selectedBook` (default `both`). "Generate Study Guide" runs `job:'reason'`
-  at 4k tokens for thesis → frameworks → worked example (in-lens) → application
-  prompts → field summary, parses a trailing `---CARDS---` JSON block into Vault
-  cards, and "Send to Studio" hands the guide to Creation Studio (new `guide`
-  source kind) to format + download. On generation, `extractFrameworks` pulls
-  each framework NAME out of the guide's `## Key Frameworks` section and
-  **`logConcept`s each one** (source = book title, so they interlink with the
-  book concept and surface in Connected Knowledge) — awaited in sequence so the
-  read-modify-writes don't clobber.
+  from `selectedBook` (default `both`). **"Generate Study Guide"** composes ONE
+  coherent artifact (it doesn't replace the six study modes — it composes from
+  them): `job:'reason'` at **6k tokens** (the old 1.5k ceiling is why this used
+  to stub) for **Core Thesis → Key Frameworks (each with a worked example in the
+  lens) → Applied Scenarios → Application Prompts → Field Summary**, then a
+  trailing `---CARDS---` block of **8–10** self-quiz cards written to the Vault
+  via `createCard`. **Applied Scenarios are grounded in CB's real context** —
+  `buildStudyContext()` reads active projects (`aether_projects_v1`), tracked
+  skills (`buildSkills`), and recent deep dives (`loadIndex`) from the graph and
+  injects them so scenarios are about his actual work/life, never generic.
+  **Guides persist to `aether_study_guides_v1`** (keyed by book id,
+  awaited/revert via `persistGuide`, hydrated from server) so a guide is
+  regenerable but never lost on refresh — a "Saved study guide · <lens> · <date>
+  / View guide" affordance reloads it, and the button reads "Regenerate" once
+  one exists (`guideLens` tracks the lens the shown guide was made with).
+  "Send to Studio" hands the guide to Creation Studio (`guide` source kind) for
+  downloadable markdown; the answering provider shows quietly via `ProviderTag`
+  (`--text-tertiary`). On generation, `extractFrameworks` pulls each framework
+  NAME out of the `## Key Frameworks` section and **`logConcept`s each one**
+  (source = book title, so they interlink with the book concept and feed
+  Skills/Connected Knowledge) — awaited in sequence so the read-modify-writes
+  don't clobber.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
