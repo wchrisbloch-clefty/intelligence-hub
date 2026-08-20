@@ -16,6 +16,7 @@ import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
 import Icon from './shared/Icon.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
+import DiagramBlock from './shared/DiagramBlock.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
 
@@ -639,6 +640,9 @@ export default function LearningCenter() {
                     <ProviderTag provider={msg.provider} />
                   </div>
                   <MD text={msg.content} color={accentColor} />
+                  {msg.content.length > 220 && (
+                    <DiagramBlock content={msg.content} hint="Diagram the structure of this explanation." label="Visualize" compact />
+                  )}
                 </div>
               )}
             </div>

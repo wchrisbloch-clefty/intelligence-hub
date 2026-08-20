@@ -155,6 +155,25 @@ nobody; now they feed a shared graph and a shared card deck.
   (source = book title, so they interlink with the book concept and feed
   Skills/Connected Knowledge) — awaited in sequence so the read-modify-writes
   don't clobber.
+- **Learning visuals** (`src/lib/diagram.js`, `src/modules/shared/DiagramBlock.jsx`)
+  — an inline diagram generator for any explanation surface. `<DiagramBlock
+  content hint initialCode onGenerated label />` asks the model for **Mermaid
+  ONLY** (flowchart / sequenceDiagram / mindmap / timeline / quadrantChart),
+  **validates with `mermaid.parse` before rendering**, and **falls back to a
+  deterministic text outline** (`toOutline`) on a parse error instead of showing
+  a broken diagram. **Mermaid is lazy-loaded via dynamic `import()`** so the
+  ~500KB engine never sits in the main bundle (it splits into on-demand chunks
+  fetched only when a diagram draws). **Theme-aware** — colors are read from the
+  live CSS tokens (`--text-primary` / `--accent` / `--rule` / surfaces) and it
+  redraws on a `data-theme` toggle (MutationObserver); **no hardcoded hex**.
+  **Legible at 390px** — the SVG keeps its natural size inside an
+  `overflow-x:auto` frame (scrolls rather than shrinking below `--fs-sm`).
+  `onGenerated(code)` lets a parent **persist the diagram with its artifact**:
+  study guides save it onto the guide (`aether_study_guides_v1`, exported to
+  Studio as a ```mermaid block), deep dives save it onto the section
+  (`s.diagram`). Mounted in **study guides, deep dives, Ask (`ChatPanel`),
+  `LearningCenter`, and Academy levels** (a ladder rung's structure is offered a
+  diagram automatically).
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
