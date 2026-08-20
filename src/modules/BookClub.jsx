@@ -11,6 +11,7 @@ import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
+import DiagramBlock from './shared/DiagramBlock.jsx';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META, PROJECTS_KEY } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
@@ -369,9 +370,18 @@ export default function BookClub() {
     setMode('guide'); setIsGuide(true); setResult(savedGuide.body); setResultProvider(savedGuide.provider || ''); setGuideCards(savedGuide.cards || 0); setVaulted(false); setGuideErr(''); setGuideLens(savedGuide.lens || 'both');
   };
 
+  // Persist a generated diagram onto its parent guide so it saves + exports with
+  // it (awaited/revert via persistGuide).
+  const saveGuideDiagram = async (mermaidCode) => {
+    if (!selectedBook) return;
+    const g = guides[selectedBook.id] || { bookId: selectedBook.id, bookTitle: selectedBook.title, lens: guideLens, provider: resultProvider, body: result, cards: guideCards, createdAt: Date.now() };
+    await persistGuide({ ...g, diagram: mermaidCode });
+  };
+
   const sendGuideToStudio = () => {
     if (!result) return;
-    openStudio({ kind: 'guide', title: `${selectedBook.title} — Study Guide`, text: result });
+    const dgm = savedGuide?.diagram ? `\n\n## Diagram\n\n\`\`\`mermaid\n${savedGuide.diagram}\n\`\`\`\n` : '';
+    openStudio({ kind: 'guide', title: `${selectedBook.title} — Study Guide`, text: result + dgm });
   };
 
   const pad     = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
@@ -671,6 +681,18 @@ export default function BookClub() {
                       </div>
                     </div>
                     <MD text={result} color={T.accent} />
+                    {isGuide && (
+                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
+                        <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>
+                        <DiagramBlock
+                          content={result}
+                          hint={`Diagram the key frameworks in "${selectedBook.title}" and how they relate.`}
+                          initialCode={savedGuide?.diagram || ''}
+                          onGenerated={saveGuideDiagram}
+                          label="Visualize frameworks"
+                        />
+                      </div>
+                    )}
                     {isGuide && (
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
                         {guideCards > 0 && (

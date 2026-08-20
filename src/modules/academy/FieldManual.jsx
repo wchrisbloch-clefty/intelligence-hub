@@ -8,6 +8,7 @@ import { readLocal, writeThrough } from '../../lib/storage.js';
 import { createCard } from '../../lib/reviews.js';
 import { logConcept } from '../../lib/graph.js';
 import MD from '../shared/MD.jsx';
+import DiagramBlock from '../shared/DiagramBlock.jsx';
 import { ThinkingDots } from '../shared/Common.jsx';
 
 // Content packs live entirely in data files (src/data/ladders/*). This component
@@ -251,6 +252,15 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
       {(level.blocks || []).map((b, i) => (
         <BlockView key={i} block={b} ladder={ladder} state={state} />
       ))}
+
+      {/* A ladder rung has a natural structure — offer a diagram of it. */}
+      {(level.blocks || []).length > 0 && (
+        <DiagramBlock
+          content={`${level.title}. ${level.sub || ''}\n` + (level.blocks || []).map((b) => b.title || b.t || b.html || (b.items || []).join('; ') || (b.pairs || []).map((p) => p.join(': ')).join('; ')).filter(Boolean).join('\n').replace(/<[^>]+>/g, '').slice(0, 2000)}
+          hint={`Diagram the structure of "${level.title}".`}
+          label="Visualize this level"
+        />
+      )}
 
       {/* Recall cards */}
       {level.cards?.length > 0 && (

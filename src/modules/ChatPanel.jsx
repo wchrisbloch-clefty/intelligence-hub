@@ -8,6 +8,7 @@ import useVoiceInput from '../hooks/useVoiceInput.js';
 import MD from './shared/MD.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
+import DiagramBlock from './shared/DiagramBlock.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
@@ -147,6 +148,9 @@ export default function ChatPanel() {
                 <div style={{ marginTop: 10 }}>
                   <SaveToNotes title={msg.content.split('\n')[0].replace(/[#*>_`-]/g, '').trim().slice(0, 70)} content={msg.content} source={{ title: `Intelligence Chat · ${mode?.label || ''}`.trim(), tier: 'reported' }} label="Save to Notes" />
                 </div>
+                {msg.content.length > 220 && (
+                  <DiagramBlock content={msg.content} hint="Diagram the structure of this answer." label="Visualize" compact />
+                )}
               </div>
             )}
           </div>

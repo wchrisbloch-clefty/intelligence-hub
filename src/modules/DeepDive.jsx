@@ -7,6 +7,7 @@ import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
+import DiagramBlock from './shared/DiagramBlock.jsx';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -201,6 +202,17 @@ export default function DeepDive() {
             </div>
           </div>
           <MD text={s.content} color={ACCENT} />
+          <DiagramBlock
+            content={s.content}
+            hint={`Diagram the structure of this pass on "${dive.topic}".`}
+            initialCode={s.diagram || ''}
+            onGenerated={(code) => {
+              // Persist the diagram onto its section so it saves + reloads with the dive.
+              const next = { ...dive, sections: dive.sections.map((x) => (x.id === s.id ? { ...x, diagram: code } : x)) };
+              setDive(next); saveDive(next);
+            }}
+            label="Visualize"
+          />
         </div>
       ))}
 
