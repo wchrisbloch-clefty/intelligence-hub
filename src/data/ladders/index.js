@@ -11,8 +11,9 @@
  */
 
 import sofcPowerdeal from './sofc-powerdeal.js';
+import negotiation from './negotiation.js';
 
-export const LADDERS = [sofcPowerdeal];
+export const LADDERS = [sofcPowerdeal, negotiation];
 
 export const getLadder = (id) => LADDERS.find((l) => l.id === id) || null;
 

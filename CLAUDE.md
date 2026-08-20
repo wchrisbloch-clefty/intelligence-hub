@@ -174,6 +174,29 @@ nobody; now they feed a shared graph and a shared card deck.
   (`s.diagram`). Mounted in **study guides, deep dives, Ask (`ChatPanel`),
   `LearningCenter`, and Academy levels** (a ladder rung's structure is offered a
   diagram automatically).
+- **Academy content packs** (`src/modules/academy/FieldManual.jsx`,
+  `src/data/ladders/*`) — packs are **DATA ONLY**; adding one is a content task,
+  not a code change: write `src/data/ladders/<name>.js` and add it to the
+  `LADDERS` array in `src/data/ladders/index.js`. Zero component edits. A pack is
+  `{ id, title, subtitle, domain, emoji, version, lastVerified, summary,
+  confirms:[{id,claim,why,owner,status}], levels:[...] }`. A **level** is
+  `{ id, concept, title, sub, minutes, blocks:[...], cards:[[front,back,tier]],
+  quiz:[{q,opts,a,e}] }`. **Block `k`-types** (all tier-chipped): `h` (n,t),
+  `p` (html), `ul` (items), `call` (tone key/sport/win/sell/warn, title, html),
+  `table` (head, rows), `pair` (pairs), `flow` (stages). Every claim carries a
+  **`tier`** (`verified`/`reported`/`inferred`) — nothing renders un-tiered — and
+  any block with **`confirm:'<id>'`** is gated out of Field Mode until the
+  matching `confirms` entry is resolved (owner+date). Progression is **ungated**
+  (every level open from load); quizzes are **optional + infinitely retryable**,
+  **misses auto-create Vault cards** (topic = the level's concept), and the
+  engine **`logConcept`s each level's `concept`** on open and on quiz (source =
+  the pack) so every tool becomes its own trajectory in Skills. Ships one BD pack
+  (`sofc-powerdeal`) and one **Negotiation pack** (`nsd-negotiation`, *Never
+  Split the Difference* — tactical empathy, calibrated questions, mirroring,
+  labeling, accusation audit, "that's right" vs "you're right", loss-aversion
+  framing, Ackerman bargaining; each level pairs a BD and a personal example).
+  No hardcoded hex — the engine renders on system tokens (`ladder.accent` is
+  vestigial). **Productization candidate:** the pack schema is the product.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
