@@ -4,7 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { createCard } from '../lib/reviews.js';
-import { logConcept } from '../lib/graph.js';
+import { logConcept, allConcepts } from '../lib/graph.js';
 import { recommendBooks } from '../lib/bookRecs.js';
 import { buildSkills, levelFor } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
@@ -89,6 +89,18 @@ function buildStudyContext() {
     const dives = (loadDiveIndex() || []).slice(0, 5)
       .map((d) => `- ${d.topic}${d.category ? ` (${d.category})` : ''}`);
     if (dives.length) parts.push(`Recent deep dives:\n${dives.join('\n')}`);
+  } catch {}
+  try {
+    // Straight from the knowledge graph: the concepts he's actually engaged with
+    // most, by observation count. This is the signal that turns "you have a real
+    // estate project" into "you've been going deep on demand charges and 4CP" —
+    // the specific thread makes a far better worked example than the category.
+    const concepts = (allConcepts() || [])
+      .filter((c) => (c.observations || 0) > 0)
+      .sort((a, b) => (b.observations || 0) - (a.observations || 0))
+      .slice(0, 6)
+      .map((c) => `- ${c.topic} (${c.observations} touch${c.observations === 1 ? '' : 'es'}${(c.modules || []).length ? `, via ${c.modules.slice(0, 3).join('/')}` : ''})`);
+    if (concepts.length) parts.push(`Concepts he's been going deep on (from the knowledge graph):\n${concepts.join('\n')}`);
   } catch {}
   return parts.join('\n\n');
 }
