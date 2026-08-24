@@ -5,7 +5,7 @@
 // state from Upstash, call Anthropic, and write a recap record back to Upstash.
 // This module centralizes the parts they share so neither route duplicates them.
 import { store } from './_lib.js';
-import { callAI } from './_providers.js';
+import { callAI, formatAttempts } from './_providers.js';
 
 // Recaps prefer Claude (the 'reason' job leads with it) but no longer die when
 // Claude is unavailable — that's the failure that broke the weekly recap.
@@ -72,7 +72,15 @@ export async function callRecapAI({ system, user, maxTokens = 2000 }) {
     messages: [{ role: 'user', content: user }],
     maxTokens,
   });
-  if (!r || !r.text) throw new Error('All AI providers failed or none configured.');
+  if (!r || !r.text) {
+    // Carry the per-provider reasons through so the route's 500 body and the
+    // server logs say WHICH provider failed and why — not just "failed".
+    const attempts = r?.attempts || [];
+    console.error(`[recap] all providers failed: ${formatAttempts(attempts)}`);
+    const err = new Error(r?.error || 'All AI providers failed or none configured.');
+    err.attempts = attempts;
+    throw err;
+  }
   return r;
 }
 

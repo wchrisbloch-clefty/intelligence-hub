@@ -104,7 +104,7 @@ export default function LearningCenter() {
       const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, job: useWeb ? 'web' : 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
       setMessages(prev => [...prev, { role: 'assistant', content: reply, provider }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed — retry.') }]);
     }
     setStream('');
     setLoading(false);
