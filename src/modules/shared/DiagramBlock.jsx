@@ -14,7 +14,7 @@ import { renderMermaid, cleanMermaid, toOutline } from '../../lib/diagram.js';
 import Icon from './Icon.jsx';
 import { ThinkingDots } from './Common.jsx';
 
-export default function DiagramBlock({ content, hint = '', initialCode = '', onGenerated, label = 'Visualize', compact = false }) {
+export default function DiagramBlock({ content, hint = '', initialCode = '', onGenerated, label = 'Visualize', compact = false, auto = false }) {
   const [code, setCode] = useState(initialCode || '');
   const [svg, setSvg] = useState('');
   const [outline, setOutline] = useState('');
@@ -64,6 +64,16 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
     }
     if (mounted.current) setLoading(false);
   };
+
+  // Auto-generate once when asked (e.g. a guide with 3+ frameworks), unless a
+  // saved diagram is already present.
+  const autoFired = useRef(false);
+  useEffect(() => {
+    if (auto && !autoFired.current && !initialCode && !code && content) {
+      autoFired.current = true;
+      generate();
+    }
+  }, [auto, content]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const btn = {
     display: 'inline-flex', alignItems: 'center', gap: 6, padding: compact ? '5px 11px' : '7px 13px',
