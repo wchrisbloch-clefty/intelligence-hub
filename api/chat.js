@@ -13,9 +13,12 @@
 // The winning provider is always reported: `provider` in the JSON response, and
 // a final `{ type:'provider', provider, model }` SSE event when streaming.
 import { readBody, requireAuth } from './_lib.js';
-import { jobOrder, PROVIDERS, streamClaude, configuredProviders, formatAttempts, CLAUDE } from './_providers.js';
+import { jobOrder, PROVIDERS, streamClaude, configuredProviders, formatAttempts, timeoutFor, CLAUDE } from './_providers.js';
 
-export const config = { maxDuration: 60 };
+// reason-tier generations (study guides at 6000 tokens) run for tens of seconds
+// to minutes, so this route needs the same headroom as the recap routes (300s),
+// not the old 60s that aborted long guides mid-generation.
+export const config = { maxDuration: 300 };
 
 function sseHeaders(res) {
   res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
@@ -64,13 +67,14 @@ export default async function handler(req, res) {
   }
 
   const hasTools = Array.isArray(tools) && tools.length > 0;
+  const timeout = timeoutFor(job); // reason-tier gets the long budget, not 15–55s
 
   // ── Tools (web_search) → Anthropic-only, no cascade ───────────────────────
   if (hasTools) {
     if (!process.env.ANTHROPIC_API_KEY) {
       return res.status(500).json({ error: 'Web search needs Claude — set ANTHROPIC_API_KEY.', code: 'no_key' });
     }
-    const upstream = await streamClaude({ system, messages, maxTokens: max_tokens, tools });
+    const upstream = await streamClaude({ system, messages, maxTokens: max_tokens, tools, timeout });
     if (!upstream || !upstream.ok) {
       let detail = '';
       try { detail = (await upstream?.json())?.error?.message || ''; } catch {}
@@ -86,7 +90,7 @@ export default async function handler(req, res) {
     const attempts = [];
     for (const key of jobOrder(job)) {
       if (key === 'claude') {
-        const upstream = await streamClaude({ system, messages, maxTokens: max_tokens });
+        const upstream = await streamClaude({ system, messages, maxTokens: max_tokens, timeout });
         if (upstream && upstream.ok) return passthroughClaude(res, upstream);
         if (!process.env.ANTHROPIC_API_KEY) {
           attempts.push({ provider: 'Claude', status: null, detail: 'no API key (ANTHROPIC_API_KEY not set)', skipped: true });
@@ -100,8 +104,8 @@ export default async function handler(req, res) {
       }
       const fn = PROVIDERS[key];
       if (!fn) continue;
-      const r = await fn({ system, messages, maxTokens: max_tokens }); // non-streaming
-      if (r && r.text) return fakeStream(res, r);                       // fake-stream it
+      const r = await fn({ system, messages, maxTokens: max_tokens, timeout }); // non-streaming
+      if (r && r.text) return fakeStream(res, r);                                // fake-stream it
       attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
     }
     // Nothing answered — headers not sent yet, safe to return JSON.
@@ -114,7 +118,7 @@ export default async function handler(req, res) {
   for (const key of jobOrder(job)) {
     const fn = PROVIDERS[key];
     if (!fn) continue;
-    const r = await fn({ system, messages, maxTokens: max_tokens });
+    const r = await fn({ system, messages, maxTokens: max_tokens, timeout });
     if (r && r.text) return res.status(200).json({ text: r.text, provider: r.provider, model: r.model });
     attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
   }
