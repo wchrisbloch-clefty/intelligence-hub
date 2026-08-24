@@ -14,7 +14,15 @@ deployed on Vercel. Single user (CB).
   `/Users/mallorykaufman/` — don't use them. **`~/Desktop/intelligence-hub` has
   unpushed local work — do not touch it.**
 - **AI provider cascade lives in `api/_providers.js`** (`callAI` + `JOB_ORDER`,
-  exposed via `/api/health`). Two gotchas that cost real time:
+  exposed via `/api/health`). Gotchas that cost real time:
+  **(0) A 404 from a provider almost always means a RETIRED MODEL, not a bad key.**
+  Three vendors retired a model on us in one week (Groq's Llama tier → Enterprise,
+  Gemini `2.5-flash` → `3.6-flash`, …). **Every model ID lives in one place — the
+  exported `MODELS` registry in `api/_providers.js`, one line each with the date
+  last confirmed working.** On a 404: check `/api/health` first (it does a live
+  call per provider and shows the upstream error message, which usually names the
+  replacement model), then update the ID + date in `MODELS`. Nothing else
+  hardcodes a model string.
   **(1) Groq's free Llama tier moved to Enterprise / Contact Sales** — `llama-3.3-70b-versatile`
   and `llama-3.1-8b-instant` now 404. Use the **open** models `openai/gpt-oss-120b`
   (groq70) and `openai/gpt-oss-20b` (groq8); they allow 65,536 output tokens.
