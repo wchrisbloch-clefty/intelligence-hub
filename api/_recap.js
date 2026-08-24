@@ -5,11 +5,12 @@
 // state from Upstash, call Anthropic, and write a recap record back to Upstash.
 // This module centralizes the parts they share so neither route duplicates them.
 import { store } from './_lib.js';
-import { callAI, formatAttempts } from './_providers.js';
+import { callAI, formatAttempts, MODELS } from './_providers.js';
 
 // Recaps prefer Claude (the 'reason' job leads with it) but no longer die when
-// Claude is unavailable — that's the failure that broke the weekly recap.
-export const RECAP_MODEL = 'claude-sonnet-4-6';
+// Claude is unavailable — that's the failure that broke the weekly recap. Model
+// ID comes from the single registry in _providers.js, never a second literal.
+export const RECAP_MODEL = MODELS.claude;
 
 // Storage keys — must match src/constants.js.
 export const KEYS = {

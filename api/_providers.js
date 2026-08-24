@@ -18,7 +18,23 @@
 // per-attempt status + detail for logging and for the user-facing error.
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
-const CLAUDE_MODEL  = 'claude-sonnet-4-6';
+
+// ── Model registry ───────────────────────────────────────────────────────────
+// EVERY model ID lives here, one per line with the date it was last confirmed
+// working. Vendors retire models with little notice (three did in one week), and
+// a retired model is a 404 that masquerades as a bad key — so when a provider
+// starts 404ing, check /api/health, then update the ID + date here. This is the
+// ONE place to change; nothing else hardcodes a model string.
+export const MODELS = {
+  claude:     'claude-sonnet-4-6',    // Anthropic  · confirmed 2026-08-24
+  gemini:     'gemini-3.6-flash',     // Google     · confirmed 2026-08-24 (2.5-flash retired: "no longer available to new users")
+  groq70:     'openai/gpt-oss-120b',  // Groq       · confirmed 2026-08-24 (free Llama tier moved to Enterprise)
+  groq8:      'openai/gpt-oss-20b',   // Groq       · confirmed 2026-08-24
+  grok:       'grok-3-mini',          // xAI        · confirmed 2026-08-24
+  perplexity: 'sonar',                // Perplexity · confirmed 2026-08-24
+};
+
+const CLAUDE_MODEL = MODELS.claude;
 
 // Per-provider output-token ceiling. A request may ask for maxTokens: 6000, but
 // a provider whose tier/model caps output lower will 400/413 the whole request —
@@ -127,17 +143,17 @@ async function openaiChat({ url, key, model, provider, system, messages, maxToke
 
 // Groq open models (the free-tier Llama models moved to Enterprise / Contact
 // Sales, which was the 404). gpt-oss-120b/20b are open and allow 65,536 output.
-async function groq70(a)      { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'openai/gpt-oss-120b', provider: 'Groq', timeout: 45000, ...a }); }
-async function groq8(a)       { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'openai/gpt-oss-20b', provider: 'Groq', timeout: 45000, ...a }); }
-async function grok(a)        { return openaiChat({ url: 'https://api.x.ai/v1/chat/completions', key: process.env.XAI_API_KEY, model: 'grok-3-mini', provider: 'Grok', timeout: 45000, ...a }); }
-async function perplexity(a)  { return openaiChat({ url: 'https://api.perplexity.ai/chat/completions', key: process.env.PERPLEXITY_API_KEY, model: 'sonar', provider: 'Perplexity', timeout: 45000, ...a }); }
+async function groq70(a)      { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: MODELS.groq70, provider: 'Groq', timeout: 45000, ...a }); }
+async function groq8(a)       { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: MODELS.groq8, provider: 'Groq', timeout: 45000, ...a }); }
+async function grok(a)        { return openaiChat({ url: 'https://api.x.ai/v1/chat/completions', key: process.env.XAI_API_KEY, model: MODELS.grok, provider: 'Grok', timeout: 45000, ...a }); }
+async function perplexity(a)  { return openaiChat({ url: 'https://api.perplexity.ai/chat/completions', key: process.env.PERPLEXITY_API_KEY, model: MODELS.perplexity, provider: 'Perplexity', timeout: 45000, ...a }); }
 
 // ── Google Gemini ────────────────────────────────────────────────────────────
 async function gemini({ system, messages, maxTokens, timeout }) {
   const budget = timeout || 45000;
   const key = process.env.GOOGLE_AI_KEY;
   if (!key) return { ok: false, provider: 'Gemini', status: null, detail: 'no API key (GOOGLE_AI_KEY not set)', skipped: true, timeoutBudgetMs: budget, durationMs: 0 };
-  const model = 'gemini-2.5-flash';
+  const model = MODELS.gemini;
   const t0 = Date.now();
   try {
     const body = {
