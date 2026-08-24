@@ -146,6 +146,6 @@ export default async function handler(req, res) {
     const record = await generateReview();
     return res.status(200).json({ ok: true, generatedAtISO: record.generatedAtISO });
   } catch (err) {
-    return res.status(500).json({ ok: false, error: err?.message || String(err) });
+    return res.status(500).json({ ok: false, error: err?.message || String(err), attempts: err?.attempts || [] });
   }
 }

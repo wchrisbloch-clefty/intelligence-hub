@@ -311,8 +311,10 @@ export default function BookClub() {
       // Record the book as a concept so it connects to research, quizzes, and
       // notes on the same subject.
       logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', refs: selectedBook.author ? [selectedBook.author] : [] });
-    } catch {
-      setResult('Unable to generate — check connection and try again.');
+    } catch (e) {
+      // Surface the real cause (which providers were tried and why) instead of
+      // pointing the user at their wifi. callClaude throws with the server's body.
+      setResult(`Couldn't generate this. ${e?.message || 'The AI providers were unavailable.'}`);
     }
     setLoading(false);
   };
@@ -357,8 +359,10 @@ export default function BookClub() {
       for (const fw of extractFrameworks(body)) {
         await logConcept({ topic: fw, source: selectedBook.title, module: 'books', confidence: 5, refs: [selectedBook.title] });
       }
-    } catch {
-      setResult('Unable to generate — check connection and try again.');
+    } catch (e) {
+      // Real cause, not "check your connection" — the study guide runs job:'reason'
+      // and the server error names which providers failed and why.
+      setResult(`Couldn't generate the study guide. ${e?.message || 'The AI providers were unavailable.'}`);
     }
     setLoading(false);
   };

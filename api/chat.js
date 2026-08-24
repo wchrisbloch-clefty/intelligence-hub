@@ -13,7 +13,7 @@
 // The winning provider is always reported: `provider` in the JSON response, and
 // a final `{ type:'provider', provider, model }` SSE event when streaming.
 import { readBody, requireAuth } from './_lib.js';
-import { jobOrder, PROVIDERS, streamClaude, configuredProviders, CLAUDE } from './_providers.js';
+import { jobOrder, PROVIDERS, streamClaude, configuredProviders, formatAttempts, CLAUDE } from './_providers.js';
 
 export const config = { maxDuration: 60 };
 
@@ -80,39 +80,62 @@ export default async function handler(req, res) {
   }
 
   // ── Streaming cascade ─────────────────────────────────────────────────────
+  // Every attempt (success or failure) is recorded so a total failure reports
+  // which providers were tried and exactly why each one failed.
   if (stream) {
+    const attempts = [];
     for (const key of jobOrder(job)) {
       if (key === 'claude') {
         const upstream = await streamClaude({ system, messages, maxTokens: max_tokens });
         if (upstream && upstream.ok) return passthroughClaude(res, upstream);
+        if (!process.env.ANTHROPIC_API_KEY) {
+          attempts.push({ provider: 'Claude', status: null, detail: 'no API key (ANTHROPIC_API_KEY not set)', skipped: true });
+        } else if (upstream) {
+          let detail = ''; try { detail = (await upstream.json())?.error?.message || ''; } catch {}
+          attempts.push({ provider: 'Claude', status: upstream.status, detail: detail || 'request failed' });
+        } else {
+          attempts.push({ provider: 'Claude', status: null, detail: 'network/timeout' });
+        }
         continue; // Claude down → fall through to the next provider
       }
       const fn = PROVIDERS[key];
       if (!fn) continue;
       const r = await fn({ system, messages, maxTokens: max_tokens }); // non-streaming
       if (r && r.text) return fakeStream(res, r);                       // fake-stream it
+      attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
     }
     // Nothing answered — headers not sent yet, safe to return JSON.
-    return res.status(providerErrorStatus()).json(providerErrorBody());
+    logCascadeFailure(job, attempts);
+    return res.status(providerErrorStatus(attempts)).json(providerErrorBody(attempts));
   }
 
   // ── Non-streaming cascade ─────────────────────────────────────────────────
+  const attempts = [];
   for (const key of jobOrder(job)) {
     const fn = PROVIDERS[key];
     if (!fn) continue;
     const r = await fn({ system, messages, maxTokens: max_tokens });
     if (r && r.text) return res.status(200).json({ text: r.text, provider: r.provider, model: r.model });
+    attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
   }
-  return res.status(providerErrorStatus()).json(providerErrorBody());
+  logCascadeFailure(job, attempts);
+  return res.status(providerErrorStatus(attempts)).json(providerErrorBody(attempts));
 }
 
-function providerErrorStatus() {
-  return configuredProviders().length === 0 ? 500 : 502;
+function logCascadeFailure(job, attempts) {
+  // Server-side, structured, so production logs show the real cause — not a bare 502.
+  console.error(`[chat] all providers failed (job=${job}): ${formatAttempts(attempts)}`);
 }
-function providerErrorBody() {
-  const configured = configuredProviders();
-  if (configured.length === 0) {
-    return { error: 'No AI provider configured. Add GROQ_API_KEY (free) in Vercel → Settings → Environment Variables, then redeploy.', code: 'no_key' };
+
+function providerErrorStatus(attempts) {
+  // 500 only when nothing was actually reachable (every attempt skipped for a
+  // missing key). If real providers were tried and rejected, it's a 502.
+  const allSkipped = attempts.length > 0 && attempts.every((a) => a.skipped);
+  return (configuredProviders().length === 0 || allSkipped) ? 500 : 502;
+}
+function providerErrorBody(attempts) {
+  if (configuredProviders().length === 0) {
+    return { error: 'No AI provider configured. Add GROQ_API_KEY (free) in Vercel → Settings → Environment Variables, then redeploy.', code: 'no_key', attempts };
   }
-  return { error: `All providers failed (tried: ${configured.join(', ')}). Retry in a moment.`, code: 'upstream' };
+  return { error: `AI request failed. ${formatAttempts(attempts)}`, code: 'upstream', attempts };
 }

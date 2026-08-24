@@ -9,11 +9,33 @@
 // PERPLEXITY_API_KEY, ANTHROPIC_API_KEY.
 //
 // Each provider is normalized behind one signature:
-//   ({ system, messages, maxTokens }) → { text, provider, model } | null
-// Returning null (not throwing) lets the cascade fall through to the next one.
+//   ({ system, messages, maxTokens }) → attempt result
+// Result is ALWAYS a structured object (never a bare null), so the cascade can
+// record why each attempt failed instead of throwing the reason away:
+//   success → { ok:true, text, provider, model }
+//   failure → { ok:false, provider, status, detail, skipped? }
+// Callers still detect success with `r && r.text` (unchanged), but now have the
+// per-attempt status + detail for logging and for the user-facing error.
 
 const ANTHROPIC_URL = 'https://api.anthropic.com/v1/messages';
 const CLAUDE_MODEL  = 'claude-sonnet-4-6';
+
+// Per-provider output-token ceiling. A request may ask for maxTokens: 6000, but
+// a provider whose tier/model caps output lower will 400/413 the whole request —
+// so we clamp per provider instead. A shorter answer beats no answer. (Groq's
+// free tier is the tight one; Claude/Gemini get real headroom.)
+const OUTPUT_CAP = { Groq: 4096, Gemini: 8192, Grok: 8192, Perplexity: 4096, Claude: 64000 };
+const capFor = (provider, maxTokens) => Math.min(maxTokens || 1024, OUTPUT_CAP[provider] ?? 4096);
+
+// Pull the most useful error string out of an upstream error response.
+async function errDetail(r) {
+  try {
+    const e = await r.clone().json();
+    return e?.error?.message || e?.error?.type || e?.message || JSON.stringify(e).slice(0, 300);
+  } catch {
+    try { return (await r.text()).slice(0, 300); } catch { return ''; }
+  }
+}
 
 // ── message/system normalization ─────────────────────────────────────────────
 // chat.js `system` may be a string or { cached, dynamic }; `messages` are
@@ -63,7 +85,7 @@ export function buildSystemBlocks(system) {
 
 // ── OpenAI-compatible providers (Groq, Grok, Perplexity) ─────────────────────
 async function openaiChat({ url, key, model, provider, system, messages, maxTokens, timeout }) {
-  if (!key) return null;
+  if (!key) return { ok: false, provider, status: null, detail: `no API key (${KEY_MAP[provider] || 'env var'} not set)`, skipped: true };
   try {
     const r = await fetch(url, {
       method: 'POST',
@@ -71,16 +93,18 @@ async function openaiChat({ url, key, model, provider, system, messages, maxToke
       body: JSON.stringify({
         model,
         messages: toOpenAIMessages(system, messages),
-        max_tokens: maxTokens,
+        max_tokens: capFor(provider, maxTokens),
         temperature: 0.3,
       }),
       signal: AbortSignal.timeout(timeout),
     });
-    if (!r.ok) return null;
+    if (!r.ok) return { ok: false, provider, status: r.status, detail: await errDetail(r) };
     const d = await r.json();
     const text = d?.choices?.[0]?.message?.content?.trim();
-    return text ? { text, provider, model } : null;
-  } catch { return null; }
+    return text ? { ok: true, text, provider, model } : { ok: false, provider, status: r.status, detail: 'empty response body' };
+  } catch (e) {
+    return { ok: false, provider, status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+  }
 }
 
 async function groq70(a)      { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile', provider: 'Groq', timeout: 15000, ...a }); }
@@ -91,12 +115,12 @@ async function perplexity(a)  { return openaiChat({ url: 'https://api.perplexity
 // ── Google Gemini ────────────────────────────────────────────────────────────
 async function gemini({ system, messages, maxTokens }) {
   const key = process.env.GOOGLE_AI_KEY;
-  if (!key) return null;
+  if (!key) return { ok: false, provider: 'Gemini', status: null, detail: 'no API key (GOOGLE_AI_KEY not set)', skipped: true };
   const model = 'gemini-2.5-flash';
   try {
     const body = {
       contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: textOfContent(m.content) }] })),
-      generationConfig: { maxOutputTokens: maxTokens, temperature: 0.3 },
+      generationConfig: { maxOutputTokens: capFor('Gemini', maxTokens), temperature: 0.3 },
     };
     const sys = sysToString(system);
     if (sys) body.systemInstruction = { parts: [{ text: sys }] };
@@ -104,19 +128,21 @@ async function gemini({ system, messages, maxTokens }) {
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
       { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(25000) }
     );
-    if (!r.ok) return null;
+    if (!r.ok) return { ok: false, provider: 'Gemini', status: r.status, detail: await errDetail(r) };
     const d = await r.json();
     const text = d?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim();
-    return text ? { text, provider: 'Gemini', model } : null;
-  } catch { return null; }
+    return text ? { ok: true, text, provider: 'Gemini', model } : { ok: false, provider: 'Gemini', status: r.status, detail: 'empty response body' };
+  } catch (e) {
+    return { ok: false, provider: 'Gemini', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+  }
 }
 
 // ── Anthropic Claude (quality tier, prompt caching, multimodal-capable) ──────
 async function claude({ system, messages, maxTokens }) {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return null;
+  if (!key) return { ok: false, provider: 'Claude', status: null, detail: 'no API key (ANTHROPIC_API_KEY not set)', skipped: true };
   try {
-    const payload = { model: CLAUDE_MODEL, max_tokens: maxTokens, messages };
+    const payload = { model: CLAUDE_MODEL, max_tokens: capFor('Claude', maxTokens), messages };
     const sb = buildSystemBlocks(system);
     if (sb) payload.system = sb;
     const r = await fetch(ANTHROPIC_URL, {
@@ -130,11 +156,13 @@ async function claude({ system, messages, maxTokens }) {
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(55000),
     });
-    if (!r.ok) return null;
+    if (!r.ok) return { ok: false, provider: 'Claude', status: r.status, detail: await errDetail(r) };
     const d = await r.json();
     const text = (d?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-    return text ? { text, provider: 'Claude', model: CLAUDE_MODEL } : null;
-  } catch { return null; }
+    return text ? { ok: true, text, provider: 'Claude', model: CLAUDE_MODEL } : { ok: false, provider: 'Claude', status: r.status, detail: 'empty response body' };
+  } catch (e) {
+    return { ok: false, provider: 'Claude', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+  }
 }
 
 // True streaming Claude call — returns the raw upstream Response for SSE
@@ -167,12 +195,15 @@ export const CLAUDE = { MODEL: CLAUDE_MODEL };
 export const PROVIDERS = { groq70, groq8, gemini, grok, perplexity, claude };
 
 // Preference order per job. Each still ends in a strong fallback so no job has a
-// single point of failure.
+// single point of failure. `reason` leads with Claude (best guides when funded)
+// but MUST reach a working provider when it isn't — so it now ends in groq70 →
+// groq8 (the 8B model has the most generous free-tier limits), giving the chain
+// a reachable last resort instead of dying on a single unavailable provider.
 export const JOB_ORDER = {
-  fast:     ['groq70', 'groq8', 'gemini', 'claude'],     // routing, classification, extraction
-  web:      ['perplexity', 'grok', 'gemini', 'claude'],  // needs current facts
-  contrast: ['grok', 'perplexity', 'gemini', 'claude'],  // sentiment, contrarian read
-  reason:   ['claude', 'gemini', 'groq70'],              // study guides, deep dives, recaps
+  fast:     ['groq70', 'groq8', 'gemini', 'claude'],           // routing, classification, extraction
+  web:      ['perplexity', 'grok', 'gemini', 'claude'],        // needs current facts
+  contrast: ['grok', 'perplexity', 'gemini', 'claude'],        // sentiment, contrarian read
+  reason:   ['claude', 'gemini', 'groq70', 'groq8'],           // study guides, deep dives, recaps
   default:  ['groq70', 'gemini', 'claude'],
 };
 
@@ -180,16 +211,31 @@ export function jobOrder(job) {
   return JOB_ORDER[job] || JOB_ORDER.default;
 }
 
-// Non-streaming brain: try providers in job order, return the first that
-// answers ({ text, provider, model }), or null if the whole chain fails.
+// A one-line, human-readable summary of a failed cascade — provider: status detail.
+export function formatAttempts(attempts) {
+  if (!attempts || !attempts.length) return 'no providers were attempted';
+  return attempts.map((a) => {
+    if (a.skipped) return `${a.provider}: skipped (${a.detail})`;
+    const code = a.status ? `HTTP ${a.status}` : 'no response';
+    return `${a.provider}: ${code}${a.detail ? ` — ${a.detail}` : ''}`;
+  }).join('  ·  ');
+}
+
+// Non-streaming brain: try providers in job order. On success returns
+// { text, provider, model }. On total failure returns { ok:false, attempts, error }
+// carrying WHY each provider failed (status + detail) — never a bare null, so the
+// reason is logged and shown instead of thrown away. Callers detect success with
+// `r && r.text` exactly as before.
 export async function callAI({ job = 'default', system, messages, maxTokens = 1024 }) {
+  const attempts = [];
   for (const key of jobOrder(job)) {
     const fn = PROVIDERS[key];
     if (!fn) continue;
     const r = await fn({ system, messages, maxTokens });
     if (r && r.text) return r;
+    attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
   }
-  return null;
+  return { ok: false, attempts, error: `All AI providers failed — ${formatAttempts(attempts)}` };
 }
 
 // ── Key diagnostics (for /api/health and error messages) ─────────────────────
@@ -209,4 +255,34 @@ export function providerKeyStatus() {
 
 export function configuredProviders() {
   return Object.entries(KEY_MAP).filter(([, env]) => process.env[env]).map(([name]) => name);
+}
+
+// One representative provider fn per key name, for live health probes.
+const HEALTH_FN = { Groq: groq70, Gemini: gemini, Grok: grok, Perplexity: perplexity, Claude: claude };
+
+function withTimeout(promise, ms, onTimeout) {
+  return Promise.race([promise, new Promise((res) => { const t = setTimeout(() => res(onTimeout), ms); t.unref?.(); })]);
+}
+
+// Live diagnostics for /api/health: for EACH provider report whether the key is
+// present or missing (with the exact env var name, so a misspelled
+// GOOGLE_AI_KEY → GEMENI_API_KEY shows up as "missing" against the name it should
+// have), and — when present — a minimal real call so a present-but-unfunded or
+// invalid key ("configured" but broken) is caught with its HTTP status instead
+// of looking healthy.
+export async function testAllProviders() {
+  const names = Object.keys(KEY_MAP);
+  const entries = await Promise.all(names.map(async (name) => {
+    const envVar = KEY_MAP[name];
+    if (!process.env[envVar]) return [name, { key: 'missing', envVar, test: 'skipped' }];
+    const fn = HEALTH_FN[name];
+    const r = await withTimeout(
+      fn({ system: '', messages: [{ role: 'user', content: 'ping' }], maxTokens: 8 }),
+      8000,
+      { ok: false, status: null, detail: 'health probe timed out (8s)' },
+    );
+    if (r && r.text) return [name, { key: 'configured', envVar, test: 'ok', model: r.model }];
+    return [name, { key: 'configured', envVar, test: 'failed', status: (r && r.status) || null, detail: (r && r.detail) || 'unknown' }];
+  }));
+  return Object.fromEntries(entries);
 }

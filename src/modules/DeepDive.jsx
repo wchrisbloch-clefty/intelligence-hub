@@ -72,8 +72,8 @@ export default function DeepDive() {
       // pulled as refs — so a deep dive connects to everything on the subject.
       logConcept({ topic: updated.topic, source: updated.topic, module: 'deepdive', confidence: 6, refs: (section.sources || []).map(s => s.url || s).filter(Boolean).slice(0, 6) });
       return updated;
-    } catch {
-      setError('Research pass failed — try again.');
+    } catch (e) {
+      setError(`Research pass failed. ${e?.message || 'The AI providers were unavailable.'}`);
       return targetDive;
     } finally {
       setRunning(false); setStream('');
