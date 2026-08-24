@@ -10,7 +10,7 @@
 //                                    (unfunded / invalid / rate-limited)
 // Pass ?deep=0 to skip the live calls and report key presence only (fast).
 import { requireAuth, store, storageConfigured } from './_lib.js';
-import { providerKeyStatus, testAllProviders } from './_providers.js';
+import { providerKeyStatus, testAllProviders, JOB_ORDER } from './_providers.js';
 
 export const config = { maxDuration: 30 };
 
@@ -29,6 +29,8 @@ export default async function handler(req, res) {
     // back-compat: a string summary of Claude's status
     ai: typeof claude === 'string' ? claude : `${claude?.key || 'unknown'}${claude?.test ? `/${claude.test}` : ''}${claude?.status ? ` (${claude.status})` : ''}`,
     providers,
+    // Routing per job, surfaced so the cascade order is visible not buried.
+    jobOrder: JOB_ORDER,
     accessCode: process.env.ACCESS_CODE ? 'configured' : 'missing',
     time: new Date().toISOString(),
   });

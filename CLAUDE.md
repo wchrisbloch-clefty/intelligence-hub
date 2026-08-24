@@ -13,6 +13,20 @@ deployed on Vercel. Single user (CB).
 - **Canonical checkout is `~/hub`.** Four stale clones exist under
   `/Users/mallorykaufman/` — don't use them. **`~/Desktop/intelligence-hub` has
   unpushed local work — do not touch it.**
+- **AI provider cascade lives in `api/_providers.js`** (`callAI` + `JOB_ORDER`,
+  exposed via `/api/health`). Two gotchas that cost real time:
+  **(1) Groq's free Llama tier moved to Enterprise / Contact Sales** — `llama-3.3-70b-versatile`
+  and `llama-3.1-8b-instant` now 404. Use the **open** models `openai/gpt-oss-120b`
+  (groq70) and `openai/gpt-oss-20b` (groq8); they allow 65,536 output tokens.
+  **(2) Health probes must resemble real workloads or they give false confidence.**
+  A tiny `/api/health` ping passed while a real 6000-token study guide timed out,
+  because timeouts are per-job: `timeoutFor('reason')` is 290s (just under the
+  routes' `maxDuration: 300`), not the 15–55s the short jobs use. Health therefore
+  reports each provider's `durationMs`, its `reasonTimeoutMs` budget, and
+  `budgetOkForReason` — never trust a green probe alone. `reason` (study
+  guides/deep dives/recaps) leads with Claude for quality; the volume jobs
+  (default/fast/web/contrast) lead with Groq for cost; Claude is the final
+  fallback in every chain. Re-routing is a one-line edit in `JOB_ORDER`.
 - **Persistence is Upstash Redis via `/api/storage`**, keys prefixed `aether_*`.
   **Not Supabase.** `api/_lib.js` reads creds as
   `process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL` (same

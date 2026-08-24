@@ -329,6 +329,11 @@ export default function BookClub() {
     setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens);
     let provider = '';
     try {
+      // Stream it: a 6000-token guide runs for tens of seconds, so we show it
+      // building (and, critically, streaming means it can't hit a single blocking
+      // wall-clock abort mid-generation). The trailing ---CARDS--- JSON is hidden
+      // from the live view; callClaude still returns the full text to parse.
+      let acc = '';
       const reply = await callClaude({
         system: CB_LEARNING_SPINE,
         messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), buildStudyContext()) }],
@@ -337,6 +342,7 @@ export default function BookClub() {
         maxTokens: 6000,
         job: 'reason',
         onProvider: (p) => { provider = p; setResultProvider(p); },
+        onToken: (t) => { acc += t; setResult(acc.split('---CARDS---')[0].trim()); },
       });
       const [rawBody, cardsRaw] = reply.split('---CARDS---');
       const body = rawBody.trim();
@@ -697,7 +703,7 @@ export default function BookClub() {
                       </div>
                     </div>
                     <MD text={result} color={T.accent} />
-                    {isGuide && (
+                    {isGuide && !loading && (
                       <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
                         <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>
                         <DiagramBlock
@@ -709,7 +715,7 @@ export default function BookClub() {
                         />
                       </div>
                     )}
-                    {isGuide && (
+                    {isGuide && !loading && (
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
                         {guideCards > 0 && (
                           <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: withAlpha(T.accent, 10), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 20, padding: '4px 12px' }}>

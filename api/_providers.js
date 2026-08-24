@@ -24,8 +24,22 @@ const CLAUDE_MODEL  = 'claude-sonnet-4-6';
 // a provider whose tier/model caps output lower will 400/413 the whole request —
 // so we clamp per provider instead. A shorter answer beats no answer. (Groq's
 // free tier is the tight one; Claude/Gemini get real headroom.)
-const OUTPUT_CAP = { Groq: 4096, Gemini: 8192, Grok: 8192, Perplexity: 4096, Claude: 64000 };
+// Groq's open gpt-oss models allow 65,536 completion tokens, so the old 4096
+// clamp is gone — a 6000-token guide fits comfortably. Gemini 2.5-flash caps at
+// 8192; Claude has real headroom.
+const OUTPUT_CAP = { Groq: 32768, Gemini: 8192, Grok: 8192, Perplexity: 4096, Claude: 64000 };
 const capFor = (provider, maxTokens) => Math.min(maxTokens || 1024, OUTPUT_CAP[provider] ?? 4096);
+
+// Wall-clock budget for ONE provider call, by job. reason-tier generations
+// (study guides at 6000 tokens) run for tens of seconds to minutes, so they get
+// a budget just under the route maxDuration (300s). A tiny health probe finishes
+// in well under any of these — which is exactly why a fast probe hid a real
+// 6000-token timeout: the budget, not the probe, is what a real call needs.
+const TIMEOUT_BUDGET = { reason: 290000, web: 90000, default: 45000 };
+export const timeoutFor = (job) => TIMEOUT_BUDGET[job] || TIMEOUT_BUDGET.default;
+// The floor a reason-tier request needs; health flags any provider whose budget
+// falls below this so a too-short timeout can never silently kill long work again.
+export const REASON_MIN_BUDGET_MS = 120000;
 
 // Pull the most useful error string out of an upstream error response.
 async function errDetail(r) {
@@ -85,7 +99,9 @@ export function buildSystemBlocks(system) {
 
 // ── OpenAI-compatible providers (Groq, Grok, Perplexity) ─────────────────────
 async function openaiChat({ url, key, model, provider, system, messages, maxTokens, timeout }) {
-  if (!key) return { ok: false, provider, status: null, detail: `no API key (${KEY_MAP[provider] || 'env var'} not set)`, skipped: true };
+  const budget = timeout || 45000;
+  if (!key) return { ok: false, provider, status: null, detail: `no API key (${KEY_MAP[provider] || 'env var'} not set)`, skipped: true, timeoutBudgetMs: budget, durationMs: 0 };
+  const t0 = Date.now();
   try {
     const r = await fetch(url, {
       method: 'POST',
@@ -96,27 +112,33 @@ async function openaiChat({ url, key, model, provider, system, messages, maxToke
         max_tokens: capFor(provider, maxTokens),
         temperature: 0.3,
       }),
-      signal: AbortSignal.timeout(timeout),
+      signal: AbortSignal.timeout(budget),
     });
-    if (!r.ok) return { ok: false, provider, status: r.status, detail: await errDetail(r) };
+    if (!r.ok) return { ok: false, provider, status: r.status, detail: await errDetail(r), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
     const d = await r.json();
     const text = d?.choices?.[0]?.message?.content?.trim();
-    return text ? { ok: true, text, provider, model } : { ok: false, provider, status: r.status, detail: 'empty response body' };
+    return text
+      ? { ok: true, text, provider, model, timeoutBudgetMs: budget, durationMs: Date.now() - t0 }
+      : { ok: false, provider, status: r.status, detail: 'empty response body', timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   } catch (e) {
-    return { ok: false, provider, status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+    return { ok: false, provider, status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim(), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   }
 }
 
-async function groq70(a)      { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.3-70b-versatile', provider: 'Groq', timeout: 15000, ...a }); }
-async function groq8(a)       { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'llama-3.1-8b-instant', provider: 'Groq', timeout: 12000, ...a }); }
-async function grok(a)        { return openaiChat({ url: 'https://api.x.ai/v1/chat/completions', key: process.env.XAI_API_KEY, model: 'grok-3-mini', provider: 'Grok', timeout: 20000, ...a }); }
-async function perplexity(a)  { return openaiChat({ url: 'https://api.perplexity.ai/chat/completions', key: process.env.PERPLEXITY_API_KEY, model: 'sonar', provider: 'Perplexity', timeout: 22000, ...a }); }
+// Groq open models (the free-tier Llama models moved to Enterprise / Contact
+// Sales, which was the 404). gpt-oss-120b/20b are open and allow 65,536 output.
+async function groq70(a)      { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'openai/gpt-oss-120b', provider: 'Groq', timeout: 45000, ...a }); }
+async function groq8(a)       { return openaiChat({ url: 'https://api.groq.com/openai/v1/chat/completions', key: process.env.GROQ_API_KEY, model: 'openai/gpt-oss-20b', provider: 'Groq', timeout: 45000, ...a }); }
+async function grok(a)        { return openaiChat({ url: 'https://api.x.ai/v1/chat/completions', key: process.env.XAI_API_KEY, model: 'grok-3-mini', provider: 'Grok', timeout: 45000, ...a }); }
+async function perplexity(a)  { return openaiChat({ url: 'https://api.perplexity.ai/chat/completions', key: process.env.PERPLEXITY_API_KEY, model: 'sonar', provider: 'Perplexity', timeout: 45000, ...a }); }
 
 // ── Google Gemini ────────────────────────────────────────────────────────────
-async function gemini({ system, messages, maxTokens }) {
+async function gemini({ system, messages, maxTokens, timeout }) {
+  const budget = timeout || 45000;
   const key = process.env.GOOGLE_AI_KEY;
-  if (!key) return { ok: false, provider: 'Gemini', status: null, detail: 'no API key (GOOGLE_AI_KEY not set)', skipped: true };
+  if (!key) return { ok: false, provider: 'Gemini', status: null, detail: 'no API key (GOOGLE_AI_KEY not set)', skipped: true, timeoutBudgetMs: budget, durationMs: 0 };
   const model = 'gemini-2.5-flash';
+  const t0 = Date.now();
   try {
     const body = {
       contents: messages.map((m) => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: [{ text: textOfContent(m.content) }] })),
@@ -126,21 +148,25 @@ async function gemini({ system, messages, maxTokens }) {
     if (sys) body.systemInstruction = { parts: [{ text: sys }] };
     const r = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(25000) }
+      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: AbortSignal.timeout(budget) }
     );
-    if (!r.ok) return { ok: false, provider: 'Gemini', status: r.status, detail: await errDetail(r) };
+    if (!r.ok) return { ok: false, provider: 'Gemini', status: r.status, detail: await errDetail(r), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
     const d = await r.json();
     const text = d?.candidates?.[0]?.content?.parts?.map((p) => p.text).join('').trim();
-    return text ? { ok: true, text, provider: 'Gemini', model } : { ok: false, provider: 'Gemini', status: r.status, detail: 'empty response body' };
+    return text
+      ? { ok: true, text, provider: 'Gemini', model, timeoutBudgetMs: budget, durationMs: Date.now() - t0 }
+      : { ok: false, provider: 'Gemini', status: r.status, detail: 'empty response body', timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   } catch (e) {
-    return { ok: false, provider: 'Gemini', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+    return { ok: false, provider: 'Gemini', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim(), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   }
 }
 
 // ── Anthropic Claude (quality tier, prompt caching, multimodal-capable) ──────
-async function claude({ system, messages, maxTokens }) {
+async function claude({ system, messages, maxTokens, timeout }) {
+  const budget = timeout || 55000;
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return { ok: false, provider: 'Claude', status: null, detail: 'no API key (ANTHROPIC_API_KEY not set)', skipped: true };
+  if (!key) return { ok: false, provider: 'Claude', status: null, detail: 'no API key (ANTHROPIC_API_KEY not set)', skipped: true, timeoutBudgetMs: budget, durationMs: 0 };
+  const t0 = Date.now();
   try {
     const payload = { model: CLAUDE_MODEL, max_tokens: capFor('Claude', maxTokens), messages };
     const sb = buildSystemBlocks(system);
@@ -154,21 +180,23 @@ async function claude({ system, messages, maxTokens }) {
         'anthropic-beta': 'prompt-caching-2024-07-31',
       },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(55000),
+      signal: AbortSignal.timeout(budget),
     });
-    if (!r.ok) return { ok: false, provider: 'Claude', status: r.status, detail: await errDetail(r) };
+    if (!r.ok) return { ok: false, provider: 'Claude', status: r.status, detail: await errDetail(r), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
     const d = await r.json();
     const text = (d?.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
-    return text ? { ok: true, text, provider: 'Claude', model: CLAUDE_MODEL } : { ok: false, provider: 'Claude', status: r.status, detail: 'empty response body' };
+    return text
+      ? { ok: true, text, provider: 'Claude', model: CLAUDE_MODEL, timeoutBudgetMs: budget, durationMs: Date.now() - t0 }
+      : { ok: false, provider: 'Claude', status: r.status, detail: 'empty response body', timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   } catch (e) {
-    return { ok: false, provider: 'Claude', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim() };
+    return { ok: false, provider: 'Claude', status: null, detail: `network/timeout (${e?.name || 'error'}: ${e?.message || ''})`.trim(), timeoutBudgetMs: budget, durationMs: Date.now() - t0 };
   }
 }
 
 // True streaming Claude call — returns the raw upstream Response for SSE
 // passthrough (chat.js), or null on network failure. Preserves prompt caching
 // and the web_search tool passthrough (Anthropic-only).
-export async function streamClaude({ system, messages, maxTokens, tools }) {
+export async function streamClaude({ system, messages, maxTokens, tools, timeout }) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   const payload = { model: CLAUDE_MODEL, max_tokens: maxTokens, messages, stream: true };
@@ -185,6 +213,10 @@ export async function streamClaude({ system, messages, maxTokens, tools }) {
         'anthropic-beta': 'prompt-caching-2024-07-31',
       },
       body: JSON.stringify(payload),
+      // Streaming means bytes flow as they generate, so a long guide never sits
+      // behind a single blocking response — but a generous abort still guards a
+      // truly hung connection. Budget sits under the route's maxDuration.
+      signal: AbortSignal.timeout(timeout || 290000),
     });
   } catch { return null; }
 }
@@ -194,17 +226,26 @@ export const CLAUDE = { MODEL: CLAUDE_MODEL };
 // ── Registry + job routing ───────────────────────────────────────────────────
 export const PROVIDERS = { groq70, groq8, gemini, grok, perplexity, claude };
 
-// Preference order per job. Each still ends in a strong fallback so no job has a
-// single point of failure. `reason` leads with Claude (best guides when funded)
-// but MUST reach a working provider when it isn't — so it now ends in groq70 →
-// groq8 (the 8B model has the most generous free-tier limits), giving the chain
-// a reachable last resort instead of dying on a single unavailable provider.
+// Preference order per job — the routing, kept here as data so a re-route is a
+// one-line change (and exposed via /api/health so it isn't buried).
+//
+// The VOLUME jobs (default, fast, web, contrast) lead Groq → Gemini → Claude:
+// cost lives in volume, and Groq is ~$0.004/call vs ~$0.10 for Claude.
+//
+// `reason` (study guides, deep dives, recaps) deliberately leads with Claude,
+// then falls to Gemini → groq70 → groq8. It's a few calls a week whose output is
+// read more than once; the Claude premium there is a few dollars a year, so
+// quality wins. Want it on Groq later? Reorder this one line.
+//
+// Claude is the FINAL fallback in every chain, never removed. Missing-key
+// providers return `skipped` without a network call, so they cost nothing to
+// have in the list.
 export const JOB_ORDER = {
-  fast:     ['groq70', 'groq8', 'gemini', 'claude'],           // routing, classification, extraction
-  web:      ['perplexity', 'grok', 'gemini', 'claude'],        // needs current facts
-  contrast: ['grok', 'perplexity', 'gemini', 'claude'],        // sentiment, contrarian read
-  reason:   ['claude', 'gemini', 'groq70', 'groq8'],           // study guides, deep dives, recaps
-  default:  ['groq70', 'gemini', 'claude'],
+  fast:     ['groq70', 'groq8', 'gemini', 'claude'],  // routing, classification, extraction
+  web:      ['groq70', 'gemini', 'claude'],           // Groq-first per routing policy
+  contrast: ['groq70', 'gemini', 'claude'],           // Groq-first per routing policy
+  reason:   ['claude', 'gemini', 'groq70', 'groq8'],  // study guides, deep dives, recaps
+  default:  ['groq70', 'gemini', 'claude'],           // regular chat
 };
 
 export function jobOrder(job) {
@@ -228,10 +269,11 @@ export function formatAttempts(attempts) {
 // `r && r.text` exactly as before.
 export async function callAI({ job = 'default', system, messages, maxTokens = 1024 }) {
   const attempts = [];
+  const timeout = timeoutFor(job); // reason-tier gets the long budget, not 15–55s
   for (const key of jobOrder(job)) {
     const fn = PROVIDERS[key];
     if (!fn) continue;
-    const r = await fn({ system, messages, maxTokens });
+    const r = await fn({ system, messages, maxTokens, timeout });
     if (r && r.text) return r;
     attempts.push(r || { provider: key, status: null, detail: 'unknown failure' });
   }
@@ -270,19 +312,28 @@ function withTimeout(promise, ms, onTimeout) {
 // have), and — when present — a minimal real call so a present-but-unfunded or
 // invalid key ("configured" but broken) is caught with its HTTP status instead
 // of looking healthy.
+//
+// The probe is deliberately tiny, so it also reports `durationMs` (how long the
+// probe took) alongside `reasonTimeoutMs` (the budget a REAL reason-tier call
+// gets) and `budgetOkForReason`. A tiny probe passing while real 6000-token work
+// times out is the exact bug that hid the last outage — so health now flags any
+// provider whose reason-tier budget is below what long generations need.
 export async function testAllProviders() {
   const names = Object.keys(KEY_MAP);
+  const reasonBudget = timeoutFor('reason');
+  const budgetOkForReason = reasonBudget >= REASON_MIN_BUDGET_MS;
   const entries = await Promise.all(names.map(async (name) => {
     const envVar = KEY_MAP[name];
-    if (!process.env[envVar]) return [name, { key: 'missing', envVar, test: 'skipped' }];
+    const base = { envVar, reasonTimeoutMs: reasonBudget, budgetOkForReason };
+    if (!process.env[envVar]) return [name, { key: 'missing', test: 'skipped', ...base }];
     const fn = HEALTH_FN[name];
     const r = await withTimeout(
-      fn({ system: '', messages: [{ role: 'user', content: 'ping' }], maxTokens: 8 }),
-      8000,
-      { ok: false, status: null, detail: 'health probe timed out (8s)' },
+      fn({ system: '', messages: [{ role: 'user', content: 'ping' }], maxTokens: 8, timeout: 10000 }),
+      10000,
+      { ok: false, status: null, detail: 'health probe timed out (10s)', durationMs: 10000 },
     );
-    if (r && r.text) return [name, { key: 'configured', envVar, test: 'ok', model: r.model }];
-    return [name, { key: 'configured', envVar, test: 'failed', status: (r && r.status) || null, detail: (r && r.detail) || 'unknown' }];
+    if (r && r.text) return [name, { key: 'configured', test: 'ok', model: r.model, durationMs: r.durationMs ?? null, ...base }];
+    return [name, { key: 'configured', test: 'failed', status: (r && r.status) || null, detail: (r && r.detail) || 'unknown', durationMs: (r && r.durationMs) ?? null, ...base }];
   }));
   return Object.fromEntries(entries);
 }
