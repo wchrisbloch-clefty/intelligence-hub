@@ -151,6 +151,21 @@ nobody; now they feed a shared graph and a shared card deck.
   the awaited/revert contract. "What moved it" drills into `conceptFootprint`
   (the shared ConnectedKnowledge panel). Module chips link back to where the
   skill is built.
+- **Book grounding is REQUIRED before a study guide** (`src/lib/bookVerify.js`).
+  A model will confidently invent a thesis for a title it doesn't know — a guide
+  for the post-cutoff *The Way of Excellence* returned frameworks from the
+  author's EARLIER books, asserted as this one's. So on select, verify against
+  **Google Books** (`intitle:"…"+inauthor:…`, free, keyless, CORS-friendly — do
+  NOT add a serverless function, we're at the Hobby 12-function cap), falling back
+  to **Open Library**. The user confirms the match; the **verified metadata is
+  stored on the book record** and the **publisher description is injected into
+  every generation prompt as grounding** (the single change that prevents drift).
+  If `publishedDate` is after `MODEL_KNOWLEDGE_CUTOFF`, the book is `postCutoff`
+  and generation first runs a **`job:'web'` pass** (Perplexity/Grok) for the real
+  thesis + structure. Failed verification still generates but banners **unverified**.
+  Every framework is tier-tagged `[verified]` / `[reported: <book>]` / `[inferred]`
+  (rendered as `--tier-*` chips by `shared/MD.jsx`) — the guide is the one surface
+  that used to present model output as authoritative.
 - **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
   is appended to every prompt. The lens is **remembered per book** (`lensByBook`
   map on **`aether_bookclub_lens`**, awaited/revert write) so a work-framed read
