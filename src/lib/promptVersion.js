@@ -1,0 +1,34 @@
+// src/lib/promptVersion.js — cache invalidation for AI-generated artifacts.
+//
+// A cached artifact built by an OLD generation prompt must never be served as if
+// it were current. After PR #29 a study guide exported byte-identical to its
+// pre-#29 version — telemetry leak intact, no tier chips, no counter-argument —
+// because nothing recorded which prompt produced it. Every generated artifact now
+// stamps the prompt version it was built with; a surface compares that to the
+// current version and flags stale (with one-tap regenerate) instead of silently
+// serving old output.
+//
+// BUMP the number for an artifact type whenever its generation prompt changes.
+export const PROMPT_VERSION = {
+  studyGuide: 2, // #29: grounding + tier chips + "Where This Breaks Down" + no telemetry leak
+  deepDive: 1,
+  ladder: 1,
+};
+
+// Stamp onto an artifact at generation time: { ...artifact, ...stampVersion('studyGuide') }.
+export function stampVersion(type) {
+  return { promptVersion: PROMPT_VERSION[type] || 0, generatedAt: Date.now() };
+}
+
+// True when the artifact was built by an older prompt than the current one.
+export function isStale(artifact, type) {
+  if (!artifact) return false;
+  return (artifact.promptVersion || 0) < (PROMPT_VERSION[type] || 0);
+}
+
+// "generated 8/24/2026 · v2" — surfaced in the UI next to a regenerate control.
+export function versionLabel(artifact) {
+  const ts = artifact?.generatedAt || artifact?.createdAt;
+  const date = ts ? new Date(ts).toLocaleDateString() : 'unknown date';
+  return `generated ${date} · v${artifact?.promptVersion || 0}`;
+}

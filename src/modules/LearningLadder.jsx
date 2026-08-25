@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, buildLadderPrompt, buildQuizPrompt } from '../utils.js';
 import { CB_LEARNING_SPINE } from '../constants.js';
 import { loadIndex, hydrateIndex, loadLadder, hydrateLadder, saveLadder, removeLadder, buildLadder, completeModule } from '../lib/ladders.js';
+import { isStale, versionLabel } from '../lib/promptVersion.js';
 import useChatThread from '../hooks/useChatThread.js';
 import { recordQuizResult } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
@@ -177,7 +178,11 @@ export default function LearningLadder() {
         <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Ladders</div>
       </div>
       <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{ladder.topic}</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 14px' }}>{GOALS.find(g => g.id === ladder.goal)?.label || ladder.goal} · {ladder.progress}% complete</div>
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 14px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span>{GOALS.find(g => g.id === ladder.goal)?.label || ladder.goal} · {ladder.progress}% complete</span>
+        {ladder.promptVersion != null && <span>· {versionLabel(ladder)}</span>}
+        {isStale(ladder, 'ladder') && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>prompt updated → rebuild</span>}
+      </div>
       <div style={{ marginBottom: 22 }}><YardLines modules={ladder.modules} /></div>
 
       {ladder.modules.map((m, i) => {

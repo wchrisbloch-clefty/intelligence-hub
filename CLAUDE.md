@@ -35,6 +35,14 @@ deployed on Vercel. Single user (CB).
   guides/deep dives/recaps) leads with Claude for quality; the volume jobs
   (default/fast/web/contrast) lead with Groq for cost; Claude is the final
   fallback in every chain. Re-routing is a one-line edit in `JOB_ORDER`.
+- **Cached AI artifacts stamp a prompt version** (`src/lib/promptVersion.js`,
+  `PROMPT_VERSION` per type). A guide/dive/ladder records the `promptVersion` +
+  `generatedAt` it was built with; surfaces compare against the current version
+  (`isStale`) and show `versionLabel` ("generated <date> · v<n>") with one-tap
+  regenerate rather than silently serving output from an older prompt — a post-#29
+  guide had exported byte-identical to the pre-#29 one because nothing
+  invalidated. **Bump the type's number whenever its generation prompt changes.**
+  Academy packs are static data and carry their own `version`/`lastVerified`.
 - **Persistence is Upstash Redis via `/api/storage`**, keys prefixed `aether_*`.
   **Not Supabase.** `api/_lib.js` reads creds as
   `process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL` (same

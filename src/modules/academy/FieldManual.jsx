@@ -146,6 +146,7 @@ function Shelf({ state, pad, isMobile, onOpen, onField, onLedger }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
                 <MetaPill>{total} levels</MetaPill>
                 <MetaPill>{ready}/{total} field-ready</MetaPill>
+                {ladder.version && <MetaPill>v{ladder.version}{ladder.lastVerified ? ` · ${ladder.lastVerified}` : ''}</MetaPill>}
                 {openC > 0 && <span style={pill('var(--negative)')}>⚠ {openC} unverified</span>}
                 {stale != null && stale > STALE_DAYS && <span style={pill('var(--caution)')}>stale {stale}d</span>}
               </div>

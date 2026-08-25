@@ -5,6 +5,7 @@
 // The app owns the object; /api/chat only generates the initial structure.
 import { readLocal, writeThrough, hydrate, storage } from './storage.js';
 import { uid } from '../utils.js';
+import { stampVersion } from './promptVersion.js';
 
 const IDX = 'ladders';
 const key = (id) => `ladder:${id}`;
@@ -35,7 +36,7 @@ export function buildLadder({ topic, goal, modules }) {
     quizId: null,
     sessionId: null,
   }));
-  return recompute({ id: uid(), topic, goal, modules: built, createdAt: Date.now(), progress: 0 });
+  return recompute({ id: uid(), topic, goal, modules: built, createdAt: Date.now(), progress: 0, ...stampVersion('ladder') });
 }
 
 export function loadIndex() { return readLocal(IDX, []); }

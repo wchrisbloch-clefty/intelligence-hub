@@ -9,6 +9,7 @@ import { recommendBooks } from '../lib/bookRecs.js';
 import { buildSkills, levelFor } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { verifyBook, toVerifiedRecord, isPostCutoff } from '../lib/bookVerify.js';
+import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
@@ -449,7 +450,7 @@ export default function BookClub() {
       setGuideCards(added);
       // Persist the guide so it survives a refresh (regenerable, never lost).
       // Awaited/revert: a failed on-device write surfaces an error, doesn't vanish.
-      await persistGuide({ bookId: selectedBook.id, bookTitle: selectedBook.title, lens, provider, body, cards: added, verified: !!selectedBook.verified, postCutoff: !!selectedBook.postCutoff, grounded: !!(grounding.description || grounding.webThesis), createdAt: Date.now() });
+      await persistGuide({ bookId: selectedBook.id, bookTitle: selectedBook.title, lens, provider, body, cards: added, verified: !!selectedBook.verified, postCutoff: !!selectedBook.postCutoff, grounded: !!(grounding.description || grounding.webThesis), createdAt: Date.now(), ...stampVersion('studyGuide') });
       logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', confidence: 6, refs: selectedBook.author ? [selectedBook.author] : [] });
       // Each framework the guide names becomes its own concept, sharing the book
       // as source so they interlink and surface in Connected Knowledge. Awaited
@@ -808,18 +809,31 @@ export default function BookClub() {
                 </div>
 
                 {/* A saved guide is one click away — never lost on refresh. */}
-                {savedGuide && !(isGuide && result) && (
-                  <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '10px 14px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 10 }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
-                      <Icon name="BookOpen" size={14} style={{ color: T.accent }} />
-                      Saved study guide · {LENSES.find((l) => l.id === savedGuide.lens)?.label || 'Both'} lens · {new Date(savedGuide.createdAt).toLocaleDateString()}
-                    </span>
-                    <button onClick={viewSavedGuide}
-                      style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: 'transparent', border: `1px solid ${T.accent}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
-                      View guide
-                    </button>
-                  </div>
-                )}
+                {savedGuide && !(isGuide && result) && (() => {
+                  const stale = isStale(savedGuide, 'studyGuide');
+                  const tone = stale ? T.tierInferred : T.accent;
+                  return (
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '10px 14px', background: withAlpha(tone, 8), border: `1px solid ${withAlpha(tone, 30)}`, borderRadius: 10 }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
+                        <Icon name={stale ? 'AlertTriangle' : 'BookOpen'} size={14} style={{ color: tone }} />
+                        Saved study guide · {LENSES.find((l) => l.id === savedGuide.lens)?.label || 'Both'} lens · {versionLabel(savedGuide)}
+                        {stale && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tone, border: `1px solid ${tone}`, borderRadius: 5, padding: '1px 6px' }}>prompt updated → regenerate (v{PROMPT_VERSION.studyGuide})</span>}
+                      </span>
+                      <span style={{ display: 'inline-flex', gap: 8 }}>
+                        <button onClick={viewSavedGuide}
+                          style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: 'transparent', border: `1px solid ${T.accent}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                          View guide
+                        </button>
+                        {stale && (
+                          <button onClick={generateGuide} disabled={loading}
+                            style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.onAccent, background: T.accent, border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                            Regenerate
+                          </button>
+                        )}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {guideErr && (
                   <div style={{ marginBottom: 16, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
                     ⚠ {guideErr}
