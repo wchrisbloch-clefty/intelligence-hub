@@ -18,6 +18,7 @@ import Icon from './shared/Icon.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
 import QuizMode from './shared/QuizMode.jsx';
+import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
 
 const READING_QUICK_PROMPTS = {
@@ -95,8 +96,10 @@ export default function LearningCenter() {
     setStream('');
     try {
       const apiMessages = await buildApiMessages(newHistory);
+      // Reading mode summarizes EXTERNAL material the user acts on → tier its
+      // claims (source trust). Free chat about the user's own thinking does not.
       const system = entryMode === 'reading'
-        ? buildReadingSystem({ contentType, goal: readerGoal, depth: depthLevel, progress: readingProgress, content: context, graph })
+        ? `${buildReadingSystem({ contentType, goal: readerGoal, depth: depthLevel, progress: readingProgress, content: context, graph })}\n\n${TIER_INSTRUCTION}`
         : buildSystem(entryMode, sessionMode, context, graph);
       // Deep/Expert reading depth grounds itself in live sources — auto-enable web.
       const useWeb = searchEnabled || (entryMode === 'reading' && depthNeedsWeb(depthLevel));
