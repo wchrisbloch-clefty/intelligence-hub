@@ -10,6 +10,7 @@ import { buildSkills, levelFor } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { verifyBook, toVerifiedRecord, isPostCutoff } from '../lib/bookVerify.js';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
+import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth } from '../lib/rigor.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
@@ -113,12 +114,17 @@ function buildStudyContext() {
 // grounding: { fullTitle, publishedDate, description, webThesis } from the
 // verified catalog record (and a web pass for post-cutoff books). This block is
 // what keeps the model from inventing a thesis for a book it doesn't know.
-const buildGuidePrompt = (b, lensClause, context, grounding = {}) => {
+const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
   const title = grounding.fullTitle || b.title;
   const ground = [
     grounding.description ? `PUBLISHER DESCRIPTION (authoritative — the guide MUST match this, not the author's other books):\n${grounding.description}` : '',
     grounding.webThesis ? `RETRIEVED THESIS & STRUCTURE (from a live web pass, this book specifically):\n${grounding.webThesis}` : '',
   ].filter(Boolean).join('\n\n');
+  // Depth-bound epistemic sections come from the shared rigor layer (evidence,
+  // sources, lineage, "Where This Breaks Down", disconfirming test, friction) —
+  // no longer hardcoded here. tiers:false because Key Frameworks carries its own
+  // framework-specific tier tags below.
+  const rigor = rigorPrompt(depth, { tiers: false });
   return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
 ${ground ? `\n════ GROUNDING — READ FIRST ════\n${ground}\nEvery framework must be traceable to THIS book. If a claim comes from the author's EARLIER work rather than this title, say so explicitly and tier it 'reported'. Do NOT present the author's other books' ideas as this book's content.\n════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios. A generic example is a failure; every scenario must be about his real work or life. Do NOT mention internal metadata, observation counts, or "touches":\n${context}\n` : ''}
 Use these exact ## sections in order:
@@ -132,11 +138,9 @@ Tag EACH framework at the END of its first line with exactly one tier marker:
 3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the project / skill / topic and show exactly how a framework from this book changes what he does next.
 ## Application Prompts
 5 concrete things CB can act on THIS WEEK.
-## Where This Breaks Down
-The strongest, most credible criticism of the book's thesis — and WHO makes it (a school of thought or a named critic). A study aid argues both sides; do not soften this into a caveat.
 ## Field Summary
 A one-page, scannable field summary — the whole book in bullets he can reread before a meeting in two minutes.
-
+${rigor ? `\n${rigor}\n` : ''}
 Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of 8 to 10 self-quiz flashcards: [{"front":"question","back":"answer"}]. Output the ---CARDS--- marker and the array even if the guide ran long. No prose after the marker.`;
 };
 
@@ -203,6 +207,11 @@ export default function BookClub() {
   const [guides, setGuides] = useState(() => readLocal(STUDY_GUIDES_KEY, {}));
   const [guideErr, setGuideErr] = useState('');
   const [guideLens, setGuideLens] = useState('both'); // lens the displayed guide was generated with
+  // Epistemic depth for the guide — binds to the shared rigor layer. Default deep
+  // (evidence + sources + lineage + "Where This Breaks Down"); dial to expert for
+  // the disconfirming test + friction, or down to standard/surface.
+  const [depth, setDepth] = useState('deep');
+  const [readNext, setReadNext] = useState([]); // networked "read next" recs for the current guide
   // Catalog verification for the selected book. status: idle|loading|done|none
   const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0 });
 
@@ -401,9 +410,37 @@ export default function BookClub() {
   // in the chosen lens → application prompts → field summary), a self-quiz that
   // writes cards straight to the Vault, and a hand-off to Creation Studio so the
   // guide is downloadable.
+  // Networked "read next": 4–6 works that deepen / contradict / precede this one,
+  // primary sources preferred, cross-referenced against the library so anything
+  // already owned is flagged rather than re-recommended.
+  const generateReadNext = async (book, grounding) => {
+    try {
+      const reply = await callClaude({
+        system: 'You recommend books as a rigorous librarian. Prefer PRIMARY sources over derivative popular titles. Output ONLY a JSON array, no prose.',
+        messages: [{ role: 'user', content: `For a reader who just studied "${grounding.fullTitle || book.title}"${book.author ? ` by ${book.author}` : ''}, recommend 4-6 works that DEEPEN, CONTRADICT, or PRECEDE it (a networked reading map, not a generic list). Prefer primary sources. Return ONLY JSON: [{"title","author","relation":"deepens|contradicts|precedes","reason":"one line"}].` }],
+        job: 'reason',
+        maxTokens: 900,
+      });
+      let text = reply.replace(/```json|```/gi, '').trim();
+      const s = text.indexOf('['), e = text.lastIndexOf(']');
+      if (s !== -1 && e > s) text = text.slice(s, e + 1);
+      const arr = JSON.parse(text);
+      if (!Array.isArray(arr)) return [];
+      const owned = new Set(books.map((b) => `${(b.title || '').toLowerCase().trim()}|${(b.author || '').toLowerCase().trim()}`));
+      const ownedTitle = new Set(books.map((b) => (b.title || '').toLowerCase().trim()));
+      return arr.slice(0, 6).map((r) => ({
+        title: String(r.title || '').trim(),
+        author: String(r.author || '').trim(),
+        relation: ['deepens', 'contradicts', 'precedes'].includes(r.relation) ? r.relation : 'deepens',
+        reason: String(r.reason || '').trim(),
+        owned: owned.has(`${String(r.title || '').toLowerCase().trim()}|${String(r.author || '').toLowerCase().trim()}`) || ownedTitle.has(String(r.title || '').toLowerCase().trim()),
+      })).filter((r) => r.title);
+    } catch { return []; }
+  };
+
   const generateGuide = async () => {
     if (!selectedBook) return;
-    setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens);
+    setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens); setReadNext([]);
     let provider = '';
     try {
       // Grounding is the single change that stops the model inventing a thesis
@@ -435,7 +472,7 @@ export default function BookClub() {
       let acc = '';
       const reply = await callClaude({
         system: CB_LEARNING_SPINE,
-        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), buildStudyContext(), grounding) }],
+        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), buildStudyContext(), grounding, depth) }],
         // High ceiling — a real six-section guide plus 8–10 cards. The old 1500
         // cap is why this produced stubs.
         maxTokens: 6000,
@@ -448,9 +485,11 @@ export default function BookClub() {
       setResult(body);
       const added = parseAndVaultCards(cardsRaw, selectedBook);
       setGuideCards(added);
+      const recs = await generateReadNext(selectedBook, grounding);
+      setReadNext(recs);
       // Persist the guide so it survives a refresh (regenerable, never lost).
       // Awaited/revert: a failed on-device write surfaces an error, doesn't vanish.
-      await persistGuide({ bookId: selectedBook.id, bookTitle: selectedBook.title, lens, provider, body, cards: added, verified: !!selectedBook.verified, postCutoff: !!selectedBook.postCutoff, grounded: !!(grounding.description || grounding.webThesis), createdAt: Date.now(), ...stampVersion('studyGuide') });
+      await persistGuide({ bookId: selectedBook.id, bookTitle: selectedBook.title, lens, depth, provider, body, cards: added, readNext: recs, verified: !!selectedBook.verified, postCutoff: !!selectedBook.postCutoff, grounded: !!(grounding.description || grounding.webThesis), createdAt: Date.now(), ...stampVersion('studyGuide') });
       logConcept({ topic: selectedBook.title, source: selectedBook.title, module: 'books', confidence: 6, refs: selectedBook.author ? [selectedBook.author] : [] });
       // Each framework the guide names becomes its own concept, sharing the book
       // as source so they interlink and surface in Connected Knowledge. Awaited
@@ -482,7 +521,8 @@ export default function BookClub() {
   const savedGuide = selectedBook ? guides[selectedBook.id] : null;
   const viewSavedGuide = () => {
     if (!savedGuide) return;
-    setMode('guide'); setIsGuide(true); setResult(savedGuide.body); setResultProvider(savedGuide.provider || ''); setGuideCards(savedGuide.cards || 0); setVaulted(false); setGuideErr(''); setGuideLens(savedGuide.lens || 'both');
+    setMode('guide'); setIsGuide(true); setResult(savedGuide.body); setResultProvider(savedGuide.provider || ''); setGuideCards(savedGuide.cards || 0); setVaulted(false); setGuideErr(''); setGuideLens(savedGuide.lens || 'both'); setReadNext(savedGuide.readNext || []);
+    if (savedGuide.depth) setDepth(savedGuide.depth);
   };
 
   // Persist a generated diagram onto its parent guide so it saves + exports with
@@ -801,6 +841,16 @@ export default function BookClub() {
                         </button>
                       );
                     })}
+                    <span style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginLeft: 8 }} title="Epistemic depth: surface=tier chips · standard=+evidence/sources · deep=+lineage/where-it-breaks-down · expert=+disconfirming test/friction">Rigor</span>
+                    {DEPTHS.map((d) => {
+                      const on = depth === d;
+                      return (
+                        <button key={d} onClick={() => setDepth(d)} title={`Rigor: ${DEPTH_LABELS[d]}`}
+                          style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                          {DEPTH_LABELS[d]}
+                        </button>
+                      );
+                    })}
                   </div>
                   <button onClick={generateGuide} disabled={loading}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: 'none', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 40 }}>
@@ -898,12 +948,39 @@ export default function BookClub() {
                         <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>
                         <DiagramBlock
                           content={result}
-                          hint={`Diagram the key frameworks in "${selectedBook.title}" and how they relate.`}
+                          hint={`Draw an ANALYTICAL diagram of "${selectedBook.title}" — a causal or tension diagram showing how the key frameworks INTERACT, where they CONFLICT, and the underlying mechanism. Do NOT just restate the section hierarchy or list the frameworks; show the relationships between them.`}
                           initialCode={savedGuide?.diagram || ''}
                           onGenerated={saveGuideDiagram}
                           label="Visualize frameworks"
                           auto={extractFrameworks(result).length >= 3}
                         />
+                      </div>
+                    )}
+                    {isGuide && !loading && readNext.length > 0 && (
+                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
+                        <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Read next · networked</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                          {readNext.map((r, i) => {
+                            const relTone = r.relation === 'contradicts' ? 'var(--tier-inferred)' : r.relation === 'precedes' ? 'var(--tier-reported)' : 'var(--tier-verified)';
+                            return (
+                              <div key={i} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                                  <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: relTone, border: `1px solid ${relTone}`, borderRadius: 4, padding: '1px 6px' }}>{r.relation}</span>
+                                  {r.owned && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>✓ in library</span>}
+                                </div>
+                                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{r.title}</div>
+                                {r.author && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{r.author}</div>}
+                                {r.reason && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>{r.reason}</div>}
+                                {!r.owned && (
+                                  <button onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author || 'Unknown', type: 'other' }])}
+                                    style={{ alignSelf: 'flex-start', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
+                                    <Icon name="Plus" size={13} /> Add to library
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     )}
                     {isGuide && !loading && (

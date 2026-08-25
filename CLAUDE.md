@@ -245,6 +245,32 @@ nobody; now they feed a shared graph and a shared card deck.
   framing, Ackerman bargaining; each level pairs a BD and a personal example).
   No hardcoded hex — the engine renders on system tokens (`ladder.accent` is
   vestigial). **Productization candidate:** the pack schema is the product.
+- **Epistemic layer** (`src/lib/rigor.js`, `shared/TierChip.jsx`) — provenance
+  applies to claims about the **external world the user acts on, not the user's
+  own thinking**, so rigor is **opt-in per surface, composed from fragments,
+  never global** (a library everyone is forced to use is a tax). It **binds to
+  the existing depth protocol**, not a parallel system: `rigorPrompt(depth)`
+  returns the fragments for that depth —
+  **surface** = tier chips only · **standard** = + evidence quality + sources ·
+  **deep** = + intellectual lineage + "Where This Breaks Down" (steelmanned, with
+  who disagrees) · **expert** = + disconfirming test + friction. Full-rigor
+  surfaces without their own depth control default to `standard`; BookClub has one
+  and defaults to `deep`. `TIER_INSTRUCTION` is the shared tier discipline —
+  **tier is source trust, never engagement** (same rule as WhatsHappening);
+  `[verified]`/`[reported: <src>]`/`[inferred]` render as `--tier-*` chips (via
+  `MD.jsx` inline, or `<TierChip>` on non-MD surfaces).
+  **Scope tiers — do NOT apply everywhere:**
+  *Full rigor* — BookClub, DeepDive, LearningCenter, FieldManual, ResearchHub,
+  TEDHub, PodcastHub (verifiable claims about external material).
+  *Tier chips only* — LearningLadder, QuizCenter, ContentInbox, DailyBrief (rigor
+  sections would be noise); **QuizCenter inherits its source's tier and never
+  asserts its own** — an unverified guide's question must not look more certain
+  than its source. *Inherit or exclude* — CreationStudio / DiagramBlock /
+  MasteryVault preserve + display tier metadata but never generate it (exports and
+  flashcards keep the provenance of what they came from); TranslatorHub flags
+  confidence on ambiguous terms only. **No provenance layer at all** on
+  DecisionLog, ProjectsOS, GrowthTools — that's the **user's own content**, and a
+  provenance layer on your own thinking is theater, not rigor.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer

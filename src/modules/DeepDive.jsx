@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, timeAgo, DEPTH_META } from '../utils.js';
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
 import { stampVersion, isStale, versionLabel } from '../lib/promptVersion.js';
+import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
@@ -57,7 +58,7 @@ export default function DeepDive() {
       const needsWeb = depthNeedsWeb(targetDive.depth);
       const text = await callClaude({
         system,
-        messages: [{ role: 'user', content: userMsg }],
+        messages: [{ role: 'user', content: `${userMsg}\n\n${TIER_INSTRUCTION}` }],
         searchEnabled: needsWeb,
         job: needsWeb ? 'web' : 'reason',
         maxTokens: 4096,
