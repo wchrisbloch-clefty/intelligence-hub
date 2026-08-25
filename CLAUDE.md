@@ -265,7 +265,12 @@ nobody; now they feed a shared graph and a shared card deck.
   *Tier chips only* — LearningLadder, QuizCenter, ContentInbox, DailyBrief (rigor
   sections would be noise); **QuizCenter inherits its source's tier and never
   asserts its own** — an unverified guide's question must not look more certain
-  than its source. *Inherit or exclude* — CreationStudio / DiagramBlock /
+  than its source. This is *wired*, not just display: `QuizMode` takes a
+  `sourceTier` prop and stamps that tier chip ("inherited from source") on every
+  answer reveal (MC + open/apply); QuizCenter generates from a bare topic via
+  ungrounded model knowledge, so it passes `inferred` — the quiz can never look
+  more certain than the model synthesis it came from, and `buildQuizPrompt` is
+  deliberately left un-tiered so the quiz never asserts a tier of its own. *Inherit or exclude* — CreationStudio / DiagramBlock /
   MasteryVault preserve + display tier metadata but never generate it (exports and
   flashcards keep the provenance of what they came from); TranslatorHub flags
   confidence on ambiguous terms only. **No provenance layer at all** on
@@ -280,9 +285,13 @@ nobody; now they feed a shared graph and a shared card deck.
   as GROUNDING; **PodcastHub** marks transcript output as reconstruction
   (`[inferred]`, "do not fabricate quotes") and tier-tags briefs; **ResearchHub /
   DeepDive** carry `TIER_INSTRUCTION` into card-analysis, board-synthesis, and
-  every deep-dive pass so extracted claims are tiered by source trust. Every one
-  of these appends `TIER_INSTRUCTION` (shared, from `rigor.js`) — no per-surface
-  copy of the tier rule. Post-cutoff detection reuses `isPostCutoff` from
+  every deep-dive pass so extracted claims are tiered by source trust;
+  **FieldManual** appends `TIER_INSTRUCTION` to its Socratic-drill examiner —
+  Academy packs are reference material the user returns to, so an un-tiered
+  asserted answer persists longer there than in a one-off guide (its
+  `DiagramBlock` stays excluded from tier *generation* per the inherit/exclude
+  rule). Every one of these appends `TIER_INSTRUCTION` (shared, from `rigor.js`)
+  — no per-surface copy of the tier rule. Post-cutoff detection reuses `isPostCutoff` from
   `bookVerify.js`; the web pass replies `NOT FOUND` rather than inventing, and a
   miss degrades to ungrounded (still tiered), never to a fabricated anchor.
 - **Long-artifact layout** (`src/modules/shared/ArtifactSections.jsx`) — a
