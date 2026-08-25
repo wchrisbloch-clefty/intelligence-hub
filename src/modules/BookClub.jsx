@@ -15,6 +15,7 @@ import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
+import ArtifactSections from './shared/ArtifactSections.jsx';
 import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META, PROJECTS_KEY } from '../constants.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
@@ -942,7 +943,9 @@ export default function BookClub() {
                         )}
                       </div>
                     </div>
-                    <MD text={result} color={T.accent} />
+                    {isGuide
+                      ? <ArtifactSections text={result} color={T.accent} isMobile={isMobile} isDesktop={isDesktop} />
+                      : <MD text={result} color={T.accent} />}
                     {isGuide && !loading && (
                       <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
                         <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>

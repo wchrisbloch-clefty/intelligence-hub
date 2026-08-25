@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, fetchPodcastRSS, fmtDuration, fmtPodDate, saveNotes, uid } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
+import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -68,12 +69,14 @@ function PodCard({ ep, idx, onSaveToVault }) {
     const prompts = {
       summary: `Summarize this podcast episode in 3-4 tight sentences for CB. Episode: "${ep.title}" from ${ep.show} (hosted by ${ep.host}). Description: ${ep.desc || 'Not available'}. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).`,
       takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation with CB application\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
-      transcript: `Based on the episode title and description, reconstruct what was likely discussed in detail. Cover: main thesis, key arguments, notable quotes or frameworks, actionable insights for CB (BD professional, investor, Houston TX). Episode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}. Be specific and thorough — 4-6 paragraphs.`,
+      transcript: `Based ONLY on the episode title and description, reconstruct what was LIKELY discussed. This is a reconstruction, not the transcript — say so, and tier the whole section [inferred]. Cover: main thesis, key arguments, notable frameworks, actionable insights for CB (BD professional, investor, Houston TX). Episode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}. 4-6 paragraphs; do not fabricate quotes.`,
     };
     try {
+      // The RSS description is the metadata anchor; tier every claim so a
+      // reconstruction never reads as verified fact.
       const result = await callClaude({
         system: CB_IDENTITY,
-        messages: [{ role: 'user', content: prompts[mode] }],
+        messages: [{ role: 'user', content: `${prompts[mode]}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'transcript' ? 1200 : 700,
       });
       setAiCache(c => ({ ...c, [mode]: result }));
@@ -229,7 +232,7 @@ export default function PodcastHub() {
     try {
       const result = await callClaude({
         system: CB_IDENTITY,
-        messages: [{ role: 'user', content: prompts[mode] }],
+        messages: [{ role: 'user', content: `${prompts[mode]}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'deepdive' ? 1400 : 700,
       });
       setPasteResult(result);
