@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, timeAgo, DEPTH_META } from '../utils.js';
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
+import { stampVersion, isStale, versionLabel } from '../lib/promptVersion.js';
 import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
@@ -64,7 +65,8 @@ export default function DeepDive() {
         onProvider: (p) => { provider = p; },
       });
       const section = { id: uid(), title, kind, content: text, sources: extractSources(text), provider, createdAt: Date.now() };
-      const updated = addSection(targetDive, section);
+      // Stamp the prompt version so a dive built by an older prompt flags stale.
+      const updated = addSection({ ...targetDive, ...stampVersion('deepDive') }, section);
       setDive(updated); refresh();
       // Feed into spaced repetition so the dive resurfaces and compounds.
       gradeTopic(`deepdive_${updated.id}`, 4, { topicLabel: updated.topic });
@@ -185,8 +187,10 @@ export default function DeepDive() {
         <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{dive.topic}</div>
         <AskChip type="deepdive" object={dive} />
       </div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 18px' }}>
-        {DEPTH_META[dive.depth]?.label || dive.depth}{dive.category ? ` · ${dive.category}` : ''} · {dive.sections.length} pass{dive.sections.length === 1 ? '' : 'es'} · certified: cited + confidence-flagged
+      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 18px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <span>{DEPTH_META[dive.depth]?.label || dive.depth}{dive.category ? ` · ${dive.category}` : ''} · {dive.sections.length} pass{dive.sections.length === 1 ? '' : 'es'} · certified: cited + confidence-flagged</span>
+        {dive.promptVersion != null && <span>· {versionLabel(dive)}</span>}
+        {isStale(dive, 'deepDive') && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>prompt updated → re-run a pass</span>}
       </div>
 
       {running && <div ref={bottomRef}><GoingDeepBanner depth={dive.depth} /></div>}
