@@ -14,7 +14,11 @@ import { renderMermaid, cleanMermaid, toOutline } from '../../lib/diagram.js';
 import Icon from './Icon.jsx';
 import { ThinkingDots } from './Common.jsx';
 
-export default function DiagramBlock({ content, hint = '', initialCode = '', onGenerated, label = 'Visualize', compact = false, auto = false }) {
+// `types` lets a caller constrain which Mermaid diagram kinds are allowed — pass
+// e.g. ['flowchart','quadrantChart'] to force a causal/tension diagram and keep
+// the model out of a decorative mindmap that just restates a hierarchy.
+const DEFAULT_TYPES = ['flowchart', 'sequenceDiagram', 'mindmap', 'timeline', 'quadrantChart'];
+export default function DiagramBlock({ content, hint = '', initialCode = '', onGenerated, label = 'Visualize', compact = false, auto = false, types = DEFAULT_TYPES }) {
   const [code, setCode] = useState(initialCode || '');
   const [svg, setSvg] = useState('');
   const [outline, setOutline] = useState('');
@@ -48,9 +52,11 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
   const generate = async () => {
     setLoading(true); setNote(''); setOutline('');
     try {
+      const typeList = (types && types.length ? types : DEFAULT_TYPES).join(', ');
+      const analytical = !types?.includes('mindmap');
       const reply = await callClaude({
-        system: 'You output ONLY valid Mermaid diagram syntax — no prose, no explanation, no code fences. Pick the single clearest diagram type: flowchart, sequenceDiagram, mindmap, timeline, or quadrantChart.',
-        messages: [{ role: 'user', content: `Produce ONE Mermaid diagram that captures the structure of the following. Keep labels short. Output ONLY Mermaid.\n\n${hint ? hint + '\n\n' : ''}${String(content || '').slice(0, 2200)}` }],
+        system: `You output ONLY valid Mermaid diagram syntax — no prose, no explanation, no code fences. Pick the single clearest diagram type from: ${typeList}.${analytical ? ' Show CAUSAL or TENSION relationships — how elements drive, depend on, feed back into, or trade off against one another (A → B, X vs Y). Do NOT restate a section hierarchy, an outline, or a flat list of items.' : ''}`,
+        messages: [{ role: 'user', content: `Produce ONE Mermaid diagram that captures the ${analytical ? 'relationships and mechanism' : 'structure'} of the following. Keep labels short. Output ONLY Mermaid.\n\n${hint ? hint + '\n\n' : ''}${String(content || '').slice(0, 2200)}` }],
         maxTokens: 700,
         job: 'reason',
       });
