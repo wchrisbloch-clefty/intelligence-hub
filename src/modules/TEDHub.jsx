@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
+import { isPostCutoff } from '../lib/bookVerify.js';
+import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 
@@ -143,7 +145,21 @@ function TalkCard({ talk, onSaveToVault }) {
     setExpanded(true);
     setLoading(true);
     try {
-      const prompt = `Analyze TED Talk: "${talk.title}" by ${talk.speaker} (${talk.year}).
+      // Same drift risk as a book: summarizing a real talk with nothing anchoring
+      // it. The title/speaker/year are the metadata anchor; a post-cutoff talk
+      // also gets a live web pass for the actual argument before we brief it.
+      let webThesis = '';
+      if (isPostCutoff(String(talk.year))) {
+        try {
+          webThesis = await callClaude({
+            system: 'You retrieve the actual argument of one specific TED talk from current sources. Report only what is truly in THIS talk; if you cannot find it, reply exactly NOT FOUND.',
+            messages: [{ role: 'user', content: `What is the actual core argument and structure of the TED talk "${talk.title}" by ${talk.speaker} (${talk.year})?` }],
+            job: 'web', maxTokens: 600,
+          });
+          if (/^\s*NOT FOUND/i.test(webThesis)) webThesis = '';
+        } catch { /* best-effort */ }
+      }
+      const prompt = `Analyze TED Talk: "${talk.title}" by ${talk.speaker} (${talk.year}).${webThesis ? `\n\nGROUNDING (the actual talk, retrieved from the web — match THIS, do not invent):\n${webThesis}` : ''}
 
 Give CB a tight intelligence brief. Format:
 **🎯 Core Thesis** — The single big idea in one sentence.
@@ -152,8 +168,10 @@ Give CB a tight intelligence brief. Format:
 **🚀 CB's Immediate Action** — One thing CB should do or change based on this talk.
 
 Context: ${talk.relevanceNote}
-Be blunt. CB-style. No fluff.`;
-      const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 500 });
+Be blunt. CB-style. No fluff.
+
+${TIER_INSTRUCTION}`;
+      const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 700 });
       setAnalysis(reply);
     } catch {
       setAnalysis('Analysis unavailable. Check connection.');

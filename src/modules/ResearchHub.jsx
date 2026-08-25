@@ -4,6 +4,7 @@ import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
 import { logConcept } from '../lib/graph.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
+import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { CB_IDENTITY } from '../constants.js';
 
 const BOARD_KEY = 'aether_board';
@@ -52,9 +53,9 @@ function ResearchBoard() {
         ? `Analyze this source/URL for CB's research: ${card.content}\n\nWhat is this about? Key signal, relevance, and what CB should take from it.`
         : `Analyze this research note for CB: "${card.content}"\n\nWhat's the signal here? Key insight, what's true/false, and what CB should do with this.`;
       const reply = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.',
+        system: CB_IDENTITY + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: prompt }],
-        maxTokens: 600,
+        maxTokens: 700,
       });
       setCardAnalysis(prev => ({ ...prev, [card.id]: reply }));
     } catch {
@@ -83,9 +84,9 @@ function ResearchBoard() {
     }).filter(Boolean).join('\n\n');
     try {
       const r = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.',
+        system: CB_IDENTITY + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: `Synthesize my research board into a comprehensive intelligence brief:\n\n${grouped}` }],
-        maxTokens: 900,
+        maxTokens: 1000,
       });
       setSynthesis(r);
     } catch { setSynthesis('Synthesis failed — try again.'); }

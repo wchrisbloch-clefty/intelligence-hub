@@ -271,6 +271,33 @@ nobody; now they feed a shared graph and a shared card deck.
   confidence on ambiguous terms only. **No provenance layer at all** on
   DecisionLog, ProjectsOS, GrowthTools — that's the **user's own content**, and a
   provenance layer on your own thinking is theater, not rigor.
+  **Grounding generalized (the book pattern, applied to every surface that briefs
+  external material):** the same drift that makes a model invent a thesis for a
+  book it doesn't know applies to any talk / episode / paper summarized with
+  nothing anchoring it. So the metadata anchor + tier discipline now travels with
+  each: **TEDHub** anchors on title/speaker/year and runs a `job:'web'` pass for
+  the real argument when the talk is `isPostCutoff` (year > cutoff), injecting it
+  as GROUNDING; **PodcastHub** marks transcript output as reconstruction
+  (`[inferred]`, "do not fabricate quotes") and tier-tags briefs; **ResearchHub /
+  DeepDive** carry `TIER_INSTRUCTION` into card-analysis, board-synthesis, and
+  every deep-dive pass so extracted claims are tiered by source trust. Every one
+  of these appends `TIER_INSTRUCTION` (shared, from `rigor.js`) — no per-surface
+  copy of the tier rule. Post-cutoff detection reuses `isPostCutoff` from
+  `bookVerify.js`; the web pass replies `NOT FOUND` rather than inventing, and a
+  miss degrades to ungrounded (still tiered), never to a fabricated anchor.
+- **Long-artifact layout** (`src/modules/shared/ArtifactSections.jsx`) — a
+  responsive renderer for any markdown artifact split on its `## ` headings.
+  Short artifacts (0–1 headings) fall through to plain `<MD>` with no chrome.
+  **Desktop + iPad** (`!isMobile`): content column + a **sticky right-rail section
+  outline** ("On this page" jump buttons). **Mobile**: a **sticky section-jump
+  chip row** + **collapsible sections** (each `## ` is a toggle; the heading line
+  is stripped from the collapsed body to avoid duplication). Content always
+  renders through `<MD>`, so **tier chips + tables (`overflow-x:auto`) behave
+  identically everywhere** and nothing overflows at 390. Wired into BookClub's
+  study-guide render (`isGuide ? <ArtifactSections …> : <MD …>`); it's the
+  reference host for the other full-rigor artifact surfaces. Layouts verified at
+  **390 / 820 / 1440, both themes** — no horizontal page scroll, tier chips don't
+  wrap badly, tables scroll inside their own frame.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
   decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
