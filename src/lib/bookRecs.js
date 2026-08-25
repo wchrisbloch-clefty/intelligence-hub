@@ -48,9 +48,12 @@ export function recommendBooks({ library = [], lens = 'both', limit = 4 } = {}) 
     const adj = (c.concepts || []).find((k) => hot.has(conceptKey(k)));
     if (adj) push(c, 'Adjacent', `Covers "${adj}", one of your most-active concepts.`);
   }
-  // 4 — Lens: a strong pick for the chosen lens (fallback so the shelf is never empty).
+  // 4 — Lens / Broadening: a strong pick to keep the shelf non-empty for ANY lens.
+  // This is the guaranteed fallback — it previously required lens !== 'both', which
+  // silently left the shelf empty on the default 'both' lens (and is why the study
+  // guide's read-next map came back empty when the AI pass returned nothing).
   for (const c of pool) {
-    if (lens !== 'both' && c.lens === lens) push(c, 'Lens', `A strong ${lens} pick to widen your ${lens} library.`);
+    push(c, 'Lens', lens === 'both' ? 'A strong pick to broaden your library.' : `A strong ${lens} pick to widen your ${lens} library.`);
   }
 
   return out.slice(0, limit);

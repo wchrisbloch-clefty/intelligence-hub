@@ -89,7 +89,11 @@ deployed on Vercel. Single user (CB).
 - **Book recs** — `src/lib/bookRecs.js` `recommendBooks({library,lens})` scores a
   curated pool (`BOOK_CANDIDATES` in constants) against the graph into four
   signal types (Adjacent / Gap / Companion / Lens), each with a one-line reason;
-  never renders a reasonless rec. Surfaced in BookClub's library.
+  never renders a reasonless rec. Surfaced in BookClub's library **and as the
+  study guide's "Read next" fallback** when the AI pass returns nothing. The Lens
+  signal is the guaranteed non-empty floor and must fire for **every** lens — it
+  used to be gated behind `lens !== 'both'`, which silently returned `[]` on the
+  default `both` lens and is why the guide's read-next map kept coming back empty.
 - **Icons + color restraint** — `src/modules/shared/Icon.jsx` renders a
   lucide-react icon by **name** (explicit registry, never `import *`, or the
   bundle balloons) at one size scale (16/20/24), inheriting `currentColor`. All
@@ -139,8 +143,12 @@ nobody; now they feed a shared graph and a shared card deck.
   (`logConcept` returns `{ok:false, code:'junk_concept'}` for a header label) and
   by `extractFrameworks` before it emits. `pruneJunkConcepts()` sweeps existing
   junk from `aether_graph_v1` (runs once on BookClub mount, reports what it
-  removed in a dismissible banner). Add a new structural label to `JUNK_LABELS` /
-  `JUNK_RE` in `graph.js`, nowhere else.
+  removed in a dismissible banner, and to the console). Add a new structural label
+  to `JUNK_LABELS` / `JUNK_RE` in `graph.js`, nowhere else. **`buildStudyContext`
+  also filters `allConcepts()` through `isJunkConcept` on the read side** — the
+  prune is async on mount and the graph can re-hydrate from the server after it
+  runs, so the read-side filter is the guarantee that a junk label never reaches a
+  guide prompt as a scenario domain regardless of prune timing.
 - **Flashcards** live on `aether_flashcards` (schema
   `{id,front,back,module,topic,source,interval,easeFactor,dueDate,reviews,createdAt}`).
   `createCard(...)` in `src/lib/reviews.js` is the single writer — dedupes by
@@ -208,6 +216,23 @@ nobody; now they feed a shared graph and a shared card deck.
   when nothing usable comes back, the guide is generated **all-`inferred` with an
   honest "could not be grounded" note**, never confident frameworks from adjacent
   work.
+  **Existence and contents are DIFFERENT facts — never assert non-existence.** A
+  catalog match proves the book EXISTS even when Google Books returns no
+  description and the web pass says `NOT FOUND` (very common for a recent title);
+  Open Library search never returns a description at all. Collapsing "verified
+  exists, contents unavailable" into "no grounding" let the model escalate to
+  *"no such title exists in publication records"* — for a real Stulberg book. So
+  `buildGuidePrompt` keeps **three distinct states**, and forbids claiming
+  non-existence in every one: **(1) verified + contents** → grounded, cap
+  `reported`; **(2) verified exists (`selectedBook.verified`) + no contents** →
+  "this book EXISTS, verified via <catalog>, published <date>; its contents could
+  not be RETRIEVED" + all-`inferred`, and it may say it couldn't retrieve the
+  contents but **never** that the book is unpublished/nonexistent; **(3) not
+  verified + no contents** → "could not VERIFY this title" + all-`inferred`, with
+  "absence from your knowledge is not evidence of non-existence." In states 2 & 3
+  the Key Frameworks section is written **from general knowledge (marked
+  `[inferred]`), never left empty** — an empty frameworks section is what silently
+  killed the auto-diagram.
 - **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
   is appended to every prompt. The lens is **remembered per book** (`lensByBook`
   map on **`aether_bookclub_lens`**, awaited/revert write) so a work-framed read
