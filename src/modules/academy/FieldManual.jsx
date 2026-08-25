@@ -7,6 +7,7 @@ import { LADDERS, getLadder } from '../../data/ladders/index.js';
 import { readLocal, writeThrough } from '../../lib/storage.js';
 import { createCard } from '../../lib/reviews.js';
 import { logConcept } from '../../lib/graph.js';
+import { TIER_INSTRUCTION } from '../../lib/rigor.js';
 import MD from '../shared/MD.jsx';
 import DiagramBlock from '../shared/DiagramBlock.jsx';
 import { ThinkingDots } from '../shared/Common.jsx';
@@ -684,7 +685,7 @@ function SocraticDrill({ ladder, level, onClose }) {
     return `LEVEL: ${ladder.title} — ${level.title}\n\nKEY CONTENT:\n${blocks}\n\nRECALL CARDS:\n${cards}`;
   }, [ladder, level]);
 
-  const system = CB_LEARNING_SPINE + `\n\nSOCRATIC MODE: You are the examiner, CB is the student, on "${level.title}". Ask ONE focused question at a time drawn from the content below. Never lecture. Wait for the answer. Respond with: what he got right, what he missed, the correct answer, then the NEXT question. After 5 questions give a scorecard: what he knows cold, what needs work.\n\nCONTENT TO EXAMINE ON:\n${digest}`;
+  const system = CB_LEARNING_SPINE + `\n\nSOCRATIC MODE: You are the examiner, CB is the student, on "${level.title}". Ask ONE focused question at a time drawn from the content below. Never lecture. Wait for the answer. Respond with: what he got right, what he missed, the correct answer, then the NEXT question. After 5 questions give a scorecard: what he knows cold, what needs work.\n\nCONTENT TO EXAMINE ON:\n${digest}\n\n${TIER_INSTRUCTION}`;
 
   const send = async (first = false) => {
     if ((!input.trim() && !first) || loading) return;

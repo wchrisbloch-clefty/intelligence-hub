@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Btn } from './Common.jsx';
+import TierChip from './TierChip.jsx';
 
 // Shared quiz-taking surface for both QuizCenter and LearningCenter.
 // onComplete(results) receives one object per question:
@@ -7,7 +8,10 @@ import { Btn } from './Common.jsx';
 //   - score: 1 / 0 for graded questions, null for self-rating ('rate')
 //   - correct: bool for 'mc', null otherwise
 //   - answer: the letter (mc), the typed text (open/apply), or the rating (rate)
-export default function QuizMode({ questions, onComplete, color = 'var(--accent)' }) {
+// sourceTier: the tier of the material the questions were generated from. A quiz
+//   never asserts its own trust — it inherits its source's, shown on each answer
+//   reveal so an ungrounded question can't look more certain than its source.
+export default function QuizMode({ questions, onComplete, color = 'var(--accent)', sourceTier }) {
   const [idx, setIdx] = useState(0);
   const [selected, setSelected] = useState(null);
   const [openAnswer, setOpenAnswer] = useState('');
@@ -29,6 +33,14 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
   };
 
   const base = () => ({ type: q.type, question: q.q, model: q.answer || '', explanation: q.explanation || '' });
+
+  // Inherited source trust — a quiz is only as certain as what it was built from.
+  const tierBadge = sourceTier ? (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+      <TierChip tier={sourceTier} size={8} />
+      <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>inherited from source</span>
+    </div>
+  ) : null;
 
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: 20, marginBottom: 16, animation: 'fadeUp 0.2s ease' }}>
@@ -75,6 +87,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
                 <div style={{ fontSize: 'var(--fs-base)', color: selected === q.answer ? 'var(--accent)' : 'var(--red)', padding: '8px 12px', background: selected === q.answer ? 'var(--accent-glow)' : 'rgba(196,85,61,0.08)', borderRadius: 6, marginBottom: 8 }}>
                   {selected === q.answer ? '✓ Correct' : `✗ Correct answer: ${q.answer}`}
                 </div>
+                {tierBadge}
                 <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim)', lineHeight: 1.65, marginBottom: 10 }}>{q.explanation}</div>
                 <Btn color={color} size="sm" onClick={() => advance({ ...base(), answer: selected, correct: selected === q.answer, score: selected === q.answer ? 1 : 0 })}>{isLast ? 'See results' : 'Next →'}</Btn>
               </>
@@ -106,6 +119,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
             ? <Btn color={color} size="sm" disabled={!openAnswer.trim()} onClick={() => setRevealed(true)}>Reveal answer</Btn>
             : <>
                 <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 5, fontStyle: 'italic' }}>Model answer</div>
+                {tierBadge}
                 <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)', lineHeight: 1.65, marginBottom: 8, padding: '8px 12px', background: 'var(--accent-glow)', borderRadius: 6 }}>{q.answer}</div>
                 {q.explanation && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim)', lineHeight: 1.6, marginBottom: 10 }}>{q.explanation}</div>}
                 <div style={{ display: 'flex', gap: 8 }}>

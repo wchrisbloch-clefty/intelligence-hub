@@ -27,6 +27,13 @@ const PRESET_TOPICS = [
 
 const STORAGE_KEY = 'aether_quiz_results';
 
+// Quizzes here are generated from a bare topic label using model knowledge —
+// no grounding document, no verification. Per the epistemic scope, a quiz never
+// asserts its own trust; it inherits its source's. That source is ungrounded
+// model synthesis, so the inherited tier is `inferred` — a question can't look
+// more certain than the (unverified) knowledge it was generated from.
+const QUIZ_SOURCE_TIER = 'inferred';
+
 // Quiz history persists cross-device: instant local read, server write-through.
 function loadResults() { return readLocal(STORAGE_KEY, []); }
 function saveResults(r) { writeThrough(STORAGE_KEY, r); }
@@ -216,7 +223,7 @@ export default function QuizCenter() {
               <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
               <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700 }}>{topic?.label}</div>
             </div>
-            <QuizMode questions={questions} color={ACCENT} onComplete={onQuizDone} />
+            <QuizMode questions={questions} color={ACCENT} sourceTier={QUIZ_SOURCE_TIER} onComplete={onQuizDone} />
           </>
         )}
       </div>
