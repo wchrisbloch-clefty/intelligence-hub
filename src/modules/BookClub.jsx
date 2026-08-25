@@ -108,6 +108,10 @@ function buildStudyContext() {
     // user-facing guide (it leaked as "(2 book touches — direct study area)").
     const concepts = (allConcepts() || [])
       .filter((c) => (c.observations || 0) > 0)
+      // Belt-and-suspenders against graph pollution: even if pruneJunkConcepts
+      // hasn't run yet (it's async on mount) or missed one, a section label like
+      // "Worked Example" must never reach the prompt as a scenario domain.
+      .filter((c) => !isJunkConcept(c.topic))
       .sort((a, b) => (b.observations || 0) - (a.observations || 0))
       .slice(0, 6)
       .map((c) => `- ${c.topic}`);
@@ -122,10 +126,18 @@ function buildStudyContext() {
 // The maximum tier a framework may claim is bounded by what grounding actually
 // returned: no primary text is ever retrieved here, so the ceiling is 'reported'
 // when we have a description/web thesis, and 'inferred' when we have neither.
-const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
+export const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
   const title = grounding.fullTitle || b.title;
-  const hasGround = !!(grounding.description || grounding.webThesis);
-  const groundedInferredOnly = !hasGround; // nothing anchored this book at all
+  const hasContents = !!(grounding.description || grounding.webThesis);
+  // Existence and contents are DIFFERENT facts. A catalog match (Google Books /
+  // Open Library) establishes the book EXISTS even when it returns no description
+  // and the web pass finds nothing — very common for a recent title. Collapsing
+  // "verified exists, contents unavailable" into "no grounding at all" is what let
+  // the model escalate to "this book does not exist" (a real Stulberg title). So
+  // three states are kept distinct, and asserting non-existence is forbidden in
+  // every one of them.
+  const existsVerified = !!grounding.verified;
+  const catalog = grounding.source === 'google' ? 'Google Books' : grounding.source === 'openlibrary' ? 'Open Library' : 'a book catalog';
   const ground = [
     grounding.webThesis ? `RETRIEVED THESIS, CHAPTERS & KEY CONCEPTS (from a live web pass, THIS book specifically — this is the spine of the guide):\n${grounding.webThesis}` : '',
     grounding.description ? `PUBLISHER DESCRIPTION (secondary — the guide MUST match this, never the author's other books):\n${grounding.description}` : '',
@@ -136,16 +148,23 @@ const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep'
   // framework-specific tier tags below.
   const rigor = rigorPrompt(depth, { tiers: false });
   // Tier ceiling written into the prompt (and enforced again on the output).
-  const tierRule = groundedInferredOnly
-    ? `No usable grounding was retrieved for this book. You do NOT reliably know it. Tag EVERY framework \`[inferred]\` and open the Core Thesis by stating plainly that the frameworks could not be grounded in this specific book. Do NOT emit \`[verified]\` or \`[reported]\`.`
+  const tierRule = !hasContents
+    ? `The book's contents were not retrieved, so write from general knowledge and tag EVERY framework \`[inferred]\`. Do NOT emit \`[verified]\` or \`[reported]\`.`
     : `Tag EACH framework at the END of its first line with exactly one tier marker, by SOURCE TRUST. \`[verified]\` requires RETRIEVED PRIMARY SOURCE TEXT with a location — you were NOT given the book's text, so \`[verified]\` is FORBIDDEN in this guide. Use \`[reported: ${title}]\` when the framework is drawn from the grounding above (publisher description / retrieved thesis), \`[reported: <other book>]\` when it is actually from the author's OTHER work (name that book), or \`[inferred]\` for your own synthesis. The highest tier allowed here is \`[reported]\`.`;
+  // The honest note about grounding — three distinct states, none of which may
+  // claim the book doesn't exist.
+  const existenceNote = hasContents
+    ? ''
+    : existsVerified
+      ? `\n════ GROUNDING STATE ════\nThis book EXISTS — it was verified against ${catalog}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}. Its CONTENTS could not be retrieved (no description available and the web pass returned nothing). Write the guide from general knowledge, mark every framework \`[inferred]\`, and open the Core Thesis by stating plainly that the book is confirmed to exist but its specific contents could not be retrieved, so the guide is inferred. You may say you could not RETRIEVE the contents — you may NEVER say or imply the book does not exist, is unpublished, or is not in publication records. It is confirmed real.\n═════════════════════════\n`
+      : `\n════ GROUNDING STATE ════\nThis title could NOT be confirmed against a book catalog, and its contents were not retrieved. Write the guide cautiously from general knowledge, mark every framework \`[inferred]\`, and open the Core Thesis by stating that you could not verify this specific title. Say only that you could not VERIFY or RETRIEVE it — you may NEVER assert that it does not exist or is not in publication records (absence from your knowledge is not evidence of non-existence).\n═════════════════════════\n`;
   return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
-${ground ? `\n════ GROUNDING — THE FRAMEWORKS COME FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the Core Thesis AND every framework ONLY from the grounding above. The frameworks in "## Key Frameworks" MUST be the concepts named in the grounding — not the author's better-known earlier book. If you are about to write a framework that is NOT supported by the grounding, that is the exact failure this guards against: drop it. If the grounding is thin, produce FEWER, well-grounded frameworks rather than padding with the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure; every scenario must be about his real work or life. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not about the guide or the graph:\n${context}\n` : ''}
+${existenceNote}${ground ? `\n════ GROUNDING — THE FRAMEWORKS COME FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the Core Thesis AND every framework ONLY from the grounding above. The frameworks in "## Key Frameworks" MUST be the concepts named in the grounding — not the author's better-known earlier book. If you are about to write a framework that is NOT supported by the grounding, that is the exact failure this guards against: drop it. If the grounding is thin, produce FEWER, well-grounded frameworks rather than padding with the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure; every scenario must be about his real work or life. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not about the guide or the graph:\n${context}\n` : ''}
 Use these exact ## sections in order:
 ## Core Thesis
-The book's central argument in plain language — no jargon, one tight paragraph${groundedInferredOnly ? ', beginning with the honest note that it could not be grounded in this specific title' : ', grounded in the material above'}.
+The book's central argument in plain language — no jargon, one tight paragraph${hasContents ? ', grounded in the material above' : existsVerified ? ', after the note that the book is confirmed to exist but its contents could not be retrieved' : ', after the note that this specific title could not be verified'}.
 ## Key Frameworks
-The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer). For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
+${hasContents ? 'The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer).' : 'The most important frameworks or mental models of this book (up to 5), written from general knowledge and each marked `[inferred]` — do not leave this section empty.'} For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
 ${tierRule}
 ## Applied Scenarios
 3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the real project / domain / topic and show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
@@ -161,7 +180,7 @@ Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array 
 // one becomes its own concept in the graph, linked to the book by shared source.
 // Tolerant of the model's formatting: bullets, numbers, bold labels, or a
 // "Name — definition" line all resolve to the leading name.
-function extractFrameworks(body) {
+export function extractFrameworks(body) {
   const m = String(body || '').match(/##\s*Key Frameworks\b([\s\S]*?)(?:\n##\s|$)/i);
   if (!m) return [];
   const out = [];
@@ -286,6 +305,9 @@ export default function BookClub() {
       // study-guide context as fake tracked skills. Report what it removed.
       try {
         const { removed } = await pruneJunkConcepts();
+        // Report what the sweep actually removed — both in-app (banner) and to the
+        // console, so a residual junk concept can be traced on the next run.
+        console.info('[graph] pruneJunkConcepts removed:', removed && removed.length ? removed : '(nothing)');
         if (!cancelled && removed && removed.length) setPruned(removed);
       } catch {}
     })();
@@ -475,6 +497,10 @@ export default function BookClub() {
         publishedDate: selectedBook.publishedDate || '',
         description: selectedBook.description || '',
         webThesis: '',
+        // Existence, tracked separately from contents: a confirmed catalog match
+        // means the book EXISTS even with no description and a NOT FOUND web pass.
+        verified: !!selectedBook.verified,
+        source: selectedBook.source || '',
       };
       if (selectedBook.postCutoff) {
         setResult('Retrieving this book’s actual thesis from the web (published after the model’s cutoff)…');
@@ -1007,7 +1033,7 @@ export default function BookClub() {
                           onGenerated={saveGuideDiagram}
                           label="Visualize frameworks"
                           types={['flowchart', 'quadrantChart']}
-                          auto={extractFrameworks(result).length >= 3}
+                          auto={extractFrameworks(result).length >= 2}
                         />
                       </div>
                     )}
