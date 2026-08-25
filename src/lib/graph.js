@@ -24,6 +24,37 @@ import { GRAPH_KEY } from '../constants.js';
 
 export const conceptKey = (topic) => String(topic || '').trim().toLowerCase().replace(/\s+/g, '_');
 
+// Structural markdown labels that are NOT real concepts. These polluted the graph
+// when BookClub's extractFrameworks parsed guide scaffolding ("What it is",
+// "Worked Example (CB's World)") as framework names and logConcept'd them — they
+// then fed back into study-guide context as fake "tracked skills". Rejected on
+// write (logConcept) and swept from existing data (pruneJunkConcepts). Compared
+// after stripping a trailing parenthetical and anything after a colon, so
+// "Worked Example (CB's World)" and "Core Thesis: ..." both normalize to a label.
+const JUNK_LABELS = new Set([
+  'what it is', 'why it matters', 'worked example', 'example', 'explanation',
+  'context', 'overview', 'summary', 'introduction', 'conclusion',
+  'core thesis', 'key frameworks', 'key concepts', 'key takeaways', 'takeaways',
+  'applied scenario', 'applied scenarios', 'application', 'application prompts',
+  'field summary', 'read next', 'framework', 'frameworks', 'mental models',
+  'scenario', 'scenarios', 'sources', 'friction', 'evidence quality',
+  'intellectual lineage', 'where this breaks down', 'disconfirming test',
+  'disconfirming signal', 'warning signs',
+]);
+const JUNK_RE = /^(worked example|applied scenario|application prompt|field summary|core thesis|key framework|key concept|what it is|why it matters|where this breaks down|disconfirming (test|signal)|evidence quality|intellectual lineage|read next)\b/i;
+
+// A "concept" that is really a section header, not knowledge. Used both to reject
+// bad writes and to prune bad reads, so the pattern lives in exactly one place.
+export function isJunkConcept(topic) {
+  const t = String(topic || '')
+    .trim().toLowerCase()
+    .replace(/\s*\([^)]*\)\s*$/, '') // drop a trailing "(CB's World)" parenthetical
+    .replace(/[:：].*$/, '')          // drop anything after a colon
+    .trim();
+  if (!t) return true;
+  return JUNK_LABELS.has(t) || JUNK_RE.test(t);
+}
+
 // Read the graph synchronously from the warm local cache. App boot and every
 // writeThrough keep localStorage current, so this is the fast path; callers
 // that need the server copy can await refreshGraph() first.
@@ -48,6 +79,9 @@ const asList = (x) => (Array.isArray(x) ? x : x == null || x === '' ? [] : [x]);
 export async function logConcept({ topic, source = null, module = null, confidence = null, refs = [] } = {}) {
   const label = String(topic || '').trim();
   if (!label) return { ok: false, code: 'no_topic' };
+  // Never let a markdown section header become a tracked concept — it would feed
+  // back into study-guide context as a fake skill/topic. Reject at the writer.
+  if (isJunkConcept(label)) return { ok: false, code: 'junk_concept' };
 
   const graph = baseGraph();
   graph.concepts = graph.concepts || {};
@@ -90,6 +124,27 @@ export async function logConcept({ topic, source = null, module = null, confiden
 
   const res = await writeThrough(GRAPH_KEY, graph);
   return { ok: res.ok !== false, graph, ...res };
+}
+
+// One-time cleanup: remove concepts that are really markdown section labels,
+// logged before isJunkConcept guarded the writer. Also strips dangling related-
+// edges that pointed at the removed nodes. Returns { removed: [topic…] } so the
+// caller can report exactly what it swept.
+export async function pruneJunkConcepts() {
+  const graph = baseGraph();
+  const concepts = graph.concepts || {};
+  const removed = [];
+  const removedKeys = new Set();
+  for (const [k, c] of Object.entries(concepts)) {
+    if (isJunkConcept(c?.topic || k)) { removed.push(c?.topic || k); removedKeys.add(k); delete concepts[k]; }
+  }
+  if (!removed.length) return { removed: [] };
+  for (const c of Object.values(concepts)) {
+    if (c?.related) for (const rk of Object.keys(c.related)) if (removedKeys.has(rk)) delete c.related[rk];
+  }
+  graph.concepts = concepts;
+  const res = await writeThrough(GRAPH_KEY, graph);
+  return { removed, ok: res.ok !== false, ...res };
 }
 
 export function getConcept(topic) {

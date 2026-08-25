@@ -131,6 +131,16 @@ nobody; now they feed a shared graph and a shared card deck.
   BookClub, DeepDive (per pass), LearningCenter, Academy (quiz pass),
   QuizCenter (right *and* wrong — a miss is signal), ResearchHub,
   ContentInbox, LearningLadder (rung completion).
+  **The graph rejects section-label junk.** `extractFrameworks` once parsed guide
+  scaffolding ("What it is", "Worked Example (CB's World)") as framework names and
+  `logConcept`'d them; they fed back into study-guide context as fake "tracked
+  skills" and turned Applied Scenarios into telemetry. Guard in ONE place —
+  `isJunkConcept(topic)` (exported) — used both to reject at the writer
+  (`logConcept` returns `{ok:false, code:'junk_concept'}` for a header label) and
+  by `extractFrameworks` before it emits. `pruneJunkConcepts()` sweeps existing
+  junk from `aether_graph_v1` (runs once on BookClub mount, reports what it
+  removed in a dismissible banner). Add a new structural label to `JUNK_LABELS` /
+  `JUNK_RE` in `graph.js`, nowhere else.
 - **Flashcards** live on `aether_flashcards` (schema
   `{id,front,back,module,topic,source,interval,easeFactor,dueDate,reviews,createdAt}`).
   `createCard(...)` in `src/lib/reviews.js` is the single writer — dedupes by
@@ -174,6 +184,30 @@ nobody; now they feed a shared graph and a shared card deck.
   Every framework is tier-tagged `[verified]` / `[reported: <book>]` / `[inferred]`
   (rendered as `--tier-*` chips by `shared/MD.jsx`) — the guide is the one surface
   that used to present model output as authoritative.
+  **The tier ceiling is enforced, not trusted.** The three tiers are strict:
+  `verified` = traceable to **retrieved primary source text with a location**;
+  `reported` = secondary (publisher description, the author's other work, public
+  talks); `inferred` = synthesis (see `rigor.js` `TIER_INSTRUCTION`). This surface
+  **never retrieves primary text** — grounding is a publisher description and/or a
+  web-thesis pass, both secondary — so **no framework may ever be `[verified]`
+  here.** The model over-claimed `[verified]` anyway (four false badges while the
+  Sources section admitted the primary text was unavailable), so the guide caps
+  the maximum tier *at generation time*: `capTierMarkers(body, groundedTier, …)`
+  (from `rigor.js`) rewrites any over-claimed marker down to the ceiling —
+  `reported` when a description/web thesis grounded it, `inferred` when nothing
+  did. A false verified badge can no longer render regardless of what the model
+  emits.
+  **Grounding must reach the frameworks, not just the opening.** The retrieved
+  thesis leaked into the Core Thesis but frameworks still came from the author's
+  better-known book. `buildGuidePrompt` now leads the grounding with the retrieved
+  chapters/named-concepts, and the Key Frameworks section is a **hard constraint**
+  ("derive frameworks ONLY from the grounding; if a framework isn't supported,
+  drop it; fewer well-grounded beats five padded from the author's other work").
+  The `job:'web'` pass explicitly asks for the book's **named frameworks + chapter
+  structure** and replies `NOT FOUND` rather than answering from a similar title;
+  when nothing usable comes back, the guide is generated **all-`inferred` with an
+  honest "could not be grounded" note**, never confident frameworks from adjacent
+  work.
 - **Books study-guide engine** (`BookClub.jsx`) — a Work/Personal/Both **lens**
   is appended to every prompt. The lens is **remembered per book** (`lensByBook`
   map on **`aether_bookclub_lens`**, awaited/revert write) so a work-framed read
@@ -184,13 +218,21 @@ nobody; now they feed a shared graph and a shared card deck.
   to stub) for **Core Thesis → Key Frameworks (each with a worked example in the
   lens) → Applied Scenarios → Application Prompts → Field Summary**, then a
   trailing `---CARDS---` block of **8–10** self-quiz cards written to the Vault
-  via `createCard`. **Applied Scenarios are grounded in CB's real context** —
+  via `createCard`. Each framework also carries a **per-framework Disconfirming
+  signal** — a concrete thing CB would observe if the framework is failing for him
+  plus a review horizon (metric threshold or date) — wired into the Key Frameworks
+  section itself, not left to the depth-gated document-level `disconfirming`
+  fragment. **Applied Scenarios are grounded in CB's real context** —
   `buildStudyContext()` reads active projects (`aether_projects_v1`), tracked
   skills (`buildSkills`), recent deep dives (`loadIndex`), and the **top concepts
   by observation count straight from the graph** (`allConcepts`) — the last turns
   "you have a real-estate project" into "you've been going deep on demand charges
   and 4CP" — and injects them so scenarios are about his actual work/life, never
-  generic.
+  generic. **Graph telemetry is NOT scenario material:** skill *names* are
+  injected but the trend/level/observation-count are not (a guide once collapsed
+  into five "trend flat" scenarios because the trend leaked); the prompt forbids
+  making a scenario about the graph, a trend, or a confidence level — real-life
+  domain first, graph signal only as the domain, never the subject.
   **Guides persist to `aether_study_guides_v1`** (keyed by book id,
   awaited/revert via `persistGuide`, hydrated from server) so a guide is
   regenerable but never lost on refresh — a "Saved study guide · <lens> · <date>
@@ -222,6 +264,19 @@ nobody; now they feed a shared graph and a shared card deck.
   (`s.diagram`). Mounted in **study guides, deep dives, Ask (`ChatPanel`),
   `LearningCenter`, and Academy levels** (a ladder rung's structure is offered a
   diagram automatically).
+  **A `types` prop constrains the diagram kind** — BookClub passes
+  `['flowchart','quadrantChart']` (excluding `mindmap`) to force a **causal /
+  tension** diagram (A → B, X vs Y) instead of a decorative mindmap that just
+  restates the section hierarchy; when `mindmap` is excluded the system prompt
+  also forbids restating an outline/list. **The diagram regenerates WITH its
+  parent.** The component holds its Mermaid in state and ignores `initialCode`
+  after mount, so a regenerated guide used to render the *previous* (now wrong)
+  diagram byte-identically. BookClub keys the `DiagramBlock` on the guide's
+  `generatedAt` so it **remounts** when the guide is regenerated — a fresh guide
+  has no saved diagram, so it auto-draws from the new frameworks — and the same
+  `promptVersion` staleness that flags the guide flags the diagram (bump
+  `PROMPT_VERSION.studyGuide` → all cached guides show "regenerate", clearing old
+  diagrams too).
 - **Academy content packs** (`src/modules/academy/FieldManual.jsx`,
   `src/data/ladders/*`) — packs are **DATA ONLY**; adding one is a content task,
   not a code change: write `src/data/ladders/<name>.js` and add it to the
@@ -256,9 +311,17 @@ nobody; now they feed a shared graph and a shared card deck.
   who disagrees) · **expert** = + disconfirming test + friction. Full-rigor
   surfaces without their own depth control default to `standard`; BookClub has one
   and defaults to `deep`. `TIER_INSTRUCTION` is the shared tier discipline —
-  **tier is source trust, never engagement** (same rule as WhatsHappening);
-  `[verified]`/`[reported: <src>]`/`[inferred]` render as `--tier-*` chips (via
-  `MD.jsx` inline, or `<TierChip>` on non-MD surfaces).
+  **tier is source trust, never engagement** (same rule as WhatsHappening) — and
+  the three tiers are **strictly defined**: `verified` = traceable to retrieved
+  **primary source text with a location** (chapter/page/timestamp); `reported` =
+  secondary (publisher description, the author's other work, public talks —
+  named); `inferred` = synthesis. `[verified]`/`[reported: <src>]`/`[inferred]`
+  render as `--tier-*` chips (via `MD.jsx` inline, or `<TierChip>` on non-MD
+  surfaces). **Enforcement, not just instruction:** `capTierMarkers(text, maxTier,
+  {reportedSource})` rewrites any marker that exceeds the ceiling a surface's
+  grounding actually earned — a surface that never retrieves primary text (every
+  one of ours) can never render a `[verified]` badge no matter what the model
+  emits.
   **Scope tiers — do NOT apply everywhere:**
   *Full rigor* — BookClub, DeepDive, LearningCenter, FieldManual, ResearchHub,
   TEDHub, PodcastHub (verifiable claims about external material).

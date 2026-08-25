@@ -45,9 +45,38 @@ export function normalizeDepth(depth) {
 }
 
 // The tier discipline every claim-making surface shares. Tier is SOURCE TRUST,
-// never engagement — same rule as WhatsHappening.
+// never engagement — same rule as WhatsHappening. The three tiers are defined by
+// WHAT the claim is traceable to, and the definitions are strict so a badge can't
+// overstate its grounding:
+//   verified — traceable to RETRIEVED PRIMARY SOURCE TEXT, with a location
+//              (chapter / page / timestamp).
+//   reported — from secondary material: a publisher description, the author's
+//              other work, or public talks / articles (name the source).
+//   inferred — model synthesis.
 export const TIER_INSTRUCTION =
-  'Tag each substantive claim/section with exactly one tier marker at the end of its line: `[verified]` (traceable to a named source in the material), `[reported: <source>]` (from a credible secondary source — name it), or `[inferred]` (your own synthesis). Every claim carries a tier; never present inference as verified.';
+  'Tag each substantive claim/section with exactly one tier marker at the end of its line, by SOURCE TRUST: `[verified]` ONLY if traceable to retrieved primary source text with a location (chapter/page/timestamp), `[reported: <source>]` if it rests on secondary material — a publisher description, the author\'s other work, or public talks/articles (name the source), or `[inferred]` for your own synthesis. Every claim carries a tier; never present inference or a secondary source as verified.';
+
+// Tier ordering, low → high trust. Used to cap the maximum tier a generated
+// artifact may claim, based on what grounding actually returned.
+export const TIER_RANK = { inferred: 0, reported: 1, verified: 2 };
+
+// Downgrade any tier marker in `text` that exceeds `maxTier`. This is the
+// enforcement half of the tier discipline: the model is TOLD the cap in the
+// prompt, but a model will still over-claim, so we rewrite the output too — a
+// `[verified]` badge can never render on a guide whose grounding never included
+// primary text. `[verified]`/`[reported: X]`/`[reported]`/`[inferred]` all match.
+// When capping to `reported`, a downgraded marker names `reportedSource` if given.
+export function capTierMarkers(text, maxTier = 'verified', { reportedSource } = {}) {
+  const cap = TIER_RANK[maxTier] ?? 2;
+  if (cap >= 2) return String(text || '');
+  return String(text || '').replace(/\[(verified|reported(?::[^\]]*)?|inferred)\]/gi, (full, inner) => {
+    const kind = /^reported/i.test(inner) ? 'reported' : inner.toLowerCase();
+    const rank = TIER_RANK[kind] ?? 0;
+    if (rank <= cap) return full; // already within the cap — leave as written
+    if (maxTier === 'reported') return reportedSource ? `[reported: ${reportedSource}]` : '[reported]';
+    return '[inferred]';
+  });
+}
 
 // Compose the rigor block for a depth. `only` overrides the depth mapping when a
 // surface wants a specific subset. Returns '' for surface depth (tier chips only).

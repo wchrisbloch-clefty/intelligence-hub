@@ -10,7 +10,8 @@
 //
 // BUMP the number for an artifact type whenever its generation prompt changes.
 export const PROMPT_VERSION = {
-  studyGuide: 3, // PR B: depth-bound rigor (evidence/sources/lineage/breakdown/disconfirming/friction) + networked read-next + analytical diagram
+  studyGuide: 4, // tier ceiling (no false [verified]) + grounding-constrained frameworks + per-framework disconfirming signal + diagram regenerates with the guide
+  // (v3 was PR B: depth-bound rigor + networked read-next + analytical diagram)
   // (v2 was #29: grounding + tier chips + "Where This Breaks Down" + no telemetry leak)
   deepDive: 1,
   ladder: 1,

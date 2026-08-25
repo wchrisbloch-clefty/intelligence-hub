@@ -4,13 +4,13 @@ import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { createCard } from '../lib/reviews.js';
-import { logConcept, allConcepts } from '../lib/graph.js';
+import { logConcept, allConcepts, isJunkConcept, pruneJunkConcepts } from '../lib/graph.js';
 import { recommendBooks } from '../lib/bookRecs.js';
-import { buildSkills, levelFor } from '../lib/skills.js';
+import { buildSkills } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { verifyBook, toVerifiedRecord, isPostCutoff } from '../lib/bookVerify.js';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
-import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth } from '../lib/rigor.js';
+import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth, capTierMarkers } from '../lib/rigor.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
@@ -85,9 +85,13 @@ function buildStudyContext() {
     if (projects.length) parts.push(`Active projects:\n${projects.join('\n')}`);
   } catch {}
   try {
+    // Skill NAMES only — the confidence level and especially the trend are graph
+    // telemetry, not scenario material. A previous guide's scenarios collapsed
+    // into "trend flat" variants because the trend leaked in; scenarios must be
+    // about the domain, never about the graph's readout of it.
     const skills = buildSkills().filter((s) => s.confidence != null).slice(0, 6)
-      .map((s) => `- ${s.name} (${levelFor(s.confidence).label}, trend ${s.trend})`);
-    if (skills.length) parts.push(`Tracked skills:\n${skills.join('\n')}`);
+      .map((s) => `- ${s.name}`);
+    if (skills.length) parts.push(`Skills he's building:\n${skills.join('\n')}`);
   } catch {}
   try {
     const dives = (loadDiveIndex() || []).slice(0, 5)
@@ -115,28 +119,36 @@ function buildStudyContext() {
 // grounding: { fullTitle, publishedDate, description, webThesis } from the
 // verified catalog record (and a web pass for post-cutoff books). This block is
 // what keeps the model from inventing a thesis for a book it doesn't know.
+// The maximum tier a framework may claim is bounded by what grounding actually
+// returned: no primary text is ever retrieved here, so the ceiling is 'reported'
+// when we have a description/web thesis, and 'inferred' when we have neither.
 const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
   const title = grounding.fullTitle || b.title;
+  const hasGround = !!(grounding.description || grounding.webThesis);
+  const groundedInferredOnly = !hasGround; // nothing anchored this book at all
   const ground = [
-    grounding.description ? `PUBLISHER DESCRIPTION (authoritative — the guide MUST match this, not the author's other books):\n${grounding.description}` : '',
-    grounding.webThesis ? `RETRIEVED THESIS & STRUCTURE (from a live web pass, this book specifically):\n${grounding.webThesis}` : '',
+    grounding.webThesis ? `RETRIEVED THESIS, CHAPTERS & KEY CONCEPTS (from a live web pass, THIS book specifically — this is the spine of the guide):\n${grounding.webThesis}` : '',
+    grounding.description ? `PUBLISHER DESCRIPTION (secondary — the guide MUST match this, never the author's other books):\n${grounding.description}` : '',
   ].filter(Boolean).join('\n\n');
   // Depth-bound epistemic sections come from the shared rigor layer (evidence,
   // sources, lineage, "Where This Breaks Down", disconfirming test, friction) —
   // no longer hardcoded here. tiers:false because Key Frameworks carries its own
   // framework-specific tier tags below.
   const rigor = rigorPrompt(depth, { tiers: false });
+  // Tier ceiling written into the prompt (and enforced again on the output).
+  const tierRule = groundedInferredOnly
+    ? `No usable grounding was retrieved for this book. You do NOT reliably know it. Tag EVERY framework \`[inferred]\` and open the Core Thesis by stating plainly that the frameworks could not be grounded in this specific book. Do NOT emit \`[verified]\` or \`[reported]\`.`
+    : `Tag EACH framework at the END of its first line with exactly one tier marker, by SOURCE TRUST. \`[verified]\` requires RETRIEVED PRIMARY SOURCE TEXT with a location — you were NOT given the book's text, so \`[verified]\` is FORBIDDEN in this guide. Use \`[reported: ${title}]\` when the framework is drawn from the grounding above (publisher description / retrieved thesis), \`[reported: <other book>]\` when it is actually from the author's OTHER work (name that book), or \`[inferred]\` for your own synthesis. The highest tier allowed here is \`[reported]\`.`;
   return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
-${ground ? `\n════ GROUNDING — READ FIRST ════\n${ground}\nEvery framework must be traceable to THIS book. If a claim comes from the author's EARLIER work rather than this title, say so explicitly and tier it 'reported'. Do NOT present the author's other books' ideas as this book's content.\n════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios. A generic example is a failure; every scenario must be about his real work or life. Do NOT mention internal metadata, observation counts, or "touches":\n${context}\n` : ''}
+${ground ? `\n════ GROUNDING — THE FRAMEWORKS COME FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the Core Thesis AND every framework ONLY from the grounding above. The frameworks in "## Key Frameworks" MUST be the concepts named in the grounding — not the author's better-known earlier book. If you are about to write a framework that is NOT supported by the grounding, that is the exact failure this guards against: drop it. If the grounding is thin, produce FEWER, well-grounded frameworks rather than padding with the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure; every scenario must be about his real work or life. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not about the guide or the graph:\n${context}\n` : ''}
 Use these exact ## sections in order:
 ## Core Thesis
-The book's central argument in plain language — no jargon, one tight paragraph.
+The book's central argument in plain language — no jargon, one tight paragraph${groundedInferredOnly ? ', beginning with the honest note that it could not be grounded in this specific title' : ', grounded in the material above'}.
 ## Key Frameworks
-The 5 most important frameworks or mental models. For EACH: the name, a clear explanation, and one fully worked example. ${lensClause}
-Tag EACH framework at the END of its first line with exactly one tier marker:
-\`[verified]\` if it's traceable to the grounding above, \`[reported: <which book>]\` if it's from the author's broader body of work (name the book), or \`[inferred]\` if it's your own synthesis. Every framework must carry a tier.
+The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer). For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
+${tierRule}
 ## Applied Scenarios
-3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the project / skill / topic and show exactly how a framework from this book changes what he does next.
+3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the real project / domain / topic and show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
 ## Application Prompts
 5 concrete things CB can act on THIS WEEK.
 ## Field Summary
@@ -160,7 +172,10 @@ function extractFrameworks(body) {
       (stripped.match(/^#{3,}\s*(.+)$/) || [])[1] ||                  // ### Heading
       (stripped.match(/^(.+?)\s*[:—–-]\s+/) || [])[1] || '';          // Name: / Name — definition
     name = name.replace(/\*\*/g, '').replace(/[:—–-]\s*$/, '').trim();
-    if (name.length >= 3 && name.length <= 60 && !/^why it matters/i.test(name)) out.push(name.replace(/\s*\[[^\]]*\]\s*$/, '').trim());
+    const clean = name.replace(/\s*\[[^\]]*\]\s*$/, '').trim();
+    // Reject markdown scaffolding ("What it is", "Worked Example", "Disconfirming
+    // signal") — the same guard the graph writer uses, so junk never gets logged.
+    if (clean.length >= 3 && clean.length <= 60 && !isJunkConcept(clean)) out.push(clean);
     if (out.length >= 5) break;
   }
   return [...new Set(out.filter(Boolean))];
@@ -213,6 +228,7 @@ export default function BookClub() {
   // the disconfirming test + friction, or down to standard/surface.
   const [depth, setDepth] = useState('deep');
   const [readNext, setReadNext] = useState([]); // networked "read next" recs for the current guide
+  const [pruned, setPruned] = useState([]); // junk concepts swept from the graph on mount (reported once)
   // Catalog verification for the selected book. status: idle|loading|done|none
   const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0 });
 
@@ -265,6 +281,13 @@ export default function BookClub() {
       const [remoteLens, remoteGuides] = await Promise.all([hydrate(LENS_KEY), hydrate(STUDY_GUIDES_KEY)]);
       if (!cancelled && remoteLens && typeof remoteLens === 'object') setLensByBook(remoteLens);
       if (!cancelled && remoteGuides && typeof remoteGuides === 'object') setGuides(remoteGuides);
+      // Sweep the knowledge graph of section-label junk logged by earlier guide
+      // generations ("What it is", "Worked Example") so it stops feeding back into
+      // study-guide context as fake tracked skills. Report what it removed.
+      try {
+        const { removed } = await pruneJunkConcepts();
+        if (!cancelled && removed && removed.length) setPruned(removed);
+      } catch {}
     })();
     return () => { cancelled = true; };
   }, []);
@@ -457,8 +480,8 @@ export default function BookClub() {
         setResult('Retrieving this book’s actual thesis from the web (published after the model’s cutoff)…');
         try {
           grounding.webThesis = await callClaude({
-            system: 'You retrieve factual information about a specific book from current sources. Report only what is actually about THIS title — never substitute the author’s other books. If you cannot find it, reply exactly NOT FOUND.',
-            messages: [{ role: 'user', content: `Give the actual core thesis and the chapter/section structure of the book "${grounding.fullTitle}" by ${selectedBook.author}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}. Be concise and factual.` }],
+            system: 'You retrieve factual information about a specific book from current sources. Report only what is actually about THIS title — never substitute the author’s other books, even by the same author. If you cannot find THIS specific book, reply exactly NOT FOUND (do not answer from a similarly-titled or better-known book).',
+            messages: [{ role: 'user', content: `For the book "${grounding.fullTitle}" by ${selectedBook.author}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, report, using current sources about THIS title specifically:\n1. Its actual core thesis (1–2 sentences).\n2. Its chapter or section structure.\n3. The NAMED frameworks, models, or key concepts it introduces — the actual terms this book uses.\nBe concise and factual. If you cannot confirm these for THIS specific title, reply exactly NOT FOUND.` }],
             job: 'web',
             maxTokens: 1200,
           });
@@ -482,11 +505,25 @@ export default function BookClub() {
         onToken: (t) => { acc += t; setResult(acc.split('---CARDS---')[0].trim()); },
       });
       const [rawBody, cardsRaw] = reply.split('---CARDS---');
-      const body = rawBody.trim();
+      // Enforce the tier ceiling: no primary text was retrieved, so cap at
+      // 'reported' (or 'inferred' when nothing anchored the book). A model will
+      // over-claim `[verified]` however firmly the prompt forbids it — this
+      // rewrite is the guarantee that a false verified badge can never render.
+      const groundedTier = (grounding.description || grounding.webThesis) ? 'reported' : 'inferred';
+      const body = capTierMarkers(rawBody.trim(), groundedTier, { reportedSource: grounding.fullTitle || selectedBook.title });
       setResult(body);
       const added = parseAndVaultCards(cardsRaw, selectedBook);
       setGuideCards(added);
-      const recs = await generateReadNext(selectedBook, grounding);
+      // Networked read-next; if the model returns nothing parseable, fall back to
+      // the curated graph recommender so the guide always ships a reading map.
+      let recs = await generateReadNext(selectedBook, grounding);
+      if (!recs.length) {
+        try {
+          recs = recommendBooks({ library: books, lens }).slice(0, 6).map((r) => ({
+            title: r.title, author: r.author || '', relation: 'deepens', reason: r.reason || '', owned: false,
+          })).filter((r) => r.title);
+        } catch {}
+      }
       setReadNext(recs);
       // Persist the guide so it survives a refresh (regenerable, never lost).
       // Awaited/revert: a failed on-device write surfaces an error, doesn't vanish.
@@ -584,6 +621,14 @@ export default function BookClub() {
       </div>
 
       <div style={{ padding: `0 ${pad}` }}>
+
+        {/* Graph cleanup report — what the junk-concept sweep removed on mount. */}
+        {pruned.length > 0 && (
+          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.caution, 10), border: `1px solid ${withAlpha(T.caution, 40)}`, borderRadius: 10, color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', display: 'flex', alignItems: 'flex-start', gap: 8, justifyContent: 'space-between' }}>
+            <span>🧹 Cleaned {pruned.length} polluted concept{pruned.length === 1 ? '' : 's'} from the knowledge graph (markdown section labels wrongly tracked as skills): <b>{pruned.slice(0, 8).join(', ')}</b>{pruned.length > 8 ? ` +${pruned.length - 8} more` : ''}.</span>
+            <button onClick={() => setPruned([])} style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>Dismiss</button>
+          </div>
+        )}
 
         {/* Save error — visible wherever the user is. */}
         {saveError && (
@@ -950,11 +995,18 @@ export default function BookClub() {
                       <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
                         <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>
                         <DiagramBlock
+                          // Keyed to the guide's generation stamp so it REMOUNTS
+                          // when the guide is regenerated — otherwise the previous
+                          // diagram's state persisted and rendered byte-identical
+                          // (and wrong) over a new guide. A fresh guide has no saved
+                          // diagram, so it auto-draws from the new frameworks.
+                          key={`guide-dgm-${savedGuide?.generatedAt || savedGuide?.createdAt || 'live'}`}
                           content={result}
                           hint={`Draw an ANALYTICAL diagram of "${selectedBook.title}" — a causal or tension diagram showing how the key frameworks INTERACT, where they CONFLICT, and the underlying mechanism. Do NOT just restate the section hierarchy or list the frameworks; show the relationships between them.`}
                           initialCode={savedGuide?.diagram || ''}
                           onGenerated={saveGuideDiagram}
                           label="Visualize frameworks"
+                          types={['flowchart', 'quadrantChart']}
                           auto={extractFrameworks(result).length >= 3}
                         />
                       </div>
