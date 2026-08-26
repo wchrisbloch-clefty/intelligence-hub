@@ -4,8 +4,12 @@ import { useApp } from '../App.jsx';
 import { callClaude, fetchPodcastRSS, fmtDuration, fmtPodDate, saveNotes, uid } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
+import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
+import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+
+const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
 
 const ACCENT       = T.accent;
 const ACCENT_BG    = 'rgba(217,164,65,0.07)';
@@ -33,6 +37,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
   const [aiCache, setAiCache] = useState({});
   const [reading, setReading] = useState(false);
   const [vaulted, setVaulted] = useState(false);
+  const [userSrc, setUserSrc] = useState(null); // real transcript / notes the user pasted
   const [ttsSupported] = useState(() => typeof window !== 'undefined' && 'speechSynthesis' in window);
 
   const getBestVoice = () => {
@@ -61,10 +66,13 @@ function PodCard({ ep, idx, onSaveToVault }) {
     setReading(true);
   };
 
-  const handleAI = async (mode) => {
+  const handleAI = (mode) => {
     if (aiPanel === mode) { setAiPanel(''); return; }
     setAiPanel(mode);
     if (aiCache[mode]) return;
+    genMode(mode);
+  };
+  const genMode = async (mode) => {
     setAiLoading(true);
     const prompts = {
       summary: `Summarize this podcast episode in 3-4 tight sentences for CB. Episode: "${ep.title}" from ${ep.show} (hosted by ${ep.host}). Description: ${ep.desc || 'Not available'}. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).`,
@@ -73,10 +81,13 @@ function PodCard({ ep, idx, onSaveToVault }) {
     };
     try {
       // The RSS description is the metadata anchor; tier every claim so a
-      // reconstruction never reads as verified fact.
+      // reconstruction never reads as verified fact. If the user pasted the real
+      // transcript/notes, that becomes the authoritative ground (not a guess).
+      const gm = userSrc?.text ? groundingTypeMeta(userSrc.type) : null;
+      const userBlock = gm ? `\n\nACTUAL EPISODE MATERIAL THE USER SUPPLIED (${gm.label} — first-hand, tier ${gm.tier}; base your answer on THIS, not a reconstruction, and cite it):\n${userSrc.text}` : '';
       const result = await callClaude({
         system: CB_IDENTITY,
-        messages: [{ role: 'user', content: `${prompts[mode]}\n\n${TIER_INSTRUCTION}` }],
+        messages: [{ role: 'user', content: `${prompts[mode]}${userBlock}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'transcript' ? 1200 : 700,
       });
       setAiCache(c => ({ ...c, [mode]: result }));
@@ -132,6 +143,13 @@ function PodCard({ ep, idx, onSaveToVault }) {
                 {t.label}
               </div>
             ))}
+          </div>
+          {/* Real source material the model can't reach — makes the "Deep Dive"
+              a grounded read instead of a reconstruction. */}
+          <div style={{ marginBottom: 12 }}>
+            <SourceGrounding value={userSrc} types={SRC_TYPES} label="I have the transcript / notes — paste to ground this"
+              onSave={(v) => { setUserSrc(v); setAiCache({}); if (aiPanel) genMode(aiPanel); }}
+              onClear={() => { setUserSrc(null); setAiCache({}); if (aiPanel) genMode(aiPanel); }} />
           </div>
           {/* AI content */}
           <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>

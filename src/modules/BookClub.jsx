@@ -9,6 +9,8 @@ import { recommendBooks } from '../lib/bookRecs.js';
 import { buildSkills } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { verifyBook, toVerifiedRecord, isPostCutoff } from '../lib/bookVerify.js';
+import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/sourceGrounding.js';
+import SourceGrounding from './shared/SourceGrounding.jsx';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
 import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth, capTierMarkers } from '../lib/rigor.js';
 import AskChip from './shared/AskChip.jsx';
@@ -22,6 +24,8 @@ const BOOKCLUB_KEY = 'aether_bookclub';
 const SEEDED_KEY   = 'aether_bookclub_seeded';
 const LENS_KEY     = 'aether_bookclub_lens';
 const STUDY_GUIDES_KEY = 'aether_study_guides_v1';
+const CHAPTER_DIVES_KEY = 'aether_chapter_dives_v1';       // { [bookId]: { [idx]: dive } }
+const CHAPTER_PROGRESS_KEY = 'aether_chapter_progress_v1'; // { [bookId]: { [idx]: { read } } }
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -51,6 +55,17 @@ const typeColor = (t) => TYPE_COLOR[t] || T.textSecondary;
 const TYPE_IDS = Object.keys(TYPE_META);
 
 const BLANK_FORM = { title: '', author: '', note: '', type: 'other' };
+
+// A book's chapter list + how trustworthy its STRUCTURE is: a user-typed TOC (or
+// photo transcription) is `verified`, a retrieved TOC is `reported`, none → null.
+const chaptersOf = (book) => {
+  if (!book) return { chapters: [], tier: null };
+  const ug = book.userGrounding;
+  const userToc = ug && ['toc', 'photo-ocr'].includes(ug.type) ? ug.text : '';
+  if (userToc) return { chapters: parseTOC(userToc), tier: 'verified' };
+  if (book.retrievedTOC?.toc) return { chapters: parseTOC(book.retrievedTOC.toc), tier: 'reported' };
+  return { chapters: [], tier: null };
+};
 
 // Dedupe/identity key — lowercased title + author.
 const keyOf = (b) => `${b.title || ''}|${b.author || ''}`.toLowerCase().trim();
@@ -120,52 +135,62 @@ function buildStudyContext() {
   return parts.join('\n\n');
 }
 
-// grounding: { fullTitle, publishedDate, description, webThesis } from the
-// verified catalog record (and a web pass for post-cutoff books). This block is
-// what keeps the model from inventing a thesis for a book it doesn't know.
-// The maximum tier a framework may claim is bounded by what grounding actually
-// returned: no primary text is ever retrieved here, so the ceiling is 'reported'
-// when we have a description/web thesis, and 'inferred' when we have neither.
+// grounding: { fullTitle, publishedDate, description, webThesis, verified, source,
+// tocChapters, tocSourceLabel, userMaterial, userMaterialLabel, tier } — the
+// verified catalog record, a web pass, a retrieved or user-supplied table of
+// contents, and any excerpt/notes the user pasted from their copy. `tier` is the
+// grounding ceiling computed upstream (verified only when the user supplied a
+// physical copy). When a TOC is present the guide is generated CHAPTER BY CHAPTER,
+// which is the thing the user actually wants and is impossible without structure.
 export const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
   const title = grounding.fullTitle || b.title;
+  const chapters = Array.isArray(grounding.tocChapters) ? grounding.tocChapters : [];
+  const hasTOC = chapters.length >= 3;
+  const hasUserMaterial = !!grounding.userMaterial;
   const hasContents = !!(grounding.description || grounding.webThesis);
-  // Existence and contents are DIFFERENT facts. A catalog match (Google Books /
-  // Open Library) establishes the book EXISTS even when it returns no description
-  // and the web pass finds nothing — very common for a recent title. Collapsing
-  // "verified exists, contents unavailable" into "no grounding at all" is what let
-  // the model escalate to "this book does not exist" (a real Stulberg title). So
-  // three states are kept distinct, and asserting non-existence is forbidden in
-  // every one of them.
+  const grounded = hasContents || hasTOC || hasUserMaterial;
+  const tier = grounding.tier || (grounded ? 'reported' : 'inferred'); // ceiling
   const existsVerified = !!grounding.verified;
   const catalog = grounding.source === 'google' ? 'Google Books' : grounding.source === 'openlibrary' ? 'Open Library' : 'a book catalog';
   const ground = [
-    grounding.webThesis ? `RETRIEVED THESIS, CHAPTERS & KEY CONCEPTS (from a live web pass, THIS book specifically — this is the spine of the guide):\n${grounding.webThesis}` : '',
-    grounding.description ? `PUBLISHER DESCRIPTION (secondary — the guide MUST match this, never the author's other books):\n${grounding.description}` : '',
+    grounding.webThesis ? `RETRIEVED THESIS, CHAPTERS & KEY CONCEPTS (from a live web pass, THIS book specifically):\n${grounding.webThesis}` : '',
+    grounding.description ? `PUBLISHER DESCRIPTION (secondary — match this, never the author's other books):\n${grounding.description}` : '',
+    hasUserMaterial ? `SOURCE MATERIAL THE READER TYPED FROM THEIR OWN COPY (${grounding.userMaterialLabel || 'excerpt/notes'} — first-hand, authoritative):\n${grounding.userMaterial}` : '',
+    hasTOC ? `TABLE OF CONTENTS (${grounding.tocSourceLabel || 'retrieved'}):\n${chapters.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : '',
   ].filter(Boolean).join('\n\n');
-  // Depth-bound epistemic sections come from the shared rigor layer (evidence,
-  // sources, lineage, "Where This Breaks Down", disconfirming test, friction) —
-  // no longer hardcoded here. tiers:false because Key Frameworks carries its own
-  // framework-specific tier tags below.
   const rigor = rigorPrompt(depth, { tiers: false });
-  // Tier ceiling written into the prompt (and enforced again on the output).
-  const tierRule = !hasContents
-    ? `The book's contents were not retrieved, so write from general knowledge and tag EVERY framework \`[inferred]\`. Do NOT emit \`[verified]\` or \`[reported]\`.`
-    : `Tag EACH framework at the END of its first line with exactly one tier marker, by SOURCE TRUST. \`[verified]\` requires RETRIEVED PRIMARY SOURCE TEXT with a location — you were NOT given the book's text, so \`[verified]\` is FORBIDDEN in this guide. Use \`[reported: ${title}]\` when the framework is drawn from the grounding above (publisher description / retrieved thesis), \`[reported: <other book>]\` when it is actually from the author's OTHER work (name that book), or \`[inferred]\` for your own synthesis. The highest tier allowed here is \`[reported]\`.`;
-  // The honest note about grounding — three distinct states, none of which may
-  // claim the book doesn't exist.
-  const existenceNote = hasContents
+  // Tier ceiling written into the prompt (and enforced again on the output). The
+  // verified tier is honest ONLY when the reader supplied a copy from the book.
+  const tierRule = tier === 'verified'
+    ? `Tag EACH framework/section with one tier marker. \`[verified]\` ONLY for what is traceable to the reader's supplied copy above — a chapter title/location from THEIR table of contents, or text in THEIR excerpt (cite the chapter as the location). \`[reported: <source>]\` for the publisher description or a retrieved TOC. \`[inferred]\` for your own synthesis beyond the supplied material. Do not mark verified anything you cannot point to in the reader's copy.`
+    : tier === 'reported'
+    ? `Tag EACH framework at the END of its first line by SOURCE TRUST. \`[verified]\` requires RETRIEVED PRIMARY SOURCE TEXT with a location — you were NOT given the book's text, so \`[verified]\` is FORBIDDEN. Use \`[reported: ${title}]\` when drawn from the grounding above, \`[reported: <other book>]\` when from the author's OTHER work (name it), or \`[inferred]\` for synthesis. Highest tier allowed: \`[reported]\`.`
+    : `The book's contents were not retrieved; write from general knowledge and tag EVERY framework \`[inferred]\`. Do NOT emit \`[verified]\` or \`[reported]\`.`;
+  // The honest note fires only when NOTHING grounds the book. Three distinct
+  // states, none of which may claim the book doesn't exist.
+  const existenceNote = grounded
     ? ''
     : existsVerified
-      ? `\n════ GROUNDING STATE ════\nThis book EXISTS — it was verified against ${catalog}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}. Its CONTENTS could not be retrieved (no description available and the web pass returned nothing). Write the guide from general knowledge, mark every framework \`[inferred]\`, and open the Core Thesis by stating plainly that the book is confirmed to exist but its specific contents could not be retrieved, so the guide is inferred. You may say you could not RETRIEVE the contents — you may NEVER say or imply the book does not exist, is unpublished, or is not in publication records. It is confirmed real.\n═════════════════════════\n`
-      : `\n════ GROUNDING STATE ════\nThis title could NOT be confirmed against a book catalog, and its contents were not retrieved. Write the guide cautiously from general knowledge, mark every framework \`[inferred]\`, and open the Core Thesis by stating that you could not verify this specific title. Say only that you could not VERIFY or RETRIEVE it — you may NEVER assert that it does not exist or is not in publication records (absence from your knowledge is not evidence of non-existence).\n═════════════════════════\n`;
-  return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
-${existenceNote}${ground ? `\n════ GROUNDING — THE FRAMEWORKS COME FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the Core Thesis AND every framework ONLY from the grounding above. The frameworks in "## Key Frameworks" MUST be the concepts named in the grounding — not the author's better-known earlier book. If you are about to write a framework that is NOT supported by the grounding, that is the exact failure this guards against: drop it. If the grounding is thin, produce FEWER, well-grounded frameworks rather than padding with the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure; every scenario must be about his real work or life. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not about the guide or the graph:\n${context}\n` : ''}
-Use these exact ## sections in order:
-## Core Thesis
-The book's central argument in plain language — no jargon, one tight paragraph${hasContents ? ', grounded in the material above' : existsVerified ? ', after the note that the book is confirmed to exist but its contents could not be retrieved' : ', after the note that this specific title could not be verified'}.
+      ? `\n════ GROUNDING STATE ════\nThis book EXISTS — verified against ${catalog}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}. Its CONTENTS could not be retrieved. Write from general knowledge, mark every framework \`[inferred]\`, and open the Core Thesis by stating the book is confirmed to exist but its contents could not be retrieved. You may say you could not RETRIEVE the contents — NEVER say or imply the book does not exist, is unpublished, or is not in publication records. It is confirmed real. (The reader can paste its table of contents to get a chapter-by-chapter guide.)\n═════════════════════════\n`
+      : `\n════ GROUNDING STATE ════\nThis title could NOT be confirmed against a book catalog and its contents were not retrieved. Write cautiously from general knowledge, mark every framework \`[inferred]\`, and open by stating you could not verify this specific title. Say only that you could not VERIFY or RETRIEVE it — NEVER assert it does not exist (absence from your knowledge is not evidence of non-existence).\n═════════════════════════\n`;
+  // Chapter-anchored body when a TOC is present; framework-based otherwise.
+  const bodySections = hasTOC
+    ? `## Core Thesis
+The book's central argument in one tight paragraph, grounded in the material above.
+## Chapter Guide
+Work through the book IN ORDER using the table of contents above. For EACH chapter, use its title as a \`### \` heading, then in 2–4 sentences give: its core argument, the key framework(s) it introduces (**bold** each framework name), and one worked example in the lens. ${grounding.tocIsUser ? 'Cite the chapter as the location for what you draw from it.' : ''} ${lensClause}
 ## Key Frameworks
-${hasContents ? 'The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer).' : 'The most important frameworks or mental models of this book (up to 5), written from general knowledge and each marked `[inferred]` — do not leave this section empty.'} For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
-${tierRule}
+The 3–5 through-line frameworks that span the chapters. Put EACH on its own line as \`**Name** — \` one-line essence, then a **Disconfirming signal:** — one concrete thing CB would OBSERVE if it's failing for him, plus a review horizon (metric or date).
+${tierRule}`
+    : `## Core Thesis
+The book's central argument in plain language — no jargon, one tight paragraph${grounded ? ', grounded in the material above' : existsVerified ? ', after the note that the book is confirmed to exist but its contents could not be retrieved' : ', after the note that this specific title could not be verified'}.
+## Key Frameworks
+${grounded ? 'The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer).' : 'The most important frameworks or mental models of this book (up to 5), written from general knowledge and each marked `[inferred]` — do not leave this section empty.'} For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
+${tierRule}`;
+  return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
+${existenceNote}${ground ? `\n════ GROUNDING — THE GUIDE COMES FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the guide ONLY from the grounding above — the chapters, thesis, and material given. Do NOT import frameworks from the author's better-known earlier book; if a framework isn't supported by the grounding, drop it. Fewer well-grounded beats five padded from the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not the guide or the graph:\n${context}\n` : ''}
+Use these exact ## sections in order:
+${bodySections}
 ## Applied Scenarios
 3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the real project / domain / topic and show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
 ## Application Prompts
@@ -174,6 +199,34 @@ ${tierRule}
 A one-page, scannable field summary — the whole book in bullets he can reread before a meeting in two minutes.
 ${rigor ? `\n${rigor}\n` : ''}
 Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of 8 to 10 self-quiz flashcards: [{"front":"question","back":"answer"}]. Output the ---CARDS--- marker and the array even if the guide ran long. No prose after the marker.`;
+};
+
+// A single-chapter deep dive. Structure (the chapter title + its order) is as
+// trustworthy as the TOC it came from — `verified` from the reader's own copy,
+// `reported` from a retrieved TOC — but the chapter's ARGUMENTS are `inferred`
+// (this surface never has the chapter's text). The prompt is explicit about which
+// is which; capTierMarkers then caps at the structure tier so the title can hold
+// its badge while the analysis stays inferred.
+export const buildChapterPrompt = (b, chapter, idx, lensClause, structureTier) => {
+  const title = b.fullTitle || b.title;
+  const loc = `Ch. ${idx + 1}: ${chapter}`;
+  const structureNote = structureTier === 'verified'
+    ? `The chapter title and its order come from the READER'S OWN COPY — the STRUCTURE is \`[verified]\` (cite it as "${loc}"). You do NOT have the chapter's text, so its arguments are \`[inferred]\`. Be explicit about which is which.`
+    : structureTier === 'reported'
+    ? `The chapter title comes from a retrieved table of contents — the STRUCTURE is \`[reported]\` (cite it as "${loc}"). You do NOT have the chapter's text, so its arguments are \`[inferred]\`.`
+    : `You do NOT have the chapter's text — everything here is \`[inferred]\`.`;
+  return `Chapter deep dive for CB (Houston BD professional) on "${title}"${b.author ? ` by ${b.author}` : ''} — Chapter ${idx + 1}: "${chapter}".
+${structureNote}
+Keep it tight. Use these exact ## sections:
+## Argument
+What this chapter argues, in 2–4 sentences.
+## Key Ideas
+The 2–3 key ideas or frameworks it introduces — **bold** each name.
+## Worked Example
+One worked example. ${lensClause}
+## Disconfirming Test
+One concrete signal CB would OBSERVE if this chapter's idea is NOT working for him, plus a review horizon (a metric threshold or a date).
+Tag claims by tier per the note above: the chapter title/order carries its structure tier; the analysis is \`[inferred]\`.`;
 };
 
 // Pull the framework NAMES out of the guide's "## Key Frameworks" section so each
@@ -248,8 +301,16 @@ export default function BookClub() {
   const [depth, setDepth] = useState('deep');
   const [readNext, setReadNext] = useState([]); // networked "read next" recs for the current guide
   const [pruned, setPruned] = useState([]); // junk concepts swept from the graph on mount (reported once)
+  // Per-chapter deep dives + read/dived progress, keyed by book id.
+  const [chapterDives, setChapterDives] = useState(() => readLocal(CHAPTER_DIVES_KEY, {}));
+  const [chapterProgress, setChapterProgress] = useState(() => readLocal(CHAPTER_PROGRESS_KEY, {}));
+  const [openChapter, setOpenChapter] = useState(null);   // idx currently expanded
+  const [chapterLoading, setChapterLoading] = useState(null); // idx generating
+  const [tocOpen, setTocOpen] = useState(true);
   // Catalog verification for the selected book. status: idle|loading|done|none
-  const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0 });
+  const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0, attempts: [] });
+  // Automated TOC retrieval in flight for the selected book.
+  const [retrieving, setRetrieving] = useState(false);
 
   const [tab,          setTab]          = useState('library'); // library | add | dive
   const [search,       setSearch]       = useState('');
@@ -297,9 +358,11 @@ export default function BookClub() {
       if (!cancelled) setBooks(lib);
       // Server copies of the per-book lens map + saved study guides are
       // authoritative when present (cross-device).
-      const [remoteLens, remoteGuides] = await Promise.all([hydrate(LENS_KEY), hydrate(STUDY_GUIDES_KEY)]);
+      const [remoteLens, remoteGuides, remoteDives, remoteProg] = await Promise.all([hydrate(LENS_KEY), hydrate(STUDY_GUIDES_KEY), hydrate(CHAPTER_DIVES_KEY), hydrate(CHAPTER_PROGRESS_KEY)]);
       if (!cancelled && remoteLens && typeof remoteLens === 'object') setLensByBook(remoteLens);
       if (!cancelled && remoteGuides && typeof remoteGuides === 'object') setGuides(remoteGuides);
+      if (!cancelled && remoteDives && typeof remoteDives === 'object') setChapterDives(remoteDives);
+      if (!cancelled && remoteProg && typeof remoteProg === 'object') setChapterProgress(remoteProg);
       // Sweep the knowledge graph of section-label junk logged by earlier guide
       // generations ("What it is", "Worked Example") so it stops feeding back into
       // study-guide context as fake tracked skills. Report what it removed.
@@ -340,13 +403,30 @@ export default function BookClub() {
   // grounded in the actual title, not the model's guess. Skips already-verified
   // books (metadata is stored on the record).
   useEffect(() => {
-    if (!selectedBook || selectedBook.verified) { setVerify({ status: 'idle', matches: [], idx: 0 }); return; }
+    if (!selectedBook || selectedBook.verified) { setVerify({ status: 'idle', matches: [], idx: 0, attempts: [] }); return; }
     let cancelled = false;
-    setVerify({ status: 'loading', matches: [], idx: 0 });
+    setVerify({ status: 'loading', matches: [], idx: 0, attempts: [] });
     (async () => {
-      const matches = await verifyBook({ title: selectedBook.title, author: selectedBook.author });
+      const { matches, attempts, confident } = await verifyBook({ title: selectedBook.title, author: selectedBook.author });
       if (cancelled) return;
-      setVerify({ status: matches.length ? 'done' : 'none', matches, idx: 0 });
+      setVerify({ status: matches.length ? 'done' : 'none', matches, idx: 0, attempts, confident });
+    })();
+    return () => { cancelled = true; };
+  }, [selectedBook?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Automated TOC retrieval, cheap step only (Open Library, keyless), for a
+  // post-cutoff book that has no TOC yet — the model can't retrieve its contents,
+  // so surface the structure automatically. The costlier web pass is behind the
+  // manual "Try automatic retrieval" button.
+  useEffect(() => {
+    if (!selectedBook || !selectedBook.postCutoff) return;
+    if (selectedBook.userGrounding || selectedBook.retrievedTOC) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rtoc = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author }); // no webPass → OL only
+        if (!cancelled && rtoc) await patchBook({ retrievedTOC: rtoc });
+      } catch {}
     })();
     return () => { cancelled = true; };
   }, [selectedBook?.id]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -368,6 +448,80 @@ export default function BookClub() {
     const next = books.map((b) => (b.id === selectedBook.id ? { ...b, verified: false } : b));
     setBooks(next); writeThrough(BOOKCLUB_KEY, next);
     setSelectedBook({ ...selectedBook, verified: false });
+  };
+
+  // ── Source grounding: user-supplied copy + automated TOC retrieval ──────────
+  // Both live on the book record (persisted). userGrounding is the reader's own
+  // material (authoritative); retrievedTOC is what the automated chain found.
+  const patchBook = async (patch) => {
+    if (!selectedBook) return;
+    const next = books.map((b) => (b.id === selectedBook.id ? { ...b, ...patch } : b));
+    if (await persist(next)) setSelectedBook({ ...selectedBook, ...patch });
+  };
+  const saveUserGrounding = (ug) => patchBook({ userGrounding: ug });
+  const clearUserGrounding = () => patchBook({ userGrounding: null });
+  // Run the automated chain. `web` gates the (costlier) job:'web' pass; the
+  // Open Library step is cheap/keyless and runs either way.
+  const runRetrieveTOC = async (web = true) => {
+    if (!selectedBook || retrieving) return;
+    setRetrieving(true);
+    try {
+      const webPass = web
+        ? (q) => callClaude({ system: 'You retrieve a book’s real table of contents from current sources. Prefer the publisher’s own page. If you cannot find THIS book’s actual TOC, reply exactly NOT FOUND.', messages: [{ role: 'user', content: q }], job: 'web', maxTokens: 700 })
+        : null;
+      const rtoc = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author, webPass });
+      if (rtoc) await patchBook({ retrievedTOC: rtoc });
+    } catch { /* best-effort; the user can still paste their copy */ }
+    setRetrieving(false);
+  };
+
+  // ── Chapter dives + per-chapter progress (awaited/revert) ──────────────────
+  const persistChapterDives = async (next) => {
+    const prev = chapterDives; setChapterDives(next);
+    const r = await writeThrough(CHAPTER_DIVES_KEY, next);
+    if (!r.localOk) { setChapterDives(prev); return false; }
+    return true;
+  };
+  const toggleChapterRead = async (idx) => {
+    if (!selectedBook) return;
+    const bid = selectedBook.id;
+    const prev = chapterProgress;
+    const wasRead = !!chapterProgress[bid]?.[idx]?.read;
+    const next = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [idx]: { ...(chapterProgress[bid]?.[idx] || {}), read: !wasRead } } };
+    setChapterProgress(next);
+    const r = await writeThrough(CHAPTER_PROGRESS_KEY, next);
+    if (!r.localOk) setChapterProgress(prev);
+  };
+  const generateChapterDive = async (idx) => {
+    if (!selectedBook || chapterLoading != null) return;
+    const { chapters, tier } = chaptersOf(selectedBook);
+    const chapter = chapters[idx];
+    if (!chapter) return;
+    setChapterLoading(idx); setOpenChapter(idx);
+    let provider = '';
+    try {
+      const reply = await callClaude({
+        system: CB_LEARNING_SPINE,
+        messages: [{ role: 'user', content: buildChapterPrompt(selectedBook, chapter, idx, lensClauseOf(lens), tier) }],
+        maxTokens: 1600, job: 'reason', onProvider: (p) => { provider = p; },
+      });
+      // Cap at the STRUCTURE tier — the chapter title can hold [verified]/[reported]
+      // while the analysis the model marked [inferred] stays inferred.
+      const body = capTierMarkers(reply.trim(), tier || 'inferred', { reportedSource: `${selectedBook.fullTitle || selectedBook.title}, Ch. ${idx + 1}` });
+      const bid = selectedBook.id;
+      const dive = { body, provider, lens, chapter, structureTier: tier, createdAt: Date.now(), ...stampVersion('studyGuide') };
+      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [idx]: dive } });
+      // Mark dived in progress.
+      const nextProg = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [idx]: { ...(chapterProgress[bid]?.[idx] || {}), dived: true } } };
+      setChapterProgress(nextProg); writeThrough(CHAPTER_PROGRESS_KEY, nextProg);
+      // Chapter-level graph signal: source = book, ref carries the chapter location
+      // so Skills sees per-chapter progress, not one lump observation per book.
+      logConcept({ topic: `${selectedBook.title} — ${chapter}`, source: selectedBook.title, module: 'books', confidence: 5, refs: [selectedBook.title, `Ch. ${idx + 1}`] });
+    } catch (e) {
+      const bid = selectedBook.id;
+      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [idx]: { body: `Couldn't generate this chapter dive. ${e?.message || 'Providers unavailable.'}`, error: true, createdAt: Date.now() } } });
+    }
+    setChapterLoading(null);
   };
 
   // Per-book lens, defaulting to Both. Persist through the awaited/revert path so
@@ -492,6 +646,16 @@ export default function BookClub() {
       // Grounding is the single change that stops the model inventing a thesis
       // for a book it doesn't know. Verified catalog description always; for a
       // post-cutoff book, a live web pass first to retrieve the real thesis.
+      // Source material the user typed from their copy, and any retrieved TOC.
+      const ug = selectedBook.userGrounding || null;
+      const rtoc = selectedBook.retrievedTOC || null;
+      // A chapter list comes from a user TOC/photo transcription, else the
+      // retrieved TOC. Excerpt/notes are injected as material but don't drive the
+      // chapter-by-chapter structure.
+      const userTocText = ug && ['toc', 'photo-ocr'].includes(ug.type) ? ug.text : '';
+      const tocChapters = parseTOC(userTocText || rtoc?.toc || '');
+      const tocIsUser = !!userTocText;
+      const userMaterial = ug && ['excerpt', 'notes'].includes(ug.type) ? ug.text : '';
       const grounding = {
         fullTitle: selectedBook.fullTitle || selectedBook.title,
         publishedDate: selectedBook.publishedDate || '',
@@ -501,6 +665,14 @@ export default function BookClub() {
         // means the book EXISTS even with no description and a NOT FOUND web pass.
         verified: !!selectedBook.verified,
         source: selectedBook.source || '',
+        // User-supplied + retrieved source material.
+        tocChapters,
+        tocIsUser,
+        tocSourceLabel: tocIsUser ? 'your copy' : (rtoc?.sourceLabel || ''),
+        userMaterial,
+        userMaterialLabel: ug ? groundingTypeMeta(ug.type).label : '',
+        // Grounding ceiling — verified only when the reader supplied a physical copy.
+        tier: groundingTier({ userGrounding: ug, retrievedTOC: rtoc, hasContents: !!selectedBook.description }),
       };
       if (selectedBook.postCutoff) {
         setResult('Retrieving this book’s actual thesis from the web (published after the model’s cutoff)…');
@@ -515,6 +687,9 @@ export default function BookClub() {
         } catch { /* web pass is best-effort; description still grounds it */ }
         setResult('');
       }
+      // Recompute the tier ceiling now that the web pass has (maybe) run — a
+      // retrieved web thesis is `reported`-grade grounding even with no description.
+      grounding.tier = groundingTier({ userGrounding: ug, retrievedTOC: rtoc, hasContents: !!(grounding.description || grounding.webThesis) });
       // Stream it: a 6000-token guide runs for tens of seconds, so we show it
       // building (and, critically, streaming means it can't hit a single blocking
       // wall-clock abort mid-generation). The trailing ---CARDS--- JSON is hidden
@@ -531,12 +706,11 @@ export default function BookClub() {
         onToken: (t) => { acc += t; setResult(acc.split('---CARDS---')[0].trim()); },
       });
       const [rawBody, cardsRaw] = reply.split('---CARDS---');
-      // Enforce the tier ceiling: no primary text was retrieved, so cap at
-      // 'reported' (or 'inferred' when nothing anchored the book). A model will
-      // over-claim `[verified]` however firmly the prompt forbids it — this
-      // rewrite is the guarantee that a false verified badge can never render.
-      const groundedTier = (grounding.description || grounding.webThesis) ? 'reported' : 'inferred';
-      const body = capTierMarkers(rawBody.trim(), groundedTier, { reportedSource: grounding.fullTitle || selectedBook.title });
+      // Enforce the tier ceiling. `verified` is honest ONLY when the reader
+      // supplied a copy from the book (grounding.tier === 'verified'); otherwise
+      // cap at 'reported' (grounded) or 'inferred'. A model over-claims however
+      // firmly the prompt forbids it — this rewrite is the guarantee.
+      const body = capTierMarkers(rawBody.trim(), grounding.tier, { reportedSource: grounding.fullTitle || selectedBook.title });
       setResult(body);
       const added = parseAndVaultCards(cardsRaw, selectedBook);
       setGuideCards(added);
@@ -753,6 +927,16 @@ export default function BookClub() {
                     </div>
 
                     {book.note && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
+                    {(() => {
+                      const chs = chaptersOf(book).chapters;
+                      if (!chs.length) return null;
+                      const dived = Object.values(chapterDives[book.id] || {}).filter((d) => d && !d.error).length;
+                      return (
+                        <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', fontWeight: 600 }}>
+                          <Icon name="ClipboardList" size={12} /> {dived}/{chs.length} chapters dived
+                        </div>
+                      );
+                    })()}
                     <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent, fontWeight: 700 }}>🤿 Deep Dive →</div>
                   </div>
                 );
@@ -857,7 +1041,7 @@ export default function BookClub() {
                   const post = isPostCutoff(m.publishedDate);
                   return (
                     <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 12, marginBottom: 16 }}>
-                      <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Confirm this book before generating</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Confirm this book before generating{verify.matches.length > 1 && !verify.confident ? ` · ${verify.matches.length} close matches — check this is the right one` : ''}</div>
                       <div style={{ display: 'flex', gap: 14 }}>
                         {m.thumbnail
                           ? <img src={m.thumbnail} alt="" width={64} style={{ borderRadius: 6, flexShrink: 0, alignSelf: 'flex-start', border: '1px solid var(--border)' }} />
@@ -897,8 +1081,108 @@ export default function BookClub() {
                 {!selectedBook.verified && verify.status === 'none' && (
                   <div style={{ padding: '12px 14px', background: withAlpha(T.negative, 8), border: `1px solid ${withAlpha(T.negative, 35)}`, borderRadius: 10, marginBottom: 16, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
                     ⚠ Couldn’t verify this title against a catalog. You can still generate, but the guide will be <b>marked unverified</b> and may drift on a book published after the model’s cutoff. <button onClick={skipVerification} style={{ marginLeft: 6, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>Continue anyway</button>
+                    {verify.attempts?.length > 0 && (
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${withAlpha(T.negative, 20)}`, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
+                        <span style={{ fontWeight: 700 }}>Tried:</span> {verify.attempts.map((a, i) => (
+                          <span key={i}>{i > 0 ? ' · ' : ' '}{a.source} <code style={{ fontFamily: 'inherit' }}>{a.query}</code> → {a.error ? `error ${a.error}` : `${a.results} result${a.results === 1 ? '' : 's'}`}</span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
+
+                {/* Source material the model can't reach: the reader's own copy +
+                    automated TOC retrieval. Emphasised when a post-cutoff book
+                    couldn't be retrieved — the moment to ask for the copy. */}
+                <div style={{ marginBottom: 16 }}>
+                  <SourceGrounding
+                    value={selectedBook.userGrounding}
+                    retrieved={selectedBook.retrievedTOC}
+                    onSave={saveUserGrounding}
+                    onClear={clearUserGrounding}
+                    onRetrieve={() => runRetrieveTOC(true)}
+                    retrievable
+                    retrieving={retrieving}
+                    label="I have this book — add the table of contents"
+                    prompt={(selectedBook.postCutoff && !selectedBook.userGrounding && !selectedBook.retrievedTOC)
+                      ? 'This book published after the model’s training data and its contents couldn’t be retrieved. If you have a copy, paste the table of contents and I’ll build a chapter-by-chapter guide instead.'
+                      : ''}
+                  />
+                </div>
+
+                {/* Table of Contents — first-class: verification the reader can see
+                    (the real chapter list, tiered by source) + chapter navigation. */}
+                {(() => {
+                  const { chapters, tier } = chaptersOf(selectedBook);
+                  if (!chapters.length) return null;
+                  const bid = selectedBook.id;
+                  const dives = chapterDives[bid] || {};
+                  const prog = chapterProgress[bid] || {};
+                  const divedCount = chapters.filter((_, i) => dives[i] && !dives[i].error).length;
+                  const readCount = chapters.filter((_, i) => prog[i]?.read).length;
+                  const tone = tier === 'verified' ? 'var(--tier-verified)' : 'var(--tier-reported)';
+                  const srcLabel = tier === 'verified' ? 'your copy' : (selectedBook.retrievedTOC?.sourceLabel || 'retrieved');
+                  return (
+                    <div style={{ marginBottom: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', overflow: 'hidden' }}>
+                      <button onClick={() => setTocOpen((o) => !o)}
+                        style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
+                          <Icon name="ClipboardList" size={16} style={{ color: tone }} />
+                          <span style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>Table of Contents</span>
+                          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tone, border: `1px solid ${tone}`, borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap' }}>structure {tier} · {srcLabel}</span>
+                          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{divedCount}/{chapters.length} dived · {readCount} read</span>
+                        </span>
+                        <Icon name={tocOpen ? 'ChevronUp' : 'ChevronDown'} size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                      </button>
+                      {tocOpen && (
+                        <div style={{ borderTop: '1px solid var(--rule)' }}>
+                          {chapters.map((ch, i) => {
+                            const dive = dives[i];
+                            const read = !!prog[i]?.read;
+                            const isOpen = openChapter === i;
+                            const cLoading = chapterLoading === i;
+                            return (
+                              <div key={i} style={{ borderBottom: '1px solid var(--rule)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
+                                  <button onClick={() => toggleChapterRead(i)} title={read ? 'Read' : 'Mark read'}
+                                    style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${read ? T.accent : 'var(--border)'}`, background: read ? T.accent : 'transparent', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
+                                    {read && <Icon name="Check" size={13} />}
+                                  </button>
+                                  <button onClick={() => { const next = isOpen ? null : i; setOpenChapter(next); if (next != null && !dive && !cLoading) generateChapterDive(i); }}
+                                    style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8, minHeight: 32 }}>
+                                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
+                                    <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', fontWeight: dive && !dive.error ? 700 : 500, lineHeight: 'var(--lh-tight)' }}>{ch}</span>
+                                    {dive && !dive.error && <Icon name="BookOpen" size={13} style={{ color: T.accent, flexShrink: 0 }} />}
+                                  </button>
+                                  <button onClick={() => { setOpenChapter(i); generateChapterDive(i); }} disabled={cLoading}
+                                    style={{ flexShrink: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '4px 10px', cursor: cLoading ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                                    {cLoading ? '…' : dive && !dive.error ? 'Redive' : 'Dive'}
+                                  </button>
+                                </div>
+                                {isOpen && (
+                                  <div style={{ padding: '0 14px 14px', background: 'var(--bg)' }}>
+                                    {cLoading ? <ThinkingDots color={T.accent} /> : dive ? (
+                                      <div>
+                                        {dive.provider && <div style={{ marginBottom: 6 }}><ProviderTag provider={dive.provider} /></div>}
+                                        <MD text={dive.body} color={T.accent} />
+                                        {!dive.error && isStale(dive, 'studyGuide') && (
+                                          <button onClick={() => generateChapterDive(i)}
+                                            style={{ marginTop: 8, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: 'none', border: `1px solid ${T.accent}`, borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                            Regenerate (prompt updated)
+                                          </button>
+                                        )}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Life-application lens + the full study-guide engine */}
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '12px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>

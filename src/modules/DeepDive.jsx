@@ -5,6 +5,8 @@ import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, ti
 import { newDive, saveDive, addSection, loadIndex, hydrateIndex, loadDive, hydrateDive, removeDive, renameDive } from '../lib/deepdives.js';
 import { stampVersion, isStale, versionLabel } from '../lib/promptVersion.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
+import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
+import SourceGrounding from './shared/SourceGrounding.jsx';
 import { gradeTopic } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
@@ -25,6 +27,10 @@ export default function DeepDive() {
   const [dive, setDive]   = useState(null);
 
   const [topicInput, setTopicInput] = useState('');
+  // Source material the user has that the model can't reach (excerpt / notes),
+  // injected into every pass of this dive. Shared component, same as BookClub.
+  const [userSrc, setUserSrc] = useState(null);
+  const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
   const [catInput, setCatInput]     = useState('');
   const [depth, setDepth]           = useState('expert');
 
@@ -56,9 +62,12 @@ export default function DeepDive() {
       const system = buildDeepDiveSystem(targetDive.topic, targetDive.category, targetDive.depth, focus || null);
       let provider = '';
       const needsWeb = depthNeedsWeb(targetDive.depth);
+      // Inject any source material the user supplied that the model can't reach.
+      const gm = userSrc?.text ? groundingTypeMeta(userSrc.type) : null;
+      const groundBlock = gm ? `\n\nSOURCE MATERIAL THE USER SUPPLIED FROM THEIR OWN COPY (${gm.label} — first-hand, tier ${gm.tier}; ground your analysis in this and cite it):\n${userSrc.text}\n` : '';
       const text = await callClaude({
         system,
-        messages: [{ role: 'user', content: `${userMsg}\n\n${TIER_INSTRUCTION}` }],
+        messages: [{ role: 'user', content: `${userMsg}${groundBlock}\n\n${TIER_INSTRUCTION}` }],
         searchEnabled: needsWeb,
         job: needsWeb ? 'web' : 'reason',
         maxTokens: 4096,
@@ -137,6 +146,10 @@ export default function DeepDive() {
                 <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{DEPTH_META[d].blurb}</div>
               </div>
             ))}
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <SourceGrounding value={userSrc} onSave={setUserSrc} onClear={() => setUserSrc(null)} types={SRC_TYPES}
+              label="I have source material for this — paste it" />
           </div>
           <button onClick={build} disabled={!topicInput.trim() || running}
             style={{ width: '100%', padding: '12px', background: topicInput.trim() && !running ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !running ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: topicInput.trim() && !running ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
