@@ -23,9 +23,12 @@ export default function SourceGrounding({
   onSave,                // (userGrounding) => void  — persist a user copy
   onClear,               // () => void               — remove the user copy
   onRetrieve,            // async () => void          — run the automated chain (books)
-  retrievable = false,   // show the "Try automatic retrieval" control
+  onSearchHarder,        // async () => void          — deeper multi-source retry
+  retrievable = false,   // show the "Try automatic retrieval" control (idle)
   retrieving = false,    // retrieval in flight
-  prompt = '',           // an emphasised CTA (e.g. post-cutoff couldn't-retrieve)
+  phase = 'idle',        // idle | searching | found | none (light miss) | deep-none
+  attempts = [],         // per-source attempt log to report on a miss
+  prompt = '',           // an emphasised CTA (legacy; phase drives the copy now)
   types = USER_GROUNDING_TYPES,
   label = 'I have this — add source material',
 }) {
@@ -55,7 +58,7 @@ export default function SourceGrounding({
     return (
       <div style={{ padding: '12px 14px', border: `1px solid ${tierColor(m.tier)}`, borderRadius: 12, background: 'var(--surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
             <Icon name={m.icon} size={16} style={{ color: tierColor(m.tier) }} />
             <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)' }}>Your {m.label.toLowerCase()}{lines ? ` · ${lines} chapters` : ''}</span>
             {chip(m.tier, 'your copy')}
@@ -107,7 +110,7 @@ export default function SourceGrounding({
     return (
       <div style={{ padding: '12px 14px', border: '1px solid var(--tier-reported)', borderRadius: 12, background: 'var(--surface)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
             <Icon name="ClipboardList" size={16} style={{ color: 'var(--tier-reported)' }} />
             <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)' }}>Retrieved table of contents · {chapters.length} chapters</span>
             {chip('reported', retrieved.sourceLabel)}
@@ -121,22 +124,74 @@ export default function SourceGrounding({
     );
   }
 
-  // ── Call to add (collapsed) — emphasised when `prompt` is set ──────────────
-  return (
-    <div style={prompt ? { padding: '14px 16px', border: '1px solid var(--tier-inferred)', borderRadius: 12, background: 'var(--surface)' } : undefined}>
-      {prompt && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', marginBottom: 10 }}>{prompt}</div>}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+  // ── Searching (automated retrieval in flight) ──────────────────────────────
+  if (phase === 'searching' || retrieving) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface)', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+        <ThinkingDots color="var(--accent)" /> <span style={{ minWidth: 0 }}>Searching catalogs and the web for the table of contents…</span>
+      </div>
+    );
+  }
+
+  // The attempt log — same pattern as the provider chain, so a miss says what was
+  // tried rather than a bare "couldn't verify".
+  const attemptLog = attempts.length > 0 && (
+    <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--rule)', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', lineHeight: 'var(--lh-read)' }}>
+      <span style={{ fontWeight: 700 }}>Tried:</span>{' '}
+      {attempts.map((a, i) => (
+        <span key={i}>{i > 0 ? ' · ' : ''}{a.source}{a.detail ? ` (${a.detail})` : ''} → {a.error ? `error ${a.error}` : `${a.results ?? 0} result${a.results === 1 ? '' : 's'}`}</span>
+      ))}
+    </div>
+  );
+
+  // ── Light miss — offer "Search harder" before the manual path appears ──────
+  if (phase === 'none') {
+    return (
+      <div style={{ padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', marginBottom: 10 }}>
+          Didn’t find a chapter list in a first pass. Let me look harder — more editions, the publisher’s own page, and the author’s site.
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <button onClick={() => onSearchHarder?.()}
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+            <Icon name="Search" size={14} /> Search harder
+          </button>
+          <button onClick={startEdit} style={{ ...linkBtn, color: 'var(--text-tertiary)' }}>or paste it yourself</button>
+        </div>
+        {attemptLog}
+      </div>
+    );
+  }
+
+  // ── Deep miss — the manual path, reframed as the exception it is ───────────
+  if (phase === 'deep-none') {
+    return (
+      <div style={{ padding: '14px 16px', border: '1px solid var(--tier-inferred)', borderRadius: 12, background: 'var(--surface)' }}>
+        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', marginBottom: 10 }}>
+          Couldn’t find a chapter list for this one. If you have a copy, you can paste the contents — that gives the strongest possible grounding (a <b>verified</b> primary source with real chapter locations).
+        </div>
         <button onClick={startEdit}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: `1px solid ${prompt ? 'var(--accent)' : 'var(--border)'}`, background: prompt ? 'var(--accent)' : 'transparent', color: prompt ? 'var(--on-accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
           <Icon name="BookMarked" size={14} /> {label}
         </button>
-        {retrievable && (
-          <button onClick={() => onRetrieve?.()} disabled={retrieving}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: retrieving ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
-            {retrieving ? <><ThinkingDots color="var(--accent)" /> Retrieving…</> : <><Icon name="Search" size={14} /> Try automatic retrieval</>}
-          </button>
-        )}
+        {attemptLog}
       </div>
+    );
+  }
+
+  // ── Idle — no retrieval attempted yet (e.g. a book the model already knows) ──
+  return (
+    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      {retrievable && (
+        <button onClick={() => onRetrieve?.()}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+          <Icon name="Search" size={14} /> Find the table of contents
+        </button>
+      )}
+      <button onClick={startEdit}
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+        <Icon name="BookMarked" size={14} /> {label}
+      </button>
     </div>
   );
 }

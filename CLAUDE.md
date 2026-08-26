@@ -180,24 +180,43 @@ nobody; now they feed a shared graph and a shared card deck.
 - **Source grounding — automated retrieval + the user's own copy**
   (`src/lib/sourceGrounding.js`, `shared/SourceGrounding.jsx`). The model can't
   retrieve a book published after its cutoff, but the user OWNS the copy — this is
-  the input path. A **table-of-contents retrieval chain** runs client-side (no
-  serverless — Hobby cap): **(1) Open Library edition `table_of_contents`** (a
-  two-hop lookup — search is work-level, the TOC lives on the EDITION record, so
-  find the work's `edition_key`s then fetch each `/books/<ek>.json` until one
-  carries a TOC), **(2/3) a `job:'web'` pass** told to prefer the publisher's own
-  page (a direct client fetch of a publisher page is CORS-blocked and we can't add
-  a proxy, so the web pass is the only client-viable way to read it — retail
-  scraping is never done: ToS, bot-detection, legal exposure), **(4) ask the
-  user**. `retrieveTOC({title,author,webPass})` runs the chain; the Open Library
-  step is auto-run on selecting a post-cutoff book, the web pass sits behind a
-  "Try automatic retrieval" button. **Tier by source** (`groundingTier`): a TOC /
+  the input path — and the tool must work HARD to find the TOC before ever asking
+  the user to type (manual paste is the last resort, not the normal path). A
+  **multi-source retrieval chain** runs client-side (no serverless — Hobby cap),
+  merging results and keeping the fullest chapter list: **Open Library** (all
+  editions of every matching work — the `table_of_contents` field is sparse and
+  sits on one edition while siblings leave it empty, so try them all + read the
+  `contents`/`description` variants), **Library of Congress** (MARC field 505,
+  "Formatted Contents Note", via loc.gov `fo=json` — library catalogs carry the
+  TOC far more reliably than Open Library's field), and a **`job:'web'` batch**
+  that is the workhorse, not a fallback: several structured queries in PARALLEL
+  (`"full title" table of contents`, `chapter list`, `site:<publisher domain>`,
+  the author's own site) each DEMANDING numbered titles in order or exactly `NOT
+  FOUND`. It **accepts a reliable non-formal breakdown** — *Winning* is 13 named
+  principles, not a contents page; that's the structure, tiered `reported`. Retail
+  scraping is never done (ToS, bot-detection, legal exposure); a direct publisher
+  fetch is CORS-blocked so the web pass is the only client-viable way to read it.
+  `retrieveTOC({title,author,webPass,publisher,deep})` runs the chain and returns
+  `{ toc, attempts }`. **Two-phase, cached, reported:** a LIGHT pass auto-runs once
+  on selecting a post-cutoff book; a miss offers **"Search harder"** (deep: more
+  editions + full web batch + publisher domain) BEFORE the manual path appears;
+  only after that misses does the paste box show, **reframed as the exception**
+  ("Couldn't find a chapter list… if you have a copy, paste it — that's the
+  strongest grounding"). Every retrieval is **cached permanently** on the book
+  record (`retrievedTOC` on a hit, a `retrievalState` marker on a miss) so it never
+  re-fetches a resolved book, and **failures report the attempts** (source · detail
+  · results/error), same as the provider chain. **Tier by source** (`groundingTier`): a TOC /
   excerpt / photo-transcription the user typed from the physical book is a real
   primary source → **`verified`** (the ONE honest `verified` path this app has,
   with real chapter locations to cite); the user's own notes → `reported`; a
   retrieved TOC / publisher description / web thesis → `reported`; nothing →
   `inferred`. `<SourceGrounding>` is the **shared input** (phone-first — that's
   where someone holding the book types); BookClub, DeepDive, TEDHub and PodcastHub
-  all mount it and inject the material into their prompts.
+  all mount it and inject the material into their prompts. **The chain's merge /
+  attempts / non-formal-structure logic is covered by `sourceGrounding.fixtures.js`
+  (Winning / Influence / The Way of Excellence) with a mock web pass; the LIVE
+  Open Library + Library of Congress HTTP calls are egress-blocked in the sandbox
+  and have NOT been exercised live from here.**
 - **Table of Contents is a first-class section** (BookClub). It's shown above the
   study guide as **verification the user can see** (the real chapter list is
   stronger proof of the right book than a description match — tiered by source)

@@ -32,54 +32,154 @@ async function fetchJson(url, timeoutMs = 9000) {
   return r.json();
 }
 
-// ── Step 1: Open Library edition `table_of_contents` (two-hop) ────────────────
-// search.json is WORK-level and carries no TOC; the TOC is a first-class field on
-// the EDITION record. So: find the work + its edition keys, then fetch editions
-// until one carries a real TOC. Open Library is keyless and CORS-friendly.
-export async function openLibraryTOC(title, author) {
+// A chapter list is USABLE when it has at least this many entries — enough to be
+// a real structure, not a stray heading or two.
+const MIN_CHAPTERS = 3;
+const isUsable = (toc) => parseTOC(toc).length >= MIN_CHAPTERS;
+// Rank retrieved candidates: a fuller chapter list wins (a reported list of 13 is
+// far more useful than a formal 3), tie broken by source trust.
+const SOURCE_RANK = { loc: 3, openlibrary: 2, web: 1 };
+const pickBest = (cands) => cands
+  .filter((c) => c && c.toc && isUsable(c.toc))
+  .map((c) => ({ ...c, n: parseTOC(c.toc).length }))
+  .sort((a, b) => b.n - a.n || (SOURCE_RANK[b.source] || 0) - (SOURCE_RANK[a.source] || 0))[0] || null;
+
+// Publisher name → its own domain, so the web pass can target the publisher's
+// listing (they publish chapter structure; it sells books). Unmapped publishers
+// still go into the query text.
+const PUBLISHER_DOMAINS = {
+  penguin: 'penguinrandomhouse.com', 'penguin random house': 'penguinrandomhouse.com',
+  portfolio: 'penguinrandomhouse.com', crown: 'penguinrandomhouse.com',
+  'simon & schuster': 'simonandschuster.com', 'simon and schuster': 'simonandschuster.com', scribner: 'simonandschuster.com',
+  harpercollins: 'harpercollins.com', 'harper collins': 'harpercollins.com', harper: 'harpercollins.com',
+  hachette: 'hachettebookgroup.com', 'little, brown': 'hachettebookgroup.com',
+  macmillan: 'us.macmillan.com', 'st. martin': 'us.macmillan.com',
+  wiley: 'wiley.com', 'hay house': 'hayhouse.com', 'harvard business': 'store.hbr.org',
+};
+const publisherDomain = (pub) => {
+  const p = clean(pub).toLowerCase();
+  if (!p) return '';
+  for (const [name, dom] of Object.entries(PUBLISHER_DOMAINS)) if (p.includes(name)) return dom;
+  return '';
+};
+
+// ── Open Library — every edition of every matching work ───────────────────────
+// search.json is WORK-level and carries no TOC; the TOC is a field on the EDITION
+// record — but it's sparse and sits on one edition while its siblings leave it
+// empty, so we try ALL editions and also read the `contents`/`description`
+// variants, not just `table_of_contents`. Keyless, CORS-friendly.
+export async function openLibraryTOC(title, author, attempts = [], { editions = 4, works = 2 } = {}) {
   const t = clean(title);
   if (!t) return null;
-  const url = `https://openlibrary.org/search.json?title=${encodeURIComponent(t)}${author ? `&author=${encodeURIComponent(clean(author))}` : ''}&limit=3&fields=key,title,edition_key`;
   let docs = [];
-  try { docs = (await fetchJson(url))?.docs || []; } catch { return null; }
-  for (const doc of docs) {
-    for (const ek of (doc.edition_key || []).slice(0, 6)) {
+  try {
+    docs = (await fetchJson(`https://openlibrary.org/search.json?title=${encodeURIComponent(t)}${author ? `&author=${encodeURIComponent(clean(author))}` : ''}&limit=${works}&fields=key,title,edition_key`))?.docs || [];
+  } catch (e) { attempts.push({ source: 'Open Library', detail: 'work search', error: String(e?.message || e) }); return null; }
+  let editionsChecked = 0;
+  const found = [];
+  for (const doc of docs.slice(0, works)) {
+    for (const ek of (doc.edition_key || []).slice(0, editions)) {
+      editionsChecked++;
       try {
         const ed = await fetchJson(`https://openlibrary.org/books/${ek}.json`);
-        const raw = Array.isArray(ed?.table_of_contents) ? ed.table_of_contents : [];
-        const titles = raw.map((e) => clean(e?.title || e?.label)).filter(Boolean);
-        if (titles.length >= 3) return { toc: titles.join('\n'), source: 'openlibrary', sourceLabel: 'Open Library', editionKey: ek };
+        const raw = Array.isArray(ed?.table_of_contents) ? ed.table_of_contents
+          : Array.isArray(ed?.contents) ? ed.contents : [];
+        let titles = raw.map((e) => clean(e?.title || e?.label || e)).filter(Boolean);
+        // Some editions stash the contents in the description as a newline list.
+        if (titles.length < MIN_CHAPTERS && typeof ed?.description === 'string' && /contents|chapter/i.test(ed.description)) {
+          const fromDesc = parseTOC(ed.description);
+          if (fromDesc.length >= MIN_CHAPTERS) titles = fromDesc;
+        }
+        if (titles.length >= MIN_CHAPTERS) found.push({ toc: titles.join('\n'), source: 'openlibrary', sourceLabel: 'Open Library', editionKey: ek });
       } catch { /* try the next edition */ }
     }
   }
-  return null;
+  attempts.push({ source: 'Open Library', detail: `${docs.length} work(s), ${editionsChecked} edition(s)`, results: found.length });
+  return pickBest(found);
 }
 
-// ── Steps 2 + 3: publisher listing + web search, via one `job:'web'` pass ─────
-// A direct client-side fetch of a publisher page is CORS-blocked in the browser,
-// and a serverless proxy isn't available (Hobby function cap), so the publisher's
-// own listing is reached the only way the client can: the web pass, instructed to
-// PREFER the publisher's page over any retailer. `webPass` is an async
-// `(prompt) => text` the caller supplies (a callClaude wrapper), so this module
-// carries no dependency on the AI layer.
-export async function webTOC(webPass, title, author) {
-  if (typeof webPass !== 'function') return null;
+// ── Library of Congress — MARC field 505 (Formatted Contents Note) ────────────
+// Library catalogs carry the TOC (505) far more reliably than Open Library's
+// field. loc.gov exposes it as JSON (`fo=json`), keyless. Best-effort: read a
+// `contents` array or a contents-style note off the top result's item record.
+export async function locTOC(title, author, attempts = []) {
+  const t = clean(title);
+  if (!t) return null;
+  const q = encodeURIComponent(`${t}${author ? ` ${clean(author)}` : ''}`);
+  let results = [];
   try {
-    const reply = await webPass(`Find the table of contents — the chapter titles, in order — of the book "${title}"${author ? ` by ${author}` : ''}. Prefer the PUBLISHER'S own page (e.g. Penguin, Portfolio) over any retailer; never use Amazon. List ONLY the chapter titles, one per line. If you cannot find the actual table of contents for THIS specific book, reply exactly NOT FOUND.`);
-    const text = clean(reply);
-    if (!text || /^NOT FOUND/i.test(text)) return null;
-    return { toc: text, source: 'web', sourceLabel: 'web (publisher / search)' };
-  } catch { return null; }
+    results = (await fetchJson(`https://www.loc.gov/books/?q=${q}&fo=json&c=5&at=results`))?.results || [];
+  } catch (e) { attempts.push({ source: 'Library of Congress', detail: 'search', error: String(e?.message || e) }); return null; }
+  for (const r of results.slice(0, 3)) {
+    // 505 shows up on the item record as `item.contents` (array) or a note.
+    const contents = Array.isArray(r?.contents) ? r.contents : [];
+    const joined = contents.map(clean).filter(Boolean).join('\n');
+    if (isUsable(joined)) { attempts.push({ source: 'Library of Congress', detail: 'contents note (505)', results: 1 }); return { toc: joined, source: 'loc', sourceLabel: 'Library of Congress' }; }
+    const url = clean(r?.id || r?.url);
+    if (url && /loc\.gov/.test(url)) {
+      try {
+        const item = (await fetchJson(`${url.replace(/\/$/, '')}/?fo=json&at=item`))?.item || {};
+        const c2 = Array.isArray(item?.contents) ? item.contents : [];
+        const notes = Array.isArray(item?.notes) ? item.notes : [];
+        const noteContents = notes.find((n) => /contents/i.test(String(n))) || '';
+        const j2 = c2.map(clean).filter(Boolean).join('\n') || parseTOC(noteContents).join('\n');
+        if (isUsable(j2)) { attempts.push({ source: 'Library of Congress', detail: 'item record 505', results: 1 }); return { toc: j2, source: 'loc', sourceLabel: 'Library of Congress' }; }
+      } catch { /* next result */ }
+    }
+  }
+  attempts.push({ source: 'Library of Congress', detail: `${results.length} result(s)`, results: 0 });
+  return null;
 }
 
-// The automated chain: Open Library → web pass. Stops at the first usable result;
-// returns null when nothing was found (the UI then asks the user for their copy).
-export async function retrieveTOC({ title, author, webPass } = {}) {
-  const ol = await openLibraryTOC(title, author);
-  if (ol) return ol;
-  const web = await webTOC(webPass, title, author);
-  if (web) return web;
-  return null;
+// ── Web pass — the workhorse, run as a batch of structured queries ────────────
+// A direct client-side fetch of a publisher page is CORS-blocked and we can't add
+// a proxy, so the web pass (Perplexity/Grok) is the only client-viable way to read
+// it. Each query DEMANDS structure (numbered titles in order, or exactly NOT
+// FOUND) and — per the ask — accepts a reliable chapter/section/PRINCIPLE
+// breakdown from the publisher, the author's site, reviews, or summaries even when
+// no page labels it a formal "table of contents" (a `reported` list beats
+// nothing). Queries run in parallel; the fullest usable list wins.
+const WEB_SYS = 'You extract a book’s chapter structure from current web sources. Return ONLY the chapter/section/principle titles, numbered, one per line, in the book’s order — a reliable breakdown from the publisher, the author’s own site, reviews, or summaries all count, even if no page calls it a formal "table of contents". Do NOT invent or pad; if you cannot find a reliable structure for THIS specific book, reply with exactly NOT FOUND and nothing else.';
+export async function webTOCBatch(webPass, title, author, { publisher = '', deep = false } = {}, attempts = []) {
+  if (typeof webPass !== 'function') return null;
+  const dom = publisherDomain(publisher);
+  const queries = [
+    `"${title}"${author ? ` by ${author}` : ''} table of contents — chapter titles in order`,
+    `"${title}"${author ? ` ${author}` : ''} chapter list / section titles in order`,
+  ];
+  if (deep) {
+    if (dom) queries.push(`site:${dom} "${title}" chapter titles / contents`);
+    else if (publisher) queries.push(`"${title}" chapter titles on the publisher (${publisher}) page`);
+    queries.push(`"${title}"${author ? ` by ${author}` : ''} — the named chapters, parts, or principles the book is organized around, in order`);
+    if (author) queries.push(`${author}'s own site or interviews: the chapter/section breakdown of "${title}"`);
+  }
+  const settled = await Promise.all(queries.map(async (q) => {
+    try {
+      const reply = await webPass(q, WEB_SYS);
+      const text = clean(reply);
+      if (!text || /^\s*NOT FOUND/i.test(text)) { attempts.push({ source: 'Web', detail: q.slice(0, 48), results: 0 }); return null; }
+      const n = parseTOC(text).length;
+      attempts.push({ source: 'Web', detail: q.slice(0, 48), results: n });
+      return isUsable(text) ? { toc: text, source: 'web', sourceLabel: dom ? `web (${dom})` : 'web (publisher / search)' } : null;
+    } catch (e) { attempts.push({ source: 'Web', detail: q.slice(0, 48), error: String(e?.message || e) }); return null; }
+  }));
+  return pickBest(settled);
+}
+
+// The automated chain. A LIGHT pass (auto, on select) tries the catalogs and one
+// web query; a DEEP pass ("Search harder") widens Open Library to more editions
+// and fires the full web batch incl. the publisher domain. Returns
+// { toc, attempts } — toc is the best candidate or null — and always the attempt
+// log so the UI can report exactly what was tried and what each returned.
+export async function retrieveTOC({ title, author, webPass, publisher = '', deep = false } = {}) {
+  const attempts = [];
+  const cands = [];
+  cands.push(await openLibraryTOC(title, author, attempts, deep ? { editions: 8, works: 3 } : { editions: 3, works: 2 }));
+  cands.push(await locTOC(title, author, attempts));
+  // Web batch: one structured query on the light pass, the full batch on deep.
+  cands.push(await webTOCBatch(webPass, title, author, { publisher, deep }, attempts));
+  const best = pickBest(cands.filter(Boolean));
+  return { toc: best || null, attempts };
 }
 
 // Parse a pasted or retrieved TOC into clean chapter lines — tolerant of leading

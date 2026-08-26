@@ -84,6 +84,7 @@ const mapGoogle = (it) => {
   return {
     source: 'google', id: it.id, title: clean(v.title), subtitle: clean(v.subtitle),
     authors: v.authors || [], publishedDate: clean(v.publishedDate), description: clean(v.description),
+    publisher: clean(v.publisher),
     thumbnail: (img.thumbnail || img.smallThumbnail || '').replace(/^http:/, 'https:'),
     infoLink: v.infoLink || '', pageCount: v.pageCount || null,
   };
@@ -158,6 +159,7 @@ export function toVerifiedRecord(match) {
     authors: match.authors,
     publishedDate: match.publishedDate,
     description: match.description,
+    publisher: match.publisher || '',
     thumbnail: match.thumbnail,
     infoLink: match.infoLink,
     postCutoff: isPostCutoff(match.publishedDate),
