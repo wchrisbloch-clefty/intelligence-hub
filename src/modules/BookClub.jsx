@@ -414,22 +414,17 @@ export default function BookClub() {
     return () => { cancelled = true; };
   }, [selectedBook?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Automated TOC retrieval, cheap step only (Open Library, keyless), for a
-  // post-cutoff book that has no TOC yet — the model can't retrieve its contents,
-  // so surface the structure automatically. The costlier web pass is behind the
-  // manual "Try automatic retrieval" button.
+  // Automated TOC retrieval for a post-cutoff book that has NOTHING yet — the
+  // model can't reach its contents, so the tool works to find the structure
+  // itself before ever asking the user to type. Runs ONCE per book: cached
+  // permanently (retrievedTOC) on a hit, and a `retrievalState` marker on a miss
+  // so it never re-fetches a book already resolved (item 6).
   useEffect(() => {
     if (!selectedBook || !selectedBook.postCutoff) return;
-    if (selectedBook.userGrounding || selectedBook.retrievedTOC) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const rtoc = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author }); // no webPass → OL only
-        if (!cancelled && rtoc) await patchBook({ retrievedTOC: rtoc });
-      } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, [selectedBook?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (selectedBook.userGrounding || selectedBook.retrievedTOC || selectedBook.retrievalState || retrieving) return;
+    runRetrievalChain(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBook?.id]);
 
   const confirmVerification = async () => {
     const m = verify.matches[verify.idx];
@@ -460,18 +455,24 @@ export default function BookClub() {
   };
   const saveUserGrounding = (ug) => patchBook({ userGrounding: ug });
   const clearUserGrounding = () => patchBook({ userGrounding: null });
-  // Run the automated chain. `web` gates the (costlier) job:'web' pass; the
-  // Open Library step is cheap/keyless and runs either way.
-  const runRetrieveTOC = async (web = true) => {
+  // The web pass the retrieval chain uses — a callClaude wrapper. Takes (query,
+  // system) so each batched query can carry the structured-output instruction.
+  const webPass = (q, system) => callClaude({
+    system: system || 'You extract a book’s chapter structure from current web sources. Return only the chapter titles in order, or exactly NOT FOUND.',
+    messages: [{ role: 'user', content: q }], job: 'web', maxTokens: 700,
+  });
+  // Run the multi-source chain. `deep` (Search harder) widens Open Library to more
+  // editions and fires the full web batch incl. the publisher domain. A hit caches
+  // the TOC permanently; a miss records the state + the attempt log so retrieval
+  // never re-runs for a resolved book and the failure can report what it tried.
+  const runRetrievalChain = async (deep = false) => {
     if (!selectedBook || retrieving) return;
     setRetrieving(true);
     try {
-      const webPass = web
-        ? (q) => callClaude({ system: 'You retrieve a book’s real table of contents from current sources. Prefer the publisher’s own page. If you cannot find THIS book’s actual TOC, reply exactly NOT FOUND.', messages: [{ role: 'user', content: q }], job: 'web', maxTokens: 700 })
-        : null;
-      const rtoc = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author, webPass });
-      if (rtoc) await patchBook({ retrievedTOC: rtoc });
-    } catch { /* best-effort; the user can still paste their copy */ }
+      const { toc, attempts } = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author, webPass, publisher: selectedBook.publisher || '', deep });
+      if (toc) await patchBook({ retrievedTOC: toc, retrievalState: 'found', retrievalAttempts: attempts });
+      else await patchBook({ retrievalState: deep ? 'deep-none' : 'none', retrievalAttempts: attempts });
+    } catch { await patchBook({ retrievalState: deep ? 'deep-none' : 'none' }); }
     setRetrieving(false);
   };
 
@@ -1091,22 +1092,22 @@ export default function BookClub() {
                   </div>
                 )}
 
-                {/* Source material the model can't reach: the reader's own copy +
-                    automated TOC retrieval. Emphasised when a post-cutoff book
-                    couldn't be retrieved — the moment to ask for the copy. */}
+                {/* Source material the model can't reach: automated retrieval
+                    leads, "Search harder" widens the net, and only after that
+                    fails does the manual paste appear (reframed as the exception). */}
                 <div style={{ marginBottom: 16 }}>
                   <SourceGrounding
                     value={selectedBook.userGrounding}
                     retrieved={selectedBook.retrievedTOC}
                     onSave={saveUserGrounding}
                     onClear={clearUserGrounding}
-                    onRetrieve={() => runRetrieveTOC(true)}
-                    retrievable
+                    onRetrieve={() => runRetrievalChain(false)}
+                    onSearchHarder={() => runRetrievalChain(true)}
+                    retrievable={!selectedBook.postCutoff && !selectedBook.retrievalState}
                     retrieving={retrieving}
+                    phase={retrieving ? 'searching' : (selectedBook.retrievedTOC ? 'found' : (selectedBook.retrievalState || 'idle'))}
+                    attempts={selectedBook.retrievalAttempts || []}
                     label="I have this book — add the table of contents"
-                    prompt={(selectedBook.postCutoff && !selectedBook.userGrounding && !selectedBook.retrievedTOC)
-                      ? 'This book published after the model’s training data and its contents couldn’t be retrieved. If you have a copy, paste the table of contents and I’ll build a chapter-by-chapter guide instead.'
-                      : ''}
                   />
                 </div>
 
