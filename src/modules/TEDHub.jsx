@@ -5,8 +5,13 @@ import { callClaude, saveNotes, uid } from '../utils.js';
 import { CB_IDENTITY } from '../constants.js';
 import { isPostCutoff } from '../lib/bookVerify.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
+import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
+import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+
+// Non-book surfaces accept a transcript/notes the model can't reach.
+const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
 
 const ACCENT        = T.accent;
 const ACCENT_BG     = 'rgba(217,164,65,0.07)';
@@ -139,10 +144,14 @@ function TalkCard({ talk, onSaveToVault }) {
   const [analysis,  setAnalysis]  = useState('');
   const [loading,   setLoading]   = useState(false);
   const [vaulted,   setVaulted]   = useState(false);
+  const [userSrc,   setUserSrc]   = useState(null); // transcript / notes the user supplied
 
-  const analyze = async () => {
+  const analyze = () => {
     if (analysis) { setExpanded(e => !e); return; }
     setExpanded(true);
+    runAnalysis();
+  };
+  const runAnalysis = async () => {
     setLoading(true);
     try {
       // Same drift risk as a book: summarizing a real talk with nothing anchoring
@@ -159,7 +168,9 @@ function TalkCard({ talk, onSaveToVault }) {
           if (/^\s*NOT FOUND/i.test(webThesis)) webThesis = '';
         } catch { /* best-effort */ }
       }
-      const prompt = `Analyze TED Talk: "${talk.title}" by ${talk.speaker} (${talk.year}).${webThesis ? `\n\nGROUNDING (the actual talk, retrieved from the web — match THIS, do not invent):\n${webThesis}` : ''}
+      const gm = userSrc?.text ? groundingTypeMeta(userSrc.type) : null;
+      const userBlock = gm ? `\n\nSOURCE THE USER SUPPLIED (${gm.label} — first-hand, tier ${gm.tier}; ground the brief in this and cite it):\n${userSrc.text}` : '';
+      const prompt = `Analyze TED Talk: "${talk.title}" by ${talk.speaker} (${talk.year}).${webThesis ? `\n\nGROUNDING (the actual talk, retrieved from the web — match THIS, do not invent):\n${webThesis}` : ''}${userBlock}
 
 Give CB a tight intelligence brief. Format:
 **🎯 Core Thesis** — The single big idea in one sentence.
@@ -224,6 +235,10 @@ ${TIER_INSTRUCTION}`;
             </div>
           ) : (
             <>
+              <div style={{ marginBottom: 12 }}>
+                <SourceGrounding value={userSrc} onSave={(v) => { setUserSrc(v); runAnalysis(); }} onClear={() => setUserSrc(null)} types={SRC_TYPES}
+                  label="I have the transcript / notes — paste to ground this" />
+              </div>
               <MD text={analysis} color={ACCENT} />
               {!vaulted && (
                 <button onClick={saveToVault}

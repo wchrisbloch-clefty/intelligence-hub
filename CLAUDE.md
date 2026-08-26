@@ -177,11 +177,66 @@ nobody; now they feed a shared graph and a shared card deck.
   the awaited/revert contract. "What moved it" drills into `conceptFootprint`
   (the shared ConnectedKnowledge panel). Module chips link back to where the
   skill is built.
+- **Source grounding — automated retrieval + the user's own copy**
+  (`src/lib/sourceGrounding.js`, `shared/SourceGrounding.jsx`). The model can't
+  retrieve a book published after its cutoff, but the user OWNS the copy — this is
+  the input path. A **table-of-contents retrieval chain** runs client-side (no
+  serverless — Hobby cap): **(1) Open Library edition `table_of_contents`** (a
+  two-hop lookup — search is work-level, the TOC lives on the EDITION record, so
+  find the work's `edition_key`s then fetch each `/books/<ek>.json` until one
+  carries a TOC), **(2/3) a `job:'web'` pass** told to prefer the publisher's own
+  page (a direct client fetch of a publisher page is CORS-blocked and we can't add
+  a proxy, so the web pass is the only client-viable way to read it — retail
+  scraping is never done: ToS, bot-detection, legal exposure), **(4) ask the
+  user**. `retrieveTOC({title,author,webPass})` runs the chain; the Open Library
+  step is auto-run on selecting a post-cutoff book, the web pass sits behind a
+  "Try automatic retrieval" button. **Tier by source** (`groundingTier`): a TOC /
+  excerpt / photo-transcription the user typed from the physical book is a real
+  primary source → **`verified`** (the ONE honest `verified` path this app has,
+  with real chapter locations to cite); the user's own notes → `reported`; a
+  retrieved TOC / publisher description / web thesis → `reported`; nothing →
+  `inferred`. `<SourceGrounding>` is the **shared input** (phone-first — that's
+  where someone holding the book types); BookClub, DeepDive, TEDHub and PodcastHub
+  all mount it and inject the material into their prompts.
+- **Table of Contents is a first-class section** (BookClub). It's shown above the
+  study guide as **verification the user can see** (the real chapter list is
+  stronger proof of the right book than a description match — tiered by source)
+  and as **navigation**: each chapter opens a **chapter dive** (argument, key
+  ideas, worked example in the lens, disconfirming test) stored per book on
+  **`aether_chapter_dives_v1`** with the same `promptVersion` invalidation as
+  guides. Per-chapter **read/dived progress** persists to
+  **`aether_chapter_progress_v1`** (awaited/revert) and shows on the book card.
+  Chapter dives inherit the book's grounding: **structure** carries the TOC's tier
+  (`verified` from the user's copy, `reported` from a retrieved TOC) while the
+  **analysis is `[inferred]`** — `buildChapterPrompt` is explicit about which is
+  which and `capTierMarkers` caps at the structure tier. Each chapter dive
+  `logConcept`s with the chapter as source (`refs:['<book>','Ch. N']`) so Skills
+  sees chapter-level progress, not one lump per book. **Chapter-anchored
+  generation:** when a TOC is present `buildGuidePrompt` generates the guide
+  chapter-by-chapter (`## Chapter Guide`) instead of the framework-based format.
+- **Book verification is robust to the titles users actually type**
+  (`src/lib/bookVerify.js`). The user types the short spine title ("Winning");
+  the catalog stores the full title with subtitle ("Winning: The Unforgiving Race
+  to Greatness") and a DIFFERENT book may share the short title (Grover's vs Jack
+  Welch's). So verification uses a **query cascade** — exact-phrase → unquoted
+  (allows subtitle) → plain keyword, both fields URL-encoded (the old code
+  interpolated the author raw and used a dead pre-encoded line) — for Google Books
+  then Open Library, stopping at the first non-empty response. Candidates are
+  **scored** (`scoreMatch`: subtitle-tolerant title similarity + token-based
+  author match that survives a middle initial + edition recency); below
+  `CONFIDENCE_THRESHOLD` the UI shows the top 2–3 to pick from rather than silently
+  locking result one. The **short title stays the display name, the full title is
+  stored for grounding**. Failure **reports the attempts** (source · query ·
+  results/error) so a zero-results query and a network failure no longer look
+  identical. Fixtures in `bookVerify.fixtures.js` cover the short-title cases
+  (Winning / Influence / Mindset). **Retrieval is verified against these fixtures
+  and mocks — the live Google Books / Open Library calls are egress-blocked in the
+  sandbox, so they have NOT been exercised live from here.**
 - **Book grounding is REQUIRED before a study guide** (`src/lib/bookVerify.js`).
   A model will confidently invent a thesis for a title it doesn't know — a guide
   for the post-cutoff *The Way of Excellence* returned frameworks from the
   author's EARLIER books, asserted as this one's. So on select, verify against
-  **Google Books** (`intitle:"…"+inauthor:…`, free, keyless, CORS-friendly — do
+  **Google Books** (free, keyless, CORS-friendly — do
   NOT add a serverless function, we're at the Hobby 12-function cap), falling back
   to **Open Library**. The user confirms the match; the **verified metadata is
   stored on the book record** and the **publisher description is injected into
