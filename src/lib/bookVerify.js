@@ -148,6 +148,25 @@ export async function verifyBook({ title, author }) {
   return { matches, attempts, confident: !!matches.length && matches[0].score >= CONFIDENCE_THRESHOLD };
 }
 
+// Live search for the Add-Book suggestion dropdown: fast (Google Books first,
+// keyless), scored so the best catalog match leads, capped for a tight list.
+// Returns [] for a too-short query so we don't fire on the first keystroke.
+export async function searchBooks({ title, author, limit = 6 } = {}) {
+  const t = clean(title), a = clean(author);
+  if (t.length < 2) return [];
+  const attempts = [];
+  let rows = await runGoogle(t, a, attempts);
+  if (!rows.length) rows = await runOpenLibrary(t, a, attempts);
+  return rows
+    .map((m) => ({ ...m, score: scoreMatch(m, { title: t, author: a }) }))
+    .sort((x, y) => y.score - x.score)
+    .slice(0, limit);
+}
+
+// The short spine title from a full catalog title ("Winning: The Unforgiving Race
+// to Greatness" → "Winning") — the display name, distinct from the grounding title.
+export const mainTitle = (full) => String(full || '').split(/:\s/)[0].trim() || String(full || '').trim();
+
 // The verified metadata we persist onto a book record (and inject as grounding).
 export function toVerifiedRecord(match) {
   if (!match) return null;
