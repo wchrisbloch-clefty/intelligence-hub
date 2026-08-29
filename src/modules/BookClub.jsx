@@ -90,6 +90,11 @@ const lensClauseOf = (id) => LENSES.find((l) => l.id === id)?.clause || LENSES[2
 // skills, and recent deep dives, pulled from the graph — so the Applied Scenarios
 // are about his real work and life, not generic illustrations. Returns '' when
 // nothing is tracked yet (the prompt then falls back to his known world).
+// Strip a trailing module/section qualifier a concept or skill sometimes carries
+// ("Having a Clear Sense of Values (Skills Building)") — that suffix is a tracking
+// artifact, not part of the domain, and must never appear in a scenario.
+export const stripModuleTag = (s) => String(s || '').replace(/\s*\((?:skills?(?: building)?|books?|academy|deep ?dive|research|quiz|ladder|field manual|notes|inbox)\)\s*$/i, '').trim();
+
 function buildStudyContext() {
   const parts = [];
   try {
@@ -104,8 +109,11 @@ function buildStudyContext() {
     // telemetry, not scenario material. A previous guide's scenarios collapsed
     // into "trend flat" variants because the trend leaked in; scenarios must be
     // about the domain, never about the graph's readout of it.
-    const skills = buildSkills().filter((s) => s.confidence != null).slice(0, 6)
-      .map((s) => `- ${s.name}`);
+    const skills = buildSkills().filter((s) => s.confidence != null)
+      .map((s) => stripModuleTag(s.name))
+      .filter((n) => n && !isJunkConcept(n))   // same read-side guard as concepts
+      .slice(0, 6)
+      .map((n) => `- ${n}`);
     if (skills.length) parts.push(`Skills he's building:\n${skills.join('\n')}`);
   } catch {}
   try {
@@ -129,7 +137,8 @@ function buildStudyContext() {
       .filter((c) => !isJunkConcept(c.topic))
       .sort((a, b) => (b.observations || 0) - (a.observations || 0))
       .slice(0, 6)
-      .map((c) => `- ${c.topic}`);
+      .map((c) => `- ${stripModuleTag(c.topic)}`)
+      .filter((l) => l !== '- ');
     if (concepts.length) parts.push(`Topics he's been going deep on (most-engaged first):\n${concepts.join('\n')}`);
   } catch {}
   return parts.join('\n\n');
@@ -311,6 +320,10 @@ export default function BookClub() {
   const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0, attempts: [] });
   // Automated TOC retrieval in flight for the selected book.
   const [retrieving, setRetrieving] = useState(false);
+  // Grounding gate: a post-cutoff book with no chapter list blocks generation
+  // until the user chooses (search harder / paste / continue ungrounded).
+  const [needsGrounding, setNeedsGrounding] = useState(false);
+  const [proceedUngrounded, setProceedUngrounded] = useState(false);
 
   const [tab,          setTab]          = useState('library'); // library | add | dive
   const [search,       setSearch]       = useState('');
@@ -420,6 +433,8 @@ export default function BookClub() {
   // permanently (retrievedTOC) on a hit, and a `retrievalState` marker on a miss
   // so it never re-fetches a book already resolved (item 6).
   useEffect(() => {
+    // A new book resets the grounding gate.
+    setNeedsGrounding(false); setProceedUngrounded(false);
     if (!selectedBook || !selectedBook.postCutoff) return;
     if (selectedBook.userGrounding || selectedBook.retrievedTOC || selectedBook.retrievalState || retrieving) return;
     runRetrievalChain(false);
@@ -639,8 +654,20 @@ export default function BookClub() {
     } catch { return []; }
   };
 
-  const generateGuide = async () => {
+  const generateGuide = async ({ ungrounded = false } = {}) => {
     if (!selectedBook) return;
+    // Grounding gate — a post-cutoff book the model can't reach, with no retrieved
+    // TOC and no user copy, must NOT silently generate ungrounded. Block until the
+    // user chooses: Search harder, paste their copy, or explicitly continue
+    // ungrounded. (A verified/known book, or one already grounded, skips the gate.)
+    const needsG = selectedBook.postCutoff && !selectedBook.userGrounding && !selectedBook.retrievedTOC;
+    if (needsG && !proceedUngrounded && !ungrounded) {
+      setNeedsGrounding(true);
+      // Kick off a light retrieval if we haven't tried yet, so the choice is live.
+      if (!selectedBook.retrievalState && !retrieving) runRetrievalChain(false);
+      return;
+    }
+    setNeedsGrounding(false);
     setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens); setReadNext([]);
     let provider = '';
     try {
@@ -1092,6 +1119,20 @@ export default function BookClub() {
                   </div>
                 )}
 
+                {/* Grounding gate — generation is blocked on a post-cutoff book
+                    with no chapter list until the user chooses. */}
+                {needsGrounding && !selectedBook.userGrounding && !selectedBook.retrievedTOC && (
+                  <div style={{ marginBottom: 12, padding: '12px 14px', background: withAlpha(T.caution, 10), border: `1px solid ${withAlpha(T.caution, 45)}`, borderRadius: 10, color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', lineHeight: 'var(--lh-read)' }}>
+                    <b style={{ color: 'var(--text)' }}>Generation paused — this book has no grounding yet.</b> It published after the model’s training data and no chapter list was found. Search harder or paste your copy’s contents below for a grounded, chapter-by-chapter guide — or continue with an ungrounded (all-<i>inferred</i>) guide.
+                    <div style={{ marginTop: 10 }}>
+                      <button onClick={() => { setProceedUngrounded(true); setNeedsGrounding(false); generateGuide({ ungrounded: true }); }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                        Continue ungrounded →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Source material the model can't reach: automated retrieval
                     leads, "Search harder" widens the net, and only after that
                     fails does the manual paste appear (reframed as the exception). */}
@@ -1209,7 +1250,7 @@ export default function BookClub() {
                       );
                     })}
                   </div>
-                  <button onClick={generateGuide} disabled={loading}
+                  <button onClick={() => generateGuide()} disabled={loading}
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: 'none', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 40 }}>
                     <Icon name="BookOpen" size={14} /> {savedGuide ? 'Regenerate Study Guide' : 'Generate Study Guide'}
                   </button>
@@ -1232,7 +1273,7 @@ export default function BookClub() {
                           View guide
                         </button>
                         {stale && (
-                          <button onClick={generateGuide} disabled={loading}
+                          <button onClick={() => generateGuide()} disabled={loading}
                             style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.onAccent, background: T.accent, border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
                             Regenerate
                           </button>

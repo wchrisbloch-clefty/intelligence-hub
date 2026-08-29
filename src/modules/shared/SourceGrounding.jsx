@@ -139,7 +139,7 @@ export default function SourceGrounding({
     <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--rule)', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', lineHeight: 'var(--lh-read)' }}>
       <span style={{ fontWeight: 700 }}>Tried:</span>{' '}
       {attempts.map((a, i) => (
-        <span key={i}>{i > 0 ? ' · ' : ''}{a.source}{a.detail ? ` (${a.detail})` : ''} → {a.error ? `error ${a.error}` : `${a.results ?? 0} result${a.results === 1 ? '' : 's'}`}</span>
+        <span key={i}>{i > 0 ? ' · ' : ''}{a.source}{a.detail ? ` (${a.detail})` : ''} → {a.unavailable ? 'unavailable (blocked)' : a.error ? `error ${a.error}` : `${a.results ?? 0} result${a.results === 1 ? '' : 's'}`}</span>
       ))}
     </div>
   );

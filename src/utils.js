@@ -164,6 +164,34 @@ export async function fetchArticle(url) {
   return null;
 }
 
+// Fetch the RAW body of a cross-origin URL (JSON or HTML) for hosts that don't
+// send CORS headers (loc.gov, publisher pages). Direct fetch first (works for
+// CORS-friendly hosts like Open Library); on failure, the same allorigins/
+// corsproxy passthrough proxies fetchArticle uses (r.jina.ai is excluded — it
+// reader-modes the body instead of returning it verbatim). Returns
+// { text, via } on success, or { text:null, blocked:true, tried:[…] } when every
+// route failed — so a caller can tell "CORS-blocked, never executed" from "ran,
+// found nothing". Never throws.
+export async function fetchRaw(url, { timeoutMs = 10000 } = {}) {
+  const tried = [];
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(timeoutMs) });
+    if (r.ok) return { text: await r.text(), via: 'direct' };
+    tried.push(`direct→${r.status}`);
+  } catch { tried.push('direct→blocked'); }
+  for (const [name, p] of [
+    ['allorigins', `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`],
+    ['corsproxy', `https://corsproxy.io/?url=${encodeURIComponent(url)}`],
+  ]) {
+    try {
+      const r = await fetch(p, { signal: AbortSignal.timeout(timeoutMs) });
+      if (r.ok) { const text = await r.text(); if (text) return { text, via: name }; tried.push(`${name}→empty`); }
+      else tried.push(`${name}→${r.status}`);
+    } catch { tried.push(`${name}→blocked`); }
+  }
+  return { text: null, blocked: true, tried };
+}
+
 // ─── FILE HELPERS ─────────────────────────────────────────────────────────
 export function getFileIcon(name = '') {
   const ext = name.split('.').pop().toLowerCase();

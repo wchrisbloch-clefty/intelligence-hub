@@ -23,13 +23,19 @@ export const USER_GROUNDING_TYPES = [
 ];
 export const groundingTypeMeta = (id) => USER_GROUNDING_TYPES.find((t) => t.id === id) || USER_GROUNDING_TYPES[0];
 
+import { fetchRaw } from '../utils.js';
+
 const clean = (s) => String(s || '').trim();
 
-async function fetchJson(url, timeoutMs = 9000) {
-  const signal = AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
-  const r = await fetch(url, { signal });
-  if (!r.ok) throw new Error(String(r.status));
-  return r.json();
+// Fetch cross-origin JSON through the shared CORS-proxy chain (direct first, then
+// allorigins/corsproxy). Open Library sends CORS headers so it resolves direct;
+// loc.gov does NOT, so it only works through the proxy — this is the fix for the
+// deployed failure. Returns { data } on success, or { blocked, tried } when every
+// route failed (so the attempt log can say CORS-blocked, not just "no results").
+async function fetchJson(url, timeoutMs = 10000) {
+  const { text, blocked, tried } = await fetchRaw(url, { timeoutMs });
+  if (blocked) return { data: null, blocked: true, tried };
+  try { return { data: JSON.parse(text) }; } catch { return { data: null, parseError: true }; }
 }
 
 // A chapter list is USABLE when it has at least this many entries — enough to be
@@ -71,27 +77,26 @@ const publisherDomain = (pub) => {
 export async function openLibraryTOC(title, author, attempts = [], { editions = 4, works = 2 } = {}) {
   const t = clean(title);
   if (!t) return null;
-  let docs = [];
-  try {
-    docs = (await fetchJson(`https://openlibrary.org/search.json?title=${encodeURIComponent(t)}${author ? `&author=${encodeURIComponent(clean(author))}` : ''}&limit=${works}&fields=key,title,edition_key`))?.docs || [];
-  } catch (e) { attempts.push({ source: 'Open Library', detail: 'work search', error: String(e?.message || e) }); return null; }
+  const search = await fetchJson(`https://openlibrary.org/search.json?title=${encodeURIComponent(t)}${author ? `&author=${encodeURIComponent(clean(author))}` : ''}&limit=${works}&fields=key,title,edition_key`);
+  if (search.blocked) { attempts.push({ source: 'Open Library', detail: 'work search', unavailable: true, note: (search.tried || []).join(', ') }); return null; }
+  const docs = search.data?.docs || [];
   let editionsChecked = 0;
   const found = [];
   for (const doc of docs.slice(0, works)) {
     for (const ek of (doc.edition_key || []).slice(0, editions)) {
       editionsChecked++;
-      try {
-        const ed = await fetchJson(`https://openlibrary.org/books/${ek}.json`);
-        const raw = Array.isArray(ed?.table_of_contents) ? ed.table_of_contents
-          : Array.isArray(ed?.contents) ? ed.contents : [];
-        let titles = raw.map((e) => clean(e?.title || e?.label || e)).filter(Boolean);
-        // Some editions stash the contents in the description as a newline list.
-        if (titles.length < MIN_CHAPTERS && typeof ed?.description === 'string' && /contents|chapter/i.test(ed.description)) {
-          const fromDesc = parseTOC(ed.description);
-          if (fromDesc.length >= MIN_CHAPTERS) titles = fromDesc;
-        }
-        if (titles.length >= MIN_CHAPTERS) found.push({ toc: titles.join('\n'), source: 'openlibrary', sourceLabel: 'Open Library', editionKey: ek });
-      } catch { /* try the next edition */ }
+      const edRes = await fetchJson(`https://openlibrary.org/books/${ek}.json`);
+      const ed = edRes.data;
+      if (!ed) continue;
+      const raw = Array.isArray(ed?.table_of_contents) ? ed.table_of_contents
+        : Array.isArray(ed?.contents) ? ed.contents : [];
+      let titles = raw.map((e) => clean(e?.title || e?.label || e)).filter(Boolean);
+      // Some editions stash the contents in the description as a newline list.
+      if (titles.length < MIN_CHAPTERS && typeof ed?.description === 'string' && /contents|chapter/i.test(ed.description)) {
+        const fromDesc = parseTOC(ed.description);
+        if (fromDesc.length >= MIN_CHAPTERS) titles = fromDesc;
+      }
+      if (titles.length >= MIN_CHAPTERS) found.push({ toc: titles.join('\n'), source: 'openlibrary', sourceLabel: 'Open Library', editionKey: ek });
     }
   }
   attempts.push({ source: 'Open Library', detail: `${docs.length} work(s), ${editionsChecked} edition(s)`, results: found.length });
@@ -100,16 +105,17 @@ export async function openLibraryTOC(title, author, attempts = [], { editions = 
 
 // ── Library of Congress — MARC field 505 (Formatted Contents Note) ────────────
 // Library catalogs carry the TOC (505) far more reliably than Open Library's
-// field. loc.gov exposes it as JSON (`fo=json`), keyless. Best-effort: read a
-// `contents` array or a contents-style note off the top result's item record.
+// field. loc.gov exposes it as JSON (`fo=json`) but does NOT send CORS headers, so
+// it MUST go through the proxy chain (this was the deployed failure — PR #37
+// fetched it directly and it never completed). Best-effort: read a `contents`
+// array or a contents-style note off the top result's item record.
 export async function locTOC(title, author, attempts = []) {
   const t = clean(title);
   if (!t) return null;
   const q = encodeURIComponent(`${t}${author ? ` ${clean(author)}` : ''}`);
-  let results = [];
-  try {
-    results = (await fetchJson(`https://www.loc.gov/books/?q=${q}&fo=json&c=5&at=results`))?.results || [];
-  } catch (e) { attempts.push({ source: 'Library of Congress', detail: 'search', error: String(e?.message || e) }); return null; }
+  const search = await fetchJson(`https://www.loc.gov/books/?q=${q}&fo=json&c=5&at=results`);
+  if (search.blocked) { attempts.push({ source: 'Library of Congress', detail: 'search', unavailable: true, note: (search.tried || []).join(', ') }); return null; }
+  const results = search.data?.results || [];
   for (const r of results.slice(0, 3)) {
     // 505 shows up on the item record as `item.contents` (array) or a note.
     const contents = Array.isArray(r?.contents) ? r.contents : [];
@@ -117,14 +123,13 @@ export async function locTOC(title, author, attempts = []) {
     if (isUsable(joined)) { attempts.push({ source: 'Library of Congress', detail: 'contents note (505)', results: 1 }); return { toc: joined, source: 'loc', sourceLabel: 'Library of Congress' }; }
     const url = clean(r?.id || r?.url);
     if (url && /loc\.gov/.test(url)) {
-      try {
-        const item = (await fetchJson(`${url.replace(/\/$/, '')}/?fo=json&at=item`))?.item || {};
-        const c2 = Array.isArray(item?.contents) ? item.contents : [];
-        const notes = Array.isArray(item?.notes) ? item.notes : [];
-        const noteContents = notes.find((n) => /contents/i.test(String(n))) || '';
-        const j2 = c2.map(clean).filter(Boolean).join('\n') || parseTOC(noteContents).join('\n');
-        if (isUsable(j2)) { attempts.push({ source: 'Library of Congress', detail: 'item record 505', results: 1 }); return { toc: j2, source: 'loc', sourceLabel: 'Library of Congress' }; }
-      } catch { /* next result */ }
+      const itemRes = await fetchJson(`${url.replace(/\/$/, '')}/?fo=json&at=item`);
+      const item = itemRes.data?.item || {};
+      const c2 = Array.isArray(item?.contents) ? item.contents : [];
+      const notes = Array.isArray(item?.notes) ? item.notes : [];
+      const noteContents = notes.find((n) => /contents/i.test(String(n))) || '';
+      const j2 = c2.map(clean).filter(Boolean).join('\n') || parseTOC(noteContents).join('\n');
+      if (isUsable(j2)) { attempts.push({ source: 'Library of Congress', detail: 'item record 505', results: 1 }); return { toc: j2, source: 'loc', sourceLabel: 'Library of Congress' }; }
     }
   }
   attempts.push({ source: 'Library of Congress', detail: `${results.length} result(s)`, results: 0 });

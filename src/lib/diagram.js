@@ -32,7 +32,24 @@ export const DIAGRAM_KINDS = ['flowchart', 'sequenceDiagram', 'mindmap', 'timeli
 export function cleanMermaid(raw) {
   let s = String(raw || '').replace(/```(?:mermaid)?/gi, '').trim();
   const m = s.match(/(?:flowchart|graph|sequenceDiagram|mindmap|timeline|quadrantChart|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|gantt|gitGraph)\b[\s\S]*/i);
-  return (m ? m[0] : s).trim();
+  return stripMermaidColors((m ? m[0] : s).trim());
+}
+
+// Enforcement (not just prompting, same pattern as capTierMarkers): a model emits
+// literal hex — `style N fill:#c0392b`, `classDef … stroke:#27ae60` — which doesn't
+// theme and violates the token rule. Strip every color directive so the app's
+// theme-aware `themeVariables` govern the palette. Removes whole
+// classDef/style/linkStyle lines, `:::class` assignments, and any leftover inline
+// `fill/stroke/color:#hex`.
+export function stripMermaidColors(s) {
+  return String(s || '')
+    .split('\n')
+    .filter((l) => !/^\s*(classDef|style|linkStyle)\b/i.test(l))
+    .join('\n')
+    .replace(/:::[A-Za-z0-9_-]+/g, '')
+    .replace(/\b(fill|stroke|color|background)\s*:\s*#[0-9a-fA-F]{3,8}\b/gi, '')
+    .replace(/#[0-9a-fA-F]{6}\b/g, '') // any leftover 6-digit hex (model's format)
+    .trim();
 }
 
 function themeVars() {

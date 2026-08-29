@@ -188,7 +188,12 @@ nobody; now they feed a shared graph and a shared card deck.
   sits on one edition while siblings leave it empty, so try them all + read the
   `contents`/`description` variants), **Library of Congress** (MARC field 505,
   "Formatted Contents Note", via loc.gov `fo=json` — library catalogs carry the
-  TOC far more reliably than Open Library's field), and a **`job:'web'` batch**
+  TOC far more reliably than Open Library's field). **loc.gov sends no CORS header,
+  so it MUST go through the shared proxy chain** (`fetchRaw` in `utils.js` — direct
+  first, then allorigins/corsproxy; the same chain `fetchArticle` uses): a PR #37
+  bug fetched it directly and it silently never completed on the deployed build.
+  A source that can't execute at all (every route blocked) is logged
+  **`unavailable`**, distinct from a genuine 0-result miss. Then a **`job:'web'` batch**
   that is the workhorse, not a fallback: several structured queries in PARALLEL
   (`"full title" table of contents`, `chapter list`, `site:<publisher domain>`,
   the author's own site) each DEMANDING numbered titles in order or exactly `NOT
@@ -205,7 +210,12 @@ nobody; now they feed a shared graph and a shared card deck.
   strongest grounding"). Every retrieval is **cached permanently** on the book
   record (`retrievedTOC` on a hit, a `retrievalState` marker on a miss) so it never
   re-fetches a resolved book, and **failures report the attempts** (source · detail
-  · results/error), same as the provider chain. **Tier by source** (`groundingTier`): a TOC /
+  · results/error, `unavailable` for blocked), same as the provider chain.
+  **Generation is GATED on grounding:** a post-cutoff book with no retrieved TOC and
+  no user copy does not silently generate — `generateGuide` blocks and the UI makes
+  the user choose (Search harder / paste / **Continue ungrounded →**, which calls
+  `generateGuide({ungrounded:true})`); a known/verified/grounded book skips the gate.
+  **Tier by source** (`groundingTier`): a TOC /
   excerpt / photo-transcription the user typed from the physical book is a real
   primary source → **`verified`** (the ONE honest `verified` path this app has,
   with real chapter locations to cite); the user's own notes → `reported`; a
@@ -354,7 +364,12 @@ nobody; now they feed a shared graph and a shared card deck.
   ~500KB engine never sits in the main bundle (it splits into on-demand chunks
   fetched only when a diagram draws). **Theme-aware** — colors are read from the
   live CSS tokens (`--text-primary` / `--accent` / `--rule` / surfaces) and it
-  redraws on a `data-theme` toggle (MutationObserver); **no hardcoded hex**.
+  redraws on a `data-theme` toggle (MutationObserver); **no hardcoded hex**. The
+  model still emits literal hex (`style N fill:#c0392b`, `classDef … stroke:#…`),
+  which doesn't theme, so `cleanMermaid` **strips it — enforcement, not just the
+  prompt** (`stripMermaidColors` drops `classDef`/`style`/`linkStyle` lines,
+  `:::class` assignments, and any leftover 6-digit hex) so the theme variables
+  govern; the generate prompt also forbids color/style directives.
   **Legible at 390px** — the SVG keeps its natural size inside an
   `overflow-x:auto` frame (scrolls rather than shrinking below `--fs-sm`).
   `onGenerated(code)` lets a parent **persist the diagram with its artifact**:
