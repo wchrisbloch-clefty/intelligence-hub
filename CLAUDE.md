@@ -261,6 +261,29 @@ nobody; now they feed a shared graph and a shared card deck.
   (Winning / Influence / Mindset). **Retrieval is verified against these fixtures
   and mocks — the live Google Books / Open Library calls are egress-blocked in the
   sandbox, so they have NOT been exercised live from here.**
+- **Add-Book surfaces what it matched — never resolves silently**
+  (`shared/BookSuggest.jsx`, `searchBooks`/`mainTitle` in `bookVerify.js`). PR #36
+  made the query tolerant of short titles but reconciled the full title invisibly.
+  Now the title field carries **live catalog suggestions** (debounced ~300ms,
+  Google Books via `searchBooks`, capped at 6): a dropdown of cover · full title
+  with subtitle · author-as-catalogued (initials kept, so Grover ≠ Welch) · year ·
+  publisher. Selecting one fills both fields from the record and stores the match
+  so **Save persists a verified record on add** — no separate confirm step. The
+  chosen record shows a **"Found: … — author, year, publisher"** strip with a
+  "Not this one" reset; free-text entry still works when there's no match. The
+  library card/nav show the **short display title** (`title`) with a quiet check
+  when catalog-backed; the detail view shows the **full title** (`fullTitle`); TOC
+  **retrieval + grounding use the full title** ("Winning" is noise, the full title
+  finds the LoC/OpenLibrary record). Multiple editions are the dropdown's rows
+  (recency already weighted by `scoreMatch`), so the user picks the edition —
+  edition matters for chapter structure and page citations. **Retroactive
+  backfill:** on library load, books missing a `fullTitle` (and not `verified` /
+  not already `backfillTried`) are quietly re-resolved via `verifyBook`; only a
+  CONFIDENT match is applied, it never blocks the UI, and `backfillTried` stops it
+  re-fetching a resolved book. **Egress is blocked in the sandbox — the suggestion
+  search, scoring, and record-mapping are verified against mocks/unit checks, and
+  the dropdown is verified usable at 390/820/1440 (incl. a soft-keyboard-height
+  390×420) both themes; the live Google Books call was NOT exercised from here.**
 - **Book grounding is REQUIRED before a study guide** (`src/lib/bookVerify.js`).
   A model will confidently invent a thesis for a title it doesn't know — a guide
   for the post-cutoff *The Way of Excellence* returned frameworks from the

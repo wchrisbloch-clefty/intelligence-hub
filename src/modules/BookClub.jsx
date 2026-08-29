@@ -1,5 +1,5 @@
 import { T, withAlpha } from '../theme';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
@@ -8,9 +8,10 @@ import { logConcept, allConcepts, isJunkConcept, pruneJunkConcepts } from '../li
 import { recommendBooks } from '../lib/bookRecs.js';
 import { buildSkills } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
-import { verifyBook, toVerifiedRecord, isPostCutoff } from '../lib/bookVerify.js';
+import { verifyBook, toVerifiedRecord, isPostCutoff, searchBooks, mainTitle } from '../lib/bookVerify.js';
 import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
+import BookSuggest from './shared/BookSuggest.jsx';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
 import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth, capTierMarkers } from '../lib/rigor.js';
 import AskChip from './shared/AskChip.jsx';
@@ -343,6 +344,9 @@ export default function BookClub() {
   // Edit form doubles as the add form. editingId = null → adding.
   const [form,      setForm]      = useState(BLANK_FORM);
   const [editingId, setEditingId] = useState(null);
+  // Live catalog suggestions for the Add-Book title field.
+  const [sugg, setSugg] = useState({ open: false, loading: false, results: [] });
+  const [formMatch, setFormMatch] = useState(null); // catalog record chosen from a suggestion
 
   // Seed on first run + migrate custom-only libraries. Guarded by SEEDED_KEY so
   // it can never double-seed (or resurrect a built-in the user deleted).
@@ -389,6 +393,40 @@ export default function BookClub() {
     })();
     return () => { cancelled = true; };
   }, []);
+
+  // Retroactive backfill: books added before catalog verification have a short
+  // title and no metadata. Once the library is loaded, quietly re-resolve any book
+  // missing a catalog title (skip built-ins — they seed as bare title/author but
+  // aren't user-entered guesses; skip anything already verified or already tried),
+  // apply only CONFIDENT matches, and persist. Runs once per session, never
+  // re-fetches a resolved/tried book, and never blocks the UI.
+  const backfillRan = useRef(false);
+  useEffect(() => {
+    if (backfillRan.current || !books.length) return;
+    const targets = books.filter((b) => !b.fullTitle && !b.verified && !b.backfillTried).slice(0, 12);
+    if (!targets.length) return;
+    backfillRan.current = true;
+    let cancelled = false;
+    (async () => {
+      const patches = {};
+      for (const b of targets) {
+        if (cancelled) return;
+        let patch = { backfillTried: true };
+        try {
+          const { matches, confident } = await verifyBook({ title: b.title, author: b.author });
+          if (confident && matches[0]) patch = { ...toVerifiedRecord(matches[0]), backfillTried: true };
+        } catch { /* leave tried, unresolved */ }
+        patches[b.id] = patch;
+      }
+      if (cancelled || !Object.keys(patches).length) return;
+      setBooks((prev) => {
+        const nb = prev.map((x) => (patches[x.id] ? { ...x, ...patches[x.id] } : x));
+        writeThrough(BOOKCLUB_KEY, nb);
+        return nb;
+      });
+    })();
+    return () => { cancelled = true; };
+  }, [books]);
 
   const filtered = search
     ? books.filter((b) => `${b.title} ${b.author}`.toLowerCase().includes(search.toLowerCase()))
@@ -484,7 +522,9 @@ export default function BookClub() {
     if (!selectedBook || retrieving) return;
     setRetrieving(true);
     try {
-      const { toc, attempts } = await retrieveTOC({ title: selectedBook.title, author: selectedBook.author, webPass, publisher: selectedBook.publisher || '', deep });
+      // Use the FULL catalog title for retrieval — "Winning" returns noise, the
+      // full "Winning: The Unforgiving Race to Greatness" finds the record.
+      const { toc, attempts } = await retrieveTOC({ title: selectedBook.fullTitle || selectedBook.title, author: (selectedBook.authors || []).join(', ') || selectedBook.author, webPass, publisher: selectedBook.publisher || '', deep });
       if (toc) await patchBook({ retrievedTOC: toc, retrievalState: 'found', retrievalAttempts: attempts });
       else await patchBook({ retrievalState: deep ? 'deep-none' : 'none', retrievalAttempts: attempts });
     } catch { await patchBook({ retrievalState: deep ? 'deep-none' : 'none' }); }
@@ -552,27 +592,60 @@ export default function BookClub() {
     if (!r.localOk) setLensByBook(prev);
   };
 
-  const openAdd = () => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('add'); };
+  const openAdd = () => { setEditingId(null); setForm(BLANK_FORM); setFormMatch(null); setSugg({ open: false, loading: false, results: [] }); setSaveError(''); setTab('add'); };
   const openEdit = (book) => {
     setEditingId(book.id);
     setForm({ title: book.title, author: book.author, note: book.note || '', type: book.type || 'other' });
+    setFormMatch(null); setSugg({ open: false, loading: false, results: [] });
     setSaveError('');
     setTab('add');
   };
 
+  // Live suggestions: debounce the title field and query the catalog, so the user
+  // picks the real record (full title, subtitle, author, year, publisher) instead
+  // of typing a guess. Only in Add mode with a title of 2+ chars.
+  useEffect(() => {
+    if (tab !== 'add') return;
+    const t = form.title.trim();
+    if (t.length < 2) { setSugg({ open: false, loading: false, results: [] }); return; }
+    // A field just filled from a chosen suggestion shouldn't immediately re-search.
+    if (formMatch && mainTitle(formMatch.fullTitle || formMatch.title) === t) return;
+    let cancelled = false;
+    setSugg((s) => ({ ...s, open: true, loading: true }));
+    const id = setTimeout(async () => {
+      const results = await searchBooks({ title: t, author: form.author.trim(), limit: 6 });
+      if (!cancelled) setSugg({ open: true, loading: false, results });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(id); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.title, form.author, tab]);
+
+  // Selecting a suggestion fills both fields from the catalog record and stores the
+  // match so Save persists a verified record (short display title + full catalog
+  // title + author-as-catalogued + year/publisher). No typing a guess and hoping.
+  const applySuggestion = (m) => {
+    const full = [m.title, m.subtitle].filter(Boolean).join(': ');
+    setFormMatch({ ...m, fullTitle: full });
+    setForm((f) => ({ ...f, title: mainTitle(full), author: (m.authors || []).join(', ') || f.author }));
+    setSugg({ open: false, loading: false, results: [] });
+  };
+
   const saveBook = async () => {
     if (!form.title.trim() || saving) return;
-    const fields = {
+    const base = {
       title:  form.title.trim(),
       author: form.author.trim() || 'Unknown',
       note:   form.note.trim(),
       type:   form.type || 'other',
     };
+    // If a catalog suggestion was chosen, persist its verified metadata now — the
+    // book is grounded on add, no separate confirm step needed.
+    const fields = formMatch ? { ...base, ...toVerifiedRecord(formMatch) } : base;
     const next = editingId
       ? books.map((b) => (b.id === editingId ? { ...b, ...fields } : b))
       : [...books, { id: uid(), builtin: false, ...fields }];
     if (await persist(next)) {
-      setForm(BLANK_FORM);
+      setForm(BLANK_FORM); setFormMatch(null); setSugg({ open: false, loading: false, results: [] });
       setEditingId(null);
       setTab('library');
     }
@@ -937,7 +1010,10 @@ export default function BookClub() {
                     <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
                       {TYPE_META[book.type]?.label || book.type || 'General'}
                     </div>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4 }}>{book.title}</div>
+                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
+                      <span style={{ flex: 1, minWidth: 0 }}>{book.title}</span>
+                      {(book.verified || book.fullTitle) && <Icon name="Check" size={13} title={`Verified: ${book.fullTitle || book.title}`} style={{ color: 'var(--tier-verified)', flexShrink: 0, marginTop: 2 }} />}
+                    </div>
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{book.author}</div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
@@ -979,11 +1055,31 @@ export default function BookClub() {
             <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 16 }}>
               {editingId ? 'Edit Book' : 'Add a Book'}
             </div>
-            <div style={{ marginBottom: 14 }}>
+            <div style={{ marginBottom: 14, position: 'relative' }}>
               <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Book Title *</label>
-              <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                placeholder="e.g. The Lean Startup"
+              <input value={form.title}
+                onChange={e => { setForm(f => ({ ...f, title: e.target.value })); setFormMatch(null); }}
+                onFocus={() => { if (sugg.results.length) setSugg(s => ({ ...s, open: true })); }}
+                placeholder="Start typing — we’ll find the exact edition"
+                autoComplete="off"
                 style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+
+              {/* Live catalog suggestions — cover, full title, author-as-catalogued,
+                  year, publisher. Selecting fills both fields from the record. */}
+              {sugg.open && !formMatch && (form.title.trim().length >= 2) && (
+                <BookSuggest results={sugg.results} loading={sugg.loading} query={form.title.trim()} onPick={applySuggestion} />
+              )}
+
+              {/* What was matched — shown always, never resolved silently. */}
+              {formMatch && (
+                <div style={{ marginTop: 8, padding: '10px 12px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <Icon name="Check" size={16} style={{ color: 'var(--tier-verified)', marginTop: 2 }} />
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>
+                    Found: <b style={{ color: 'var(--text)' }}>{formMatch.fullTitle}</b> — {(formMatch.authors || []).join(', ')}{(formMatch.publishedDate || '') ? `, ${(formMatch.publishedDate || '').slice(0, 4)}` : ''}{formMatch.publisher ? `, ${formMatch.publisher}` : ''}. Saved as “{form.title.trim()}”.
+                    <button onClick={() => { setFormMatch(null); setSugg(s => ({ ...s, open: true })); }} style={{ marginLeft: 6, color: T.accent, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>Not this one</button>
+                  </span>
+                </div>
+              )}
             </div>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Author</label>
@@ -1069,7 +1165,7 @@ export default function BookClub() {
                   const post = isPostCutoff(m.publishedDate);
                   return (
                     <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 12, marginBottom: 16 }}>
-                      <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Confirm this book before generating{verify.matches.length > 1 && !verify.confident ? ` · ${verify.matches.length} close matches — check this is the right one` : ''}</div>
+                      <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Found — confirm this is the book{verify.matches.length > 1 ? ` · ${verify.matches.length} editions/matches` : ''}</div>
                       <div style={{ display: 'flex', gap: 14 }}>
                         {m.thumbnail
                           ? <img src={m.thumbnail} alt="" width={64} style={{ borderRadius: 6, flexShrink: 0, alignSelf: 'flex-start', border: '1px solid var(--border)' }} />
@@ -1077,7 +1173,7 @@ export default function BookClub() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{[m.title, m.subtitle].filter(Boolean).join(': ')}</div>
                           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>
-                            {(m.authors || []).join(', ') || '—'}{m.publishedDate ? ` · ${m.publishedDate}` : ''} · {m.source === 'google' ? 'Google Books' : 'Open Library'}
+                            {(m.authors || []).join(', ') || '—'}{m.publishedDate ? ` · ${m.publishedDate}` : ''}{m.publisher ? ` · ${m.publisher}` : ''} · {m.source === 'google' ? 'Google Books' : 'Open Library'}
                           </div>
                           {post && (
                             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>
