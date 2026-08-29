@@ -55,7 +55,7 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
       const typeList = (types && types.length ? types : DEFAULT_TYPES).join(', ');
       const analytical = !types?.includes('mindmap');
       const reply = await callClaude({
-        system: `You output ONLY valid Mermaid diagram syntax — no prose, no explanation, no code fences. Pick the single clearest diagram type from: ${typeList}.${analytical ? ' Show CAUSAL or TENSION relationships — how elements drive, depend on, feed back into, or trade off against one another (A → B, X vs Y). Do NOT restate a section hierarchy, an outline, or a flat list of items.' : ''}`,
+        system: `You output ONLY valid Mermaid diagram syntax — no prose, no explanation, no code fences. Pick the single clearest diagram type from: ${typeList}. Do NOT include ANY color, hex codes, or styling — no fill:, stroke:, style, classDef, or linkStyle directives; the app themes the diagram itself.${analytical ? ' Show CAUSAL or TENSION relationships — how elements drive, depend on, feed back into, or trade off against one another (A → B, X vs Y). Do NOT restate a section hierarchy, an outline, or a flat list of items.' : ''}`,
         messages: [{ role: 'user', content: `Produce ONE Mermaid diagram that captures the ${analytical ? 'relationships and mechanism' : 'structure'} of the following. Keep labels short. Output ONLY Mermaid.\n\n${hint ? hint + '\n\n' : ''}${String(content || '').slice(0, 2200)}` }],
         maxTokens: 700,
         job: 'reason',
