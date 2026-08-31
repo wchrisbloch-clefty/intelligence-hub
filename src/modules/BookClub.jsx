@@ -293,7 +293,7 @@ const PROMPTS = {
 };
 
 export default function BookClub() {
-  const { isMobile, isPhone, isTablet, isDesktop, openStudio } = useApp();
+  const { isMobile, isPhone, isTablet, isDesktop, openStudio, captureRoute, clearCapture } = useApp();
   // Lens is remembered PER BOOK — a work-framed read of one title shouldn't
   // reset the personal framing chosen for another. Stored as { [bookId]: lensId }.
   const [lensByBook, setLensByBook] = useState(() => readLocal(LENS_KEY, {}));
@@ -600,6 +600,18 @@ export default function BookClub() {
     setSaveError('');
     setTab('add');
   };
+
+  // A "book" capture (e.g. from a Blue Ocean signal's "Add a book" action) opens
+  // the add form pre-filled with the target title — which also fires the live
+  // suggestion dropdown so the user picks the exact edition.
+  useEffect(() => {
+    if (captureRoute?.route !== 'book') return;
+    setEditingId(null);
+    setForm({ ...BLANK_FORM, title: captureRoute.topic || captureRoute.title || '' });
+    setFormMatch(null); setSaveError(''); setTab('add');
+    clearCapture?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [captureRoute?.ts]);
 
   // Live suggestions: debounce the title field and query the catalog, so the user
   // picks the real record (full title, subtitle, author, year, publisher) instead

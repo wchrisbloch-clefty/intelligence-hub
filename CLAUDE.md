@@ -73,6 +73,31 @@ deployed on Vercel. Single user (CB).
   gone from Home (lives in GrowthTools); **RecapCard moved to a `recaps` mode in
   the Skills container** (`Recaps.jsx`, still reads `weekly_recap_latest` /
   `monthly_review_latest`).
+- **Blue Ocean signals are personal, not hardcoded** (`src/lib/signals.js`,
+  `home/OpportunityCards.jsx`, `home/SignalCard.jsx`). The old `OpportunityCards`
+  rendered a fixed six-category list and read no user context. Now: **domains are
+  user-owned** (`aether_signal_domains_v1` — add/rename/archive/weight + an
+  optional one-line *thesis* in the user's words, seeded from the original six).
+  **`buildSignalContext()`** composes the graph (top concepts by observation +
+  recent movement), skills (levels/trends/**decaying**), active projects,
+  **dismissals** (feed `aether_feed_dismissed_meta` + the signal feedback store —
+  negative signal, previously discarded), and the domain weights/theses.
+  **`buildSignalPrompt`** asks for 4–6 signals, each **typed** (adjacent / gap /
+  **convergence** / decay / **contrarian** — the last two are the personal-only
+  moves), each with a **traceable one-line reason** (cite a specific number/skill/
+  project/thesis — a reasonless signal is dropped in `parseSignals`), each with a
+  routed **next action** (deepdive / book / project / ladder → `applyRoute`; `book`
+  pre-fills BookClub's add form), tiered via `TIER_INSTRUCTION` and generated with
+  **`job:'web'`** for market claims — `parseSignals` **clamps verified→reported**
+  (this surface never retrieves primary text). Signals are **cached + versioned**
+  (`aether_signals_v1`, `stampVersion('signals')`) — a weekly-briefing Generate/
+  Refresh, not a per-load slot machine — and every card carries a **pursue /
+  not-now / not-relevant** loop (`aether_signal_feedback_v1`) fed back into the
+  next generation. **Honest empty state:** a thin graph (<6 concepts) says
+  "signals get sharper as the graph fills — N tracked so far" rather than
+  fabricating personalization. (Live web egress is blocked in the sandbox — the
+  domain/context/prompt/parse logic is verified against seeded fixtures/mocks; the
+  live `job:'web'` generation was NOT exercised from here.)
 - **7th container: What's Happening** (`feed`, `WhatsHappening.jsx`) — a "what
   changed" surface: WHAT CHANGED header + live/cached state + Work/Personal/Both
   lens, a `DISCOVERY` panel ("you may be missing this"), filter chips + density

@@ -100,7 +100,7 @@ export default function App() {
   };
 
   // Universal capture: route a classified intent to its module, pre-filled.
-  const ROUTE_MODULE = { learn: 'learn', ladder: 'ladder', deepdive: 'deepdive', research: 'research', project: 'projects', note: 'inbox' };
+  const ROUTE_MODULE = { learn: 'learn', ladder: 'ladder', deepdive: 'deepdive', research: 'research', project: 'projects', note: 'inbox', book: 'books' };
   const applyRoute = (payload) => {
     setCaptureRoute({ ...payload, ts: Date.now() });
     setActiveModule(ROUTE_MODULE[payload.route] || 'home');

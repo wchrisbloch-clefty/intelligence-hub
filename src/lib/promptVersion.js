@@ -17,6 +17,7 @@ export const PROMPT_VERSION = {
   // (v2 was #29: grounding + tier chips + "Where This Breaks Down" + no telemetry leak)
   deepDive: 1,
   ladder: 1,
+  signals: 1, // personal Blue Ocean signals from graph/skills/projects/dismissals + user domains
 };
 
 // Stamp onto an artifact at generation time: { ...artifact, ...stampVersion('studyGuide') }.
