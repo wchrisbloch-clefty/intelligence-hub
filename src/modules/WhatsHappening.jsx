@@ -130,7 +130,16 @@ export default function WhatsHappening() {
   const dive = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source, module: 'feed' }); applyRoute?.({ route: 'deepdive', topic: it.title }); };
   const explore = (it) => { setChatPrefill(`Explore what connects to: "${it.title}" (${it.category}). Pull the related concepts from my knowledge graph and show me the threads.`); setChatOpen(true); };
   const ask = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source, module: 'feed' }); setChatPrefill(askPrefill('feed', it)); setChatOpen(true); };
-  const dismiss = (it) => persistDismissed([...dismissed, it.id]);
+  const dismiss = (it) => {
+    persistDismissed([...dismissed, it.id]);
+    // Record lightweight meta so Blue Ocean signal generation can treat dismissals
+    // as negative signal (title/category), not just an opaque id count. Additive —
+    // the id array above still drives feed filtering.
+    try {
+      const meta = readLocal('aether_feed_dismissed_meta', []) || [];
+      writeThrough('aether_feed_dismissed_meta', [...meta, { id: it.id, title: it.title, category: it.category, at: Date.now() }].slice(-40));
+    } catch {}
+  };
 
   const addSource = () => { const n = newSource.trim(); if (!n) return; persistSources([...sources, { id: 'src_' + Date.now().toString(36), name: n, category: filter === 'All' ? 'General' : filter, enabled: true }]); setNewSource(''); };
   const toggleSource = (id) => persistSources(sources.map((s) => s.id === id ? { ...s, enabled: !s.enabled } : s));
