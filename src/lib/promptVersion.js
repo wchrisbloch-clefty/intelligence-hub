@@ -10,14 +10,15 @@
 //
 // BUMP the number for an artifact type whenever its generation prompt changes.
 export const PROMPT_VERSION = {
-  studyGuide: 6, // source grounding (user copy + TOC retrieval), chapter-anchored generation + chapter dives, verified tier from a physical copy
+  studyGuide: 7, // shared VOICE fragment — meaning-level framing + sports analogies, no fake-precision telemetry
+  // (v6 was: source grounding / user copy + TOC retrieval / chapter-anchored generation + chapter dives / verified tier from a physical copy)
   // (v5 was: three-state grounding / never assert non-existence + frameworks produced even when contents unavailable)
   // (v4 was: tier ceiling / no false [verified] + grounding-constrained frameworks + per-framework disconfirming + diagram regenerates)
   // (v3 was PR B: depth-bound rigor + networked read-next + analytical diagram)
   // (v2 was #29: grounding + tier chips + "Where This Breaks Down" + no telemetry leak)
   deepDive: 1,
   ladder: 1,
-  signals: 1, // personal Blue Ocean signals from graph/skills/projects/dismissals + user domains
+  signals: 2, // + shared VOICE fragment (meaning-level framing, no fake-precision telemetry)
 };
 
 // Stamp onto an artifact at generation time: { ...artifact, ...stampVersion('studyGuide') }.

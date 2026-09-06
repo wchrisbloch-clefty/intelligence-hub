@@ -39,6 +39,7 @@ export default function App() {
   const [chatOpen,         setChatOpen]         = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
   const [chatPrefill,      setChatPrefill]      = useState('');
+  const [chatAttach,       setChatAttach]       = useState(null); // { label } — what the chat is attached to
 
   const [graph,    setGraph]    = useState(null);
   const [projects, setProjects] = useState([]);
@@ -96,6 +97,7 @@ export default function App() {
   // surface. For non-chat modules, open the global Intelligence Chat fresh.
   const triggerNewChat = () => {
     setNewChatNonce(n => n + 1);
+    setChatAttach(null); // a fresh chat is no longer attached to an artifact
     if (activeModule !== 'coach') setChatOpen(true);
   };
 
@@ -127,6 +129,7 @@ export default function App() {
     chatOpen,     setChatOpen,
     searchQuery,  setSearchQuery,
     chatPrefill,  setChatPrefill,
+    chatAttach,   setChatAttach,
     graph,        setGraph,
     projects,     setProjects,
     notes,        setNotes,

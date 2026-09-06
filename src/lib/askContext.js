@@ -28,9 +28,20 @@ export function toContext(type, o = {}) {
       return `Captured item: "${o.title}"${o.url ? ` (${o.url})` : ''}. ${clip(o.summary || o.snippet, 300)}`;
     case 'feed':
       return `Feed item: "${o.title}" — ${o.source || 'source'}${o.author ? ` · ${o.author}` : ''}${o.category ? ` (${o.category})` : ''}${o.tier ? `, ${o.tier}` : ''}.`;
+    case 'research':
+      return `Research thread: "${o.title}"${o.tags?.length ? ` (${o.tags.join(', ')})` : ''} — ${(o.messages || []).filter((m) => m.role === 'assistant').length} response(s) so far.`;
     default:
       return typeof o === 'string' ? o : clip(JSON.stringify(o), 400);
   }
+}
+
+// A short human label naming what a chat is attached to — shown in the chat
+// header so the user can see the context is live ("Book · Winning").
+const TYPE_LABEL = { book: 'Book', project: 'Project', note: 'Note', deepdive: 'Deep dive', decision: 'Decision', skill: 'Skill', inbox: 'Captured', feed: 'Feed', research: 'Research' };
+export function askLabel(type, o = {}) {
+  const name = o.title || o.topic || o.name || o.decision || '';
+  const kind = TYPE_LABEL[type] || 'Context';
+  return name ? `${kind} · ${clip(name, 48)}` : kind;
 }
 
 // The topic string used to pull graph neighbors for an object.

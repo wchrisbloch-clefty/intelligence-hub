@@ -23,7 +23,7 @@ const QUICK_PROMPTS = {
 };
 
 export default function ChatPanel() {
-  const { chatOpen, setChatOpen, activeModule, graph, projects, isMobile, chatPrefill, setChatPrefill, newChatNonce } = useApp();
+  const { chatOpen, setChatOpen, activeModule, graph, projects, isMobile, chatPrefill, setChatPrefill, newChatNonce, chatAttach, setChatAttach } = useApp();
   const [chatMode, setChatMode] = useState('synthesis');
   const [sessionsOpen, setSessionsOpen] = useState(false);
   const [drawerVersion, setDrawerVersion] = useState(0);
@@ -41,8 +41,8 @@ export default function ChatPanel() {
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
-  // Global "New chat" from the top bar → start fresh here.
-  useEffect(() => { if (newChatNonce) { startNewSession(); setSessionsOpen(false); } }, [newChatNonce, startNewSession]);
+  // Global "New chat" from the top bar → start fresh here (and detach).
+  useEffect(() => { if (newChatNonce) { startNewSession(); setSessionsOpen(false); setChatAttach?.(null); } }, [newChatNonce, startNewSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-send when opened via AI search
   useEffect(() => {
@@ -81,8 +81,8 @@ export default function ChatPanel() {
           activeId={sessionId}
           version={drawerVersion}
           color={T.accent}
-          onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); }}
-          onNew={startNewSession}
+          onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); setChatAttach?.(null); }}
+          onNew={() => { startNewSession(); setChatAttach?.(null); }}
           onClose={() => setSessionsOpen(false)}
         />
       )}
@@ -95,7 +95,7 @@ export default function ChatPanel() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
-            <div onClick={() => { startNewSession(); setSessionsOpen(false); }} title="New session" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>✎</div>
+            <div onClick={() => { startNewSession(); setSessionsOpen(false); setChatAttach?.(null); }} title="New session" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>✎</div>
             <div onClick={() => setChatOpen(false)} title="Close" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 5px' }}>✕</div>
           </div>
         </div>
@@ -107,6 +107,15 @@ export default function ChatPanel() {
             </div>
           ))}
         </div>
+        {/* Attachment — names the artifact this chat opened from, so the user can
+            see the context is live. Detach returns to generic chat. */}
+        {chatAttach?.label && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 10px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 8 }}>
+            <Icon name="Paperclip" size={12} style={{ color: T.accent }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatAttach.label}</span>
+            <span onClick={() => setChatAttach?.(null)} title="Detach" style={{ color: 'var(--subtle)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>✕</span>
+          </div>
+        )}
       </div>
 
       {/* Messages */}
