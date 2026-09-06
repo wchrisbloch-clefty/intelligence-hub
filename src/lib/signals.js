@@ -11,7 +11,7 @@ import { readLocal } from './storage.js';
 import { allConcepts } from './graph.js';
 import { buildSkills } from './skills.js';
 import { PROJECTS_KEY } from '../constants.js';
-import { TIER_INSTRUCTION, TIER_RANK } from './rigor.js';
+import { TIER_INSTRUCTION, TIER_RANK, VOICE } from './rigor.js';
 
 export const DOMAINS_KEY  = 'aether_signal_domains_v1';
 export const SIGNALS_KEY  = 'aether_signals_v1';
@@ -155,6 +155,8 @@ RULES:
 - Do NOT resurface anything in DISMISSED or NOT RELEVANT above.
 
 ${TIER_INSTRUCTION}
+
+${VOICE}
 
 Return ONLY a JSON array, no prose:
 [{"type":"convergence","title":"short signal title","reason":"one line citing a specific item above","action":{"kind":"deepdive","target":"topic to act on"},"tier":"reported","market":true}]`;

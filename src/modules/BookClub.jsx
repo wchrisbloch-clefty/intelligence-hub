@@ -13,7 +13,7 @@ import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import BookSuggest from './shared/BookSuggest.jsx';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
-import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth, capTierMarkers } from '../lib/rigor.js';
+import { rigorPrompt, DEPTHS, DEPTH_LABELS, normalizeDepth, capTierMarkers, VOICE } from '../lib/rigor.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
@@ -202,12 +202,13 @@ ${existenceNote}${ground ? `\n════ GROUNDING — THE GUIDE COMES FROM HE
 Use these exact ## sections in order:
 ${bodySections}
 ## Applied Scenarios
-3–5 scenarios, each built on a specific item from ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"}. Name the real project / domain / topic and show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
+3–5 scenarios, each grounded in ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"} at the level that carries MEANING — the real domain/situation ("an active real-estate project in the acquisition gap"), NOT exact project names, percentages, or milestone counts. Show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
 ## Application Prompts
 5 concrete things CB can act on THIS WEEK.
 ## Field Summary
 A one-page, scannable field summary — the whole book in bullets he can reread before a meeting in two minutes.
 ${rigor ? `\n${rigor}\n` : ''}
+${VOICE}
 Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of 8 to 10 self-quiz flashcards: [{"front":"question","back":"answer"}]. Output the ---CARDS--- marker and the array even if the guide ran long. No prose after the marker.`;
 };
 
@@ -236,7 +237,9 @@ The 2–3 key ideas or frameworks it introduces — **bold** each name.
 One worked example. ${lensClause}
 ## Disconfirming Test
 One concrete signal CB would OBSERVE if this chapter's idea is NOT working for him, plus a review horizon (a metric threshold or a date).
-Tag claims by tier per the note above: the chapter title/order carries its structure tier; the analysis is \`[inferred]\`.`;
+Tag claims by tier per the note above: the chapter title/order carries its structure tier; the analysis is \`[inferred]\`.
+
+${VOICE}`;
 };
 
 // Pull the framework NAMES out of the guide's "## Key Frameworks" section so each

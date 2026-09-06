@@ -1,15 +1,17 @@
 import { T, withAlpha } from '../../theme';
 import { useApp } from '../../App.jsx';
-import { askPrefill } from '../../lib/askContext.js';
+import { askPrefill, askLabel } from '../../lib/askContext.js';
 import { MessageSquare } from 'lucide-react';
 
 // The Universal Ask affordance. Drop it on any object; it opens the global Ask
-// layer pre-loaded with that object plus its graph neighbors.
+// layer pre-loaded with that object plus its graph neighbors, and names the
+// attachment in the chat header so the user can see the context is live.
 export default function AskChip({ type, object, label = 'Ask', size = 'sm', style = {} }) {
-  const { setChatPrefill, setChatOpen } = useApp();
+  const { setChatPrefill, setChatOpen, setChatAttach } = useApp();
   const open = (e) => {
     e?.stopPropagation?.();
     setChatPrefill(askPrefill(type, object));
+    setChatAttach?.({ label: askLabel(type, object) });
     setChatOpen(true);
   };
   const pad = size === 'sm' ? '4px 10px' : '7px 13px';

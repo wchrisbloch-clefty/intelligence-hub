@@ -56,6 +56,14 @@ export function normalizeDepth(depth) {
 export const TIER_INSTRUCTION =
   'Tag each substantive claim/section with exactly one tier marker at the end of its line, by SOURCE TRUST: `[verified]` ONLY if traceable to retrieved primary source text with a location (chapter/page/timestamp), `[reported: <source>]` if it rests on secondary material — a publisher description, the author\'s other work, or public talks/articles (name the source), or `[inferred]` for your own synthesis. Every claim carries a tier; never present inference or a secondary source as verified.';
 
+// The shared VOICE fragment — composed by every generating surface (signals,
+// study guides, chapter dives) so the writing lands instead of reading like a
+// database row. The failure it fixes: over-fitting to exact user details ("your
+// Real Estate Cash Flow System at 40% milestone, 2/5 done") — fake precision that
+// looks personal but doesn't carry meaning.
+export const VOICE =
+  'VOICE — write for CB: sports-first, elementary, simple, occasionally funny. Reach for a well-chosen sports analogy when it makes a concept click. Reference his situation at the level that carries MEANING ("an active real-estate project stuck in the acquisition gap"), NEVER as exact names, percentages, or milestone counts — fake precision like "your X System at 40%, 2/5 done" reads like a database row, not insight. NEVER cite graph telemetry — observation counts, trend labels, confidence percentages — as if it were insight; that is instrumentation leaking into the content. Keep the framing human and plain; keep the next action specific and concrete.';
+
 // Tier ordering, low → high trust. Used to cap the maximum tier a generated
 // artifact may claim, based on what grounding actually returned.
 export const TIER_RANK = { inferred: 0, reported: 1, verified: 2 };

@@ -534,11 +534,22 @@ nobody; now they feed a shared graph and a shared card deck.
   wrap badly, tables scroll inside their own frame.
 - **Universal Ask** (`src/lib/askContext.js`, `shared/AskChip.jsx`) — one
   `toContext(type, object)` serializer per type (book, project, note, deepdive,
-  decision, skill, inbox, **feed**). `<AskChip type object />` opens the Ask layer
-  pre-loaded with the object + its graph neighbors (`askPrefill`). Wired on all
-  the object types; **What's Happening feed items** route their "Ask" action
-  through `askPrefill('feed', item)` so a headline opens the chat with its own
-  context line plus any graph neighbors.
+  decision, skill, inbox, **feed**, **research**). `<AskChip type object />` opens
+  the Ask layer pre-loaded with the object + its graph neighbors (`askPrefill`)
+  AND sets `chatAttach` (`askLabel(type,object)`, e.g. "Book · Winning") so the
+  **chat header names what it's attached to** — the user sees the context is live,
+  with a detach ✕; starting a new session clears it. Wired on every artifact whose
+  serializer exists (BookClub, DeepDive, ResearchHub threads, Notes/Vault,
+  ProjectsOS, Skills, DecisionLog, ContentInbox, What's Happening).
+- **Shared VOICE fragment** (`rigor.js` `VOICE`) — composed by every generating
+  surface (signals, study guides, chapter dives). It fixes fake precision: content
+  over-fit to exact user details ("your Real Estate Cash Flow System at 40%, 2/5
+  done") reads like a database row, not insight. VOICE says: reference the
+  situation at the level that carries MEANING ("an active real-estate project in
+  the acquisition gap"), sports-first/elementary/simple, use a sports analogy when
+  it clarifies, and NEVER cite graph telemetry (observation counts, trend labels,
+  confidence %) as insight — that's instrumentation leaking into content. Bump the
+  consuming type's `promptVersion` when VOICE changes (studyGuide, signals).
 - **MCP bridge** (`api/mcp.js`, `api/_mcp.js`) — the Claude connector. JSON-RPC
   over POST (`initialize`/`tools/list`/`tools/call`), gated by an **`MCP_TOKEN`**
   bearer (timing-safe compare; the token is used only for the compare and is

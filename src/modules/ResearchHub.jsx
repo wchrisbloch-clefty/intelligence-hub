@@ -10,6 +10,7 @@ import { CB_IDENTITY } from '../constants.js';
 const BOARD_KEY = 'aether_board';
 import MD from './shared/MD.jsx';
 import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
+import AskChip from './shared/AskChip.jsx';
 
 const BOARD_COLS = [
   { id: 'collecting',   label: 'Collecting',   icon: '📥', color: T.accent },
@@ -334,6 +335,7 @@ export default function ResearchHub() {
                   <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 10 }}>
+                  <AskChip type="research" object={t} />
                   <Badge color={t.status === 'active' ? T.accent : 'var(--subtle)'}>{t.status}</Badge>
                   <div onClick={e => { e.stopPropagation(); deleteThread(t.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
                 </div>
