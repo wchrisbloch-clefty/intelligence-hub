@@ -6,6 +6,7 @@ import { askPrefill } from '../lib/askContext.js';
 import { getFeed, relTime } from '../lib/adapters.js';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
+import FollowButton from './shared/FollowButton.jsx';
 
 // "What's Happening" — the 7th container. One surface for what changed: a
 // discovery panel (stories your sources missed), a tiered feed, trending, and
@@ -290,6 +291,7 @@ export default function WhatsHappening() {
                         <FeedAction icon="Microscope" label="Dive deeper" onClick={() => dive(it)} />
                         <FeedAction icon="Share2" label="Explore" onClick={() => explore(it)} />
                         <FeedAction icon="MessageSquare" label="Ask" onClick={() => ask(it)} />
+                        <FollowButton name={it.title} source="feed" style={{ padding: '5px 10px' }} />
                         <SaveToNotes title={it.title} content={it.title} source={{ url: it.url, title: it.source, tier: it.tier }} label="Save" style={{ padding: '5px 10px' }} />
                         <FeedAction icon="X" label="Dismiss" onClick={() => dismiss(it)} muted />
                       </div>

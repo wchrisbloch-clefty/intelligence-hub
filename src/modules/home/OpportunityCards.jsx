@@ -9,6 +9,7 @@ import {
   domainAdd, domainRename, domainSetThesis, domainSetWeight, domainArchive,
   buildSignalContext, buildSignalPrompt, parseSignals, signalTypeMeta, actionMeta,
 } from '../../lib/signals.js';
+import { TOPICS_KEY, loadTopics, unfollowTopic, isStaleTopic, daysSince } from '../../lib/topics.js';
 import Icon from '../shared/Icon.jsx';
 import { ThinkingDots } from '../shared/Common.jsx';
 import SignalCard from './SignalCard.jsx';
@@ -26,15 +27,27 @@ export default function OpportunityCards() {
   const [err, setErr] = useState('');
   const [showDomains, setShowDomains] = useState(false);
   const [newDomain, setNewDomain] = useState('');
+  const [topics, setTopics] = useState(() => loadTopics());
 
   useEffect(() => {
     (async () => {
-      const [rs, rd, rf] = await Promise.all([hydrate(SIGNALS_KEY), hydrate(DOMAINS_KEY), hydrate(FEEDBACK_KEY)]);
+      const [rs, rd, rf, rt] = await Promise.all([hydrate(SIGNALS_KEY), hydrate(DOMAINS_KEY), hydrate(FEEDBACK_KEY), hydrate(TOPICS_KEY)]);
       if (rs && typeof rs === 'object') setCache(rs);
       if (Array.isArray(rd) && rd.length) setDomains(rd);
       if (rf && typeof rf === 'object') setFeedback(rf);
+      if (Array.isArray(rt)) setTopics(rt);
     })();
   }, []);
+
+  // Followed topics are written by FollowButtons across the app — re-read the
+  // store whenever the panel opens so the list is current.
+  useEffect(() => { if (showDomains) setTopics(loadTopics()); }, [showDomains]);
+  const unfollow = async (name) => {
+    const prev = topics; const next = unfollowTopic(prev, name);
+    setTopics(next);
+    const r = await writeThrough(TOPICS_KEY, next);
+    if (!r.localOk) setTopics(prev);
+  };
 
   const persistDomains = async (next) => {
     const prev = domains; setDomains(next);
@@ -140,6 +153,27 @@ export default function OpportunityCards() {
         <button onClick={() => { if (newDomain.trim()) { persistDomains(domainAdd(domains, newDomain)); setNewDomain(''); } }}
           style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
       </div>
+
+      {/* Followed topics — narrower current interests, followed from anywhere.
+          Surface last-activity and prompt on stale ones; a stale list is worse
+          than none. */}
+      {topics.length > 0 && (
+        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--rule)' }}>
+          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>Followed topics</div>
+          {topics.map((t) => {
+            const stale = isStaleTopic(t);
+            return (
+              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 100 }}>{t.name}</span>
+                <span style={{ fontSize: 'var(--fs-sm)', color: stale ? 'var(--caution)' : 'var(--text-tertiary)' }}>
+                  {stale ? `no activity in ${daysSince(t.lastActivity || t.followedAt)}d — still following?` : `active ${daysSince(t.lastActivity || t.followedAt)}d ago`}
+                </span>
+                <button onClick={() => unfollow(t.name)} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>Unfollow</button>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 

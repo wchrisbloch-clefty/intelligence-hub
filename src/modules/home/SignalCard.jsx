@@ -5,6 +5,7 @@
 // not-relevant loop. Theme tokens + Icon registry only — no hardcoded hex.
 import Icon from '../shared/Icon.jsx';
 import TierChip from '../shared/TierChip.jsx';
+import FollowButton from '../shared/FollowButton.jsx';
 import { signalTypeMeta, actionMeta } from '../../lib/signals.js';
 
 const VERDICTS = [
@@ -39,6 +40,7 @@ export default function SignalCard({ signal, verdict, onAct, onAsk, onVerdict })
           style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
           Ask <Icon name="ArrowRight" size={13} />
         </button>
+        <FollowButton name={signal.action?.target || signal.title} source="signal" style={{ minHeight: 34 }} />
       </div>
       {/* Feedback loop — persisted, fed back into the next generation. */}
       <div style={{ display: 'flex', gap: 6, marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--rule)', flexWrap: 'wrap' }}>

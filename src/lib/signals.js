@@ -12,6 +12,7 @@ import { allConcepts } from './graph.js';
 import { buildSkills } from './skills.js';
 import { PROJECTS_KEY } from '../constants.js';
 import { TIER_INSTRUCTION, TIER_RANK, VOICE } from './rigor.js';
+import { loadTopics } from './topics.js';
 
 export const DOMAINS_KEY  = 'aether_signal_domains_v1';
 export const SIGNALS_KEY  = 'aether_signals_v1';
@@ -92,6 +93,12 @@ export function buildSignalContext(domains = loadDomains()) {
     parts.push('DOMAINS the user tracks (weight 1–5; thesis is their own view — treat it as their stance to test, not fact):\n' +
       doms.map((d) => `- ${d.title} (weight ${d.weight})${d.thesis ? ` — thesis: "${d.thesis}"` : ''}`).join('\n'));
   }
+
+  // Followed topics — narrower, current interests. Weight signals toward these.
+  try {
+    const topics = loadTopics().slice(0, 12).map((t) => t.name);
+    if (topics.length) parts.push(`FOLLOWED topics (current interests — weight signals toward these): ${topics.join(', ')}`);
+  } catch {}
 
   // Graph — top concepts by observation, and recent vs. stale movement.
   const byObs = [...concepts].filter((c) => (c.observations || 0) > 0).sort((a, b) => (b.observations || 0) - (a.observations || 0));

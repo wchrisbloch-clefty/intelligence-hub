@@ -98,6 +98,30 @@ deployed on Vercel. Single user (CB).
   fabricating personalization. (Live web egress is blocked in the sandbox — the
   domain/context/prompt/parse logic is verified against seeded fixtures/mocks; the
   live `job:'web'` generation was NOT exercised from here.)
+- **Tracked topics — a learning layer** (`src/lib/topics.js`,
+  `shared/FollowButton.jsx`). A topic is narrower than a domain, more explicit than
+  an auto-logged graph concept — something the user is CURRENTLY interested in.
+  Followed in one tap from anywhere (`<FollowButton name source />` — a signal
+  card, a feed item, a deep dive, a research thread), stored on
+  **`aether_topics_v1`** (`{id,name,source,followedAt,lastActivity}`). Topics feed
+  `buildSignalContext()` alongside domains — a followed topic weights signals
+  toward it. `matchItems(feedItems, topicText, tags)` (token overlap, stop-words
+  dropped) is the shared matcher, reused by live research threads. Managed in
+  OpportunityCards' Domains panel with **last-activity + unfollow**, and a stale
+  prompt ("no activity in N days — still following?", `isStaleTopic`, 30-day
+  horizon) — a stale topic list is worse than none.
+- **Research threads connect to live** (`ResearchHub.jsx`) — a thread declares a
+  topic; matching feed items (`getFeed` from `adapters.js`, filtered by
+  `matchItems`) are pulled in automatically on open and on **Refresh**. A
+  per-thread watermark (**`aether_research_seen_v1`**, same pattern as
+  `aether_feed_seen`) drives an **unread "N new" badge** on the thread card and a
+  **"New since last visit" divider** inside. Pulled items show **source + tier**
+  and are **Ask** (`AskChip type=feed`), **Dive** (`applyRoute deepdive`), and
+  **Keep** (`logConcept` with the outlet as source, the thread as ref) in place.
+  The thread topic is followable (`FollowButton`), so following a topic and
+  researching it are the same act. (Live `getFeed` here returns adapter/mock
+  posts; the curated-news matching was verified against seeded items — the live
+  adapter fetch is egress-blocked in the sandbox.)
 - **7th container: What's Happening** (`feed`, `WhatsHappening.jsx`) — a "what
   changed" surface: WHAT CHANGED header + live/cached state + Work/Personal/Both
   lens, a `DISCOVERY` panel ("you may be missing this"), filter chips + density
