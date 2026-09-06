@@ -4,13 +4,18 @@ import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
 import { logConcept } from '../lib/graph.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
+import { getFeed, relTime } from '../lib/adapters.js';
+import { matchItems } from '../lib/topics.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { CB_IDENTITY } from '../constants.js';
 
 const BOARD_KEY = 'aether_board';
+const RESEARCH_SEEN_KEY = 'aether_research_seen_v1'; // { [threadId]: lastVisitedAt } — "new since last visit" watermark
 import MD from './shared/MD.jsx';
 import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
 import AskChip from './shared/AskChip.jsx';
+import FollowButton from './shared/FollowButton.jsx';
+import Icon from './shared/Icon.jsx';
 
 const BOARD_COLS = [
   { id: 'collecting',   label: 'Collecting',   icon: '📥', color: T.accent },
@@ -204,7 +209,7 @@ const SOURCE_LIBRARY = [
 ];
 
 export default function ResearchHub() {
-  const { graph, research, setResearch, isMobile, captureRoute, clearCapture } = useApp();
+  const { graph, research, setResearch, isMobile, captureRoute, clearCapture, applyRoute } = useApp();
   const [activeThread, setActiveThread] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -217,6 +222,21 @@ export default function ResearchHub() {
   useEffect(() => { if (captureRoute?.route === 'research') { setNewQuery(captureRoute.topic || ''); clearCapture?.(); } }, [captureRoute, clearCapture]);
   const [boardView, setBoardView] = useState(false);
   const bottomRef = useRef(null);
+  // Live signals — a thread declares a topic; matching feed items are pulled in
+  // automatically. One getFeed() on mount serves both the list (unread badges)
+  // and the open thread; "new since last visit" uses a per-thread watermark.
+  const [feedItems, setFeedItems] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(false);
+  const [seen, setSeen] = useState(() => readLocal(RESEARCH_SEEN_KEY, {}));
+  const [threadSeenAt, setThreadSeenAt] = useState(0); // the seen watermark captured when the open thread was entered
+  const itemTime = (it) => it.at || Date.parse(it.publishedAt || '') || 0;
+
+  const loadLiveFeed = async () => {
+    setFeedLoading(true);
+    try { const f = await getFeed({ limit: 40 }); setFeedItems(Array.isArray(f) ? f : []); } catch {}
+    setFeedLoading(false);
+  };
+  useEffect(() => { loadLiveFeed(); }, []);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
 
@@ -273,8 +293,21 @@ export default function ResearchHub() {
   const openThread = (thread) => {
     setActiveThread(thread.id);
     setMessages(thread.messages || []);
+    // Capture the prior watermark for the "new since last visit" divider, then
+    // advance it and refresh the live pull.
+    setThreadSeenAt(seen[thread.id] || 0);
+    const nextSeen = { ...seen, [thread.id]: Date.now() };
+    setSeen(nextSeen); writeThrough(RESEARCH_SEEN_KEY, nextSeen);
+    loadLiveFeed();
     if ((thread.messages || []).length === 0) sendMessage(thread.id, research, thread.query, []);
   };
+
+  // A pulled live item, kept into the thread's knowledge → logConcept (source =
+  // the item's outlet, ref = the thread) so provenance is preserved.
+  const keepLiveItem = (thread, it) => {
+    logConcept({ topic: it.title.slice(0, 60), source: it.source || 'feed', module: 'research', refs: [thread.title] });
+  };
+  const diveLiveItem = (it) => { logConcept({ topic: it.title.slice(0, 60), source: it.source || 'feed', module: 'research' }); applyRoute?.({ route: 'deepdive', topic: it.title }); };
 
   const deleteThread = async (id) => {
     const updated = research.filter(t => t.id !== id);
@@ -327,11 +360,16 @@ export default function ResearchHub() {
         <div>
           <Label color={T.accent}>Research Threads</Label>
           {research.length === 0 && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
-          {research.map(t => (
+          {research.map(t => {
+            const newCount = matchItems(feedItems, t.title, t.tags).filter((it) => itemTime(it) > (seen[t.id] || 0)).length;
+            return (
             <Card key={t.id} color={T.accent} onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4 }}>{t.title}</div>
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 7 }}>
+                    <span>{t.title}</span>
+                    {newCount > 0 && <span title={`${newCount} new signal${newCount === 1 ? '' : 's'} since last visit`} style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, color: 'var(--on-accent)', background: 'var(--accent)', borderRadius: 20, padding: '1px 7px' }}>{newCount} new</span>}
+                  </div>
                   <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 10 }}>
@@ -346,7 +384,8 @@ export default function ResearchHub() {
                 </div>
               )}
             </Card>
-          ))}
+            );
+          })}
         </div>
 
         <div>
@@ -389,13 +428,50 @@ export default function ResearchHub() {
             <div onClick={() => setActiveThread(null)} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 4 }}>← Research Hub</div>
             <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', maxWidth: 500 }}>{thread?.title}</div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {thread && <FollowButton name={thread.title} source="research" />}
             <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           </div>
         </div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 160px' }}>
+        {/* Live signals — feed items matching this thread's topic, pulled in
+            automatically, marked new since last visit, source + tier shown. */}
+        {thread && (() => {
+          const matched = matchItems(feedItems, thread.title, thread.tags);
+          if (!matched.length && !feedLoading) return null;
+          const fresh = matched.filter((it) => itemTime(it) > threadSeenAt);
+          const older = matched.filter((it) => itemTime(it) <= threadSeenAt);
+          const Row = ({ it }) => (
+            <div style={{ padding: '10px 12px', border: '1px solid var(--rule)', borderRadius: 8, marginBottom: 8, background: 'var(--surface)' }}>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)', marginBottom: 4 }}>{it.title}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{it.source}{it.relTime ? ` · ${it.relTime}` : ''}</span>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)', border: '1px solid var(--rule)', borderRadius: 4, padding: '1px 6px' }}>{it.tier}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <AskChip type="feed" object={it} />
+                <button onClick={() => diveLiveItem(it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Microscope" size={13} /> Dive</button>
+                <button onClick={() => keepLiveItem(thread, it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Bookmark" size={13} /> Keep</button>
+                {it.url && it.url !== '#' && <a href={it.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: T.accent, fontWeight: 700, alignSelf: 'center' }}>Open ↗</a>}
+              </div>
+            </div>
+          );
+          return (
+            <div style={{ maxWidth: 760, margin: '0 auto 18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}><Icon name="Radio" size={13} /> Live signals on this thread</span>
+                <button onClick={loadLiveFeed} disabled={feedLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--rule)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="RefreshCw" size={12} /> {feedLoading ? '…' : 'Refresh'}</button>
+              </div>
+              {fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, margin: '2px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>New since last visit<span style={{ flex: 1, height: 1, background: withAlpha(T.accent, 30) }} /></div>}
+              {fresh.map((it) => <Row key={it.id} it={it} />)}
+              {older.length > 0 && fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', margin: '4px 0 8px' }}>Earlier</div>}
+              {older.map((it) => <Row key={it.id} it={it} />)}
+            </div>
+          );
+        })()}
+
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: 18, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
             {msg.role === 'user' ? (
