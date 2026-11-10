@@ -1,0 +1,29 @@
+/* ArtifactSections (as-). Tokens only. Rail on desktop/iPad, sticky jump chips +
+   collapsible sections on mobile (the JS picks which via isMobile). */
+.as-split { display: flex; gap: 24px; align-items: flex-start; min-width: 0; }
+.as-body { min-width: 0; flex: 1; }
+.as-sec { scroll-margin-top: 12px; }
+.as-sec[data-mobile] { scroll-margin-top: 60px; }
+
+.as-rail { position: sticky; top: 12px; flex-shrink: 0; width: 190px; align-self: flex-start; max-height: calc(100vh - 40px); overflow-y: auto; padding: 4px 0; }
+.as-rail-kicker { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-subtle); font-weight: 700; margin-bottom: var(--s2); }
+.as-rail-link { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 2px solid var(--border); padding: 5px 10px;
+  color: var(--text-muted); font: inherit; font-size: var(--fs-sm); cursor: pointer; line-height: var(--lh-tight);
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.as-rail-link:hover { background: var(--surface-muted); color: var(--text); border-left-color: var(--border-strong); }
+.as-rail-link:focus-visible { outline-offset: -2px; }
+
+/* Mobile jump bar — chips sit in a horizontal scroller, so they carry a real
+   44px box rather than a ::after hit area that the scroller would clip. */
+.as-jump { position: sticky; top: 0; z-index: 5; display: flex; gap: 6px; overflow-x: auto; padding: 8px 0; margin-bottom: var(--s2);
+  background: var(--surface); border-bottom: 1px solid var(--border); -webkit-overflow-scrolling: touch; }
+.as-chip { flex-shrink: 0; min-height: 44px; padding: 5px 12px; border-radius: 22px; border: 1px solid var(--border); background: var(--background);
+  color: var(--text-muted); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-color) ease; }
+.as-chip:hover { background: var(--surface-muted); }
+.as-chip:focus-visible { outline-offset: -2px; }
+
+.as-toggle { display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: space-between; gap: var(--s2); background: none; border: none;
+  border-top: 1px solid var(--border); padding: 12px 0 6px; cursor: pointer; font: inherit; text-align: left; }
+.as-toggle-title { font-size: var(--fs-base); font-weight: 700; color: var(--c, var(--text)); min-width: 0; }
+.as-toggle-icon { color: var(--text-subtle); flex-shrink: 0; }

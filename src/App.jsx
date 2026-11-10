@@ -1,9 +1,9 @@
-import { T, withAlpha } from './theme';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loadGraph, loadProjects, loadNotes, loadResearch, saveProjects, uid } from './utils.js';
 import { CONTAINERS, containerOfMode } from './constants.js';
 import { readLocal, writeThrough } from './lib/storage.js';
 import { getTheme, applyTheme } from './theme.js';
+import './save-to-project.css';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
@@ -212,33 +212,31 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
     projects.find(p => p.status === 'active')?.id || projects[0]?.id || null
   );
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Save to Project</div>
-          <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+    <div className="stp-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="stp" role="dialog" aria-modal="true" aria-label="Save to Project">
+        <div className="stp-head">
+          <div className="stp-title">Save to Project</div>
+          <button type="button" className="stp-close tap" onClick={onClose} aria-label="Close">✕</button>
         </div>
-        <div style={{ padding: 18 }}>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 14 }}>
-            Saving: <span style={{ color: 'var(--text-b)', fontWeight: 600 }}>{artifact.title || 'AI Output'}</span>
+        <div className="stp-body">
+          <div className="stp-saving">
+            Saving: <b>{artifact.title || 'AI Output'}</b>
           </div>
-          <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          <div className="stp-list">
             {projects.map(p => (
-              <div key={p.id} onClick={() => setSelectedId(p.id)}
-                style={{ padding: '10px 12px', background: selectedId === p.id ? withAlpha(p.color || T.accent, 8) : 'var(--bg)', border: `1px solid ${selectedId === p.id ? withAlpha(p.color || T.accent, 31) : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ fontSize: 'var(--fs-lg)'}}>{p.emoji}</div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
-                  <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{p.status}</div>
+              <button type="button" key={p.id} className="stp-row" aria-pressed={selectedId === p.id}
+                onClick={() => setSelectedId(p.id)} style={p.color ? { '--c': p.color } : undefined}>
+                <div className="stp-emoji" aria-hidden="true">{p.emoji}</div>
+                <div className="stp-row-main">
+                  <div className="stp-row-title">{p.title}</div>
+                  <div className="stp-row-status">{p.status}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
-              style={{ flex: 2, padding: '10px', background: selectedId ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+          <div className="stp-actions">
+            <button type="button" className="stp-cancel tap" onClick={onClose}>Cancel</button>
+            <button type="button" className="stp-save tap" onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}>
               Save to Project →
             </button>
           </div>

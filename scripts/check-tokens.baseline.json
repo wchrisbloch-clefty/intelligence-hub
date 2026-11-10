@@ -1,9 +1,7 @@
 {
-  "src/App.jsx": 18,
+  "src/App.jsx": 5,
   "src/modules/Academy.jsx": 5,
-  "src/modules/AuthGate.jsx": 10,
   "src/modules/BookClub.jsx": 133,
-  "src/modules/ChatPanel.jsx": 30,
   "src/modules/CoachAI.jsx": 28,
   "src/modules/ContentInbox.jsx": 35,
   "src/modules/CreationStudio.jsx": 17,
@@ -23,19 +21,5 @@
   "src/modules/TEDHub.jsx": 25,
   "src/modules/TranslatorHub.jsx": 40,
   "src/modules/WhatsHappening.jsx": 41,
-  "src/modules/academy/FieldManual.jsx": 109,
-  "src/modules/shared/ArtifactSections.jsx": 6,
-  "src/modules/shared/AskChip.jsx": 1,
-  "src/modules/shared/BookSuggest.jsx": 9,
-  "src/modules/shared/Common.jsx": 27,
-  "src/modules/shared/DepthControls.jsx": 9,
-  "src/modules/shared/DiagramBlock.jsx": 6,
-  "src/modules/shared/DueReviews.jsx": 8,
-  "src/modules/shared/MD.jsx": 10,
-  "src/modules/shared/ProviderTag.jsx": 1,
-  "src/modules/shared/QuizMode.jsx": 15,
-  "src/modules/shared/SaveToNotes.jsx": 1,
-  "src/modules/shared/SessionDrawer.jsx": 12,
-  "src/modules/shared/SourceGrounding.jsx": 27,
-  "src/modules/shared/TierChip.jsx": 1
+  "src/modules/academy/FieldManual.jsx": 109
 }

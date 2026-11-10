@@ -13,6 +13,7 @@ import { callClaude } from '../../utils.js';
 import { renderMermaid, cleanMermaid, toOutline } from '../../lib/diagram.js';
 import Icon from './Icon.jsx';
 import { ThinkingDots } from './Common.jsx';
+import './diagram-block.css';
 
 // `types` lets a caller constrain which Mermaid diagram kinds are allowed — pass
 // e.g. ['flowchart','quadrantChart'] to force a causal/tension diagram and keep
@@ -81,31 +82,25 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
     }
   }, [auto, content]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const btn = {
-    display: 'inline-flex', alignItems: 'center', gap: 6, padding: compact ? '5px 11px' : '7px 13px',
-    borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)',
-    fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 34,
-  };
-
   return (
-    <div style={{ marginTop: 12 }}>
+    <div className="dg" data-compact={compact ? '' : undefined}>
       {!svg && !outline && !loading && (
-        <button onClick={generate} style={btn}>
+        <button type="button" className="dg-btn tap" onClick={generate}>
           <Icon name="Share2" size={14} /> {label}
         </button>
       )}
-      {loading && <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)' }}><ThinkingDots color="var(--accent-text)" /> Drawing…</div>}
+      {loading && <div className="dg-busy" aria-live="polite"><ThinkingDots color="var(--accent-text)" /> Drawing…</div>}
 
       {svg && (
         <div>
           <div
             // Natural-size SVG in a horizontally scrollable frame — legible at
             // 390px without shrinking text below --fs-sm.
-            style={{ overflowX: 'auto', maxWidth: '100%', border: '1px solid var(--rule)', borderRadius: 10, background: 'var(--surface)', padding: 14 }}
+            className="dg-frame" data-scroll-x=""
             dangerouslySetInnerHTML={{ __html: svg }}
           />
-          <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-            <button onClick={() => { setCode(''); setSvg(''); }} style={{ ...btn, border: 'none', padding: '3px 6px' }}>
+          <div className="dg-tools">
+            <button type="button" className="dg-btn tap" data-bare="" onClick={() => { setCode(''); setSvg(''); }}>
               <Icon name="RefreshCw" size={12} /> Redraw
             </button>
           </div>
@@ -113,10 +108,10 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
       )}
 
       {outline && (
-        <div style={{ border: '1px solid var(--rule)', borderRadius: 10, background: 'var(--surface)', padding: 14 }}>
-          {note && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', marginBottom: 8 }}>{note}</div>}
-          <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', color: 'var(--text-primary)', lineHeight: 'var(--lh-read)' }}>{outline}</pre>
-          <button onClick={generate} style={{ ...btn, marginTop: 8 }}><Icon name="RefreshCw" size={12} /> Try diagram again</button>
+        <div className="dg-frame">
+          {note && <div className="dg-note">{note}</div>}
+          <pre className="dg-outline">{outline}</pre>
+          <button type="button" className="dg-btn tap" data-space="" onClick={generate}><Icon name="RefreshCw" size={12} /> Try diagram again</button>
         </div>
       )}
     </div>

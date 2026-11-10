@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { timeAgo } from '../../utils.js';
 import { loadIndex, hydrateIndex, loadSession, hydrateSession, removeSession, renameSession } from '../../lib/sessions.js';
+import './session-drawer.css';
+
+const ACCENTS = new Set(['var(--accent)', 'var(--accent-text)']);
 
 // Saved-session list for a module: resume, rename, delete, and start a new one.
 // `version` bumps whenever the parent saves, forcing a re-read of the index.
@@ -31,52 +34,54 @@ export default function SessionDrawer({ module, activeId, version = 0, onResume,
     setEditing(null);
   };
 
+  const isAcc = ACCENTS.has(color);
+  const vars = { '--c': isAcc ? 'var(--accent)' : color, '--ct': isAcc ? 'var(--accent-text)' : color };
+
   return (
-    <div style={{
-      position: 'absolute', inset: 0, background: 'var(--bg-nav)', zIndex: 60,
-      display: 'flex', flexDirection: 'column', animation: 'fadeUp 0.15s ease',
-    }}>
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Saved Sessions</div>
-        <div onClick={onClose} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>✕</div>
+    <div className="sd" style={vars}>
+      <div className="sd-head">
+        <div className="sd-title">Saved Sessions</div>
+        <button type="button" className="sd-icon-btn tap" onClick={onClose} aria-label="Close saved sessions">✕</button>
       </div>
 
-      <div style={{ padding: '10px 12px', flexShrink: 0 }}>
-        <div onClick={() => { onNew(); onClose(); }}
-          style={{ padding: '10px 12px', borderRadius: 9, border: `1px solid ${color}`, color, background: 'var(--accent-glow)', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 700, textAlign: 'center' }}>
+      <div className="sd-new-wrap">
+        <button type="button" className="sd-new" onClick={() => { onNew(); onClose(); }}>
           ＋ New session
-        </div>
+        </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 12px 14px' }}>
+      <div className="sd-list">
         {items.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '30px 12px', color: 'var(--dim)', fontSize: 'var(--fs-base)', lineHeight: 1.7 }}>
+          <div className="sd-empty">
             No saved sessions yet.<br />Your conversations will appear here.
           </div>
         )}
         {items.map(s => {
           const active = s.id === activeId;
+          const editing = editingId === s.id;
           return (
-            <div key={s.id} onClick={() => editingId !== s.id && resume(s.id)}
-              style={{ padding: '10px 12px', marginBottom: 6, borderRadius: 9, cursor: 'pointer', border: `1px solid ${active ? color : 'var(--border)'}`, background: active ? 'var(--accent-glow)' : 'var(--surface)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {editingId === s.id ? (
-                  <input autoFocus value={editValue} onClick={e => e.stopPropagation()}
+            <div key={s.id} className={`sd-item${editing ? '' : ' focus-ring'}`} aria-current={active ? 'true' : undefined}
+              role={editing ? undefined : 'button'} tabIndex={editing ? undefined : 0}
+              onClick={() => !editing && resume(s.id)}
+              onKeyDown={e => { if (!editing && e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); resume(s.id); } }}>
+              <div className="sd-item-main">
+                {editing ? (
+                  <input autoFocus className="sd-rename" value={editValue} onClick={e => e.stopPropagation()}
+                    aria-label="Session name"
                     onChange={e => setEditVal(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') commitRename(s.id); if (e.key === 'Escape') setEditing(null); }}
-                    onBlur={() => commitRename(s.id)}
-                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${color}`, borderRadius: 6, padding: '4px 7px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+                    onBlur={() => commitRename(s.id)} />
                 ) : (
                   <>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: active ? color : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.title}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{timeAgo(s.updatedAt)}</div>
+                    <div className="sd-item-title">{s.title}</div>
+                    <div className="sd-item-meta">{timeAgo(s.updatedAt)}</div>
                   </>
                 )}
               </div>
-              {editingId !== s.id && (
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <span onClick={e => startRename(s, e)} title="Rename" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 4px' }}>✎</span>
-                  <span onClick={e => del(s.id, e)} title="Delete" style={{ fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer', padding: '2px 4px' }}>🗑</span>
+              {!editing && (
+                <div className="sd-item-actions">
+                  <button type="button" className="sd-icon-btn" onClick={e => startRename(s, e)} title="Rename" aria-label={`Rename ${s.title}`}>✎</button>
+                  <button type="button" className="sd-icon-btn" data-danger="" onClick={e => del(s.id, e)} title="Delete" aria-label={`Delete ${s.title}`}>🗑</button>
                 </div>
               )}
             </div>

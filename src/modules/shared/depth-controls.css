@@ -1,0 +1,16 @@
+/* DepthControls (dpc-). Tokens only. */
+.dpc-confirm { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px; animation: fadeUp 0.15s ease; min-width: 0; }
+.dpc-row { display: flex; align-items: flex-start; gap: 10px; min-width: 0; }
+.dpc-glyph { font-size: var(--fs-lg); line-height: 1.2; flex-shrink: 0; }
+.dpc-main { flex: 1; min-width: 0; }
+.dpc-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.dpc-body { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
+.dpc-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.dpc-actions .btn { font-size: var(--fs-base); }
+.dpc-actions .btn-primary { font-weight: 800; }
+
+.dpc-banner { display: flex; align-items: center; gap: 10px; background: var(--surface-muted); border: 1px solid var(--accent); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; min-width: 0; }
+.dpc-banner-glyph { font-size: 14px; animation: pulse 1.2s infinite ease-in-out; flex-shrink: 0; }
+.dpc-banner-main { min-width: 0; }
+.dpc-banner-kicker { font-size: 11px; font-weight: 800; color: var(--accent-text); letter-spacing: 1px; text-transform: uppercase; }
+.dpc-banner-note { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.5; }

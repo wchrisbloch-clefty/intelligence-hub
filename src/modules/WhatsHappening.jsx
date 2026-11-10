@@ -105,13 +105,20 @@ export default function WhatsHappening() {
     else setErr('');
   };
 
-  const allItems = useMemo(() => [...live, ...CURATED], [live]);
+  // Curated items render on first paint and stay put; live items APPEND when the
+  // fetch resolves. Prepending them (and a "Loading feed…" row above the list)
+  // shoved every visible card down on arrival — CLS 0.09–0.12 at iPad, caught by
+  // the responsive gate (Batch Z-2).
+  const allItems = useMemo(() => [...CURATED, ...live], [live]);
   const categories = useMemo(() => ['All', ...Array.from(new Set(sources.map((s) => s.category)))], [sources]);
 
+  // Newest-first WITHIN each group; the live group follows the curated group so a
+  // late-arriving fetch never reorders what's already on screen.
+  const liveIds = useMemo(() => new Set(live.map((x) => x.id)), [live]);
   const visibleItems = allItems
     .filter((it) => !dismissed.includes(it.id))
     .filter((it) => filter === 'All' || it.category === filter)
-    .sort((a, b) => b.at - a.at);
+    .sort((a, b) => (liveIds.has(a.id) - liveIds.has(b.id)) || (b.at - a.at));
 
   const freshCount = visibleItems.filter((it) => it.at > seenAt).length;
 
@@ -267,7 +274,6 @@ export default function WhatsHappening() {
           {freshCount > 0 && (
             <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', marginBottom: 12 }}>{freshCount} new since your last visit</div>
           )}
-          {loading && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', padding: '12px 0' }}>Loading feed…</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>
             {visibleItems.map((it) => {
               const fresh = it.at > seenAt;
@@ -300,6 +306,7 @@ export default function WhatsHappening() {
                 </article>
               );
             })}
+            {loading && <div aria-live="polite" style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', padding: '12px 0' }}>Loading live signals…</div>}
             {visibleItems.length === 0 && !loading && (
               <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed var(--rule)', borderRadius: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>Nothing in this view. Try another filter or add sources.</div>
             )}

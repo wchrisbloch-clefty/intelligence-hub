@@ -252,6 +252,10 @@ body {
 .fr-sidebar { display: none; }
 .fr-main {
   flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden;
+  /* Reserve the scrollbar's width up front: when content grows past the viewport
+     a scrollbar appears, the column narrows, text reflows and every card below
+     shifts (CLS 0.11 on What's Happening at iPad — Batch Z-2). */
+  scrollbar-gutter: stable;
   transition: padding-right 0.22s ease;
 }
 .fr-tabbar { display: block; flex-shrink: 0; }

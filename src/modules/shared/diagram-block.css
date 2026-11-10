@@ -1,0 +1,15 @@
+/* DiagramBlock (dg-). Tokens only; the SVG itself is themed by lib/diagram.js. */
+.dg { margin-top: 12px; min-width: 0; }
+.dg-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; min-height: 34px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.dg-btn:hover { background: var(--surface-muted); }
+.dg[data-compact] .dg-btn { padding: 5px 11px; }
+.dg-btn[data-bare] { border-color: transparent; padding: 3px 6px; }
+.dg-btn[data-space] { margin-top: var(--s2); }
+.dg-busy { display: flex; align-items: center; gap: var(--s2); color: var(--text-subtle); font-size: var(--fs-sm); }
+/* Natural-size SVG in a horizontally scrollable frame — legible at 390px. */
+.dg-frame { overflow-x: auto; max-width: 100%; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 14px; }
+.dg-tools { display: flex; gap: 10px; margin-top: 6px; }
+.dg-note { font-size: var(--fs-sm); color: var(--text-subtle); margin-bottom: var(--s2); }
+.dg-outline { margin: 0; white-space: pre-wrap; font-family: inherit; font-size: var(--fs-sm); color: var(--text); line-height: var(--lh-read); overflow-wrap: anywhere; }

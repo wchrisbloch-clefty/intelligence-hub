@@ -8,17 +8,18 @@
 // tokens + Icon registry only — no hardcoded hex or font sizes.
 import Icon from './Icon.jsx';
 import { ThinkingDots } from './Common.jsx';
+import './book-suggest.css';
 
 export default function BookSuggest({ results = [], loading = false, query = '', onPick }) {
   return (
-    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: 4, maxHeight: 320, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', WebkitOverflowScrolling: 'touch' }}>
+    <div className="bks">
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
+        <div className="bks-status" aria-live="polite">
           <ThinkingDots color="var(--accent-text)" /> Searching the catalog…
         </div>
       )}
       {!loading && results.length === 0 && (
-        <div style={{ padding: '12px 14px', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
+        <div className="bks-status">
           No catalog match{query ? ` for “${query}”` : ''} — you can still add it as typed.
         </div>
       )}
@@ -26,14 +27,13 @@ export default function BookSuggest({ results = [], loading = false, query = '',
         const full = [m.title, m.subtitle].filter(Boolean).join(': ');
         const yr = (m.publishedDate || '').slice(0, 4);
         return (
-          <button key={m.id || full} onClick={() => onPick?.(m)}
-            style={{ display: 'flex', gap: 10, width: '100%', textAlign: 'left', padding: '10px 12px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--rule)', cursor: 'pointer', fontFamily: 'inherit', alignItems: 'flex-start', minHeight: 56 }}>
+          <button type="button" key={m.id || full} className="bks-row" onClick={() => onPick?.(m)}>
             {m.thumbnail
-              ? <img src={m.thumbnail} alt="" width={34} style={{ borderRadius: 4, flexShrink: 0, border: '1px solid var(--border)' }} />
-              : <div style={{ width: 34, height: 48, borderRadius: 4, flexShrink: 0, background: 'var(--surf2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="BookMarked" size={14} style={{ color: 'var(--dim)' }} /></div>}
-            <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: 'block', fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{full}</span>
-              <span style={{ display: 'block', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', marginTop: 2, overflowWrap: 'anywhere' }}>
+              ? <img src={m.thumbnail} alt="" width={34} className="bks-cover" />
+              : <div className="bks-cover-ph"><Icon name="BookMarked" size={14} /></div>}
+            <span className="bks-text">
+              <span className="bks-title">{full}</span>
+              <span className="bks-meta">
                 {(m.authors || []).join(', ') || '—'}{yr ? ` · ${yr}` : ''}{m.publisher ? ` · ${m.publisher}` : ''}
               </span>
             </span>
