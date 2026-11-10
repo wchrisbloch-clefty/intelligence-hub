@@ -11,9 +11,5 @@
   "books@820/light:tap": 15,
   "learn@1280/dark:contrast": 4,
   "learn@390/dark:contrast": 4,
-  "learn@820/dark:contrast": 4,
-  "skills@390/dark:tap": 2,
-  "skills@390/light:tap": 2,
-  "skills@820/dark:tap": 2,
-  "skills@820/light:tap": 2
+  "learn@820/dark:contrast": 4
 }

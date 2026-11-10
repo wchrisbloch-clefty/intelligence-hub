@@ -116,3 +116,29 @@ list and form, studio with and without sources). All were 0 after one fix: subtl
 text on the decision-card hover fill.
 
 Screens: `docs/screens/batch-Z2-H-projects-{projects,decisions}-*`, `batch-Z2-H-studio-studio-*`
+
+## Skills (Practice): Skills, Recaps, MasteryVault, GrowthTools
+
+Branch `worktree-agent-a2d1a3929bb3bce24`, cherry-picked as one commit.
+
+| | before | after |
+|---|---|---|
+| Skills / Recaps / MasteryVault / GrowthTools tokens | 32 / 3 / 89 / 53 | **0 / 0 / 0 / 0** |
+| skills tap (the 40px "Track a skill" input and button) | 8 | **0** |
+| vault contrast ("+ New Note": black on accent, 1.43:1) | 6 | **0** (via a scratch audit) |
+
+Scoreboard after: responsive **96 → 88**, tokens **803 → 626**.
+
+- **Seeded and interacted states** were audited with the gate's own `measure()`: 12
+  states × 6 cells, including sparklines, the drill, study mode, export, note detail,
+  and Growth's expanded cards and tabs. The first pass found 16 contrast failures
+  (`--text-subtle` on the hover fill), all fixed. The final pass was 0.
+- **Things that were broken and now render:** Growth progress bars, which used an
+  invalid `linear-gradient(…80)` and so never drew. Several hairlines built as
+  `${'var(--x)'}40` were invalid CSS and also never drew.
+- **Found, not changed** (outside a style refactor):
+  - "+ Add certification" in Growth has no handler and never did.
+  - `NOTE_COLORS` is six identical `T.accent` values, so the note colour picker shows six
+    identical swatches.
+
+Screens: `docs/screens/batch-Z2-H-skills-*`
