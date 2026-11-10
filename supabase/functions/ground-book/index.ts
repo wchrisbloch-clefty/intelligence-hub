@@ -119,6 +119,7 @@ async function firecrawlPublisher(title: string, author: string, publisher: stri
 //      Over the cap → 429. Counter unreachable → 503. Fails CLOSED either way.
 export const DAILY_CAP = 40;
 const MAX_TITLE = 200, MAX_AUTHOR = 120, MAX_PUBLISHER = 120;
+const MISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 async function consumeQuota(): Promise<{ ok: boolean; status?: number; body?: unknown }> {
   const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -151,10 +152,21 @@ Deno.serve(async (req: Request) => {
   if (rawAuthor.length > MAX_AUTHOR || rawPublisher.length > MAX_PUBLISHER) return withCors(json(400, { error: 'author/publisher too long', code: 'bad_request' }));
   const title = rawTitle; const author = rawAuthor;
 
-  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 180)}`;
+  // The cache key carries whether Firecrawl is available: a miss recorded while the
+  // key was unset must not shadow a real lookup once CB adds it. Hits are kept
+  // forever; misses expire after MISS_TTL_MS so a newly-catalogued book resolves.
+  const fc = Deno.env.get('FIRECRAWL_API_KEY') ? 'fc1' : 'fc0';
+  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}`;
   const store = kv();
   if (!body.refresh) {
-    try { const hit = await store.get(cacheKey); if (hit) return withCors(json(200, { ...JSON.parse(hit), cached: true })); } catch { /* cache unreadable → fall through to the quota gate */ }
+    try {
+      const hit = await store.get(cacheKey);
+      if (hit) {
+        const c = JSON.parse(hit);
+        const fresh = c.toc || (Date.now() - Date.parse(c.at || 0) < MISS_TTL_MS);
+        if (fresh) return withCors(json(200, { ...c, cached: true }));
+      }
+    } catch { /* cache unreadable → fall through to the quota gate */ }
   }
   const quota = await consumeQuota();
   if (!quota.ok) return withCors(json(quota.status!, quota.body));
@@ -170,9 +182,8 @@ Deno.serve(async (req: Request) => {
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
   const out = { state, toc: best?.toc || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null,
     tier: best ? 'reported' : 'inferred', record: ol.record, attempts, at: new Date().toISOString() };
-  // Cache EVERY result, hit or miss — the same book never spends twice. A miss
-  // can be re-tried deliberately with { refresh: true }, which still counts
-  // against the daily cap.
+  // Cache EVERY result, hit or miss — the same book never spends twice (a miss for
+  // 7 days). { refresh: true } re-tries deliberately and still counts against the cap.
   try { await store.set(cacheKey, JSON.stringify(out)); } catch { /* best-effort */ }
   return withCors(json(200, out));
 });
