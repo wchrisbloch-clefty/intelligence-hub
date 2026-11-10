@@ -15,8 +15,9 @@
 //   'unverified'            no catalog match (NOT evidence the book doesn't exist)
 // plus { toc, source, attempts } — every step reports what it tried and got.
 //
-// Results are cached permanently in kv (aether_ground_<key>) so a resolved book
-// never re-spends Firecrawl credits. verify_jwt = true (called with the anon key).
+// Spend guard (Z-2 / G4): input validation, every result cached in kv, and a
+// fail-closed per-day cap on uncached lookups — see DAILY_CAP below.
+// verify_jwt = true (called with the PUBLIC anon key — not an auth boundary).
 import { json, kv } from '../_shared/edge.js';
 
 const MIN = 3;
@@ -107,21 +108,61 @@ async function firecrawlPublisher(title: string, author: string, publisher: stri
   return null;
 }
 
+// ── Spend guard (Batch Z-2 / G4) ─────────────────────────────────────────────
+// The anon key that reaches this function is PUBLIC (it is in a public repo) —
+// an identifier, not authorization. So the function protects the spend itself:
+//   1. strict input validation (no title, empty, or oversized → 400, nothing spent)
+//   2. EVERY result is cached in kv (hit or miss) and served before any spend —
+//      a repeated lookup for the same book costs nothing
+//   3. every UNCACHED lookup consumes one unit of a per-day cap, counted in kv
+//      (aether_ground_quota_<YYYY-MM-DD>, atomic upsert via ground_book_consume()).
+//      Over the cap → 429. Counter unreachable → 503. Fails CLOSED either way.
+export const DAILY_CAP = 40;
+const MAX_TITLE = 200, MAX_AUTHOR = 120, MAX_PUBLISHER = 120;
+
+async function consumeQuota(): Promise<{ ok: boolean; status?: number; body?: unknown }> {
+  const url = Deno.env.get('SUPABASE_URL'); const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+  try {
+    const r = await fetch(`${url}/rest/v1/rpc/ground_book_consume`, {
+      method: 'POST',
+      headers: { apikey: key!, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cap: DAILY_CAP }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!r.ok) return { ok: false, status: 503, body: { error: 'quota check unavailable — refusing to spend', code: 'quota_unavailable' } };
+    const q = await r.json();
+    if (!q?.allowed) return { ok: false, status: 429, body: { error: `daily lookup cap reached (${DAILY_CAP}/day)`, code: 'quota_exceeded', used: q?.used, cap: DAILY_CAP } };
+    return { ok: true };
+  } catch {
+    return { ok: false, status: 503, body: { error: 'quota check unavailable — refusing to spend', code: 'quota_unavailable' } };
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: CORS });
+  if (req.method !== 'POST') return withCors(json(405, { error: 'POST only' }));
   let body: any = {};
-  try { body = await req.json(); } catch { /* empty */ }
-  const title = clean(body.title).slice(0, 200); const author = clean(body.author).slice(0, 120);
-  if (!title) return withCors(json(400, { error: 'title required' }));
+  try { body = await req.json(); } catch { return withCors(json(400, { error: 'JSON body required', code: 'bad_request' })); }
+  const rawTitle = typeof body?.title === 'string' ? body.title.trim() : '';
+  const rawAuthor = typeof body?.author === 'string' ? body.author.trim() : '';
+  const rawPublisher = typeof body?.publisher === 'string' ? body.publisher.trim() : '';
+  if (!rawTitle) return withCors(json(400, { error: 'title required', code: 'bad_title' }));
+  if (rawTitle.length > MAX_TITLE) return withCors(json(400, { error: `title longer than ${MAX_TITLE} chars`, code: 'bad_title' }));
+  if (rawAuthor.length > MAX_AUTHOR || rawPublisher.length > MAX_PUBLISHER) return withCors(json(400, { error: 'author/publisher too long', code: 'bad_request' }));
+  const title = rawTitle; const author = rawAuthor;
+
   const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 180)}`;
   const store = kv();
   if (!body.refresh) {
-    try { const hit = await store.get(cacheKey); if (hit) return withCors(json(200, { ...JSON.parse(hit), cached: true })); } catch { /* cache miss */ }
+    try { const hit = await store.get(cacheKey); if (hit) return withCors(json(200, { ...JSON.parse(hit), cached: true })); } catch { /* cache unreadable → fall through to the quota gate */ }
   }
+  const quota = await consumeQuota();
+  if (!quota.ok) return withCors(json(quota.status!, quota.body));
+
   const attempts: any[] = [];
   const ol = await openLibrary(title, author, attempts);
   const loc = await libraryOfCongress(title, author, attempts);
-  const publisher = clean(body.publisher) || ol.record?.publisher || '';
+  const publisher = rawPublisher || ol.record?.publisher || '';
   const cands = [ol.best, loc].filter(Boolean) as any[];
   if (!cands.some((c) => c.toc.length >= MIN)) { const fc = await firecrawlPublisher(title, author, publisher, attempts); if (fc) cands.push(fc); }
   const best = cands.sort((a, b) => b.toc.length - a.toc.length)[0] || null;
@@ -129,8 +170,10 @@ Deno.serve(async (req: Request) => {
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
   const out = { state, toc: best?.toc || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null,
     tier: best ? 'reported' : 'inferred', record: ol.record, attempts, at: new Date().toISOString() };
-  // Cache only resolved books — a miss may resolve later (new edition, new key).
-  if (best) { try { await store.set(cacheKey, JSON.stringify(out)); } catch { /* best-effort */ } }
+  // Cache EVERY result, hit or miss — the same book never spends twice. A miss
+  // can be re-tried deliberately with { refresh: true }, which still counts
+  // against the daily cap.
+  try { await store.set(cacheKey, JSON.stringify(out)); } catch { /* best-effort */ }
   return withCors(json(200, out));
 });
 
