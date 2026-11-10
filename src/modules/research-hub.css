@@ -1,0 +1,9 @@
+/* ResearchHub (rh-). Tokens only. Mobile-first; capability added upward. */
+/* Threads + Source Library. Stacked until desktop: at iPad the content column is
+   ~610px, and a fixed 280px library column overflowed it (Batch Z-2 / G1). */
+.rh-split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s6); }
+.rh-split > * { min-width: 0; }
+@media (min-width: 1101px) { .rh-split { grid-template-columns: minmax(0, 1fr) 280px; } }
+
+/* The topic field is the tap target — full 44px. */
+.rh-query { min-height: 44px; }

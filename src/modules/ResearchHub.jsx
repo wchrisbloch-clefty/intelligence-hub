@@ -1,3 +1,4 @@
+import './research-hub.css';
 import { T, withAlpha } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
@@ -379,10 +380,10 @@ export default function ResearchHub() {
       {!boardView && <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 14, padding: '14px 18px', marginBottom: 12 }}>
           <span style={{ fontSize: 'var(--fs-lg)', color: T.accent }}>🔭</span>
-          <input value={newQuery} onChange={e => setNewQuery(e.target.value)}
+          <input className="rh-query" value={newQuery} onChange={e => setNewQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
             placeholder="Research a topic, question, or opportunity..."
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-lg)', color: 'var(--text-b)', fontFamily: 'inherit' }} />
+            style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-lg)', color: 'var(--text-b)', fontFamily: 'inherit' }} />
           <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
         </div>
@@ -393,7 +394,7 @@ export default function ResearchHub() {
         </div>
       </div>}
 
-      {!boardView && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 280px', gap: 24 }}>
+      {!boardView && <div className="rh-split">
         <div>
           <Label color={T.accent}>Research Threads</Label>
           {research.length === 0 && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}

@@ -169,7 +169,9 @@ try {
 
 const base0 = fs.existsSync(BASELINE) ? JSON.parse(fs.readFileSync(BASELINE, 'utf8')) : {};
 if (process.argv.includes('--update')) {
-  const next = {};
+  // Views not run this time (AUDIT_ONLY) keep their existing baseline cells.
+  const ran = new Set(Object.keys(counts).map((k) => k.split('@')[0]));
+  const next = Object.fromEntries(Object.entries(base0).filter(([k]) => !ran.has(k.split('@')[0])));
   for (const [k, n] of Object.entries(counts)) {
     if (!n) continue;
     if (base0[k] !== undefined && n > base0[k]) { console.error(`refusing to RAISE ${k} (${base0[k]} → ${n})`); process.exit(1); }
@@ -192,5 +194,6 @@ if (fails.length) {
   for (const [k, n] of fails) console.error(`  ${k}: ${n} (baseline ${base0[k] || 0})\n    ${(samples[k] || []).join('\n    ')}`);
   process.exit(1);
 }
-const lowered = Object.entries(base0).filter(([k, n]) => (counts[k] ?? 0) < n);
+const ranViews = new Set(Object.keys(counts).map((k) => k.split('@')[0]));
+const lowered = Object.entries(base0).filter(([k, n]) => ranViews.has(k.split('@')[0]) && (counts[k] ?? 0) < n);
 console.log(`\naudit-responsive: ok${lowered.length ? ` — ${lowered.length} cell(s) improved; run --update to lock in` : ''}`);
