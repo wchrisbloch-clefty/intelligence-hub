@@ -3,7 +3,7 @@
  * Every interactive control carries .tap (≥44px hit area, visual size unchanged). */
 
 /* ── Page frame ───────────────────────────────────────────────────────── */
-.hm { max-width: 1100px; margin: 0 auto; padding: 20px var(--gutter) 80px; min-width: 0; }
+.hm { max-width: var(--container-page); margin: 0 auto; padding: 20px var(--gutter) 80px; min-width: 0; }
 .hm-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: var(--s4); }
 .hm-date { font-size: 9px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-subtle); margin-bottom: 4px; }
 .hm-greet { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--text); letter-spacing: -0.5px; line-height: var(--lh-tight); }

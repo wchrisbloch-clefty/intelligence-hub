@@ -4,6 +4,9 @@ import CaptureBar from './shared/CaptureBar.jsx';
 import Icon from './shared/Icon.jsx';
 import { SECTIONS, sectionById } from './home/sections.js';
 import './home/home.css';
+import PageWithRail from './shared/PageWithRail.jsx';
+import ConnectedKnowledgePanel from './shared/ConnectedKnowledge.jsx';
+import ProvenancePanel from './shared/ProvenancePanel.jsx';
 
 // HomeDashboard is a renderer over the section registry (src/modules/home).
 // Nothing is inline, so every section can be reordered, hidden, and collapsed.
@@ -128,13 +131,24 @@ export default function HomeDashboard() {
         </div>
       )}
 
-      {visible.map((s, i) => (
-        <SectionShell key={s.id} section={s}
-          collapsed={layout.collapsed.includes(s.id)} editing={editing}
-          first={i === 0} last={i === visible.length - 1}
-          onCollapse={() => toggleCollapse(s.id)}
-          onUp={() => move(s.id, -1)} onDown={() => move(s.id, 1)} onHide={() => hide(s.id)} />
-      ))}
+      {/* J2: Connected Knowledge + the provenance legend live in the 340px rail
+          (≥1101), stacked below the feed on iPad. The 'connected' section is
+          hosted by the rail here, so it isn't rendered twice. MobileHome (≤720)
+          keeps it as a normal section. */}
+      <PageWithRail label="Connected knowledge and provenance" rail={(
+        <>
+          {!layout.hidden.includes('connected') && <ConnectedKnowledgePanel compact />}
+          <ProvenancePanel />
+        </>
+      )}>
+        {visible.filter((s) => s.id !== 'connected').map((s, i, arr) => (
+          <SectionShell key={s.id} section={s}
+            collapsed={layout.collapsed.includes(s.id)} editing={editing}
+            first={i === 0} last={i === arr.length - 1}
+            onCollapse={() => toggleCollapse(s.id)}
+            onUp={() => move(s.id, -1)} onDown={() => move(s.id, 1)} onHide={() => hide(s.id)} />
+        ))}
+      </PageWithRail>
     </div>
   );
 }
