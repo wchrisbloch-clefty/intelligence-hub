@@ -30,6 +30,7 @@ const CHAPTER_PROGRESS_KEY = 'aether_chapter_progress_v1'; // { [bookId]: { [idx
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
 
 const STUDY_MODES = [
   { id: 'overview',  label: 'Overview',       icon: 'ClipboardList', desc: 'Executive summary + key thesis' },
@@ -337,6 +338,11 @@ export default function BookClub() {
   const [resultProvider, setResultProvider] = useState('');
   const [vaulted, setVaulted] = useState(false);
   const [loading,      setLoading]      = useState(false);
+  // Generation failure as a STATE, not content: previously the error string was
+  // written into `result` and rendered as if it were the guide.
+  const [genErr, setGenErr] = useState('');
+  // What the last generation was, so Retry re-runs ONLY that section.
+  const lastGenRef = useRef(null);
 
   // Stored library is the single source of truth (built-ins + custom). KNOWN_BOOKS
   // is only a seed.
@@ -684,7 +690,8 @@ export default function BookClub() {
 
   const handleDeepDiveFor = async (modeId) => {
     if (!selectedBook) return;
-    setLoading(true);
+    lastGenRef.current = { kind: 'mode', modeId };
+    setLoading(true); setGenErr('');
     setResult('');
     setResultProvider('');
     setVaulted(false);
@@ -704,11 +711,20 @@ export default function BookClub() {
     } catch (e) {
       // Surface the real cause (which providers were tried and why) instead of
       // pointing the user at their wifi. callClaude throws with the server's body.
-      setResult(`Couldn't generate this. ${e?.message || 'The AI providers were unavailable.'}`);
+      setResult(''); setGenErr(e?.message || 'The AI providers were unavailable.');
     }
     setLoading(false);
   };
   const handleDeepDive = () => handleDeepDiveFor(mode);
+  // Retry re-runs ONLY the section that failed (guide or study mode), never the page.
+  const retryGeneration = () => {
+    const last = lastGenRef.current;
+    if (loading || !last) return;
+    if (last.kind === 'guide') generateGuide({ ungrounded: !!last.ungrounded });
+    else handleDeepDiveFor(last.modeId);
+  };
+  // A failure from a previous book never bleeds into the next one.
+  useEffect(() => { setGenErr(''); }, [selectedBook?.id]);
 
   // The study-guide engine: a full guide (thesis → frameworks → worked example
   // in the chosen lens → application prompts → field summary), a self-quiz that
@@ -756,6 +772,8 @@ export default function BookClub() {
       return;
     }
     setNeedsGrounding(false);
+    lastGenRef.current = { kind: 'guide', ungrounded };
+    setGenErr('');
     setMode('guide'); setIsGuide(true); setLoading(true); setResult(''); setResultProvider(''); setVaulted(false); setGuideCards(0); setGuideErr(''); setGuideLens(lens); setReadNext([]);
     let provider = '';
     try {
@@ -854,7 +872,7 @@ export default function BookClub() {
     } catch (e) {
       // Real cause, not "check your connection" — the study guide runs job:'reason'
       // and the server error names which providers failed and why.
-      setResult(`Couldn't generate the study guide. ${e?.message || 'The AI providers were unavailable.'}`);
+      setResult(''); setGenErr(e?.message || 'The AI providers were unavailable.');
     }
     setLoading(false);
   };
@@ -873,8 +891,13 @@ export default function BookClub() {
 
   // Load a previously saved guide back into the reader without regenerating.
   const savedGuide = selectedBook ? guides[selectedBook.id] : null;
+  // Explicit status for the primary artifact (study guide or study-mode output).
+  // 'empty' has no placeholder: the Generate Study Guide button + study-mode grid
+  // directly above already say what produces it.
+  const resultStatus = loading ? 'loading' : genErr ? 'error' : result ? 'ready' : 'empty';
   const viewSavedGuide = () => {
     if (!savedGuide) return;
+    setGenErr('');
     setMode('guide'); setIsGuide(true); setResult(savedGuide.body); setResultProvider(savedGuide.provider || ''); setGuideCards(savedGuide.cards || 0); setVaulted(false); setGuideErr(''); setGuideLens(savedGuide.lens || 'both'); setReadNext(savedGuide.readNext || []);
     if (savedGuide.depth) setDepth(savedGuide.depth);
   };
@@ -1313,8 +1336,10 @@ export default function BookClub() {
                                   </button>
                                 </div>
                                 {isOpen && (
-                                  <div style={{ padding: '0 14px 14px', background: 'var(--bg)' }}>
-                                    {cLoading ? <ThinkingDots color={T.accent} /> : dive ? (
+                                  <div data-status={cLoading ? 'loading' : dive?.error ? 'error' : dive ? 'ready' : 'empty'} style={{ padding: '0 14px 14px', background: 'var(--bg)' }}>
+                                    {cLoading ? <SectionSkeleton rows={4} label="chapter dive" /> : dive?.error ? (
+                                      <SectionError label="this chapter dive" onRetry={() => generateChapterDive(i)} detail={dive.body} />
+                                    ) : dive ? (
                                       <div>
                                         {dive.provider && <div style={{ marginBottom: 6 }}><ProviderTag provider={dive.provider} /></div>}
                                         <MD text={dive.body} color={T.accent} />
@@ -1422,7 +1447,14 @@ export default function BookClub() {
                   </button>
                 )}
 
-                {loading && <ThinkingDots color={T.accent} />}
+                {/* Primary artifact status: the study guide / study-mode output. */}
+                <div data-status={resultStatus}>
+                {resultStatus === 'loading' && !result && (
+                  <SectionSkeleton rows={isGuide ? 8 : 5} lead label={isGuide ? 'study guide' : 'study mode'} />
+                )}
+                {resultStatus === 'error' && (
+                  <SectionError label={isGuide ? 'the study guide' : 'this study mode'} onRetry={retryGeneration} detail={genErr} />
+                )}
 
                 {result && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
@@ -1516,6 +1548,7 @@ export default function BookClub() {
                     )}
                   </div>
                 )}
+                </div>
               </div>
             )}
           </div>

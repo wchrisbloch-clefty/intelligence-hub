@@ -7,12 +7,13 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { getFeed, relTime } from '../lib/adapters.js';
 import { matchItems } from '../lib/topics.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
 import { CB_IDENTITY } from '../constants.js';
 
 const BOARD_KEY = 'aether_board';
 const RESEARCH_SEEN_KEY = 'aether_research_seen_v1'; // { [threadId]: lastVisitedAt } — "new since last visit" watermark
 import MD from './shared/MD.jsx';
-import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
+import { Btn, Input, Label, Card, Badge, Modal } from './shared/Common.jsx';
 import AskChip from './shared/AskChip.jsx';
 import FollowButton from './shared/FollowButton.jsx';
 import Icon from './shared/Icon.jsx';
@@ -33,6 +34,9 @@ function ResearchBoard() {
   const [draft, setDraft]         = useState('');
   const [synthesis, setSynthesis] = useState('');
   const [synLoading, setSynLoading] = useState(false);
+  // Failure as STATE, not content (used to be written into `synthesis`).
+  const [synErr, setSynErr] = useState('');
+  const [cardErr, setCardErr] = useState({}); // id -> error message
   const [analyzingId, setAnalyzingId] = useState(null);
   const [cardAnalysis, setCardAnalysis] = useState({}); // id -> analysis text
 
@@ -54,6 +58,7 @@ function ResearchBoard() {
     if (analyzingId === card.id) return;
     setAnalyzingId(card.id);
     setCardAnalysis(prev => ({ ...prev, [card.id]: '' }));
+    setCardErr(prev => { const n = { ...prev }; delete n[card.id]; return n; });
     try {
       const prompt = card.type === 'url'
         ? `Analyze this source/URL for CB's research: ${card.content}\n\nWhat is this about? Key signal, relevance, and what CB should take from it.`
@@ -64,8 +69,8 @@ function ResearchBoard() {
         maxTokens: 700,
       });
       setCardAnalysis(prev => ({ ...prev, [card.id]: reply }));
-    } catch {
-      setCardAnalysis(prev => ({ ...prev, [card.id]: 'Analysis failed — try again.' }));
+    } catch (e) {
+      setCardErr(prev => ({ ...prev, [card.id]: e?.message || 'Analysis failed.' }));
     }
     setAnalyzingId(null);
   };
@@ -83,6 +88,7 @@ function ResearchBoard() {
     if (cards.length === 0) return;
     setSynLoading(true);
     setSynthesis('');
+    setSynErr('');
     const grouped = BOARD_COLS.map(col => {
       const colCards = cards.filter(c => c.column === col.id);
       if (!colCards.length) return '';
@@ -95,9 +101,13 @@ function ResearchBoard() {
         maxTokens: 1000,
       });
       setSynthesis(r);
-    } catch { setSynthesis('Synthesis failed — try again.'); }
+    } catch (e) { setSynErr(e?.message || 'The AI providers were unavailable.'); }
     setSynLoading(false);
   };
+
+  // Explicit status for the board synthesis. 'empty' has no placeholder — the
+  // "AI Synthesize All" button above is the CTA that produces it.
+  const synStatus = synLoading ? 'loading' : synErr ? 'error' : synthesis ? 'ready' : 'empty';
 
   return (
     <div>
@@ -113,6 +123,9 @@ function ResearchBoard() {
         )}
       </div>
 
+      <div data-status={synStatus}>
+      {synStatus === 'loading' && <div style={{ marginBottom: 20 }}><SectionSkeleton rows={5} lead label="board synthesis" /></div>}
+      {synStatus === 'error' && <div style={{ marginBottom: 20 }}><SectionError label="the board synthesis" onRetry={synthesizeAll} detail={synErr} /></div>}
       {synthesis && (
         <div style={{ background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 12, padding: '16px 18px', marginBottom: 20 }}>
           <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
@@ -120,6 +133,7 @@ function ResearchBoard() {
           <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
         </div>
       )}
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, overflowX: 'auto' }}>
         {BOARD_COLS.map((col, colIdx) => {
@@ -146,8 +160,13 @@ function ResearchBoard() {
                       </div>
                     )}
                     {analyzingId === card.id && (
-                      <div style={{ fontSize: 'var(--fs-sm)', color: col.color, marginBottom: 6 }}>
-                        <ThinkingDots color={col.color} />
+                      <div data-status="loading" style={{ marginBottom: 6 }}>
+                        <SectionSkeleton rows={2} label="card analysis" />
+                      </div>
+                    )}
+                    {analyzingId !== card.id && cardErr[card.id] && (
+                      <div data-status="error" style={{ marginBottom: 6 }}>
+                        <SectionError label="the analysis" onRetry={() => analyzeCard(card)} detail={cardErr[card.id]} />
                       </div>
                     )}
                     <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -227,13 +246,16 @@ export default function ResearchHub() {
   // and the open thread; "new since last visit" uses a per-thread watermark.
   const [feedItems, setFeedItems] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [feedErr, setFeedErr] = useState(''); // was a swallowed catch {}
+  const [threadErr, setThreadErr] = useState('');
+  const lastSendRef = useRef(null); // { threadId, newMsgs } for Retry
   const [seen, setSeen] = useState(() => readLocal(RESEARCH_SEEN_KEY, {}));
   const [threadSeenAt, setThreadSeenAt] = useState(0); // the seen watermark captured when the open thread was entered
   const itemTime = (it) => it.at || Date.parse(it.publishedAt || '') || 0;
 
   const loadLiveFeed = async () => {
-    setFeedLoading(true);
-    try { const f = await getFeed({ limit: 40 }); setFeedItems(Array.isArray(f) ? f : []); } catch {}
+    setFeedLoading(true); setFeedErr('');
+    try { const f = await getFeed({ limit: 40 }); setFeedItems(Array.isArray(f) ? f : []); } catch (e) { setFeedErr(e?.message || 'The live feed could not be fetched.'); }
     setFeedLoading(false);
   };
   useEffect(() => { loadLiveFeed(); }, []);
@@ -269,8 +291,16 @@ export default function ResearchHub() {
     const newMsgs = [...prevMessages, userMsg];
     setMessages(newMsgs);
     setSearchInput('');
+    await replyThread(threadId, threads, newMsgs);
+  };
+
+  // The reply half of sendMessage, split out so Retry re-runs ONLY the failed
+  // reply against the same history (the question is already in the thread).
+  const replyThread = async (threadId, threads, newMsgs) => {
+    lastSendRef.current = { threadId, newMsgs };
     setLoading(true);
     setStream('');
+    setThreadErr('');
     try {
       const system = {
         cached: CB_IDENTITY,
@@ -284,13 +314,20 @@ export default function ResearchHub() {
       setResearch(updatedThreads);
       await saveResearch(updatedThreads);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
+      setThreadErr(e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed.'));
     }
     setStream('');
     setLoading(false);
   };
 
+  const retryThread = () => {
+    const f = lastSendRef.current;
+    if (!f || loading) return;
+    replyThread(f.threadId, research, f.newMsgs);
+  };
+
   const openThread = (thread) => {
+    setThreadErr('');
     setActiveThread(thread.id);
     setMessages(thread.messages || []);
     // Capture the prior watermark for the "new since last visit" divider, then
@@ -420,6 +457,8 @@ export default function ResearchHub() {
   );
 
   const thread = research.find(t => t.id === activeThread);
+  // Explicit status of the thread's generated analysis (the primary artifact).
+  const threadStatus = loading ? 'loading' : threadErr ? 'error' : messages.some(m => m.role === 'assistant') ? 'ready' : 'empty';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
@@ -435,12 +474,14 @@ export default function ResearchHub() {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 160px' }}>
+      <div data-status={threadStatus} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 160px' }}>
         {/* Live signals — feed items matching this thread's topic, pulled in
             automatically, marked new since last visit, source + tier shown. */}
         {thread && (() => {
           const matched = matchItems(feedItems, thread.title, thread.tags);
-          if (!matched.length && !feedLoading) return null;
+          // Empty (no matching items) stays hidden — no placeholder noise on a thread.
+          if (!matched.length && !feedLoading && !feedErr) return null;
+          const feedStatus = feedLoading ? 'loading' : feedErr ? 'error' : 'ready';
           const fresh = matched.filter((it) => itemTime(it) > threadSeenAt);
           const older = matched.filter((it) => itemTime(it) <= threadSeenAt);
           const Row = ({ it }) => (
@@ -459,11 +500,13 @@ export default function ResearchHub() {
             </div>
           );
           return (
-            <div style={{ maxWidth: 760, margin: '0 auto 18px' }}>
+            <div data-status={feedStatus} style={{ maxWidth: 760, margin: '0 auto 18px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}><Icon name="Radio" size={13} /> Live signals on this thread</span>
                 <button onClick={loadLiveFeed} disabled={feedLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--rule)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="RefreshCw" size={12} /> {feedLoading ? '…' : 'Refresh'}</button>
               </div>
+              {feedLoading && !matched.length && <SectionSkeleton rows={2} label="live signals" />}
+              {feedStatus === 'error' && <SectionError label="live signals" onRetry={loadLiveFeed} detail={feedErr} />}
               {fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, margin: '2px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>New since last visit<span style={{ flex: 1, height: 1, background: withAlpha(T.accent, 30) }} /></div>}
               {fresh.map((it) => <Row key={it.id} it={it} />)}
               {older.length > 0 && fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', margin: '4px 0 8px' }}>Earlier</div>}
@@ -484,14 +527,23 @@ export default function ResearchHub() {
             )}
           </div>
         ))}
-        {loading && (
+        {loading && stream && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
+            <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: '100%' }}>
               <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
-              {stream
-                ? <MD text={stream + '▍'} color={T.accent} />
-                : <ThinkingDots color={T.accent} />}
+              <MD text={stream + '▍'} color={T.accent} />
             </div>
+          </div>
+        )}
+        {/* Skeleton only until the first streamed token arrives. */}
+        {loading && !stream && (
+          <div style={{ maxWidth: 760, margin: '0 auto 18px' }}>
+            <SectionSkeleton rows={messages.some(m => m.role === 'assistant') ? 3 : 6} lead label="research analysis" />
+          </div>
+        )}
+        {threadStatus === 'error' && (
+          <div style={{ maxWidth: 760, margin: '0 auto 18px' }}>
+            <SectionError label="this research reply" onRetry={retryThread} detail={threadErr} />
           </div>
         )}
         <div ref={bottomRef} />

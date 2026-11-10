@@ -29,11 +29,13 @@ import DecisionLog from './modules/DecisionLog.jsx';
 import CreationStudio from './modules/CreationStudio.jsx';
 import TEDHub from './modules/TEDHub.jsx';
 import QuizCenter from './modules/QuizCenter.jsx';
+import { DebugOverlay, dbgRender } from './modules/debug/index.jsx';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
 export default function App() {
+  dbgRender('App');
   const [activeModule,     setActiveModuleRaw]  = useState('home');
   const [navModes,         setNavModes]         = useState(() => readLocal('aether_nav_v1', {}));
   const [chatOpen,         setChatOpen]         = useState(false);
@@ -169,21 +171,15 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
+      <div className="fr-shell" data-chat={chatOpen ? 'open' : 'closed'}>
         <TopBar />
 
-        {/* Body row: container rail (≥768) + scrolling content, capped at
-            1280 on desktop. Mobile drops the rail for the bottom bar. */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0, width: '100%', maxWidth: isDesktop ? 1280 : '100%', margin: '0 auto' }}>
-          {!isMobile && <SideNav />}
-          <main style={{
-            flex: 1,
-            minWidth: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            paddingRight: (!isMobile && chatOpen) ? 360 : 0,
-            transition: 'padding-right 0.22s ease',
-          }}>
+        {/* Layout is CSS-only (src/styles/tokens.css · docs/RESPONSIVE.md):
+            both nav surfaces always render and media queries pick one, so a
+            phone's first paint is never the desktop layout. */}
+        <div className="fr-body">
+          <div className="fr-sidebar"><SideNav /></div>
+          <main className="fr-main">
             {/* Container's modes, as a scrollable chip row under the header */}
             <ModeChips />
             {/* Orchestrated entrance: each view rises 8px + fades on mount */}
@@ -193,8 +189,9 @@ export default function App() {
           </main>
         </div>
 
-        {isMobile && <BottomNav />}
+        <div className="fr-tabbar"><BottomNav /></div>
         <ChatPanel />
+        <DebugOverlay />
         {pendingArtifact && (
           <SaveToProjectModal
             artifact={pendingArtifact}

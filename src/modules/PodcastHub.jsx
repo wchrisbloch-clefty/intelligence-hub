@@ -8,6 +8,7 @@ import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
 
 const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
 
@@ -35,6 +36,9 @@ function PodCard({ ep, idx, onSaveToVault }) {
   const [aiPanel, setAiPanel] = useState(''); // '' | 'summary' | 'takeaways' | 'transcript'
   const [aiLoading, setAiLoading] = useState(false);
   const [aiCache, setAiCache] = useState({});
+  // Failure as STATE, not content: 'Network error — try again.' used to be
+  // cached as the mode's result (and so could be saved to the Vault).
+  const [aiErr, setAiErr] = useState({}); // mode -> error message
   const [reading, setReading] = useState(false);
   const [vaulted, setVaulted] = useState(false);
   const [userSrc, setUserSrc] = useState(null); // real transcript / notes the user pasted
@@ -74,6 +78,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
   };
   const genMode = async (mode) => {
     setAiLoading(true);
+    setAiErr(m => { const n = { ...m }; delete n[mode]; return n; });
     const prompts = {
       summary: `Summarize this podcast episode in 3-4 tight sentences for CB. Episode: "${ep.title}" from ${ep.show} (hosted by ${ep.host}). Description: ${ep.desc || 'Not available'}. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).`,
       takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation with CB application\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
@@ -91,11 +96,15 @@ function PodCard({ ep, idx, onSaveToVault }) {
         maxTokens: mode === 'transcript' ? 1200 : 700,
       });
       setAiCache(c => ({ ...c, [mode]: result }));
-    } catch {
-      setAiCache(c => ({ ...c, [mode]: 'Network error — try again.' }));
+    } catch (e) {
+      setAiErr(m => ({ ...m, [mode]: e?.message || 'The AI providers were unavailable.' }));
     }
     setAiLoading(false);
   };
+
+  // Explicit status of the open AI panel's generated brief. 'empty' has no
+  // placeholder — opening a panel always starts its generation.
+  const aiStatus = aiLoading && !aiCache[aiPanel] ? 'loading' : aiErr[aiPanel] ? 'error' : aiCache[aiPanel] ? 'ready' : 'empty';
 
   const aiTabs = [
     { id: 'summary',    label: '✦ Summary',    shortLabel: '✦' },
@@ -152,12 +161,14 @@ function PodCard({ ep, idx, onSaveToVault }) {
               onClear={() => { setUserSrc(null); setAiCache({}); if (aiPanel) genMode(aiPanel); }} />
           </div>
           {/* AI content */}
-          <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
+          <div data-status={aiStatus} style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
             <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
               {aiPanel === 'summary' ? 'AI Summary' : aiPanel === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
             </div>
-            {aiLoading && !aiCache[aiPanel]
-              ? <ThinkingDots color={ACCENT} />
+            {aiStatus === 'loading'
+              ? <SectionSkeleton rows={aiPanel === 'transcript' ? 6 : 3} label={aiPanel === 'summary' ? 'summary' : aiPanel === 'takeaways' ? 'takeaways' : 'deep dive'} />
+              : aiStatus === 'error'
+              ? <SectionError label={aiPanel === 'summary' ? 'the summary' : aiPanel === 'takeaways' ? 'the takeaways' : 'the deep dive'} onRetry={() => genMode(aiPanel)} detail={aiErr[aiPanel]} />
               : aiCache[aiPanel]
                 ? <>
                     <MD text={aiCache[aiPanel]} color={ACCENT} />
@@ -228,17 +239,28 @@ export default function PodcastHub() {
   const [pasteMode, setPasteMode]   = useState('');
   const [pasteResult, setPasteResult] = useState('');
   const [pasteLoading, setPasteLoading] = useState(false);
+  const [pasteErr, setPasteErr] = useState(''); // was written into pasteResult as content
   const [pasteReading, setPasteReading] = useState(false);
   const [pasteVaulted, setPasteVaulted] = useState(false);
   const [ttsGlobal] = useState(() => typeof window !== 'undefined' && 'speechSynthesis' in window);
 
   const pasteHasContent = pasteUrl.trim() || pasteText.trim();
+  // Explicit status of the paste-analysis artifact. 'empty' has no placeholder —
+  // the Summary / Takeaways / Deep Dive buttons are the CTA.
+  const pasteStatus = pasteLoading ? 'loading' : pasteErr ? 'error' : pasteResult ? 'ready' : 'empty';
 
   const handlePasteAI = async (mode) => {
     if (!pasteHasContent) return;
-    if (pasteMode === mode) { setPasteMode(''); return; }
+    if (pasteMode === mode) { setPasteMode(''); setPasteErr(''); return; }
+    await runPaste(mode);
+  };
+
+  // The generation half of handlePasteAI (no toggle), so Retry re-runs ONLY it.
+  const runPaste = async (mode) => {
+    if (!pasteHasContent) return;
     setPasteMode(mode);
     setPasteResult('');
+    setPasteErr('');
     setPasteLoading(true);
     const urlContext = pasteUrl.trim() ? `\nEpisode/Show URL: ${pasteUrl.trim()}` : '';
     const textContext = pasteText.trim() ? `\n\nContent:\n${pasteText.slice(0, 6000)}` : '';
@@ -254,8 +276,8 @@ export default function PodcastHub() {
         maxTokens: mode === 'deepdive' ? 1400 : 700,
       });
       setPasteResult(result);
-    } catch {
-      setPasteResult('Network error — try again.');
+    } catch (e) {
+      setPasteErr(e?.message || 'The AI providers were unavailable.');
     }
     setPasteLoading(false);
   };
@@ -438,14 +460,14 @@ export default function PodcastHub() {
           <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px' }}>
             <input
               value={pasteUrl}
-              onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); }}
+              onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
               placeholder="Podcast episode URL (optional) — e.g. https://podcasts.apple.com/… or Spotify link"
               style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }}
             />
             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
             <textarea
               value={pasteText}
-              onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); }}
+              onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
               placeholder="Paste podcast transcript, episode description, show notes, or any text here..."
               rows={5}
               style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 12 }}
@@ -468,18 +490,19 @@ export default function PodcastHub() {
                 </button>
               )}
               {pasteHasContent && (
-                <button onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); }}
+                <button onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
                   style={{ padding: '6px 10px', fontSize: 'var(--fs-sm)', border: '1px solid var(--border)', borderRadius: 7, background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
                   Clear
                 </button>
               )}
             </div>
-            {(pasteLoading || pasteResult) && (
-              <div style={{ marginTop: 14, background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
+            {(pasteLoading || pasteResult || pasteErr) && (
+              <div data-status={pasteStatus} style={{ marginTop: 14, background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
                 <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
                   {pasteMode === 'summary' ? 'AI Summary' : pasteMode === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
                 </div>
-                {pasteLoading ? <ThinkingDots color={ACCENT} /> : (
+                {pasteStatus === 'loading' ? <SectionSkeleton rows={pasteMode === 'deepdive' ? 6 : 3} label="podcast analysis" />
+                  : pasteStatus === 'error' ? <SectionError label="this analysis" onRetry={() => runPaste(pasteMode)} detail={pasteErr} /> : (
                   <>
                     <MD text={pasteResult} color={ACCENT} />
                     {!pasteVaulted

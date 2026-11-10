@@ -19,7 +19,8 @@ import ProviderTag from './shared/ProviderTag.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
-import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError, SectionEmpty } from './shared/SectionState.jsx';
+import { Btn, Input, Textarea, Label, Card, Badge, BottomSheet } from './shared/Common.jsx';
 
 const READING_QUICK_PROMPTS = {
   nonfiction:  ["What's the single most important framework?", 'Connect this to my other reading', 'How does this apply to my goals?', 'What is the author getting wrong?', 'Quiz me on this section'],
@@ -64,6 +65,12 @@ export default function LearningCenter() {
   const [quizMode, setQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizLoading, setQuizLoading] = useState(false);
+  // Failures as STATE, not content: a failed reply used to be appended to the
+  // transcript as if the assistant had said it, and a failed opener was replaced
+  // by a fake "Ready." greeting.
+  const [sessionErr, setSessionErr] = useState('');
+  const [quizErr, setQuizErr] = useState('');
+  const lastFailRef = useRef(null); // { kind:'send', history } | { kind:'open', args }
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [showAnnotation, setShowAnnotation] = useState(false);
   const [annotationText, setAnnotationText] = useState('');
@@ -84,6 +91,8 @@ export default function LearningCenter() {
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = T.accent; // one confident accent — the active session is gold
   const sessionTitle = entryMode === 'reading' ? context.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : entryMode === 'capture' ? context.title : 'Document';
+  // Explicit status of the session's generated replies (the primary artifact).
+  const sessionStatus = loading ? 'loading' : sessionErr ? 'error' : messages.some(m => m.role === 'assistant') ? 'ready' : 'empty';
 
   const send = async (text, attachments = []) => {
     if ((!text.trim() && attachments.length === 0) || loading) return;
@@ -92,8 +101,15 @@ export default function LearningCenter() {
     setMessages(newHistory);
     setInput('');
     setUploadedFiles([]);
+    await respond(newHistory);
+  };
+
+  // The reply half of send(), split out so Retry re-runs ONLY the failed reply
+  // against the same history (the user's message is already in the transcript).
+  const respond = async (newHistory) => {
     setLoading(true);
     setStream('');
+    setSessionErr('');
     try {
       const apiMessages = await buildApiMessages(newHistory);
       // Reading mode summarizes EXTERNAL material the user acts on → tier its
@@ -107,7 +123,8 @@ export default function LearningCenter() {
       const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, job: useWeb ? 'web' : 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
       setMessages(prev => [...prev, { role: 'assistant', content: reply, provider }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed — retry.') }]);
+      lastFailRef.current = { kind: 'send', history: newHistory };
+      setSessionErr(e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed.'));
     }
     setStream('');
     setLoading(false);
@@ -128,6 +145,7 @@ export default function LearningCenter() {
     setSessionStart(Date.now());
     setLoading(true);
     setStream('');
+    setSessionErr('');
     let opener = '';
     if (eMode === 'reading') {
       const t = ctx.title;
@@ -162,24 +180,34 @@ export default function LearningCenter() {
       let provider = '';
       const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }], job: 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
       setMessages([{ role: 'assistant', content: reply, provider }]);
-    } catch {
-      setMessages([{ role: 'assistant', content: 'Ready. What would you like to explore?' }]);
+    } catch (e) {
+      lastFailRef.current = { kind: 'open', args: [eMode, sMode, ctx, cType, goal, depth, progress] };
+      setSessionErr(e?.message || 'The AI providers were unavailable.');
     }
     setStream('');
     setLoading(false);
   };
 
   const generateQuiz = async () => {
-    setQuizLoading(true);
+    if (quizLoading) return;
+    setQuizLoading(true); setQuizErr('');
     try {
       const reply = await callClaude({ system: '', messages: [{ role: 'user', content: buildQuizPrompt({ subject: sessionTitle, count: 5, includeRate: false }) }] });
       const parsed = JSON.parse(reply.replace(/```json|```/g, '').trim());
       setQuizQuestions(parsed.questions || []);
       setQuizMode(true);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Quiz generation failed. Ask me to quiz you directly.' }]);
+    } catch (e) {
+      setQuizErr(e?.message || 'Quiz generation failed.');
     }
     setQuizLoading(false);
+  };
+
+  // Retry re-runs ONLY the failed call — the reply or the session opener.
+  const retrySession = () => {
+    const f = lastFailRef.current;
+    if (!f || loading) return;
+    if (f.kind === 'send') respond(f.history);
+    else autoOpen(...f.args);
   };
 
   const onQuizComplete = (results) => {
@@ -617,16 +645,15 @@ export default function LearningCenter() {
             </div>
             <div style={{ display: 'flex', gap: 5 }}>
               <div onClick={() => setShowLogModal(true)} style={{ fontSize: 'var(--fs-sm)', color: accentColor, padding: '5px 10px', border: `1px solid ${accentColor}40`, borderRadius: 6, cursor: 'pointer' }}>Save session</div>
-              <div onClick={() => { setScreen('home'); setContext({}); setMessages([]); setUploadedFiles([]); setQuizMode(false); setShowAnnotation(false); }} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', padding: '5px 10px', border: '1px solid var(--bord2)', borderRadius: 6, cursor: 'pointer' }}>← Learn</div>
+              <div onClick={() => { setScreen('home'); setContext({}); setMessages([]); setUploadedFiles([]); setQuizMode(false); setShowAnnotation(false); setSessionErr(''); setQuizErr(''); }} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', padding: '5px 10px', border: '1px solid var(--bord2)', borderRadius: 6, cursor: 'pointer' }}>← Learn</div>
             </div>
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 200px' }}>
-          {messages.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 10 }}><Icon name={entryMode === 'reading' ? currentContentType.icon : 'BookMarked'} size={28} style={{ color: 'var(--text-tertiary)' }} /></div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Initializing...</div>
+        <div data-status={sessionStatus} style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 200px' }}>
+          {sessionStatus === 'empty' && messages.length === 0 && (
+            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+              <SectionEmpty what="No session yet" how="Ask a question below — or use Summarize / Quiz me — to start this session." />
             </div>
           )}
           {messages.map((msg, i) => (
@@ -650,19 +677,35 @@ export default function LearningCenter() {
               )}
             </div>
           ))}
+          {(quizLoading || quizErr) && (
+            <div data-status={quizLoading ? 'loading' : 'error'} style={{ maxWidth: 720, margin: '0 auto 18px' }}>
+              {quizLoading
+                ? <SectionSkeleton rows={5} label="quiz" />
+                : <SectionError label="the quiz" onRetry={generateQuiz} detail={quizErr} />}
+            </div>
+          )}
           {quizMode && quizQuestions.length > 0 && (
             <div style={{ maxWidth: 720, margin: '0 auto' }}>
               <QuizMode questions={quizQuestions} color={accentColor} onComplete={onQuizComplete} />
             </div>
           )}
-          {loading && (
+          {loading && stream && (
             <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 720, margin: '0 auto 18px' }}>
-              <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
-                <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: stream ? 10 : 8 }}>CB Intelligence</div>
-                {stream
-                  ? <MD text={stream + '▍'} color={accentColor} />
-                  : <ThinkingDots color={accentColor} />}
+              <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: '100%' }}>
+                <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 10 }}>CB Intelligence</div>
+                <MD text={stream + '▍'} color={accentColor} />
               </div>
+            </div>
+          )}
+          {/* Skeleton only until the first streamed token arrives. */}
+          {loading && !stream && (
+            <div style={{ maxWidth: 720, margin: '0 auto 18px' }}>
+              <SectionSkeleton rows={messages.length ? 3 : 5} lead={!messages.length} label="response" />
+            </div>
+          )}
+          {sessionStatus === 'error' && (
+            <div style={{ maxWidth: 720, margin: '0 auto 18px' }}>
+              <SectionError label={lastFailRef.current?.kind === 'open' ? 'the session opener' : 'this reply'} onRetry={retrySession} detail={sessionErr} />
             </div>
           )}
           <div ref={bottomRef} />

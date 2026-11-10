@@ -8,7 +8,7 @@ import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
-import { ThinkingDots } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
 
 // Non-book surfaces accept a transcript/notes the model can't reach.
 const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
@@ -145,6 +145,8 @@ function TalkCard({ talk, onSaveToVault }) {
   const [loading,   setLoading]   = useState(false);
   const [vaulted,   setVaulted]   = useState(false);
   const [userSrc,   setUserSrc]   = useState(null); // transcript / notes the user supplied
+  // Failure as STATE, not content (used to be written into `analysis`).
+  const [err,       setErr]       = useState('');
 
   const analyze = () => {
     if (analysis) { setExpanded(e => !e); return; }
@@ -152,7 +154,7 @@ function TalkCard({ talk, onSaveToVault }) {
     runAnalysis();
   };
   const runAnalysis = async () => {
-    setLoading(true);
+    setLoading(true); setErr('');
     try {
       // Same drift risk as a book: summarizing a real talk with nothing anchoring
       // it. The title/speaker/year are the metadata anchor; a post-cutoff talk
@@ -184,11 +186,15 @@ Be blunt. CB-style. No fluff.
 ${TIER_INSTRUCTION}`;
       const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 700 });
       setAnalysis(reply);
-    } catch {
-      setAnalysis('Analysis unavailable. Check connection.');
+    } catch (e) {
+      setErr(e?.message || 'The AI providers were unavailable.');
     }
     setLoading(false);
   };
+
+  // Explicit status of this talk's generated brief. 'empty' has no placeholder —
+  // expanding the card always starts the analysis.
+  const status = loading ? 'loading' : err ? 'error' : analysis ? 'ready' : 'empty';
 
   const saveToVault = () => {
     onSaveToVault(`TED: ${talk.title} — ${talk.speaker}`, analysis);
@@ -227,12 +233,11 @@ ${TIER_INSTRUCTION}`;
       </div>
 
       {expanded && (
-        <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
-          {loading ? (
-            <div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: ACCENT, marginBottom: 8 }}>Generating CB-style brief…</div>
-              <ThinkingDots color={ACCENT} />
-            </div>
+        <div data-status={status} style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
+          {status === 'loading' ? (
+            <SectionSkeleton rows={4} lead label="talk brief" />
+          ) : status === 'error' ? (
+            <SectionError label="the talk brief" onRetry={runAnalysis} detail={err} />
           ) : (
             <>
               <div style={{ marginBottom: 12 }}>
@@ -240,7 +245,7 @@ ${TIER_INSTRUCTION}`;
                   label="I have the transcript / notes — paste to ground this" />
               </div>
               <MD text={analysis} color={ACCENT} />
-              {!vaulted && (
+              {analysis && !vaulted && (
                 <button onClick={saveToVault}
                   style={{ marginTop: 12, fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-c)', cursor: 'pointer', fontFamily: 'inherit' }}>
                   🏛 Save to Vault

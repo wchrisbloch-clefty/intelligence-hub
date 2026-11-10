@@ -15,8 +15,8 @@ import SaveToNotes from './shared/SaveToNotes.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
 import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
-import { ThinkingDots } from './shared/Common.jsx';
 import { GoingDeepBanner } from './shared/DepthControls.jsx';
+import { SectionSkeleton, SectionError, SectionEmpty } from './shared/SectionState.jsx';
 
 const ACCENT = T.accent;
 const DEPTHS = ['deep', 'expert']; // a dive is always a heavy, sourced tier
@@ -40,6 +40,8 @@ export default function DeepDive() {
   const [error, setError]     = useState('');
   const [angle, setAngle]     = useState('');
   const bottomRef = useRef(null);
+  // The last pass's arguments, so the error state's Retry re-runs ONLY that pass.
+  const lastPassRef = useRef(null);
   const pad = isMobile ? '14px' : '24px';
 
   useEffect(() => { hydrateIndex().then(r => { if (Array.isArray(r)) setIndex(r); }); }, []);
@@ -58,6 +60,7 @@ export default function DeepDive() {
   const refresh = () => setIndex(loadIndex());
 
   const runPass = async (targetDive, { userMsg, title, kind, focus }) => {
+    lastPassRef.current = { userMsg, title, kind, focus };
     setRunning(true); setStream(''); setError('');
     try {
       const system = buildDeepDiveSystem(targetDive.topic, targetDive.category, targetDive.depth, focus || null);
@@ -123,6 +126,9 @@ export default function DeepDive() {
     title: 'Data refresh', kind: 'refresh', focus: 'Latest data and recent developments',
   });
 
+  const OVERVIEW_PASS = { userMsg: 'Produce the deep dive now, following the scaffold.', title: 'Overview', kind: 'overview' };
+  const retryPass = () => { if (dive && !running) runPass(dive, lastPassRef.current || OVERVIEW_PASS); };
+
   // ── Home: create + list ─────────────────────────────────────────────────
   if (view === 'home') {
     return (
@@ -184,6 +190,8 @@ export default function DeepDive() {
 
   // ── Dive view ────────────────────────────────────────────────────────────
   if (!dive) { setView('home'); return null; }
+  // Explicit section status for the dive's generated passes.
+  const diveStatus = running ? 'loading' : error ? 'error' : dive.sections.length ? 'ready' : 'empty';
   return (
     <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
@@ -211,6 +219,7 @@ export default function DeepDive() {
 
       {running && <div ref={bottomRef}><GoingDeepBanner depth={dive.depth} /></div>}
 
+      <div data-status={diveStatus}>
       {/* Sections */}
       {dive.sections.map((s, i) => (
         <div key={s.id} style={{ marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
@@ -241,8 +250,13 @@ export default function DeepDive() {
           <MD text={stream + '▍'} color={ACCENT} />
         </div>
       )}
-      {running && !stream && <div style={{ padding: '10px 0' }}><ThinkingDots color={ACCENT} /></div>}
-      {error && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--red)', marginBottom: 12 }}>{error}</div>}
+      {running && !stream && <SectionSkeleton rows={6} lead label="research pass" />}
+      {diveStatus === 'error' && <SectionError label="this research pass" onRetry={retryPass} detail={error} />}
+      {diveStatus === 'empty' && (
+        <SectionEmpty what="No research passes yet" how="Run the overview pass to build this dive from live sources."
+          actionLabel="Run overview pass" onAction={() => runPass(dive, OVERVIEW_PASS)} />
+      )}
+      </div>
 
       {/* Aggregated sources */}
       {dive.sources.length > 0 && (

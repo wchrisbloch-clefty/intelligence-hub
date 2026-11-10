@@ -1,0 +1,38 @@
+/* src/styles/primitives.css — shared control primitives (button / badge / chip).
+ * Tokens only. States: :hover, :focus-visible, [disabled], [aria-busy="true"].
+ * /design forces hover/focus with data-force so every state is visible at once.
+ * Every control carries a ≥44px hit area via the .tap utility (tokens.css). */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  min-height: 36px; padding: 6px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border-strong); background: var(--surface); color: var(--text);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; text-decoration: none;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.btn:hover, .btn[data-force="hover"] { background: var(--surface-muted); }
+.btn:focus-visible, .btn[data-force="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+.btn[aria-busy="true"] { cursor: progress; color: var(--text-subtle); }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-foreground); }
+.btn-primary:hover, .btn-primary[data-force="hover"] { background: var(--accent-hover); border-color: var(--accent-hover); }
+
+.btn-ghost { border-color: transparent; background: transparent; color: var(--text-muted); }
+.btn-danger { color: var(--negative); }
+
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 1px 8px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); color: var(--text-muted); font-size: var(--fs-xs); font-weight: 700; white-space: nowrap; }
+
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 12px;
+  border-radius: 999px; border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.chip:hover, .chip[data-force="hover"] { background: var(--surface-muted); color: var(--text); }
+.chip:focus-visible, .chip[data-force="focus"] { outline: 2px solid var(--ring); outline-offset: 2px; }
+.chip[aria-pressed="true"], .chip[aria-selected="true"] { border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.chip[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* Tap-target audit: /design toggles this on <html> to outline every hit area. */
+[data-show-taps] button, [data-show-taps] a[href], [data-show-taps] [role="button"],
+[data-show-taps] input, [data-show-taps] select, [data-show-taps] textarea {
+  outline: 1px dashed var(--tier-inferred); outline-offset: 0; }
+[data-show-taps] .tap::after { outline: 1px dashed var(--tier-verified); }
+[data-show-taps] [data-under-44] { outline: 2px solid var(--negative) !important; }

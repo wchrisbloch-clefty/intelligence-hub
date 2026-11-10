@@ -10,7 +10,7 @@ import { logConcept } from '../../lib/graph.js';
 import { TIER_INSTRUCTION } from '../../lib/rigor.js';
 import MD from '../shared/MD.jsx';
 import DiagramBlock from '../shared/DiagramBlock.jsx';
-import { ThinkingDots } from '../shared/Common.jsx';
+import { SectionSkeleton, SectionError } from '../shared/SectionState.jsx';
 
 // Content packs live entirely in data files (src/data/ladders/*). This component
 // is the engine — it must never special-case a specific ladder. Adding a ladder
@@ -678,6 +678,10 @@ function SocraticDrill({ ladder, level, onClose }) {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [stream, setStream] = useState('');
+  // Failure as STATE, not content: a failed examiner turn used to be appended to
+  // the transcript as a fake assistant message.
+  const [err, setErr] = useState('');
+  const [lastAsk, setLastAsk] = useState(null); // { history, first } for Retry
 
   const digest = useMemo(() => {
     const blocks = (level.blocks || []).map((b) => b.title || b.t || b.html || (b.items || []).join('; ') || (b.pairs || []).map((p) => p.join(': ')).join('; ')).filter(Boolean).join('\n').replace(/<[^>]+>/g, '').slice(0, 3500);
@@ -691,7 +695,13 @@ function SocraticDrill({ ladder, level, onClose }) {
     if ((!input.trim() && !first) || loading) return;
     const newMsgs = first ? [] : [...messages, { role: 'user', content: input.trim() }];
     if (!first) { setMessages(newMsgs); setInput(''); }
-    setLoading(true); setStream('');
+    await ask(newMsgs, first);
+  };
+
+  // The examiner call, split out so Retry re-runs ONLY the failed turn.
+  const ask = async (newMsgs, first) => {
+    setLastAsk({ history: newMsgs, first });
+    setLoading(true); setStream(''); setErr('');
     try {
       const reply = await callClaude({
         system,
@@ -700,11 +710,13 @@ function SocraticDrill({ ladder, level, onClose }) {
         onToken: (t) => setStream((s) => s + t),
       });
       setMessages((m) => [...(first ? [] : m), { role: 'assistant', content: reply }]);
-    } catch {
-      setMessages((m) => [...m, { role: 'assistant', content: 'Drill unavailable — check connection and try again.' }]);
+    } catch (e) {
+      setErr(e?.message || 'The AI providers were unavailable.');
     }
     setStream(''); setLoading(false);
   };
+  const retry = () => { if (lastAsk && !loading) ask(lastAsk.history, lastAsk.first); };
+  const drillStatus = loading ? 'loading' : err ? 'error' : messages.some((m) => m.role === 'assistant') ? 'ready' : 'empty';
 
   useEffect(() => { send(true); /* eslint-disable-next-line */ }, []);
 
@@ -715,13 +727,17 @@ function SocraticDrill({ ladder, level, onClose }) {
           <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>🎯 Socratic Drill — {level.title}</div>
           <div onClick={onClose} style={{ fontSize: 'var(--fs-xl)', color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div data-status={drillStatus} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* 'empty' has no placeholder: the drill auto-asks its first question on open,
+              so empty only exists for the first frame before the call starts. */}
           {messages.map((m, i) => (
             <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', background: m.role === 'user' ? 'var(--u-bubble)' : 'var(--bg)', border: `1px solid ${m.role === 'user' ? 'var(--u-bubble-b)' : 'var(--border)'}`, borderRadius: 12, padding: '10px 14px' }}>
               {m.role === 'user' ? <div style={{ fontSize: 'var(--fs-base)', color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color={ACCENT} />}
             </div>
           ))}
-          {loading && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}>{stream ? <MD text={stream + '▍'} color={ACCENT} /> : <ThinkingDots color={ACCENT} />}</div>}
+          {loading && stream && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}><MD text={stream + '▍'} color={ACCENT} /></div>}
+          {loading && !stream && <SectionSkeleton rows={2} label="examiner question" />}
+          {drillStatus === 'error' && <SectionError label={lastAsk?.first ? 'the first drill question' : 'the examiner’s reply'} onRetry={retry} detail={err} />}
         </div>
         <div style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
           <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Your answer…"
