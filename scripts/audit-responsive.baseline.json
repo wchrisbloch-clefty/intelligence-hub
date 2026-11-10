@@ -1,14 +1,4 @@
 {
-  "books@1280/dark:contrast": 7,
-  "books@1280/light:contrast": 3,
-  "books@390/dark:contrast": 7,
-  "books@390/dark:tap": 8,
-  "books@390/light:contrast": 3,
-  "books@390/light:tap": 8,
-  "books@820/dark:contrast": 7,
-  "books@820/dark:tap": 15,
-  "books@820/light:contrast": 3,
-  "books@820/light:tap": 15,
   "learn@1280/dark:contrast": 4,
   "learn@390/dark:contrast": 4,
   "learn@820/dark:contrast": 4

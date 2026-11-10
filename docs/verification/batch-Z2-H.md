@@ -142,3 +142,40 @@ Scoreboard after: responsive **96 → 88**, tokens **803 → 626**.
     identical swatches.
 
 Screens: `docs/screens/batch-Z2-H-skills-*`
+
+## Learn, part A: BookClub, DeepDive, TEDHub, PodcastHub, plus the mental-model chip
+
+Branch `worktree-agent-a1b4378617896a2c0`, cherry-picked as one commit.
+
+| | before | after |
+|---|---|---|
+| BookClub / DeepDive / PodcastHub / TEDHub tokens | 133 / 36 / 56 / 25 | **0 / 0 / 0 / 0** |
+| books tap / contrast | 46 / 30 | **0 / 0** |
+| deepdive tap / contrast (scratch audit) | 8 / 3 | 0 / 0 |
+| ted tap / contrast (scratch audit) | 28 / 30 | 0 / 0 |
+| podcast contrast: white text on a gradient that went white (scratch audit) | 9 | 0 |
+
+Scoreboard after: responsive **88 → 78**, tokens **626 → 376**. `npm run verify:prompts`
+still passes. Every prompt line in BookClub is byte-identical, and the J1 backfill and
+SectionState wiring are preserved.
+
+**"Through my mental models" chip:**
+
+- **BookClub:** mounted under the study-guide body (`title` = the book, `body` = the
+  guide on screen).
+- **DeepDive:** mounted after the passes (`body` = all sections). It is disabled while a
+  pass runs.
+- **Nothing calls the model until the chip is tapped.** The agent checked this in the
+  browser for the deep dive. In BookClub the one `/api/chat` on opening a saved guide is
+  the existing DiagramBlock auto-draw.
+
+**Visible changes:**
+
+- Selected states use an accent border and `--accent-text`, replacing tinted fills.
+- The podcast header gradient is now a flat surface card.
+- Notices are a hairline box with a coloured left edge.
+- Emoji UI icons are now lucide icons where the registry has a match. 🗑 🔊 ⏹ 🧹 🎙️
+  remain, because the shared Icon registry wasn't in scope.
+- BookClub's 480px breakpoint is gone; it uses 721 and 1101 only.
+
+Screens: `docs/screens/batch-Z2-H-learnA-{books,deepdive,ted,podcast}-*`
