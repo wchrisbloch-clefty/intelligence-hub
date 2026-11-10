@@ -5,6 +5,7 @@ import { NOTES_KEY } from '../../constants.js';
 import { uid } from '../../utils.js';
 import { logConcept } from '../../lib/graph.js';
 import Icon from './Icon.jsx';
+import './save-to-notes.css';
 
 // One-tap Save to Notes. Drop it wherever content is generated or surfaced —
 // grounded answers, deep-dive passes, book insights, feed items. Every note
@@ -39,8 +40,8 @@ export default function SaveToNotes({ title, content, source = null, label = 'Sa
 
   const on = state === 'saved';
   return (
-    <button onClick={save} title="Save to Notes with its source and tier"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: state === 'error' ? 'var(--negative)' : on ? 'var(--accent-text)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', ...style }}>
+    <button type="button" className="stn tap" data-state={state} aria-pressed={on} onClick={save}
+      title="Save to Notes with its source and tier" style={style}>
       <Icon name={on ? 'Check' : 'StickyNote'} size={13} /> {state === 'error' ? 'Try again' : on ? 'Saved' : label}
     </button>
   );

@@ -1,0 +1,2 @@
+/* ProviderTag (pt-). Quiet metadata, --text-subtle. */
+.pt { font-size: var(--fs-sm); color: var(--text-subtle); letter-spacing: 0.2px; font-weight: 500; }

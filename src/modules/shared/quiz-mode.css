@@ -1,0 +1,48 @@
+/* QuizMode (qm-). Tokens only. Selected = accent border + accent text, no tinted fill. */
+.qm { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 16px; animation: fadeUp 0.2s ease; min-width: 0; }
+.qm-head { margin-bottom: 16px; }
+.qm-head-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--s2); }
+.qm-kicker { font-size: 10px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; }
+.qm-track { display: flex; gap: 4px; }
+.qm-seg { flex: 1; height: 3px; border-radius: 2px; background: var(--border); transition: background-color 0.3s ease; }
+.qm-seg[data-state="done"] { background: var(--accent); }
+.qm-seg[data-state="miss"] { background: var(--negative); }
+.qm-seg[data-state="current"] { background: var(--surface-muted); }
+.qm-q { font-size: var(--fs-lg); font-weight: 600; color: var(--text); line-height: 1.6; margin-bottom: 18px; overflow-wrap: anywhere; }
+
+.qm-opts { display: flex; flex-direction: column; gap: var(--s2); }
+.qm-opt { display: flex; align-items: center; width: 100%; min-height: 44px; padding: 11px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--background); color: var(--text); font: inherit; font-size: var(--fs-base);
+  text-align: left; cursor: pointer; overflow-wrap: anywhere;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.qm-opt:hover:not([disabled]) { background: var(--surface-muted); }
+.qm-opt[disabled] { cursor: default; }
+.qm-opt[data-state="selected"] { border-color: var(--accent); color: var(--accent-text); }
+.qm-opt[data-state="correct"] { border-color: var(--accent); color: var(--text); }
+.qm-opt[data-state="wrong"] { border-color: var(--negative); }
+
+.qm-verdict { font-size: var(--fs-base); padding: 8px 12px; background: var(--surface-muted); border-radius: 6px; margin-bottom: var(--s2); color: var(--accent-text); }
+.qm-verdict[data-ok="0"] { color: var(--negative); }
+.qm-tier { display: flex; align-items: center; gap: 6px; margin-bottom: var(--s2); flex-wrap: wrap; }
+.qm-tier-note { font-size: var(--fs-xs); color: var(--text-subtle); }
+.qm-expl { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+
+.qm-rates { display: flex; gap: 10px; justify-content: center; margin-bottom: 14px; flex-wrap: wrap; }
+.qm-rate { width: 48px; height: 48px; border-radius: 10px; border: 2px solid var(--border); background: var(--background);
+  display: flex; align-items: center; justify-content: center; font: inherit; font-size: var(--fs-lg); font-weight: 800; color: var(--text-muted); cursor: pointer;
+  transition: border-color var(--dur-color) ease, color var(--dur-color) ease, background-color var(--dur-color) ease; }
+.qm-rate:hover { background: var(--surface-muted); }
+.qm-rate[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
+
+.qm-answer { display: block; width: 100%; min-height: 44px; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; color: var(--text); font: inherit; font-size: var(--fs-base); outline: none; resize: none; margin-bottom: var(--s2); }
+.qm-answer::placeholder { color: var(--text-subtle); }
+.qm-answer:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.qm-model-label { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 5px; font-style: italic; }
+.qm-model { font-size: var(--fs-base); color: var(--text); line-height: 1.65; margin-bottom: var(--s2); padding: 8px 12px; background: var(--surface-muted); border-radius: 6px; }
+.qm-self { display: flex; gap: var(--s2); }
+.qm-self-btn { flex: 1; min-width: 0; min-height: 44px; padding: 10px; border-radius: var(--radius); background: transparent; text-align: center;
+  font: inherit; font-size: var(--fs-base); cursor: pointer; transition: background-color var(--dur-color) ease; }
+.qm-self-btn:hover { background: var(--surface-muted); }
+.qm-self-btn[data-kind="miss"] { border: 1px solid var(--negative); color: var(--negative); }
+.qm-self-btn[data-kind="got"] { border: 1px solid var(--accent); color: var(--accent-text); }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Btn } from './Common.jsx';
 import TierChip from './TierChip.jsx';
+import './quiz-mode.css';
 
 // Shared quiz-taking surface for both QuizCenter and LearningCenter.
 // onComplete(results) receives one object per question:
@@ -36,59 +37,57 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
 
   // Inherited source trust — a quiz is only as certain as what it was built from.
   const tierBadge = sourceTier ? (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+    <div className="qm-tier">
       <TierChip tier={sourceTier} size={8} />
-      <span style={{ fontSize: 'var(--fs-xs)', color: 'var(--text-tertiary)' }}>inherited from source</span>
+      <span className="qm-tier-note">inherited from source</span>
     </div>
   ) : null;
 
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 10, padding: 20, marginBottom: 16, animation: 'fadeUp 0.2s ease' }}>
+    <div className="qm">
       {/* header — yard-line progress */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent-text)', textTransform: 'uppercase' }}>Question {idx + 1} of {questions.length}</div>
+      <div className="qm-head">
+        <div className="qm-head-row">
+          <div className="qm-kicker">Question {idx + 1} of {questions.length}</div>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
+        <div className="qm-track">
           {questions.map((_, i) => {
             const r = results[i];
-            const bg = i < results.length
-              ? (r.score === null ? 'var(--accent)' : r.score > 0 ? 'var(--accent)' : 'var(--red)')
-              : i === idx ? 'var(--accent-glow)' : 'var(--line)';
-            return <div key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: bg, transition: 'background 0.3s ease' }} />;
+            const st = i < results.length
+              ? (r.score === null || r.score > 0 ? 'done' : 'miss')
+              : i === idx ? 'current' : undefined;
+            return <div key={i} className="qm-seg" data-state={st} />;
           })}
         </div>
       </div>
 
-      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 600, color: 'var(--chalk)', lineHeight: 1.6, marginBottom: 18 }}>{q.q}</div>
+      <div className="qm-q">{q.q}</div>
 
       {/* Multiple choice */}
       {q.type === 'mc' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="qm-opts">
           {q.options.map((opt, i) => {
             const letter = opt[0];
             const isCorrect = letter === q.answer;
             const isSelected = selected === letter;
-            let bg = 'var(--ink)', border = 'var(--line)', textColor = 'var(--text-b)';
-            if (revealed) {
-              if (isCorrect)       { bg = 'var(--accent-glow)'; border = 'var(--accent)'; textColor = 'var(--chalk)'; }
-              else if (isSelected) { bg = 'rgba(196,85,61,0.10)'; border = 'var(--red)'; }
-            } else if (isSelected) { bg = 'var(--accent-glow)'; border = 'var(--accent)'; }
+            let st;
+            if (revealed) st = isCorrect ? 'correct' : isSelected ? 'wrong' : undefined;
+            else if (isSelected) st = 'selected';
             return (
-              <div key={i} onClick={() => !revealed && setSelected(letter)}
-                style={{ padding: '11px 14px', borderRadius: 8, border: `1px solid ${border}`, background: bg, cursor: revealed ? 'default' : 'pointer', fontSize: 'var(--fs-base)', color: textColor, transition: 'all 0.15s', minHeight: 42, display: 'flex', alignItems: 'center' }}>
+              <button type="button" key={i} className="qm-opt" data-state={st} aria-pressed={isSelected}
+                disabled={revealed} onClick={() => setSelected(letter)}>
                 {opt}
-              </div>
+              </button>
             );
           })}
           {!revealed
             ? <Btn color={color} disabled={!selected} onClick={() => setRevealed(true)} size="sm">Check answer</Btn>
             : <>
-                <div style={{ fontSize: 'var(--fs-base)', color: selected === q.answer ? 'var(--accent-text)' : 'var(--red)', padding: '8px 12px', background: selected === q.answer ? 'var(--accent-glow)' : 'rgba(196,85,61,0.08)', borderRadius: 6, marginBottom: 8 }}>
+                <div className="qm-verdict" data-ok={selected === q.answer ? '1' : '0'}>
                   {selected === q.answer ? '✓ Correct' : `✗ Correct answer: ${q.answer}`}
                 </div>
                 {tierBadge}
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim)', lineHeight: 1.65, marginBottom: 10 }}>{q.explanation}</div>
+                <div className="qm-expl">{q.explanation}</div>
                 <Btn color={color} size="sm" onClick={() => advance({ ...base(), answer: selected, correct: selected === q.answer, score: selected === q.answer ? 1 : 0 })}>{isLast ? 'See results' : 'Next →'}</Btn>
               </>
           }
@@ -98,12 +97,11 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
       {/* Self-rating 1–5 */}
       {q.type === 'rate' && (
         <div>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 14 }}>
+          <div className="qm-rates">
             {[1, 2, 3, 4, 5].map(v => (
-              <div key={v} onClick={() => setRating(v)}
-                style={{ width: 48, height: 48, borderRadius: 10, border: `2px solid ${rating === v ? 'var(--accent)' : 'var(--line)'}`, background: rating === v ? 'var(--accent-glow)' : 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', fontWeight: 800, color: rating === v ? 'var(--accent-text)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.1s' }}>
+              <button type="button" key={v} className="qm-rate" aria-pressed={rating === v} onClick={() => setRating(v)}>
                 {v}
-              </div>
+              </button>
             ))}
           </div>
           <Btn color={color} size="sm" disabled={rating === null} onClick={() => advance({ ...base(), answer: String(rating), correct: null, score: null })}>{isLast ? 'See results' : 'Next →'}</Btn>
@@ -114,17 +112,17 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
       {(q.type === 'open' || q.type === 'apply') && (
         <div>
           <textarea value={openAnswer} onChange={e => setOpenAnswer(e.target.value)} placeholder="Type your answer…"
-            rows={3} style={{ width: '100%', background: 'var(--ink)', border: '1px solid var(--line)', borderRadius: 8, padding: '10px 12px', color: 'var(--chalk)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 8 }} />
+            rows={3} className="qm-answer" aria-label="Your answer" />
           {!revealed
             ? <Btn color={color} size="sm" disabled={!openAnswer.trim()} onClick={() => setRevealed(true)}>Reveal answer</Btn>
             : <>
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 5, fontStyle: 'italic' }}>Model answer</div>
+                <div className="qm-model-label">Model answer</div>
                 {tierBadge}
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)', lineHeight: 1.65, marginBottom: 8, padding: '8px 12px', background: 'var(--accent-glow)', borderRadius: 6 }}>{q.answer}</div>
-                {q.explanation && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim)', lineHeight: 1.6, marginBottom: 10 }}>{q.explanation}</div>}
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 0 })} style={{ flex: 1, padding: '10px', background: 'rgba(196,85,61,0.10)', border: '1px solid var(--red)', borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer', minHeight: 40 }}>Missed it</div>
-                  <div onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 1 })} style={{ flex: 1, padding: '10px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', minHeight: 40 }}>Got it</div>
+                <div className="qm-model">{q.answer}</div>
+                {q.explanation && <div className="qm-expl">{q.explanation}</div>}
+                <div className="qm-self">
+                  <button type="button" className="qm-self-btn" data-kind="miss" onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 0 })}>Missed it</button>
+                  <button type="button" className="qm-self-btn" data-kind="got" onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 1 })}>Got it</button>
                 </div>
               </>
           }
