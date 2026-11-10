@@ -31,7 +31,7 @@ jobs:
   responsive:
     name: responsive geometry (390 / 820 / 1280 × light / dark)
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     needs: build
     steps:
       - uses: actions/checkout@v4

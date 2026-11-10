@@ -67,6 +67,37 @@ deployed on Vercel. Single user (CB).
   tokens. Eyebrow labels (uppercase + letter-spaced kickers) are the one thing
   allowed below 13px and are left as small literals.
 
+## Batch Z-2 — the gates are now at zero (keep them there)
+
+- **Every module is on co-located CSS** (`<module>.css`, module-prefixed classes).
+  `scripts/check-tokens.mjs` (in `npm run build`) fails on any literal colour in CSS
+  outside `src/styles/tokens.css` and any colour/background/border inline style in JSX.
+  Only `CoachAI.jsx` (unrouted) remains in `check-tokens.baseline.json`.
+- **`--accent` is a FILL colour** (primary button, active nav/tab). Text that should read
+  as accent is `--accent-text`; text ON an accent fill is `--accent-foreground`. Using
+  `--accent` as text fails contrast in dark (2.19:1) — `scripts/codemod-accent-text.mjs`
+  swept 306 such uses.
+- **`npm run audit:responsive`** guards **22 views** (every mode) × 390/820/1280 × both
+  themes on overflow / tap<44 / CLS>0.05 / contrast / 0×0 / console. The baseline is
+  `{}` — ANY failing cell fails CI. Adding a new view: add it to `VIEWS` and run
+  `--update` with `AUDIT_NEW_VIEWS=<id>`; existing views can never gain a cell.
+- Controls inside an `overflow:auto` scroller need a real 44px min-height on touch — the
+  `.tap` `::after` hit area is clipped there.
+- `.fr-main` has `scrollbar-gutter: stable` — without it a feed growing past the viewport
+  narrows the column and reflows every card (CLS 0.11).
+- **Desktop rail:** `shared/PageWithRail` (340px `--rail-width`, ≥1101; stacks below
+  under 1101). Occupants: ConnectedKnowledge, `shared/ProvenancePanel` (tier legend),
+  Research's Source Library, What's Happening's Trending/Topics.
+- **"Through my mental models"** (`shared/MentalModelChip`, `lib/mentalModels.js`) —
+  on-demand reframe against `prompts/library-v1.md`, on the study guide and deep dive.
+  Automatic connection to the bookshelf is OFF by default; this chip is the opt-in.
+- **Catalog requests** (`lib/bookVerify.js`) go through one throttled queue with a 429
+  circuit breaker and a kv cache (`aether_bookverify_v1`). Never bypass it with a raw
+  fetch to Google Books / Open Library.
+- **`ground-book`** is a spend endpoint called with the PUBLIC anon key: input
+  validation, every result cached in kv (misses 7 days, keyed on Firecrawl
+  availability), and a fail-closed 40/day cap via `ground_book_consume()`.
+
 ## Home feed rebuild + What's Happening + Notes (later phase)
 
 - **Home is a renderer over a section registry** (`src/modules/home/sections.js`
