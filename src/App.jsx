@@ -4,6 +4,7 @@ import { CONTAINERS, containerOfMode } from './constants.js';
 import { readLocal, writeThrough } from './lib/storage.js';
 import { getTheme, applyTheme } from './theme.js';
 import './save-to-project.css';
+import './loading-screen.css';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
@@ -248,14 +249,12 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
 
 function LoadingScreen() {
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 'var(--fs-2xl)', fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #D9A441)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
-        ))}
+    <div className="ls" aria-busy="true" aria-label="Loading">
+      <div className="ls-title">The Film Room</div>
+      <div className="ls-dots" aria-hidden="true">
+        {[0, 1, 2].map(i => <span key={i} className="ls-dot" style={{ '--i': i }} />)}
       </div>
-      <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Studying the tape</div>
+      <div className="ls-kicker">Studying the tape</div>
     </div>
   );
 }
