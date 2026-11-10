@@ -8,7 +8,7 @@ import { logConcept, allConcepts, isJunkConcept, pruneJunkConcepts } from '../li
 import { recommendBooks } from '../lib/bookRecs.js';
 import { buildSkills } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
-import { verifyBook, toVerifiedRecord, isPostCutoff, searchBooks, mainTitle } from '../lib/bookVerify.js';
+import { toVerifiedRecord, isPostCutoff, searchBooks, mainTitle, verifyBookCached, hydrateVerifyCache } from '../lib/bookVerify.js';
 import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import BookSuggest from './shared/BookSuggest.jsx';
@@ -430,7 +430,14 @@ export default function BookClub() {
   // aren't user-entered guesses; skip anything already verified or already tried),
   // apply only CONFIDENT matches, and persist. Runs once per session, never
   // re-fetches a resolved/tried book, and never blocks the UI.
+  // Batch Z-2 / J1: lookups go through bookVerify's throttled queue (≤2 in flight,
+  // spaced) and kv-backed cache (a device — or any other device — pays once). A 429
+  // opens the catalog circuit breaker: the backfill STOPS, the affected books are
+  // NOT marked tried (they retry later), and the shelf shows SectionError + Retry —
+  // never a silent empty shelf, never a fabricated record. Rate-limited = unverified.
   const backfillRan = useRef(false);
+  const [backfillErr, setBackfillErr] = useState('');
+  const [backfillNonce, setBackfillNonce] = useState(0);
   useEffect(() => {
     if (backfillRan.current || !books.length) return;
     const targets = books.filter((b) => !b.fullTitle && !b.verified && !b.backfillTried).slice(0, 12);
@@ -438,17 +445,20 @@ export default function BookClub() {
     backfillRan.current = true;
     let cancelled = false;
     (async () => {
+      await hydrateVerifyCache();
       const patches = {};
+      let limited = false;
       for (const b of targets) {
         if (cancelled) return;
-        let patch = { backfillTried: true };
         try {
-          const { matches, confident } = await verifyBook({ title: b.title, author: b.author });
-          if (confident && matches[0]) patch = { ...toVerifiedRecord(matches[0]), backfillTried: true };
-        } catch { /* leave tried, unresolved */ }
-        patches[b.id] = patch;
+          const { matches, confident, rateLimited } = await verifyBookCached({ title: b.title, author: b.author });
+          if (rateLimited) { limited = true; break; }        // stop — don't mark tried
+          patches[b.id] = confident && matches[0] ? { ...toVerifiedRecord(matches[0]), backfillTried: true } : { backfillTried: true };
+        } catch { /* network blip: leave untried so it retries next session */ }
       }
-      if (cancelled || !Object.keys(patches).length) return;
+      if (cancelled) return;
+      setBackfillErr(limited ? 'The book catalog is rate-limiting lookups right now. Your books are fine — their catalog details will fill in when you retry.' : '');
+      if (!Object.keys(patches).length) return;
       setBooks((prev) => {
         const nb = prev.map((x) => (patches[x.id] ? { ...x, ...patches[x.id] } : x));
         writeThrough(BOOKCLUB_KEY, nb);
@@ -456,7 +466,8 @@ export default function BookClub() {
       });
     })();
     return () => { cancelled = true; };
-  }, [books]);
+  }, [books, backfillNonce]);
+  const retryBackfill = () => { backfillRan.current = false; setBackfillErr(''); setBackfillNonce((n) => n + 1); };
 
   const filtered = search
     ? books.filter((b) => `${b.title} ${b.author}`.toLowerCase().includes(search.toLowerCase()))
@@ -488,7 +499,7 @@ export default function BookClub() {
     let cancelled = false;
     setVerify({ status: 'loading', matches: [], idx: 0, attempts: [] });
     (async () => {
-      const { matches, attempts, confident } = await verifyBook({ title: selectedBook.title, author: selectedBook.author });
+      const { matches, attempts, confident } = await verifyBookCached({ title: selectedBook.title, author: selectedBook.author });
       if (cancelled) return;
       setVerify({ status: matches.length ? 'done' : 'none', matches, idx: 0, attempts, confident });
     })();
@@ -995,6 +1006,11 @@ export default function BookClub() {
           <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-base)', fontWeight: 600 }}>
             ⚠ {saveError}
           </div>
+        )}
+
+        {/* Catalog rate-limited (J1): honest, retryable — never a silent empty shelf. */}
+        {tab === 'library' && backfillErr && (
+          <div style={{ marginBottom: 14 }}><SectionError label="catalog details" onRetry={retryBackfill} detail={backfillErr} /></div>
         )}
 
         {/* ── LIBRARY TAB ──────────────────────────────────────────── */}
