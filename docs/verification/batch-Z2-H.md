@@ -43,3 +43,33 @@ What changed:
   because the scroller clips `::after` hit areas.
 
 Screens: `docs/screens/batch-Z2-H-feed-feed-{before,after}-{390,820,1280}-{light,dark}.png`
+
+## Research (Investigate): ResearchHub, Notes, ContentInbox
+
+Branch `worktree-agent-a7bf6d92405c148dc`, cherry-picked as one commit.
+
+| | before | after |
+|---|---|---|
+| ResearchHub.jsx / Notes.jsx / ContentInbox.jsx tokens | 78 / 24 / 35 | **0 / 0 / 0** |
+| research contrast (dark "+ New Thread": black on gold, 1.07:1) | 3 | **0** |
+| research tap / overflow / cls / 0×0 / console | 0 | 0 |
+
+Scoreboard after: responsive **108 → 105**, tokens **1,165 → 1,028**.
+
+- **J2 for research:** the thread list renders through `PageWithRail`. The 340px rail
+  holds the Source Library plus `ProvenancePanel`, and stacks below under 1101. The page
+  max-width is now `--container-page`, so the main column has room.
+- **Primary actions:** every gold gradient, black-text button is now `.btn-primary`.
+- **Selected states:** accent border plus `--accent-text`, with `aria-pressed`.
+- **Icons:** emoji UI icons are now lucide icons. Content emoji in saved data is left
+  alone.
+- **Board layout:** the Research Board is 1 column on phone, 2 at ≥721 and 4 at ≥1101.
+  It used to be 4 squeezed columns in a phone scroller.
+- **Notes and inbox:** neither is in the audit's `VIEWS` yet. The agent audited them
+  with a scratch copy of the script, including seeded and interactive states (open
+  thread, board add form, Notes composer, expanded inbox item), and they came back
+  clean. They will be added to `VIEWS` at the end of H.
+- **Known, unchanged:** the thread-view compose placeholder clips at 390. This was
+  pre-existing.
+
+Screens: `docs/screens/batch-Z2-H-research-{research,notes,inbox}-{before,after}-{390,820,1280}-{light,dark}.png`
