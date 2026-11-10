@@ -142,7 +142,14 @@ try {
         }, theme);
         const page = await ctx.newPage();
         const errs = [];
-        page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text().slice(0, 140)); });
+        // Third-party resource failures (Google Books 429, sandbox egress refusals) are
+        // the network, not the app — excluded. App console errors and page errors count.
+        page.on('console', (m) => {
+          if (m.type() !== 'error') return;
+          const loc = m.location()?.url || '';
+          if (/Failed to load resource/.test(m.text()) && loc && !loc.startsWith(base)) return;
+          errs.push(m.text().slice(0, 140));
+        });
         page.on('pageerror', (e) => errs.push(String(e.message).slice(0, 140)));
         await page.goto(base + view.path, { waitUntil: 'networkidle' });
         await page.waitForTimeout(1200);
