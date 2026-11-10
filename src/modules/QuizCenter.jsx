@@ -5,7 +5,7 @@ import { callClaude, buildQuizPrompt } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { recordQuizResult, createCard } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
@@ -92,7 +92,7 @@ export default function QuizCenter() {
     setGapReport('');
     try {
       const raw = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: buildQuizPrompt({ subject: topicObj.label, count: 6, includeRate: true }) }],
         maxTokens: 1200,
       });
@@ -126,7 +126,7 @@ export default function QuizCenter() {
     setGapLoading(true);
     try {
       const report = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: buildGapPrompt(topic.id, topic.label, results) }],
         maxTokens: 600,
       });

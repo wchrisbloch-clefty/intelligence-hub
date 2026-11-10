@@ -6,7 +6,7 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 
 const INBOX_KEY = 'aether_inbox';
 import MD from './shared/MD.jsx';
@@ -80,12 +80,12 @@ export default function ContentInbox() {
     const typeLabel = type === 'video' ? 'YouTube/video' : type === 'social' ? 'social post' : 'article/document';
 
     const prompt = text.trim()
-      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways with specific CB applications (BD, investing, health, Houston)\n3. Connection to CB's mental model library\n4. Decisive action or insight\n\nContent:\n${text.slice(0, 5000)}`
+      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways, each with an example from the content's own world\n3. Connection to a book on the reader's shelf ONLY if one genuinely applies (otherwise skip)\n4. Decisive action or insight\n\nContent:\n${text.slice(0, 5000)}`
       : `The user saved this ${typeLabel} URL for CB: ${url}\n\nAnalyze based on URL/domain context. Cover:\n1. What this source likely contains and why CB saved it\n2. 3 insights CB should extract if he reads/watches this\n3. How it connects to CB's goals (BD, passive income, longevity, Houston)\n4. Decisive recommendation`;
 
     try {
       const summary = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 900,
       });
@@ -147,11 +147,11 @@ export default function ContentInbox() {
     const type = item.type;
     const typeLabel = type === 'video' ? 'YouTube/video' : type === 'social' ? 'social post' : 'article/document';
     const prompt = item.snippet
-      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways with specific CB applications (BD, investing, health, Houston)\n3. Connection to CB's mental model library\n4. Decisive action or insight\n\nContent:\n${item.snippet}`
+      ? `Analyze this ${typeLabel} content for CB. Provide:\n1. Core thesis (1-2 sentences)\n2. 4 key takeaways, each with an example from the content's own world\n3. Connection to a book on the reader's shelf ONLY if one genuinely applies (otherwise skip)\n4. Decisive action or insight\n\nContent:\n${item.snippet}`
       : `The user saved this ${typeLabel} URL for CB: ${item.url}\n\nAnalyze based on URL/domain context. Cover:\n1. What this source likely contains and why CB saved it\n2. 3 insights CB should extract if he reads/watches this\n3. How it connects to CB's goals (BD, passive income, longevity, Houston)\n4. Decisive recommendation`;
     try {
       const summary = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 900,
       });

@@ -8,7 +8,7 @@ import { getFeed, relTime } from '../lib/adapters.js';
 import { matchItems } from '../lib/topics.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 
 const BOARD_KEY = 'aether_board';
 const RESEARCH_SEEN_KEY = 'aether_research_seen_v1'; // { [threadId]: lastVisitedAt } — "new since last visit" watermark
@@ -64,7 +64,7 @@ function ResearchBoard() {
         ? `Analyze this source/URL for CB's research: ${card.content}\n\nWhat is this about? Key signal, relevance, and what CB should take from it.`
         : `Analyze this research note for CB: "${card.content}"\n\nWhat's the signal here? Key insight, what's true/false, and what CB should do with this.`;
       const reply = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.\n\n' + TIER_INSTRUCTION,
+        system: SYSTEM_BASE + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 700,
       });
@@ -96,7 +96,7 @@ function ResearchBoard() {
     }).filter(Boolean).join('\n\n');
     try {
       const r = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.\n\n' + TIER_INSTRUCTION,
+        system: SYSTEM_BASE + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: `Synthesize my research board into a comprehensive intelligence brief:\n\n${grouped}` }],
         maxTokens: 1000,
       });
@@ -303,7 +303,7 @@ export default function ResearchHub() {
     setThreadErr('');
     try {
       const system = {
-        cached: CB_IDENTITY,
+        cached: SYSTEM_BASE,
         dynamic: "\n\nMODE: TRUTH & RESEARCH HUB\nYour job: cut through narrative, surface signal, flag bias, give CB the contrarian insight most people miss. Prioritize analytical depth and objectivity over forced connections. End every response with: (1) Truth Score (1-10, how confident you are in this), (2) Bias Flags (sources or narratives to be skeptical of), (3) Decisive Bet (what CB should do with this information). Be rigorous.",
       };
       const reply = await callClaude({ system, messages: newMsgs.map(m => ({ role: m.role, content: m.content })), searchEnabled, onToken: (t) => setStream(s => s + t) });

@@ -25,20 +25,11 @@ export const KEYS = {
   MONTHLY_REVIEW: 'monthly_review_latest',
 };
 
-// CB's identity spine — mirrored from src/constants.js (CB_IDENTITY). Keep in
-// sync with constants.js if the spine changes.
-export const CB_IDENTITY = `You are CB's Intelligence System — research analyst, truth-seeker, and knowledge hub.
-
-WHO CB IS:
-Mid-to-late 30s, Houston TX. BD professional. Family-first, long-game operator. Stoic philosophy, systems thinker. Always hunting tipping points, compounding effects, Blue Ocean opportunities.
-
-CB'S GOALS:
-- Financial: $10K+/mo passive income (dividends, real estate, business revenue)
-- Health: performance + longevity (Attia, Huberman frameworks)
-- Building: scalable, sellable, modular businesses
-- Priority: W2 protection → passive income → business building
-
-DECISIVENESS RULE: Every output ends with a clear recommendation, action, or bet. No vagueness.`;
+// System prompt — Batch Z / Order D. Layers 1 + 2 only (LENS + SUBJECT_FIDELITY),
+// compiled from prompts/*.md by scripts/gen-prompts.mjs — the SAME text the app
+// uses, no hand-kept mirror. The reader's goals are not in it.
+import { LENS, SUBJECT_FIDELITY } from '../prompts/prompts.generated.js';
+export const SYSTEM_BASE = `You are an intelligence system: research analyst, truth-seeker, and teacher.\n\n${LENS}\n\n${SUBJECT_FIDELITY}`;
 
 // ─── STATE (Upstash, via _lib.js store) ─────────────────────────────────────
 // Values are stored verbatim as JSON strings (the app JSON.stringifies before

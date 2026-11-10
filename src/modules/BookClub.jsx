@@ -19,7 +19,8 @@ import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
 import ArtifactSections from './shared/ArtifactSections.jsx';
-import { CB_LEARNING_SPINE, KNOWN_BOOKS, TYPE_META, PROJECTS_KEY } from '../constants.js';
+import { SYSTEM_LEARNING, SUBJECT_FIDELITY, KNOWN_BOOKS, TYPE_META, PROJECTS_KEY } from '../constants.js';
+import { selectDomains, personalSectionPrompt, DOMAIN_PACKS } from '../lib/domainPacks.js';
 
 const BOOKCLUB_KEY = 'aether_bookclub';
 const SEEDED_KEY   = 'aether_bookclub_seeded';
@@ -78,20 +79,23 @@ const seedBooks = () => KNOWN_BOOKS.map((b) => ({
   id: uid(), title: b.title, author: b.author, type: b.type || 'other', builtin: true,
 }));
 
-// Life-application lens — deep dives assumed a work context; now the reader
-// chooses. The lens is appended to every prompt so examples land in the right
-// part of CB's life.
+// Life-application lens. Batch Z / Order D: the lens no longer translates the
+// book into the reader's career or portfolio (that is what produced dividend
+// examples in a book about excellence). SUBJECT FIDELITY rules the body — worked
+// examples come from the book's own world. The lens only decides which half of
+// ordinary life a GENERAL example is drawn from, when the book's own world has none.
 const LENSES = [
-  { id: 'work',     icon: 'Briefcase', label: 'Work',     clause: "Frame everything through CB's professional world — BD pipeline, deals, revenue, career leverage. Use work examples." },
-  { id: 'personal', icon: 'Sprout', label: 'Personal', clause: "Frame everything through CB's personal world — health and longevity, family, character, money habits, personal growth. Use life examples." },
-  { id: 'both',     icon: 'Scale', label: 'Both',     clause: 'For each point give BOTH a work application (BD, deals, career) and a personal application (health, family, character).' },
+  { id: 'work',     icon: 'Briefcase', label: 'Work',     clause: "Worked examples come from the book's own world. Where it has none, use a general workplace situation (a team, a meeting, a hard conversation) — never finance, investing, real estate, business development or passive income unless the book is about them." },
+  { id: 'personal', icon: 'Sprout', label: 'Personal', clause: "Worked examples come from the book's own world. Where it has none, use everyday life (health, family, habits, sport) — never money, investing or a career unless the book is about them." },
+  { id: 'both',     icon: 'Scale', label: 'Both',     clause: "Worked examples come from the book's own world. Where it has none, use a general or sporting example from work or everyday life — never finance, investing, real estate, business development or passive income unless the book is about them." },
 ];
 const lensClauseOf = (id) => LENSES.find((l) => l.id === id)?.clause || LENSES[2].clause;
 
-// The study guide is grounded in CB's ACTUAL context — active projects, tracked
-// skills, and recent deep dives, pulled from the graph — so the Applied Scenarios
-// are about his real work and life, not generic illustrations. Returns '' when
-// nothing is tracked yet (the prompt then falls back to his known world).
+// The reader's ACTUAL context — active projects, tracked skills, recent deep
+// dives, top graph concepts. Batch Z / Order D: this NO LONGER feeds the body or
+// any scenario. It only reaches a prompt through Layer 3 (selectDomains →
+// personalSectionPrompt), as one labelled closing section, and Layer 3 ships
+// disabled — so today it reaches no prompt at all.
 // Strip a trailing module/section qualifier a concept or skill sometimes carries
 // ("Having a Clear Sense of Values (Skills Building)") — that suffix is a tracking
 // artifact, not part of the domain, and must never appear in a scenario.
@@ -146,6 +150,16 @@ function buildStudyContext() {
   return parts.join('\n\n');
 }
 
+// Layer 3 gate for the study guide: what the BOOK is about (title, author,
+// description, retrieved thesis, chapters) decides whether any personal section
+// is added — never the reader's wishes. Disabled in Batch Z → always ''.
+export function guidePersonalSection(book, grounding = {}) {
+  const material = [grounding.fullTitle || book?.title, book?.author, grounding.description, grounding.webThesis,
+    ...(Array.isArray(grounding.tocChapters) ? grounding.tocChapters : [])].filter(Boolean).join(' ');
+  const packs = selectDomains(material, { topic: book?.title });
+  return packs.length ? personalSectionPrompt(packs, buildStudyContext()) : '';
+}
+
 // grounding: { fullTitle, publishedDate, description, webThesis, verified, source,
 // tocChapters, tocSourceLabel, userMaterial, userMaterialLabel, tier } — the
 // verified catalog record, a web pass, a retrieved or user-supplied table of
@@ -153,7 +167,9 @@ function buildStudyContext() {
 // grounding ceiling computed upstream (verified only when the user supplied a
 // physical copy). When a TOC is present the guide is generated CHAPTER BY CHAPTER,
 // which is the thing the user actually wants and is impossible without structure.
-export const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth = 'deep') => {
+// `personal` is the Layer-3 closing-section instruction from personalSectionPrompt
+// — '' unless selectDomains() matched (and Layer 3 is disabled in Batch Z).
+export const buildGuidePrompt = (b, lensClause, personal = '', grounding = {}, depth = 'deep') => {
   const title = grounding.fullTitle || b.title;
   const chapters = Array.isArray(grounding.tocChapters) ? grounding.tocChapters : [];
   const hasTOC = chapters.length >= 3;
@@ -189,26 +205,27 @@ export const buildGuidePrompt = (b, lensClause, context, grounding = {}, depth =
     ? `## Core Thesis
 The book's central argument in one tight paragraph, grounded in the material above.
 ## Chapter Guide
-Work through the book IN ORDER using the table of contents above. For EACH chapter, use its title as a \`### \` heading, then in 2–4 sentences give: its core argument, the key framework(s) it introduces (**bold** each framework name), and one worked example in the lens. ${grounding.tocIsUser ? 'Cite the chapter as the location for what you draw from it.' : ''} ${lensClause}
+Work through the book IN ORDER using the table of contents above. For EACH chapter, use its title as a \`### \` heading, then in 2–4 sentences give: its core argument, the key framework(s) it introduces (**bold** each framework name), and one worked example from the book's own world. ${grounding.tocIsUser ? 'Cite the chapter as the location for what you draw from it.' : ''} ${lensClause}
 ## Key Frameworks
-The 3–5 through-line frameworks that span the chapters. Put EACH on its own line as \`**Name** — \` one-line essence, then a **Disconfirming signal:** — one concrete thing CB would OBSERVE if it's failing for him, plus a review horizon (metric or date).
+The 3–5 through-line frameworks that span the chapters. Put EACH on its own line as \`**Name** — \` one-line essence, then a **Disconfirming signal:** — one concrete thing a practitioner would OBSERVE if it's failing, plus a review horizon (metric or date).
 ${tierRule}`
     : `## Core Thesis
 The book's central argument in plain language — no jargon, one tight paragraph${grounded ? ', grounded in the material above' : existsVerified ? ', after the note that the book is confirmed to exist but its contents could not be retrieved' : ', after the note that this specific title could not be verified'}.
 ## Key Frameworks
-${grounded ? 'The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer).' : 'The most important frameworks or mental models of this book (up to 5), written from general knowledge and each marked `[inferred]` — do not leave this section empty.'} For EACH: the name, a clear explanation, one fully worked example, and a **Disconfirming signal:** — one concrete thing CB would OBSERVE if this framework is NOT working for him, plus a review horizon (a metric threshold or a date). ${lensClause}
+${grounded ? 'The most important frameworks or mental models FROM THE GROUNDING (up to 5; fewer if the grounding only supports fewer).' : 'The most important frameworks or mental models of this book (up to 5), written from general knowledge and each marked `[inferred]` — do not leave this section empty.'} For EACH: the name, a clear explanation, one fully worked example drawn from the book's own world, and a **Disconfirming signal:** — one concrete thing a practitioner would OBSERVE if this framework is NOT working, plus a review horizon (a metric threshold or a date). ${lensClause}
 ${tierRule}`;
-  return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}, for CB (Houston BD professional; passive-income + longevity goals).
-${existenceNote}${ground ? `\n════ GROUNDING — THE GUIDE COMES FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the guide ONLY from the grounding above — the chapters, thesis, and material given. Do NOT import frameworks from the author's better-known earlier book; if a framework isn't supported by the grounding, drop it. Fewer well-grounded beats five padded from the author's other work.\n═══════════════════════════════════════════════════\n` : ''}${context ? `\nCB'S ACTUAL CONTEXT — use ONLY these for the Applied Scenarios, as the DOMAIN of each scenario. A generic example is a failure. Never quote or mention graph metadata about his learning — no trends, confidence levels, observation counts, "touches", or section labels; a scenario is about the work, not the guide or the graph:\n${context}\n` : ''}
+  return `Produce a complete STUDY GUIDE for "${title}"${b.author ? ` by ${b.author}` : ''}${grounding.publishedDate ? ` (published ${grounding.publishedDate})` : ''}.
+${SUBJECT_FIDELITY}
+${existenceNote}${ground ? `\n════ GROUNDING — THE GUIDE COMES FROM HERE ════\n${ground}\n\nHARD CONSTRAINT: Derive the guide ONLY from the grounding above — the chapters, thesis, and material given. Do NOT import frameworks from the author's better-known earlier book; if a framework isn't supported by the grounding, drop it. Fewer well-grounded beats five padded from the author's other work.\n═══════════════════════════════════════════════════\n` : ''}
 Use these exact ## sections in order:
 ${bodySections}
 ## Applied Scenarios
-3–5 scenarios, each grounded in ${context ? "CB's actual context above" : "CB's world (Houston BD, real-estate deals, passive income, health/longevity, family)"} at the level that carries MEANING — the real domain/situation ("an active real-estate project in the acquisition gap"), NOT exact project names, percentages, or milestone counts. Show exactly how a framework from this book changes what he does next. Never make a scenario about the graph, a trend, or a confidence level.
+3–5 scenarios set IN THE BOOK'S OWN WORLD (or, where it has none, a general or sporting situation). Show exactly how a framework from this book changes what someone does next. Do not set a scenario in finance, investing, real estate, business development or passive income unless the book is about that subject. Never make a scenario about a learning graph, a trend, or a confidence level.
 ## Application Prompts
-5 concrete things CB can act on THIS WEEK.
+5 concrete things a reader could act on THIS WEEK to practise the book's ideas, in the book's own terms.
 ## Field Summary
-A one-page, scannable field summary — the whole book in bullets he can reread before a meeting in two minutes.
-${rigor ? `\n${rigor}\n` : ''}
+A one-page, scannable field summary — the whole book in bullets to reread in two minutes.
+${rigor ? `\n${rigor}\n` : ''}${personal ? `\n${personal}\n` : ''}
 ${VOICE}
 Then output a line containing only ---CARDS--- and, after it, ONLY a JSON array of 8 to 10 self-quiz flashcards: [{"front":"question","back":"answer"}]. Output the ---CARDS--- marker and the array even if the guide ran long. No prose after the marker.`;
 };
@@ -227,17 +244,18 @@ export const buildChapterPrompt = (b, chapter, idx, lensClause, structureTier) =
     : structureTier === 'reported'
     ? `The chapter title comes from a retrieved table of contents — the STRUCTURE is \`[reported]\` (cite it as "${loc}"). You do NOT have the chapter's text, so its arguments are \`[inferred]\`.`
     : `You do NOT have the chapter's text — everything here is \`[inferred]\`.`;
-  return `Chapter deep dive for CB (Houston BD professional) on "${title}"${b.author ? ` by ${b.author}` : ''} — Chapter ${idx + 1}: "${chapter}".
+  return `Chapter deep dive on "${title}"${b.author ? ` by ${b.author}` : ''} — Chapter ${idx + 1}: "${chapter}".
 ${structureNote}
+${SUBJECT_FIDELITY}
 Keep it tight. Use these exact ## sections:
 ## Argument
 What this chapter argues, in 2–4 sentences.
 ## Key Ideas
 The 2–3 key ideas or frameworks it introduces — **bold** each name.
 ## Worked Example
-One worked example. ${lensClause}
+One worked example from the book's own world. ${lensClause}
 ## Disconfirming Test
-One concrete signal CB would OBSERVE if this chapter's idea is NOT working for him, plus a review horizon (a metric threshold or a date).
+One concrete signal a practitioner would OBSERVE if this chapter's idea is NOT working, plus a review horizon (a metric threshold or a date).
 Tag claims by tier per the note above: the chapter title/order carries its structure tier; the analysis is \`[inferred]\`.
 
 ${VOICE}`;
@@ -288,10 +306,13 @@ function parseAndVaultCards(cardsRaw, book) {
 }
 
 const PROMPTS = {
-  overview:  (b) => `Give me a master-level executive overview of "${b.title}" by ${b.author}. Lead with the central thesis in one sentence. Then: 5 key insights, the strongest evidence, what critics miss, and the single most important takeaway for CB (Houston BD professional building passive income and longevity). Format with clear headers. Be decisive.`,
-  concepts:  (b) => `Extract the 7 core mental models and frameworks from "${b.title}" by ${b.author}. For each: (1) Name and 1-sentence definition, (2) How the author uses it, (3) How CB can apply it immediately. Be concrete.`,
-  apply:     (b) => `How does "${b.title}" by ${b.author} apply directly to CB's life? Focus on: BD pipeline building, real estate deals, passive income strategy, health/longevity, and mental toughness. Give 6 specific, actionable applications. Be blunt.`,
-  quotes:    (b) => `Give me the 8 most powerful, memorable passages or quotes from "${b.title}" by ${b.author}. For each: the exact quote (or close paraphrase), and 1 sentence on why it matters for CB's world.`,
+  overview:  (b) => `Give me a master-level executive overview of "${b.title}" by ${b.author}. Lead with the central thesis in one sentence. Then: 5 key insights, the strongest evidence, what critics miss, and the single most important takeaway. Format with clear headers. Be decisive.`,
+  concepts:  (b) => `Extract the 7 core mental models and frameworks from "${b.title}" by ${b.author}. For each: (1) Name and 1-sentence definition, (2) How the author uses it, (3) How a practitioner applies it, with an example from the book's own world. Be concrete.`,
+  // The ONE study mode whose whole job is personal relevance — the user asked for
+  // it by tapping "Apply". The five areas are PEERS (finance is not privileged) and
+  // only the ones the book genuinely touches get applications.
+  apply:     (b) => `How does "${b.title}" by ${b.author} apply to the reader's life? First, one line on what the book is actually about. Then give up to 6 specific, actionable applications, drawn ONLY from the areas the book genuinely touches among: ${Object.values(DOMAIN_PACKS).map((p) => p.label).join(' · ')}. Skip any area the book doesn't speak to — do not stretch it into money, investing or real estate if it isn't about them. Be blunt.`,
+  quotes:    (b) => `Give me the 8 most powerful, memorable passages or quotes from "${b.title}" by ${b.author}. For each: the exact quote (or close paraphrase), and 1 sentence on why it matters.`,
   quiz:      (b) => `Create a 5-question Socratic quiz on "${b.title}" by ${b.author}. Make questions progressively deeper — from recall to synthesis. After each question, give the ideal answer. Aim to expose gaps in understanding, not just test memory.`,
   discuss:   (b) => `Let's discuss "${b.title}" by ${b.author}. Give me: (1) The book's strongest argument, (2) The most valid critique or counterargument, (3) What the author got wrong or oversimplified, (4) How the book connects to today's world. Be intellectually honest.`,
 };
@@ -566,7 +587,7 @@ export default function BookClub() {
     let provider = '';
     try {
       const reply = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: buildChapterPrompt(selectedBook, chapter, idx, lensClauseOf(lens), tier) }],
         maxTokens: 1600, job: 'reason', onProvider: (p) => { provider = p; },
       });
@@ -698,7 +719,7 @@ export default function BookClub() {
     setIsGuide(false);
     try {
       const reply = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: `${PROMPTS[modeId](selectedBook)}\n\nLENS: ${lensClauseOf(lens)}` }],
         maxTokens: 1400,
         job: 'reason',
@@ -830,8 +851,8 @@ export default function BookClub() {
       // from the live view; callClaude still returns the full text to parse.
       let acc = '';
       const reply = await callClaude({
-        system: CB_LEARNING_SPINE,
-        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), buildStudyContext(), grounding, depth) }],
+        system: SYSTEM_LEARNING,
+        messages: [{ role: 'user', content: buildGuidePrompt(selectedBook, lensClauseOf(lens), guidePersonalSection(selectedBook, grounding), grounding, depth) }],
         // High ceiling — a real six-section guide plus 8–10 cards. The old 1500
         // cap is why this produced stubs.
         maxTokens: 6000,
@@ -945,7 +966,7 @@ export default function BookClub() {
           📖 Book Club
         </div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 5 }}>
-          Research, deep dive, and master any book with AI — connected to CB's mental model library
+          Research, deep dive, and master any book with AI
         </div>
       </div>
 

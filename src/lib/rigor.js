@@ -9,6 +9,7 @@
 // Rigor binds to the EXISTING depth protocol (surface / standard / deep / expert)
 // rather than adding a parallel system.
 
+import { LENS } from '../../prompts/prompts.generated.js';
 export const DEPTHS = ['surface', 'standard', 'deep', 'expert'];
 
 // One prompt fragment per epistemic move. Each is an instruction appended to a
@@ -61,8 +62,9 @@ export const TIER_INSTRUCTION =
 // database row. The failure it fixes: over-fitting to exact user details ("your
 // Real Estate Cash Flow System at 40% milestone, 2/5 done") — fake precision that
 // looks personal but doesn't carry meaning.
-export const VOICE =
-  'VOICE — write for CB: sports-first, elementary, simple, occasionally funny. Reach for a well-chosen sports analogy when it makes a concept click. Reference his situation at the level that carries MEANING ("an active real-estate project stuck in the acquisition gap"), NEVER as exact names, percentages, or milestone counts — fake precision like "your X System at 40%, 2/5 done" reads like a database row, not insight. NEVER cite graph telemetry — observation counts, trend labels, confidence percentages — as if it were insight; that is instrumentation leaking into the content. Keep the framing human and plain; keep the next action specific and concrete.';
+export const VOICE = `${LENS}
+- Never cite graph telemetry — observation counts, trend labels, confidence percentages — as if it were insight; that is instrumentation leaking into the content.
+- Keep framing human and plain; keep the next action specific and concrete.`;
 
 // Tier ordering, low → high trust. Used to cap the maximum tier a generated
 // artifact may claim, based on what grounding actually returned.

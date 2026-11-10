@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/check-tokens.mjs && vite build",
+    "build": "node scripts/gen-prompts.mjs --check && node scripts/check-tokens.mjs && vite build",
     "preview": "vite preview",
     "check:tokens": "node scripts/check-tokens.mjs",
-    "serve:local": "node scripts/serve-local.mjs"
+    "serve:local": "node scripts/serve-local.mjs",
+    "gen:prompts": "node scripts/gen-prompts.mjs",
+    "verify:prompts": "node scripts/verify-prompts.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.17.0",

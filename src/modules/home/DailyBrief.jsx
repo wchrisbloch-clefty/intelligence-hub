@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { callClaude } from '../../utils.js';
-import { CB_IDENTITY } from '../../constants.js';
+import { SYSTEM_BASE } from '../../constants.js';
 import MD from '../shared/MD.jsx';
 import Icon from '../shared/Icon.jsx';
 import { SectionSkeleton, SectionError } from '../shared/SectionState.jsx';
@@ -44,7 +44,7 @@ Give CB 4 tight, decisive bullets. Format exactly:
 CB's context: projects: ${projList} · recent learning: ${topicList} · streak: ${graph?.streak || 0} days · Houston, TX. BD professional.
 
 Be blunt. No hedging. One decisive line per bullet.`;
-      const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 500 });
+      const reply = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompt }], maxTokens: 500 });
       setBrief(reply); setDone(true);
       if (cacheKey) localStorage.setItem(cacheKey, reply);
     } catch { setError(true); }

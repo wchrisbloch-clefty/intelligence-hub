@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveNotes, callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 
 const FLASHCARDS_KEY = 'aether_flashcards';
 import MD from './shared/MD.jsx';
@@ -195,7 +195,7 @@ function ExpertiseExport({ notes }) {
     };
     try {
       const r = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `${instructions[format]}\n\nBased on these notes from CB's knowledge vault:\n\n${content.slice(0, 5000)}` }],
         maxTokens: 1200,
       });
@@ -306,7 +306,7 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
       apply: `Give CB 3 specific, concrete ways to apply the insight in this note within the next 30 days. Be specific to CB's world (Houston TX, BD professional, investor, family-first operator).\n\nNote title: ${note.title}\nContent: ${note.content}`,
     };
     try {
-      const r = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompts[mode] }], maxTokens: 700 });
+      const r = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompts[mode] }], maxTokens: 700 });
       setAiResult(r);
     } catch { setAiResult('Network error — try again.'); }
     setAiLoading(false);

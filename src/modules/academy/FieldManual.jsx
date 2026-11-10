@@ -2,7 +2,7 @@ import { T, withAlpha } from '../../theme';
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../App.jsx';
 import { callClaude, logSession, uid } from '../../utils.js';
-import { CB_LEARNING_SPINE } from '../../constants.js';
+import { SYSTEM_LEARNING } from '../../constants.js';
 import { LADDERS, getLadder } from '../../data/ladders/index.js';
 import { readLocal, writeThrough } from '../../lib/storage.js';
 import { createCard } from '../../lib/reviews.js';
@@ -689,7 +689,7 @@ function SocraticDrill({ ladder, level, onClose }) {
     return `LEVEL: ${ladder.title} — ${level.title}\n\nKEY CONTENT:\n${blocks}\n\nRECALL CARDS:\n${cards}`;
   }, [ladder, level]);
 
-  const system = CB_LEARNING_SPINE + `\n\nSOCRATIC MODE: You are the examiner, CB is the student, on "${level.title}". Ask ONE focused question at a time drawn from the content below. Never lecture. Wait for the answer. Respond with: what he got right, what he missed, the correct answer, then the NEXT question. After 5 questions give a scorecard: what he knows cold, what needs work.\n\nCONTENT TO EXAMINE ON:\n${digest}\n\n${TIER_INSTRUCTION}`;
+  const system = SYSTEM_LEARNING + `\n\nSOCRATIC MODE: You are the examiner, CB is the student, on "${level.title}". Ask ONE focused question at a time drawn from the content below. Never lecture. Wait for the answer. Respond with: what he got right, what he missed, the correct answer, then the NEXT question. After 5 questions give a scorecard: what he knows cold, what needs work.\n\nCONTENT TO EXAMINE ON:\n${digest}\n\n${TIER_INSTRUCTION}`;
 
   const send = async (first = false) => {
     if ((!input.trim() && !first) || loading) return;

@@ -2,7 +2,7 @@ import { T, withAlpha } from '../theme';
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, fetchPodcastRSS, fmtDuration, fmtPodDate, saveNotes, uid } from '../utils.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
@@ -81,7 +81,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
     setAiErr(m => { const n = { ...m }; delete n[mode]; return n; });
     const prompts = {
       summary: `Summarize this podcast episode in 3-4 tight sentences for CB. Episode: "${ep.title}" from ${ep.show} (hosted by ${ep.host}). Description: ${ep.desc || 'Not available'}. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).`,
-      takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation with CB application\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
+      takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with an example from the episode's own world\n2. **Point title** — one-sentence explanation with an example from the episode's own world\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
       transcript: `Based ONLY on the episode title and description, reconstruct what was LIKELY discussed. This is a reconstruction, not the transcript — say so, and tier the whole section [inferred]. Cover: main thesis, key arguments, notable frameworks, actionable insights for CB (BD professional, investor, Houston TX). Episode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}. 4-6 paragraphs; do not fabricate quotes.`,
     };
     try {
@@ -91,7 +91,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
       const gm = userSrc?.text ? groundingTypeMeta(userSrc.type) : null;
       const userBlock = gm ? `\n\nACTUAL EPISODE MATERIAL THE USER SUPPLIED (${gm.label} — first-hand, tier ${gm.tier}; base your answer on THIS, not a reconstruction, and cite it):\n${userSrc.text}` : '';
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `${prompts[mode]}${userBlock}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'transcript' ? 1200 : 700,
       });
@@ -266,12 +266,12 @@ export default function PodcastHub() {
     const textContext = pasteText.trim() ? `\n\nContent:\n${pasteText.slice(0, 6000)}` : '';
     const prompts = {
       summary: `Summarize this podcast content in 3-4 tight, insight-packed sentences for CB. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).${urlContext}${textContext}`,
-      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation\n(continue for 5 total)${urlContext}${textContext}`,
-      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and CB-specific action items (BD professional, investor, Houston TX). Be specific, thorough, and decisive.${urlContext}${textContext}`,
+      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with an example from the episode's own world\n2. **Point title** — one-sentence explanation\n(continue for 5 total)${urlContext}${textContext}`,
+      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and concrete action items in the episode's own domain. Be specific, thorough, and decisive.${urlContext}${textContext}`,
     };
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `${prompts[mode]}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'deepdive' ? 1400 : 700,
       });

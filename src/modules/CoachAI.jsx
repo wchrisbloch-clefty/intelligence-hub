@@ -2,7 +2,7 @@ import { T } from '../theme';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import useChatThread from '../hooks/useChatThread.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import MD from './shared/MD.jsx';
 import Icon from './shared/Icon.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
@@ -52,7 +52,7 @@ function buildSystem(toneId, topicId) {
   const topicLine = topicId !== 'all'
     ? `\n\nFOCUS: Anchor conversations to CB's ${topicId} goals and challenges unless CB redirects.`
     : '';
-  return `${CB_IDENTITY}\n\nROLE: ${tone}${topicLine}\n\nIMPORTANT: Hold CB accountable to what he says. Push for specifics when answers are vague. Never let him off the hook with empty answers.`;
+  return `${SYSTEM_BASE}\n\nROLE: ${tone}${topicLine}\n\nIMPORTANT: Hold CB accountable to what he says. Push for specifics when answers are vague. Never let him off the hook with empty answers.`;
 }
 
 export default function CoachAI() {

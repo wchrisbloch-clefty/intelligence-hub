@@ -2,7 +2,7 @@ import { T, withAlpha } from '../theme';
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveProjects, uid, callClaude, processFiles, getFileIcon, timeAgo } from '../utils.js';
-import { PROJECT_CATEGORIES, PROJECT_STATUSES, CB_IDENTITY, ACCEPT_TYPES } from '../constants.js';
+import { PROJECT_CATEGORIES, PROJECT_STATUSES, SYSTEM_BASE, ACCEPT_TYPES } from '../constants.js';
 
 // Map a free-text inferred category label to a project category key.
 // Category is never mandatory — this only pre-selects a sensible default.
@@ -258,7 +258,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
       nextmoves:  `Top 3 highest-leverage moves to make THIS WEEK on this project. Specific, tactical, no fluff.\n\nProject: ${proj.title}\nStatus: ${proj.status}\nMilestones done: ${done}/${proj.milestones.length}\nProcess stages: ${proj.process?.stages?.length || 0}`,
     };
     try {
-      const r = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompts[mode] }], maxTokens: 800 });
+      const r = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompts[mode] }], maxTokens: 800 });
       setAiResult(r);
     } catch { setAiResult('Network error — try again.'); }
     setAiLoading(false);
@@ -412,7 +412,7 @@ Rules: 3-6 stages ideal. 3-8 steps per stage. Steps start with a verb. Infer log
 
 Text:
 ${rawText.slice(0, 3000)}`;
-      const r = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 1200 });
+      const r = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompt }], maxTokens: 1200 });
       const clean = r.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
       const { stages: parsed } = JSON.parse(clean);
       const newStages = parsed.map(s => ({
@@ -785,7 +785,7 @@ function PersonasTab({ proj, onUpdate }) {
     setGenerating(true);
     try {
       const r = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{
           role: 'user',
           content: `For CB's project "${proj.title}" (${proj.description || ''}), generate 2 ideal customer profile (ICP) personas. Return ONLY valid JSON:\n{"personas":[{"name":"Persona type/name","role":"Job title","company":"Company type","industry":"Industry vertical","painPoints":"Key pain points and frustrations","valueProp":"How CB uniquely solves their problem","outreachAngle":"Best conversation opener for this persona"}]}`,

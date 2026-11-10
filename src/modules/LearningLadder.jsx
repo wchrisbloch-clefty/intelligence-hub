@@ -2,7 +2,7 @@ import { T } from '../theme';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildLadderPrompt, buildQuizPrompt } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import { loadIndex, hydrateIndex, loadLadder, hydrateLadder, saveLadder, removeLadder, buildLadder, completeModule } from '../lib/ladders.js';
 import { isStale, versionLabel } from '../lib/promptVersion.js';
 import useChatThread from '../hooks/useChatThread.js';
@@ -62,7 +62,7 @@ export default function LearningLadder() {
     setGenerating(true); setGenError('');
     try {
       const raw = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: buildLadderPrompt(topicInput.trim(), GOALS.find(g => g.id === goal)?.label) }],
         maxTokens: 1600,
       });
@@ -229,8 +229,8 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
   const bottomRef = useRef(null);
   const buildRequest = useCallback(() => ({
     system: {
-      cached: CB_LEARNING_SPINE,
-      dynamic: `\n\nLEARNING LADDER — SCOPED SESSION\nSubject: "${topic}"\nGoal: ${goalLabel || 'mastery'}\nModule: "${mod.title}"\nObjectives:\n${(mod.objectives || []).map(o => `- ${o}`).join('\n')}\n\nTeach ONLY toward these objectives: concept → analogy → CB application → check for understanding. Stay on this rung; don't jump ahead. When CB seems ready, tell him to take the module quiz.`,
+      cached: SYSTEM_LEARNING,
+      dynamic: `\n\nLEARNING LADDER — SCOPED SESSION\nSubject: "${topic}"\nGoal: ${goalLabel || 'mastery'}\nModule: "${mod.title}"\nObjectives:\n${(mod.objectives || []).map(o => `- ${o}`).join('\n')}\n\nTeach ONLY toward these objectives: concept → analogy → example from the subject itself → check for understanding. Stay on this rung; don't jump ahead. When CB seems ready, tell him to take the module quiz.`,
     },
   }), [topic, goalLabel, mod]);
 

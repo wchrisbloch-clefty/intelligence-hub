@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 
 const DECISIONS_KEY = 'aether_decisions';
 import MD from './shared/MD.jsx';
@@ -87,7 +87,7 @@ export default function DecisionLog() {
     ).join('\n\n---\n\n');
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `Analyze CB's decision log for patterns and quality. Provide:\n1. CB's decision-making strengths\n2. Cognitive biases or blind spots you detect\n3. Patterns in what CB avoids vs favors\n4. Quality of reasoning (evidence, mental models used)\n5. Three specific, actionable recommendations to sharpen CB's decision quality\n\nDecisions log:\n${summary}` }],
         maxTokens: 1100,
       });
@@ -104,7 +104,7 @@ export default function DecisionLog() {
     const prompt = `Analyze this specific decision for CB and give actionable feedback:\n\nTitle: ${d.title}\nContext: ${d.context || 'Not provided'}\nOptions considered: ${d.options.join(' | ') || 'Not listed'}\nChosen option: ${d.options[d.chosen] || '—'}\nReasoning: ${d.reasoning || 'Not provided'}\nStatus: ${d.status}\n\nProvide:\n1. Quality of reasoning (strengths and blind spots)\n2. What mental models apply here\n3. Risks or second-order effects CB may not have considered\n4. A decisive recommendation or validation`;
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 800,
       });

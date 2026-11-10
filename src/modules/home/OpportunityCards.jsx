@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { readLocal, writeThrough, hydrate } from '../../lib/storage.js';
 import { callClaude } from '../../utils.js';
-import { CB_IDENTITY } from '../../constants.js';
+import { SYSTEM_BASE } from '../../constants.js';
 import { stampVersion, isStale, versionLabel } from '../../lib/promptVersion.js';
 import {
   DOMAINS_KEY, SIGNALS_KEY, FEEDBACK_KEY, loadDomains, activeDomains,
@@ -67,7 +67,7 @@ export default function OpportunityCards() {
     setLoading(true); setErr('');
     try {
       const raw = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: buildSignalPrompt(ctx.text, domains) }],
         // Market/current-condition claims need live grounding; TIER_INSTRUCTION
         // (in the prompt) then tiers each by what came back.

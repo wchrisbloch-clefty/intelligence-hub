@@ -2,7 +2,7 @@ import { T } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildCreationPrompt, CREATION_KINDS } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import { loadIndex as loadDives, loadDive } from '../lib/deepdives.js';
 import { loadIndex as loadLadders, loadLadder } from '../lib/ladders.js';
 import { loadSession } from '../lib/sessions.js';
@@ -60,7 +60,7 @@ export default function CreationStudio() {
     setLoading(true); setStream(''); setResult('');
     try {
       const text = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: buildCreationPrompt(kind, s.title, s.text) }],
         maxTokens: 3000,
         onToken: (t) => setStream(s2 => s2 + t),

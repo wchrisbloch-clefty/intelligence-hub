@@ -2,7 +2,7 @@ import { T, withAlpha } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Btn, ThinkingDots } from './shared/Common.jsx';
 import Icon from './shared/Icon.jsx';
@@ -51,7 +51,7 @@ export default function GrowthTools() {
     if (goalAI[goal.id]) return;
     setGoalAILoading(goal.id);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's goal: ${goal.label}. Current: ${goal.current}${goal.unit} of ${goal.target}${goal.unit} (${Math.min(100, Math.round((goal.current / goal.target) * 100))}%). Horizon: ${goal.horizon}.\n\nGive CB: (1) the single biggest lever to accelerate progress toward this goal, (2) one common mistake to avoid, (3) a specific 30-day sprint target. Be decisive and CB-specific.` }], maxTokens: 500 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB's goal: ${goal.label}. Current: ${goal.current}${goal.unit} of ${goal.target}${goal.unit} (${Math.min(100, Math.round((goal.current / goal.target) * 100))}%). Horizon: ${goal.horizon}.\n\nGive CB: (1) the single biggest lever to accelerate progress toward this goal, (2) one common mistake to avoid, (3) a specific 30-day sprint target. Be decisive and CB-specific.` }], maxTokens: 500 });
       setGoalAI(p => ({ ...p, [goal.id]: r }));
     } catch { setGoalAI(p => ({ ...p, [goal.id]: 'Network error — try again.' })); }
     setGoalAILoading(null);
@@ -63,7 +63,7 @@ export default function GrowthTools() {
     if (skillAI[skill.name]) return;
     setSkillAILoading(skill.name);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's skill: ${skill.name} — self-assessed ${skill.level}/10, growth trend ${skill.growth}.\n\nGive CB: (1) what getting from ${skill.level} to ${Math.min(10, skill.level + 2)} looks like in practice, (2) the highest-leverage resource or method to level up this skill, (3) how this skill connects to CB's BD/investing/Houston goals. Be specific.` }], maxTokens: 450 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB's skill: ${skill.name} — self-assessed ${skill.level}/10, growth trend ${skill.growth}.\n\nGive CB: (1) what getting from ${skill.level} to ${Math.min(10, skill.level + 2)} looks like in practice, (2) the highest-leverage resource or method to level up this skill, (3) how this skill connects to CB's BD/investing/Houston goals. Be specific.` }], maxTokens: 450 });
       setSkillAI(p => ({ ...p, [skill.name]: r }));
     } catch { setSkillAI(p => ({ ...p, [skill.name]: 'Network error — try again.' })); }
     setSkillAILoading(null);
@@ -73,7 +73,7 @@ export default function GrowthTools() {
     if (certAI[cert.name]) { setCertAI(p => ({ ...p, [cert.name]: '' })); return; }
     setCertAILoading(cert.name);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB is exploring the ${cert.name} certification (status: ${cert.status}). Give CB: (1) honest ROI assessment — is this worth the time and money for a BD professional/investor in Houston? (2) time commitment and difficulty, (3) decisive recommendation: pursue, deprioritize, or find a better alternative.` }], maxTokens: 450 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB is exploring the ${cert.name} certification (status: ${cert.status}). Give CB: (1) honest ROI assessment — is this worth the time and money for a BD professional/investor in Houston? (2) time commitment and difficulty, (3) decisive recommendation: pursue, deprioritize, or find a better alternative.` }], maxTokens: 450 });
       setCertAI(p => ({ ...p, [cert.name]: r }));
     } catch { setCertAI(p => ({ ...p, [cert.name]: 'Network error — try again.' })); }
     setCertAILoading(null);
@@ -90,7 +90,7 @@ export default function GrowthTools() {
       const topicList = topics.slice(-5).map(t => `${t.title} (confidence ${t.confidence}/10)`).join(', ');
       const projList = projects.filter(p => p.status === 'active').map(p => p.title).join(', ');
       const prompt = `CB's Growth Synthesis Request:\n\nRecent learning: ${topicList}\nActive projects: ${projList}\nLearning streak: ${streak} days\nTotal learning: ${Math.round(totalMin / 60)}h\n\nGenerate a decisive growth synthesis: (1) What is compounding right now in CB's favor? (2) What's the biggest gap between where he is and where he wants to be? (3) The single highest-leverage action for the next 90 days — be specific, be decisive. Format in CB style: big picture first, decisive action last.`;
-      const reply = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: prompt }], maxTokens: 800 });
+      const reply = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: prompt }], maxTokens: 800 });
       setSynthesis(reply);
     } catch {
       setSynthesis('Network error. Try again.');

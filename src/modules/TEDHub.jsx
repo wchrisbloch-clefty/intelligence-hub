@@ -2,7 +2,7 @@ import { T } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import { isPostCutoff } from '../lib/bookVerify.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
@@ -184,7 +184,7 @@ Context: ${talk.relevanceNote}
 Be blunt. CB-style. No fluff.
 
 ${TIER_INSTRUCTION}`;
-      const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 700 });
+      const reply = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompt }], maxTokens: 700 });
       setAnalysis(reply);
     } catch (e) {
       setErr(e?.message || 'The AI providers were unavailable.');
