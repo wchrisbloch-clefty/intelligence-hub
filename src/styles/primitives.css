@@ -36,3 +36,4 @@
   outline: 1px dashed var(--tier-inferred); outline-offset: 0; }
 [data-show-taps] .tap::after { outline: 1px dashed var(--tier-verified); }
 [data-show-taps] [data-under-44] { outline: 2px solid var(--negative) !important; }
+.btn-primary[aria-busy="true"] { color: var(--accent-foreground); }

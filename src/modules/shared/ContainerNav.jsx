@@ -25,13 +25,13 @@ export function SideNav() {
         const on = c.id === current;
         return (
           <button key={c.id} onClick={() => openContainer(c.id)} title={c.verb}
-            style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '11px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 44, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', transition: 'background 0.12s, color 0.12s' }}
+            style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', padding: '11px 12px', borderRadius: 10, border: 'none', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 44, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', transition: 'background 0.12s, color 0.12s' }}
             onMouseEnter={(e) => { if (!on) e.currentTarget.style.color = 'var(--text-b)'; }}
             onMouseLeave={(e) => { if (!on) e.currentTarget.style.color = 'var(--muted)'; }}>
             <NavIcon id={c.id} size={18} strokeWidth={on ? 2.2 : 1.8} />
             <span style={{ display: 'flex', flexDirection: 'column', gap: 1, minWidth: 0 }}>
               <span style={{ fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 600, letterSpacing: 0.1 }}>{c.label}</span>
-              <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, color: on ? withAlpha(T.accent, 65) : 'var(--dim)' }}>{c.verb}</span>
+              <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, color: on ? 'var(--accent-text)' : 'var(--dim)' }}>{c.verb}</span>
             </span>
           </button>
         );
@@ -52,7 +52,7 @@ export function ModeChips() {
           const on = id === activeModule;
           return (
             <button key={id} onClick={() => setActiveModule(id)} title={MODE_META[id]?.desc || ''}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '7px 13px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, padding: '7px 13px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
               <NavIcon id={id} size={14} strokeWidth={on ? 2.2 : 1.8} /> {modeLabel(id)}
             </button>
           );
@@ -73,7 +73,7 @@ export function BottomNav() {
 
   const Slot = ({ id, label, active, onClick }) => (
     <button onClick={onClick}
-      style={{ flex: 1, minWidth: 0, minHeight: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, border: 'none', background: 'transparent', color: active ? T.accent : 'var(--muted)', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', WebkitTapHighlightColor: 'transparent' }}>
+      style={{ flex: 1, minWidth: 0, minHeight: 44, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 3, border: 'none', background: 'transparent', color: active ? 'var(--accent-text)' : 'var(--muted)', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', WebkitTapHighlightColor: 'transparent' }}>
       {id === '__more__'
         ? <MoreHorizontal size={20} strokeWidth={active ? 2.4 : 1.9} />
         : <NavIcon id={id} size={20} strokeWidth={active ? 2.4 : 1.9} />}
@@ -113,7 +113,7 @@ function MoreSheet({ onClose }) {
                 const on = id === activeModule;
                 return (
                   <button key={id} onClick={() => go(id)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 12px', minHeight: 44, borderRadius: 10, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'var(--surface)', color: on ? T.accent : 'var(--text-b)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', outline: 'none' }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '11px 12px', minHeight: 44, borderRadius: 10, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'var(--surface)', color: on ? 'var(--accent-text)' : 'var(--text-b)', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left', outline: 'none' }}>
                     <NavIcon id={id} size={16} strokeWidth={on ? 2.2 : 1.8} />
                     <span style={{ fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{modeLabel(id)}</span>
                   </button>

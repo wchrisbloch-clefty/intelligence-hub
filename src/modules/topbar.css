@@ -20,7 +20,7 @@
 .tb-voice { flex-shrink: 0; display: flex; background: none; border: 0; color: var(--text-subtle); cursor: pointer; padding: 2px; }
 .tb-voice[data-on="1"] { color: var(--negative); }
 .tb-ask { flex-shrink: 0; background: none; border: 0; color: var(--accent-text); font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; white-space: nowrap; }
-.tb-kbd { display: none; font-size: var(--fs-xs); color: var(--text-subtle); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1px 6px; font-family: inherit; flex-shrink: 0; }
+.tb-kbd { display: none; font-size: var(--fs-xs); color: var(--text-muted); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1px 6px; font-family: inherit; flex-shrink: 0; }
 
 .tb-drop { position: absolute; top: 100%; left: 0; right: 0; margin-top: 6px; z-index: 200; overflow: hidden;
   background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }

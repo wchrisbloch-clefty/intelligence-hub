@@ -37,7 +37,8 @@ export const useApp = () => useContext(AppContext);
 
 export default function App() {
   dbgRender('App');
-  const [activeModule,     setActiveModuleRaw]  = useState('home');
+  // ?mode=<moduleId> deep link (used by scripts/audit-responsive.mjs to reach every container).
+  const [activeModule,     setActiveModuleRaw]  = useState(() => { try { return new URLSearchParams(location.search).get('mode') || 'home'; } catch { return 'home'; } });
   const [navModes,         setNavModes]         = useState(() => readLocal('aether_nav_v1', {}));
   const [chatOpen,         setChatOpen]         = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');

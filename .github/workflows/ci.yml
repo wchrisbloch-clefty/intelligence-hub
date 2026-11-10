@@ -1,0 +1,45 @@
+name: CI
+
+# Before Batch Z the only checks on a PR were Vercel build statuses — green meant
+# "it builds", never "it fits on a phone". These gates run on every PR to main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build (prompts + edge sync + tokens + vite)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      # npm run build = gen-prompts --check → sync-edge-shared --check →
+      # check-tokens (ratchet) → vite build. Any drift or new hex fails here.
+      - run: npm run build
+      - name: Prompt-level de-bias checks (Order D)
+        run: npm run verify:prompts
+
+  responsive:
+    name: responsive geometry (390 / 820 / 1280 × light / dark)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      # Overflow · tap targets <44px on coarse pointers · CLS > 0.05 · contrast <4.5:1 ·
+      # 0×0 elements · console errors. Ratcheted per view: counts may only go down.
+      - run: npm run audit:responsive

@@ -59,7 +59,7 @@ function readColours(host, names) {
 function Panel({ theme, names }) {
   const ref = useRef(null);
   const [rows, setRows] = useState([]);
-  useLayoutEffect(() => { if (ref.current) setRows(readColours(ref.current, names)); }, [names, theme]);
+  useLayoutEffect(() => { if (ref.current) setRows(readColours(ref.current, names)); }, [names, theme]); // before paint
   return (
     <div ref={ref} data-theme={theme} className="dz-panel">
       <div className="dz-panel-head">{theme}</div>
@@ -94,10 +94,12 @@ function ControlRow({ cls, label }) {
 }
 
 export default function DesignPage() {
-  const [names, setNames] = useState([]);
+  // Discovered synchronously (CSS is bundled and applied before first render), so
+  // the swatches are in the first paint — no layout shift.
+  const [names] = useState(() => discoverTokens());
   const [taps, setTaps] = useState(false);
   const [theme, setTheme] = useState(getTheme);
-  useEffect(() => { document.title = 'Design — Film Room'; setNames(discoverTokens()); }, []);
+  useEffect(() => { document.title = 'Design — Film Room'; }, []);
   useEffect(() => {
     const el = document.documentElement;
     if (!taps) { el.removeAttribute('data-show-taps'); document.querySelectorAll('[data-under-44]').forEach(n => n.removeAttribute('data-under-44')); return; }
