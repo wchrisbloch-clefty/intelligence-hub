@@ -73,3 +73,46 @@ Scoreboard after: responsive **108 → 105**, tokens **1,165 → 1,028**.
   pre-existing.
 
 Screens: `docs/screens/batch-Z2-H-research-{research,notes,inbox}-{before,after}-{390,820,1280}-{light,dark}.png`
+
+## Projects (Execute) + Studio (Produce): ProjectsOS, DecisionLog, CreationStudio
+
+Branch `worktree-agent-a5d84520ef8a68aa1`, two commits, cherry-picked.
+
+| | before | after |
+|---|---|---|
+| ProjectsOS / DecisionLog / CreationStudio tokens | 159 / 49 / 17 | **0 / 0 / 0** |
+| projects contrast (black text on navy "+ New Project", 1.43:1) | 6 | **0** |
+| studio contrast (subtle text on the selected card, 4.47:1) | 3 | **0** |
+| tap | 0 | 0 |
+
+Projects tap was 0 before only because clickable divs weren't detected as controls. Now
+they're real buttons, all measured, all passing.
+
+Scoreboard after: responsive **105 → 96**, tokens **1,028 → 803**.
+
+**Bugs found and fixed while extracting:**
+
+- `ProjectsOS` used `<Icon>` in the New Project modal **without importing it**. Opening
+  the modal would have thrown.
+- File artifacts rendered the literal text "FileText" / "Paperclip", because
+  `getFileIcon` returns lucide names.
+- Card borders built as `${p.color}20` were invalid CSS, so the cards had no hairline.
+
+**Visible changes:**
+
+- Project colour is now `--pc`, used for bars and hairlines only. Text that used it is
+  now `--text-muted`, for contrast.
+- Black-text colour fills are now `.btn-primary`.
+- Gold tints are now hairlines. Selected states use an accent border and
+  `--accent-text`.
+- Emoji UI icons are now lucide icons. 👤 and 🔌 remain, because the Icon registry has
+  no match and is shared.
+- The kanban is 1 column on phone, 2 on iPad and 4 on desktop.
+- Workspace tabs get a real 44px on touch.
+
+**Audit coverage:** `decisions` isn't in `VIEWS`. The agent audited 16 seeded states with
+a scratch copy of the audit (every workspace tab, modals, forms, empties, the decisions
+list and form, studio with and without sources). All were 0 after one fix: subtle date
+text on the decision-card hover fill.
+
+Screens: `docs/screens/batch-Z2-H-projects-{projects,decisions}-*`, `batch-Z2-H-studio-studio-*`

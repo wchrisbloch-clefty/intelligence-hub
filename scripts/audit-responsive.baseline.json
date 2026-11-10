@@ -12,17 +12,8 @@
   "learn@1280/dark:contrast": 4,
   "learn@390/dark:contrast": 4,
   "learn@820/dark:contrast": 4,
-  "projects@1280/dark:contrast": 1,
-  "projects@1280/light:contrast": 1,
-  "projects@390/dark:contrast": 1,
-  "projects@390/light:contrast": 1,
-  "projects@820/dark:contrast": 1,
-  "projects@820/light:contrast": 1,
   "skills@390/dark:tap": 2,
   "skills@390/light:tap": 2,
   "skills@820/dark:tap": 2,
-  "skills@820/light:tap": 2,
-  "studio@1280/light:contrast": 1,
-  "studio@390/light:contrast": 1,
-  "studio@820/light:contrast": 1
+  "skills@820/light:tap": 2
 }
