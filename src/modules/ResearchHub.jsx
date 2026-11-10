@@ -20,10 +20,10 @@ import FollowButton from './shared/FollowButton.jsx';
 import Icon from './shared/Icon.jsx';
 
 const BOARD_COLS = [
-  { id: 'collecting',   label: 'Collecting',   icon: '📥', color: T.accent },
-  { id: 'analyzing',    label: 'Analyzing',    icon: '🔍', color: T.accent },
-  { id: 'synthesizing', label: 'Synthesizing', icon: '⚗️', color: T.accent },
-  { id: 'insights',     label: 'Insights',     icon: '💡', color: T.accent },
+  { id: 'collecting',   label: 'Collecting',   icon: '📥', color: 'var(--accent-text)' },
+  { id: 'analyzing',    label: 'Analyzing',    icon: '🔍', color: 'var(--accent-text)' },
+  { id: 'synthesizing', label: 'Synthesizing', icon: '⚗️', color: 'var(--accent-text)' },
+  { id: 'insights',     label: 'Insights',     icon: '💡', color: 'var(--accent-text)' },
 ];
 
 function loadBoard()   { return readLocal(BOARD_KEY, []); }
@@ -129,8 +129,8 @@ function ResearchBoard() {
       {synStatus === 'error' && <div style={{ marginBottom: 20 }}><SectionError label="the board synthesis" onRetry={synthesizeAll} detail={synErr} /></div>}
       {synthesis && (
         <div style={{ background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 12, padding: '16px 18px', marginBottom: 20 }}>
-          <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
-          <MD text={synthesis} color={T.accent} />
+          <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
+          <MD text={synthesis} color="var(--accent-text)" />
           <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
         </div>
       )}
@@ -151,7 +151,7 @@ function ResearchBoard() {
                   <div key={card.id} style={{ background: 'var(--bg)', border: `1px solid ${col.color}20`, borderRadius: 8, padding: '9px 10px' }}>
                     <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)', lineHeight: 1.45, marginBottom: 6, wordBreak: 'break-word' }}>
                       {card.type === 'url'
-                        ? <span onClick={() => window.open(card.content, '_blank')} style={{ color: 'var(--accent,#D9A441)', cursor: 'pointer', textDecoration: 'underline' }}>{card.content.slice(0, 50)}…</span>
+                        ? <span onClick={() => window.open(card.content, '_blank')} style={{ color: 'var(--accent-text)', cursor: 'pointer', textDecoration: 'underline' }}>{card.content.slice(0, 50)}…</span>
                         : card.content.slice(0, 120) + (card.content.length > 120 ? '…' : '')
                       }
                     </div>
@@ -218,14 +218,14 @@ const SEARCH_SUGGESTIONS = [
 ];
 
 const SOURCE_LIBRARY = [
-  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker', color: T.accent },
-  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker', color: T.accent },
-  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker', color: T.accent },
-  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author', color: T.accent },
-  { name: 'Warren Buffett', domain: 'Investing', type: 'Author', color: T.accent },
-  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author', color: T.accent },
-  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter', color: T.accent },
-  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter', color: T.accent },
+  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker', color: 'var(--accent-text)' },
+  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker', color: 'var(--accent-text)' },
+  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker', color: 'var(--accent-text)' },
+  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author', color: 'var(--accent-text)' },
+  { name: 'Warren Buffett', domain: 'Investing', type: 'Author', color: 'var(--accent-text)' },
+  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author', color: 'var(--accent-text)' },
+  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter', color: 'var(--accent-text)' },
+  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter', color: 'var(--accent-text)' },
 ];
 
 export default function ResearchHub() {
@@ -358,7 +358,7 @@ export default function ResearchHub() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
           <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Deep Intelligence Search</div>
           <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
         </div>
@@ -369,7 +369,7 @@ export default function ResearchHub() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {[{ id: false, label: '💬 Threads' }, { id: true, label: '🗂 Research Board' }].map(v => (
           <div key={String(v.id)} onClick={() => setBoardView(v.id)}
-            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? T.accent : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
             {v.label}
           </div>
         ))}
@@ -379,12 +379,12 @@ export default function ResearchHub() {
 
       {!boardView && <div style={{ marginBottom: 24 }}>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 14, padding: '14px 18px', marginBottom: 12 }}>
-          <span style={{ fontSize: 'var(--fs-lg)', color: T.accent }}>🔭</span>
+          <span style={{ fontSize: 'var(--fs-lg)', color: 'var(--accent-text)' }}>🔭</span>
           <input className="rh-query" value={newQuery} onChange={e => setNewQuery(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
             placeholder="Research a topic, question, or opportunity..."
             style={{ flex: 1, minWidth: 0, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-lg)', color: 'var(--text-b)', fontFamily: 'inherit' }} />
-          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? 'var(--accent-text)' : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -396,12 +396,12 @@ export default function ResearchHub() {
 
       {!boardView && <div className="rh-split">
         <div>
-          <Label color={T.accent}>Research Threads</Label>
+          <Label color="var(--accent-text)">Research Threads</Label>
           {research.length === 0 && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
           {research.map(t => {
             const newCount = matchItems(feedItems, t.title, t.tags).filter((it) => itemTime(it) > (seen[t.id] || 0)).length;
             return (
-            <Card key={t.id} color={T.accent} onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
+            <Card key={t.id} color="var(--accent-text)" onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 7 }}>
@@ -427,7 +427,7 @@ export default function ResearchHub() {
         </div>
 
         <div>
-          <Label color={T.accent}>Source Library</Label>
+          <Label color="var(--accent-text)">Source Library</Label>
           {SOURCE_LIBRARY.map(s => (
             <div key={s.name}
               onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}
@@ -470,7 +470,7 @@ export default function ResearchHub() {
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {thread && <FollowButton name={thread.title} source="research" />}
-            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? 'var(--accent-text)' : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
           </div>
         </div>
       </div>
@@ -496,7 +496,7 @@ export default function ResearchHub() {
                 <AskChip type="feed" object={it} />
                 <button onClick={() => diveLiveItem(it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Microscope" size={13} /> Dive</button>
                 <button onClick={() => keepLiveItem(thread, it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Bookmark" size={13} /> Keep</button>
-                {it.url && it.url !== '#' && <a href={it.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: T.accent, fontWeight: 700, alignSelf: 'center' }}>Open ↗</a>}
+                {it.url && it.url !== '#' && <a href={it.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 700, alignSelf: 'center' }}>Open ↗</a>}
               </div>
             </div>
           );
@@ -508,7 +508,7 @@ export default function ResearchHub() {
               </div>
               {feedLoading && !matched.length && <SectionSkeleton rows={2} label="live signals" />}
               {feedStatus === 'error' && <SectionError label="live signals" onRetry={loadLiveFeed} detail={feedErr} />}
-              {fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, margin: '2px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>New since last visit<span style={{ flex: 1, height: 1, background: withAlpha(T.accent, 30) }} /></div>}
+              {fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', margin: '2px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>New since last visit<span style={{ flex: 1, height: 1, background: withAlpha(T.accent, 30) }} /></div>}
               {fresh.map((it) => <Row key={it.id} it={it} />)}
               {older.length > 0 && fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', margin: '4px 0 8px' }}>Earlier</div>}
               {older.map((it) => <Row key={it.id} it={it} />)}
@@ -522,8 +522,8 @@ export default function ResearchHub() {
               <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '80%', fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
-                <MD text={msg.content} color={T.accent} />
+                <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
@@ -531,8 +531,8 @@ export default function ResearchHub() {
         {loading && stream && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
             <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: '100%' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
-              <MD text={stream + '▍'} color={T.accent} />
+              <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
+              <MD text={stream + '▍'} color="var(--accent-text)" />
             </div>
           </div>
         )}

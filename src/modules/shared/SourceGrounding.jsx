@@ -82,7 +82,7 @@ export default function SourceGrounding({
             const on = type === t.id;
             return (
               <button key={t.id} onClick={() => setType(t.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent-glow)' : 'transparent', color: on ? 'var(--accent)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent-glow)' : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
                 <Icon name={t.icon} size={13} /> {t.label}
               </button>
             );
@@ -128,7 +128,7 @@ export default function SourceGrounding({
   if (phase === 'searching' || retrieving) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface)', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
-        <ThinkingDots color="var(--accent)" /> <span style={{ minWidth: 0 }}>Searching catalogs and the web for the table of contents…</span>
+        <ThinkingDots color="var(--accent-text)" /> <span style={{ minWidth: 0 }}>Searching catalogs and the web for the table of contents…</span>
       </div>
     );
   }
@@ -184,7 +184,7 @@ export default function SourceGrounding({
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
       {retrievable && (
         <button onClick={() => onRetrieve?.()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent-text)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
           <Icon name="Search" size={14} /> Find the table of contents
         </button>
       )}
@@ -196,4 +196,4 @@ export default function SourceGrounding({
   );
 }
 
-const linkBtn = { background: 'none', border: 'none', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', padding: 0 };
+const linkBtn = { background: 'none', border: 'none', color: 'var(--accent-text)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', padding: 0 };

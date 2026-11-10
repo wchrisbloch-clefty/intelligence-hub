@@ -82,7 +82,7 @@ function FlashCards({ onCreateFromNote }) {
         Card {(studyIdx % due.length) + 1} of {due.length} · {cards.filter(c => c.dueDate <= Date.now()).length} due today
       </div>
       <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? withAlpha(T.accent, 25) : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: VAULT_ACCENT, textTransform: 'uppercase', marginBottom: 12 }}>{revealed ? 'Answer' : 'Question'}</div>
+        <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 12 }}>{revealed ? 'Answer' : 'Question'}</div>
         <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.5 }}>
           {revealed ? studyCard?.back : studyCard?.front}
         </div>
@@ -97,7 +97,7 @@ function FlashCards({ onCreateFromNote }) {
           <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.negative, 8), border: '1px solid #C4553D40', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: T.negative, cursor: 'pointer' }}>
             ✕ Hard — review again
           </div>
-          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.accent, 8), border: '1px solid #D9A44140', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
+          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.accent, 8), border: '1px solid #D9A44140', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
             ✓ Got it — {Math.min(Math.round((studyCard?.interval || 1) * (studyCard?.easeFactor || 2.5)), 30)}d
           </div>
         </div>
@@ -130,11 +130,11 @@ function FlashCards({ onCreateFromNote }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
         <div>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{cards.length} cards · <span style={{ color: VAULT_ACCENT }}>{dueNow} due today</span></div>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{cards.length} cards · <span style={{ color: 'var(--accent-text)' }}>{dueNow} due today</span></div>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Spaced repetition — review at optimal intervals</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setMode('create')} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>+ New Card</div>
+          <div onClick={() => setMode('create')} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>+ New Card</div>
           {cards.length > 0 && <div onClick={() => { setStudyIdx(0); setRevealed(false); setMode('study'); }} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 700, background: VAULT_ACCENT, borderRadius: 8, color: '#000', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Study {dueNow > 0 ? `(${dueNow} due)` : 'All'} →</div>}
         </div>
       </div>
@@ -154,7 +154,7 @@ function FlashCards({ onCreateFromNote }) {
           return (
             <div key={c.id} style={{ background: 'var(--surface)', border: `1px solid ${overdue ? VAULT_ACCENT + '50' : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', borderRadius: 4, background: overdue ? `${VAULT_ACCENT}15` : 'var(--bg)', color: overdue ? VAULT_ACCENT : 'var(--dim)', fontWeight: overdue ? 700 : 400 }}>{overdue ? 'Due' : `in ${Math.ceil((c.dueDate - Date.now()) / DAY_MS)}d`}</span>
+                <span style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', borderRadius: 4, background: overdue ? `${VAULT_ACCENT}15` : 'var(--bg)', color: overdue ? 'var(--accent-text)' : 'var(--dim)', fontWeight: overdue ? 700 : 400 }}>{overdue ? 'Due' : `in ${Math.ceil((c.dueDate - Date.now()) / DAY_MS)}d`}</span>
                 <span onClick={() => removeCard(c.id)} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer' }}>✕</span>
               </div>
               <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 6, lineHeight: 1.4 }}>{c.front}</div>
@@ -249,7 +249,7 @@ function ExpertiseExport({ notes }) {
                 <div key={f.id} onClick={() => setFormat(f.id)}
                   style={{ padding: '9px 12px', background: format === f.id ? `${VAULT_ACCENT}10` : 'var(--surface)', border: `1px solid ${format === f.id ? VAULT_ACCENT + '50' : 'var(--border)'}`, borderRadius: 9, cursor: 'pointer', transition: 'all 0.1s' }}>
                   <div style={{ fontSize: 'var(--fs-base)', marginBottom: 3 }}>{f.icon}</div>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: format === f.id ? VAULT_ACCENT : 'var(--text)' }}>{f.label}</div>
+                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: format === f.id ? 'var(--accent-text)' : 'var(--text)' }}>{f.label}</div>
                   <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4, marginTop: 2 }}>{f.desc}</div>
                 </div>
               ))}
@@ -265,17 +265,17 @@ function ExpertiseExport({ notes }) {
           <div>
             <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Your Content</div>
             <div style={{ background: 'var(--surface)', border: `1px solid ${result ? VAULT_ACCENT + '40' : 'var(--border)'}`, borderRadius: 12, padding: '16px', minHeight: isMobile ? 200 : 320, transition: 'border-color 0.15s' }}>
-              {loading && <ThinkingDots color={VAULT_ACCENT} />}
+              {loading && <ThinkingDots color="var(--accent-text)" />}
               {!loading && !result && (
                 <div style={{ color: 'var(--dim)', fontSize: 'var(--fs-base)', lineHeight: 1.8 }}>
                   Select notes, pick a format, and hit Generate. AI will turn your private knowledge into publish-ready content.
                 </div>
               )}
-              {!loading && result && <MD text={result} color={VAULT_ACCENT} />}
+              {!loading && result && <MD text={result} color="var(--accent-text)" />}
             </div>
             {result && (
               <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <div onClick={copy} style={{ padding: isMobile ? '10px 18px' : '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>
+                <div onClick={copy} style={{ padding: isMobile ? '10px 18px' : '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>
                   {copied ? '✓ Copied!' : 'Copy'}
                 </div>
                 <div onClick={() => setResult('')} style={{ padding: isMobile ? '10px 14px' : '7px 12px', fontSize: 'var(--fs-base)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Clear</div>
@@ -316,7 +316,7 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
     <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
         <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Vault</div>
-        <div onClick={onCardCreate} style={{ fontSize: 'var(--fs-sm)', padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: VAULT_ACCENT, cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
+        <div onClick={onCardCreate} style={{ fontSize: 'var(--fs-sm)', padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
         <AskChip type="note" object={note} />
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
@@ -382,7 +382,7 @@ export default function MasteryVault() {
   const [activeNote, setActiveNote] = useState(null);
   const [showNew,    setShowNew]    = useState(false);
   const [filterTag,  setFilterTag]  = useState('all');
-  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: T.accent });
+  const [newNote,    setNewNote]    = useState({ title: '', content: '', tags: [], connections: [], color: 'var(--accent-text)' });
   const [tagInput,   setTagInput]   = useState('');
 
   const updateNotes = async (updated) => {
@@ -394,7 +394,7 @@ export default function MasteryVault() {
     if (!newNote.title.trim()) return;
     const note = { id: uid(), ...newNote, createdAt: Date.now() };
     await updateNotes([note, ...notes]);
-    setNewNote({ title: '', content: '', tags: [], connections: [], color: T.accent });
+    setNewNote({ title: '', content: '', tags: [], connections: [], color: 'var(--accent-text)' });
     setTagInput('');
     setShowNew(false);
   };
@@ -439,7 +439,7 @@ export default function MasteryVault() {
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: VAULT_ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Mastery Vault</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Mastery Vault</div>
           <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Knowledge Base</div>
           <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>{notes.length} notes · flash cards · publish-ready exports</div>
         </div>
@@ -456,7 +456,7 @@ export default function MasteryVault() {
           { id: 'export',     label: '📤 Export' },
         ].map(t => (
           <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? VAULT_ACCENT : 'var(--border)'}`, background: tab === t.id ? `${VAULT_ACCENT}10` : 'var(--surface)', color: tab === t.id ? VAULT_ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? VAULT_ACCENT : 'var(--border)'}`, background: tab === t.id ? `${VAULT_ACCENT}10` : 'var(--surface)', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
             {t.label}
           </div>
         ))}
@@ -469,7 +469,7 @@ export default function MasteryVault() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
               {['all', ...allTags].map(t => (
                 <div key={t} onClick={() => setFilterTag(t)}
-                  style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterTag === t ? VAULT_ACCENT : 'var(--bord2)'}`, color: filterTag === t ? VAULT_ACCENT : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterTag === t ? `${VAULT_ACCENT}18` : 'transparent' }}>
+                  style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterTag === t ? VAULT_ACCENT : 'var(--bord2)'}`, color: filterTag === t ? 'var(--accent-text)' : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterTag === t ? `${VAULT_ACCENT}18` : 'transparent' }}>
                   {t}
                 </div>
               ))}
@@ -528,7 +528,7 @@ export default function MasteryVault() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
               {newNote.tags.map(t => (
                 <div key={t} onClick={() => setNewNote(p => ({ ...p, tags: p.tags.filter(x => x !== t) }))}
-                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', background: `${VAULT_ACCENT}15`, border: `1px solid ${VAULT_ACCENT}40`, color: VAULT_ACCENT, borderRadius: 14, cursor: 'pointer' }}>
+                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', background: `${VAULT_ACCENT}15`, border: `1px solid ${VAULT_ACCENT}40`, color: 'var(--accent-text)', borderRadius: 14, cursor: 'pointer' }}>
                   {t} ✕
                 </div>
               ))}
@@ -543,7 +543,7 @@ export default function MasteryVault() {
             <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
               {topics.slice(0, 10).map(t => (
                 <div key={t} onClick={() => setNewNote(p => ({ ...p, connections: p.connections.includes(t) ? p.connections.filter(x => x !== t) : [...p.connections, t] }))}
-                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? T.accent : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? T.accent : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? withAlpha(T.accent, 8) : 'transparent' }}>
+                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? T.accent : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? 'var(--accent-text)' : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? withAlpha(T.accent, 8) : 'transparent' }}>
                   {t}
                 </div>
               ))}

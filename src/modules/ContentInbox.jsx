@@ -123,7 +123,7 @@ export default function ContentInbox() {
       content:     item.summary,
       tags:        ['inbox', item.type],
       connections: [],
-      color:       ACCENT,
+      color:       'var(--accent-text)',
       createdAt:   Date.now(),
     };
     const updated = [note, ...notes];
@@ -169,7 +169,7 @@ export default function ContentInbox() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
+        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
         <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Capture & Synthesize</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Save articles, videos, links, or paste text — AI extracts what matters for CB.</div>
       </div>
@@ -178,7 +178,7 @@ export default function ContentInbox() {
       <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
         {[{ id: 'inbox', label: `📥 Inbox (${items.length})` }, { id: 'add', label: '+ Add Content' }].map(t => (
           <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
             {t.label}
           </div>
         ))}
@@ -218,7 +218,7 @@ export default function ContentInbox() {
             <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
               {FILTERS.map(f => (
                 <div key={f.id} onClick={() => setFilter(f.id)}
-                  style={{ padding: '4px 12px', fontSize: 'var(--fs-sm)', borderRadius: 20, border: `1px solid ${filter === f.id ? ACCENT : 'var(--border)'}`, background: filter === f.id ? ACCENT_BG : 'transparent', color: filter === f.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontWeight: filter === f.id ? 700 : 400 }}>
+                  style={{ padding: '4px 12px', fontSize: 'var(--fs-sm)', borderRadius: 20, border: `1px solid ${filter === f.id ? ACCENT : 'var(--border)'}`, background: filter === f.id ? ACCENT_BG : 'transparent', color: filter === f.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', fontWeight: filter === f.id ? 700 : 400 }}>
                   <Icon name={f.icon} size={14} /> {f.label}
                 </div>
               ))}
@@ -247,20 +247,20 @@ export default function ContentInbox() {
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                           {item.url && (
                             <span onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}
-                              style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent, #D9A441)', cursor: 'pointer' }}>
+                              style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', cursor: 'pointer' }}>
                               ↗ {shortHost(item.url)}
                             </span>
                           )}
                           <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
                           <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
-                          {item.inVault && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: T.accent, fontWeight: 600 }}>✓ Vaulted</span>}
+                          {item.inVault && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 600 }}>✓ Vaulted</span>}
                         </div>
                         {/* Capture lineage — the trail of what this became */}
                         {item.derivedInto?.length > 0 && (
                           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
                             <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, color: 'var(--dim)' }}>Became</span>
                             {item.derivedInto.map((d, di) => (
-                              <span key={di} style={{ fontSize: 'var(--fs-sm)', padding: '2px 8px', borderRadius: 12, background: withAlpha(T.accent, 10), color: T.accent, fontWeight: 600 }}>
+                              <span key={di} style={{ fontSize: 'var(--fs-sm)', padding: '2px 8px', borderRadius: 12, background: withAlpha(T.accent, 10), color: 'var(--accent-text)', fontWeight: 600 }}>
                                 {DERIVED_LABEL[d.module] || d.module}
                               </span>
                             ))}
@@ -269,7 +269,7 @@ export default function ContentInbox() {
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
                         <div
-                          style={{ fontSize: 'var(--fs-sm)', color: ACCENT, padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined, display: 'flex', alignItems: 'center' }}>
+                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined, display: 'flex', alignItems: 'center' }}>
                           {expanded ? '▲ Hide' : '▼ View AI'}
                         </div>
                         <div onClick={e => { e.stopPropagation(); remove(item.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
@@ -279,25 +279,25 @@ export default function ContentInbox() {
 
                   {expanded && item.summary && (
                     <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
-                      <div style={{ fontSize: isMobile ? 10 : 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
-                      <MD text={item.summary} color={ACCENT} />
+                      <div style={{ fontSize: isMobile ? 10 : 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
+                      <MD text={item.summary} color="var(--accent-text)" />
                       <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
                         <div onClick={() => copyToClipboard(item.id, item.summary)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? T.accent : ACCENT, cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? 'var(--accent-text)' : 'var(--accent-text)', cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
                           {copiedId === item.id ? '✓ Copied!' : 'Copy'}
                         </div>
                         <div onClick={() => reanalyze(item)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, cursor: reanalyzing ? 'default' : 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined, opacity: reanalyzing === item.id ? 0.6 : 1 }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: 'var(--accent-text)', cursor: reanalyzing ? 'default' : 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined, opacity: reanalyzing === item.id ? 0.6 : 1 }}>
                           {reanalyzing === item.id ? '⟳ Re-analyzing…' : '⟳ Re-analyze'}
                         </div>
                         {!item.inVault && (
                           <div onClick={() => saveToVault(item)}
-                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: T.accent, cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
+                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
                             🏛 Save to Vault
                           </div>
                         )}
                         <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: T.accent, cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
+                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
                           🚀 Save to Project
                         </div>
                         <AskChip type="inbox" object={item} style={{ minHeight: isMobile ? 40 : undefined }} />

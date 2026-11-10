@@ -80,7 +80,7 @@ export default function ChatPanel() {
           module="chat"
           activeId={sessionId}
           version={drawerVersion}
-          color={T.accent}
+          color="var(--accent-text)"
           onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); setChatAttach?.(null); }}
           onNew={() => { startNewSession(); setChatAttach?.(null); }}
           onClose={() => setSessionsOpen(false)}
@@ -91,7 +91,7 @@ export default function ChatPanel() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
-            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
+            <div style={{ fontSize: 9, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
             <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
@@ -102,7 +102,7 @@ export default function ChatPanel() {
         <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
           {CHAT_MODES.map(m => (
             <div key={m.id} onClick={() => setChatMode(m.id)} title={m.desc}
-              style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? T.accent : 'var(--border)'}`, color: chatMode === m.id ? T.accent : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? withAlpha(T.accent, 6) : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? T.accent : 'var(--border)'}`, color: chatMode === m.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? withAlpha(T.accent, 6) : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
               <Icon name={m.icon} size={13} /> {m.label}
             </div>
           ))}
@@ -111,8 +111,8 @@ export default function ChatPanel() {
             see the context is live. Detach returns to generic chat. */}
         {chatAttach?.label && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 10px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 8 }}>
-            <Icon name="Paperclip" size={12} style={{ color: T.accent }} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatAttach.label}</span>
+            <Icon name="Paperclip" size={12} style={{ color: 'var(--accent-text)' }} />
+            <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatAttach.label}</span>
             <span onClick={() => setChatAttach?.(null)} title="Detach" style={{ color: 'var(--subtle)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>✕</span>
           </div>
         )}
@@ -152,8 +152,8 @@ export default function ChatPanel() {
               </div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
-                <MD text={msg.content} color={T.accent} />
+                <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
+                <MD text={msg.content} color="var(--accent-text)" />
                 <div style={{ marginTop: 10 }}>
                   <SaveToNotes title={msg.content.split('\n')[0].replace(/[#*>_`-]/g, '').trim().slice(0, 70)} content={msg.content} source={{ title: `Intelligence Chat · ${mode?.label || ''}`.trim(), tier: 'reported' }} label="Save to Notes" />
                 </div>
@@ -168,10 +168,10 @@ export default function ChatPanel() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
             <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
+              <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
               {stream
-                ? <MD text={stream + '▍'} color={T.accent} />
-                : <ThinkingDots color={T.accent} />}
+                ? <MD text={stream + '▍'} color="var(--accent-text)" />
+                : <ThinkingDots color="var(--accent-text)" />}
             </div>
           </div>
         )}
@@ -182,7 +182,7 @@ export default function ChatPanel() {
       {attachments.length > 0 && (
         <div style={{ padding: '6px 14px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
           {attachments.map((a, i) => (
-            <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div key={i} style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', background: withAlpha(T.accent, 7), border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
               <Icon name={a.icon} size={13} /> {a.name.slice(0, 14)}
               <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
             </div>

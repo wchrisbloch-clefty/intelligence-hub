@@ -24,7 +24,7 @@ export default function DueReviews({ onQuiz }) {
     <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 14, padding: '16px 18px', marginBottom: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
         <span style={{ fontSize: 14 }}>🔁</span>
-        <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase' }}>Due for review today</div>
+        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase' }}>Due for review today</div>
         <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginLeft: 'auto' }}>{due.length} {due.length === 1 ? 'topic' : 'topics'}</div>
       </div>
 
@@ -36,7 +36,7 @@ export default function DueReviews({ onQuiz }) {
               <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>Last: {r.lastResult} · ease {r.ease}</div>
             </div>
             {onQuiz && (
-              <div onClick={() => onQuiz(r.topicLabel)} title="Quiz me" style={{ flexShrink: 0, fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>Quiz →</div>
+              <div onClick={() => onQuiz(r.topicLabel)} title="Quiz me" style={{ flexShrink: 0, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>Quiz →</div>
             )}
           </div>
           <div style={{ display: 'flex', gap: 6 }}>

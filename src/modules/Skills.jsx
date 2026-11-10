@@ -92,7 +92,7 @@ function SkillCard({ skill, concepts, onRename, onArchive, onRemove, onSetConcep
       {(skill.due > 0 || skill.decaying) && (
         <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 10 }}>
           {skill.due > 0 && (
-            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, background: withAlpha(T.accent, 10), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 20, padding: '3px 10px' }}>{skill.due} due for review</span>
+            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: withAlpha(T.accent, 10), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 20, padding: '3px 10px' }}>{skill.due} due for review</span>
           )}
           {skill.decaying && (
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--caution)', background: withAlpha('var(--caution)', 10), border: `1px solid ${withAlpha('var(--caution)', 30)}`, borderRadius: 20, padding: '3px 10px' }}>
@@ -137,7 +137,7 @@ function SkillCard({ skill, concepts, onRename, onArchive, onRemove, onSetConcep
                 const on = mapped.has(c.key);
                 return (
                   <button key={c.key} onClick={() => toggleConcept(c.key)}
-                    style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', borderRadius: 20, border: `1px solid ${on ? T.accent : 'var(--rule)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? T.accent : 'var(--text-secondary)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', borderRadius: 20, border: `1px solid ${on ? T.accent : 'var(--rule)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--text-secondary)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit' }}>
                     {c.name}
                   </button>
                 );
@@ -157,7 +157,7 @@ function SkillCard({ skill, concepts, onRename, onArchive, onRemove, onSetConcep
         <AskChip type="skill" object={skill} />
         {skill.userDefined && (
           <button onClick={() => setEditing((e) => !e)} title="Edit skill"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', color: editing ? T.accent : 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--rule)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', color: editing ? 'var(--accent-text)' : 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--rule)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
             <Icon name={editing ? 'Check' : 'Pencil'} size={13} /> {editing ? 'Done' : 'Edit'}
           </button>
         )}
@@ -196,7 +196,7 @@ export default function Skills() {
   const chips = [
     { label: `${summary.total} tracked`, color: 'var(--text)' },
     { label: `${summary.rising} rising`, color: 'var(--positive)' },
-    { label: `${summary.due} due`, color: T.accent },
+    { label: `${summary.due} due`, color: 'var(--accent-text)' },
     { label: `${summary.decaying} decaying`, color: 'var(--caution)' },
   ];
 
@@ -213,7 +213,7 @@ export default function Skills() {
           <span key={c.label} style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: c.color, background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 20, padding: '5px 12px' }}>{c.label}</span>
         ))}
         {archivedCount > 0 && (
-          <button onClick={() => setShowArchived((v) => !v)} style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: showArchived ? T.accent : 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--rule)', borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button onClick={() => setShowArchived((v) => !v)} style={{ fontSize: 'var(--fs-sm)', fontWeight: 600, color: showArchived ? 'var(--accent-text)' : 'var(--text-secondary)', background: 'transparent', border: '1px solid var(--rule)', borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontFamily: 'inherit' }}>
             {showArchived ? 'Hide' : 'Show'} archived ({archivedCount})
           </button>
         )}

@@ -29,7 +29,7 @@ const isTableRow = (l) => /^\s*\|.*\|\s*$/.test(l);
 const isTableSep = (l) => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$/.test(l);
 const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
 
-export default function MD({ text, color = T.accent }) {
+export default function MD({ text, color = 'var(--accent-text)' }) {
   const lines = String(text || '').split('\n');
   const out = [];
   let i = 0;

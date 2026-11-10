@@ -15,8 +15,8 @@ const ACCENT_BG     = 'rgba(217,164,65,0.07)';
 const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
 
 const STATUS_META = {
-  thinking: { label: 'Thinking',    color: T.accent },
-  decided:  { label: 'Decided',     color: T.accent },
+  thinking: { label: 'Thinking',    color: 'var(--accent-text)' },
+  decided:  { label: 'Decided',     color: 'var(--accent-text)' },
   closed:   { label: 'Archived',    color: 'var(--dim)' },
 };
 
@@ -126,7 +126,7 @@ export default function DecisionLog() {
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Decision Log</div>
+        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Decision Log</div>
         <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Decisions That Compound</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
       </div>
@@ -136,7 +136,7 @@ export default function DecisionLog() {
         <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 'var(--fs-xl)'}}>⏰</span>
           <div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: ACCENT }}>{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--accent-text)' }}>{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>How did they turn out? Record the outcome to build your pattern library.</div>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function DecisionLog() {
         ].map(t => (
           <div key={t.id}
             onClick={() => t.id === 'patterns' ? analyzePatterns() : setTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
+            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
             {t.label}
           </div>
         ))}
@@ -189,7 +189,7 @@ export default function DecisionLog() {
           <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
             {[{ id: 'thinking', label: '🤔 Still Deciding' }, { id: 'decided', label: '✅ Already Decided' }].map(s => (
               <div key={s.id} onClick={() => setForm(p => ({ ...p, status: s.id }))}
-                style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.status === s.id ? ACCENT : 'var(--border)'}`, background: form.status === s.id ? ACCENT_BG : 'transparent', color: form.status === s.id ? ACCENT : 'var(--subtle)', transition: 'all 0.12s', minHeight: isMobile ? 44 : 34 }}>
+                style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.status === s.id ? ACCENT : 'var(--border)'}`, background: form.status === s.id ? ACCENT_BG : 'transparent', color: form.status === s.id ? 'var(--accent-text)' : 'var(--subtle)', transition: 'all 0.12s', minHeight: isMobile ? 44 : 34 }}>
                 {s.label}
               </div>
             ))}
@@ -205,12 +205,12 @@ export default function DecisionLog() {
       {/* ── AI Patterns ────────────────────────────────────────────────────── */}
       {tab === 'patterns' && (
         <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '20px 22px' }}>
-          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>AI Pattern Analysis</div>
+          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 14 }}>AI Pattern Analysis</div>
           {aiLoading
-            ? <ThinkingDots color={ACCENT} />
+            ? <ThinkingDots color="var(--accent-text)" />
             : patterns
               ? <>
-                  <MD text={patterns} color={ACCENT} />
+                  <MD text={patterns} color="var(--accent-text)" />
                   <div onClick={() => { setPatterns(''); analyzePatterns(); }}
                     style={{ marginTop: 14, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
                     Refresh analysis
@@ -250,7 +250,7 @@ export default function DecisionLog() {
                           <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 8px', background: `${meta.color}15`, color: meta.color, borderRadius: 4, fontWeight: 600 }}>{meta.label}</span>
                           <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(d.createdAt).toLocaleDateString()}</span>
                           {days !== null && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{days}d since decision</span>}
-                          {reviewReady && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>⏰ Review ready</span>}
+                          {reviewReady && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 700 }}>⏰ Review ready</span>}
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
@@ -275,9 +275,9 @@ export default function DecisionLog() {
                           <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Options</div>
                           {d.options.map((opt, i) => (
                             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, padding: '7px 12px', background: i === d.chosen ? ACCENT_BG : 'var(--bg)', border: `1px solid ${i === d.chosen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8 }}>
-                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? ACCENT : 'var(--dim)' }}>{i === d.chosen ? '✓' : '○'}</span>
+                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? 'var(--accent-text)' : 'var(--dim)' }}>{i === d.chosen ? '✓' : '○'}</span>
                               <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? 'var(--text)' : 'var(--muted)', flex: 1 }}>{opt}</span>
-                              {i === d.chosen && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>CHOSEN</span>}
+                              {i === d.chosen && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 700 }}>CHOSEN</span>}
                             </div>
                           ))}
                         </div>
@@ -293,7 +293,7 @@ export default function DecisionLog() {
                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
                         {d.status === 'thinking' && (
                           <div onClick={() => updateStatus(d.id, 'decided')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: T.accent, minHeight: isMobile ? 44 : 34 }}>
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: 'var(--accent-text)', minHeight: isMobile ? 44 : 34 }}>
                             ✓ Mark Decided
                           </div>
                         )}
@@ -305,16 +305,16 @@ export default function DecisionLog() {
                         )}
                         {!decisionAI[d.id] && (
                           <div onClick={() => analyzeDecision(d)}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
-                            {decisionAILoading === d.id ? <><ThinkingDots color={ACCENT} /> Analyzing…</> : '✦ Get AI Feedback'}
+                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: 'var(--accent-text)', minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
+                            {decisionAILoading === d.id ? <><ThinkingDots color="var(--accent-text)" /> Analyzing…</> : '✦ Get AI Feedback'}
                           </div>
                         )}
                       </div>
 
                       {decisionAI[d.id] && (
                         <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
-                          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Decision Analysis</div>
-                          <MD text={decisionAI[d.id]} color={ACCENT} />
+                          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 10 }}>AI Decision Analysis</div>
+                          <MD text={decisionAI[d.id]} color="var(--accent-text)" />
                           <div onClick={() => setDecisionAI(prev => { const n = { ...prev }; delete n[d.id]; return n; })}
                             style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
                             Clear analysis

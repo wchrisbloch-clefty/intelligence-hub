@@ -94,7 +94,7 @@ export default function DiagramBlock({ content, hint = '', initialCode = '', onG
           <Icon name="Share2" size={14} /> {label}
         </button>
       )}
-      {loading && <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)' }}><ThinkingDots color="var(--accent)" /> Drawing…</div>}
+      {loading && <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)' }}><ThinkingDots color="var(--accent-text)" /> Drawing…</div>}
 
       {svg && (
         <div>

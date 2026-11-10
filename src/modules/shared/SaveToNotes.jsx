@@ -24,7 +24,7 @@ export default function SaveToNotes({ title, content, source = null, label = 'Sa
       title: t || 'Note',
       content: String(content || '').trim(),
       tags: [],
-      color: 'var(--accent)',
+      color: 'var(--accent-text)',
       createdAt: Date.now(),
       source: source && (source.url || source.title) ? { url: source.url || '', title: source.title || '', tier: source.tier || 'reported' } : null,
     };
@@ -40,7 +40,7 @@ export default function SaveToNotes({ title, content, source = null, label = 'Sa
   const on = state === 'saved';
   return (
     <button onClick={save} title="Save to Notes with its source and tier"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: state === 'error' ? 'var(--negative)' : on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', ...style }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: state === 'error' ? 'var(--negative)' : on ? 'var(--accent-text)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', ...style }}>
       <Icon name={on ? 'Check' : 'StickyNote'} size={13} /> {state === 'error' ? 'Try again' : on ? 'Saved' : label}
     </button>
   );

@@ -40,7 +40,7 @@ export default function Notes() {
       title: form.title.trim() || form.content.trim().slice(0, 55),
       content: form.content.trim(),
       tags: [],
-      color: 'var(--accent)',
+      color: 'var(--accent-text)',
       createdAt: Date.now(),
       source: (form.sourceUrl || form.sourceTitle) ? { url: form.sourceUrl.trim(), title: form.sourceTitle.trim(), tier: form.tier } : null,
     };
@@ -120,7 +120,7 @@ export default function Notes() {
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
                   <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: `var(--tier-${n.source.tier || 'uncited'})`, border: `1px solid color-mix(in srgb, var(--tier-${n.source.tier || 'uncited'}) 40%, transparent)`, padding: '1px 6px', borderRadius: 3 }}>{n.source.tier || 'uncited'}</span>
                   {n.source.url
-                    ? <a href={n.source.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent)', textDecoration: 'none' }}>{n.source.title || n.source.url}</a>
+                    ? <a href={n.source.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', textDecoration: 'none' }}>{n.source.title || n.source.url}</a>
                     : <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{n.source.title}</span>}
                 </div>
               )}

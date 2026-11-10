@@ -87,7 +87,7 @@ export default function CoachAI() {
           module="coach"
           activeId={sessionId}
           version={drawerVersion}
-          color={ACCENT}
+          color="var(--accent-text)"
           onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); }}
           onNew={startNewSession}
           onClose={() => setSessionsOpen(false)}
@@ -98,7 +98,7 @@ export default function CoachAI() {
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--bord2)', padding: '14px 20px', flexShrink: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
           <div>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
+            <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
             <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
               <Icon name={currentTone.icon} size={14} /> {currentTone.label} Mode
             </div>
@@ -114,7 +114,7 @@ export default function CoachAI() {
               ✎ New
             </div>
             <div onClick={() => setSettingsOpen(o => !o)}
-              style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: `1px solid ${settingsOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 7, color: settingsOpen ? ACCENT : 'var(--subtle)', cursor: 'pointer', background: settingsOpen ? ACCENT_BG : 'transparent', fontWeight: 600, transition: 'all 0.12s' }}>
+              style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: `1px solid ${settingsOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 7, color: settingsOpen ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', background: settingsOpen ? ACCENT_BG : 'transparent', fontWeight: 600, transition: 'all 0.12s' }}>
               ⚙ Coach Type
             </div>
           </div>
@@ -124,7 +124,7 @@ export default function CoachAI() {
         <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none' }}>
           {TOPICS.map(t => (
             <div key={t.id} onClick={() => setTopic(t.id)}
-              style={{ flexShrink: 0, padding: '4px 11px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+              style={{ flexShrink: 0, padding: '4px 11px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
               <Icon name={t.icon} size={14} /> {t.label}
             </div>
           ))}
@@ -140,7 +140,7 @@ export default function CoachAI() {
               <div key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); startNewSession(); }}
                 style={{ padding: '12px', background: tone === t.id ? ACCENT_BG : 'var(--surface)', border: `1px solid ${tone === t.id ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s', textAlign: 'center' }}>
                 <Icon name={t.icon} size={24} />
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: tone === t.id ? 'var(--accent-text)' : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
                 <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
               </div>
             ))}
@@ -178,15 +178,15 @@ export default function CoachAI() {
             ) : (
               <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase' }}>
                     <Icon name={currentTone.icon} size={14} /> {currentTone.label} · {currentTopic.label}
                   </div>
                   <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}
-                    style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                    style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
                     + Save to Project
                   </div>
                 </div>
-                <MD text={msg.content} color={ACCENT} />
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
@@ -195,8 +195,8 @@ export default function CoachAI() {
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 16px' }}>
             <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '12px 16px' }}>
-              <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
-              <ThinkingDots color={ACCENT} />
+              <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
+              <ThinkingDots color="var(--accent-text)" />
             </div>
           </div>
         )}
@@ -209,7 +209,7 @@ export default function CoachAI() {
           <div style={{ display: 'flex', gap: 5, overflowX: 'auto', marginBottom: 8, paddingBottom: 2, scrollbarWidth: 'none' }}>
             {CHECKIN_PROMPTS.slice(5).map(p => (
               <div key={p} onClick={() => send(p)}
-                style={{ fontSize: 'var(--fs-sm)', padding: '3px 10px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                style={{ fontSize: 'var(--fs-sm)', padding: '3px 10px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, color: 'var(--accent-text)', borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 {p.length > 42 ? p.slice(0, 42) + '…' : p}
               </div>
             ))}

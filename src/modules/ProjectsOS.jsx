@@ -60,7 +60,7 @@ export default function ProjectsOS() {
     const p = def({
       id: uid(), title: newProj.title, emoji: newProj.emoji || '🚀',
       status: 'planning', category: newProj.category,
-      color: PROJECT_CATEGORIES[newProj.category]?.color || T.accent,
+      color: PROJECT_CATEGORIES[newProj.category]?.color || 'var(--accent-text)',
       description: newProj.description, milestones: [], connections: [],
       blueOcean: '', createdAt: Date.now(), updatedAt: Date.now(), priority: newProj.priority,
     });
@@ -97,7 +97,7 @@ export default function ProjectsOS() {
     <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
           <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
           <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
         </div>
@@ -152,7 +152,7 @@ export default function ProjectsOS() {
                         {p.artifacts?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>📎 {p.artifacts.length}</div>}
                         {p.personas?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>👤 {p.personas.length}</div>}
                         {p.process?.stages?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>⚙ {p.process.stages.length} stages</div>}
-                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', color: T.accent }}>▲ HIGH</div>}
+                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>▲ HIGH</div>}
                       </div>
                     </div>
                   );
@@ -198,7 +198,7 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
               <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
                 <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
                 <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
-                {proj.priority === 'high' && <Badge color={T.accent}>high priority</Badge>}
+                {proj.priority === 'high' && <Badge color="var(--accent-text)">high priority</Badge>}
                 {proj.milestones.length > 0 && <Badge color={proj.color}>{pct}%</Badge>}
                 <AskChip type="project" object={proj} />
               </div>
@@ -323,7 +323,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
           <Label>Knowledge Connections</Label>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: T.accent, borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: 'var(--accent-text)', borderRadius: 20 }}>📚 {c}</div>
             ))}
           </div>
         </div>
@@ -331,7 +331,7 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
 
       {proj.blueOcean && (
         <div style={{ padding: '12px 14px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44130', borderRadius: 10, marginBottom: 24 }}>
-          <Label color={T.accent}>🌊 Blue Ocean Insight</Label>
+          <Label color="var(--accent-text)">🌊 Blue Ocean Insight</Label>
           <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
         </div>
       )}
@@ -608,7 +608,7 @@ function NotesTab({ proj, onUpdate }) {
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
         <Label>Project Notes</Label>
-        <div style={{ fontSize: 'var(--fs-sm)', color: saved ? T.accent : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
+        <div style={{ fontSize: 'var(--fs-sm)', color: saved ? 'var(--accent-text)' : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
       </div>
       <textarea value={text} onChange={e => handleChange(e.target.value)}
         placeholder="Write anything here — meeting notes, ideas, strategy, call summaries, observations, next steps, frameworks you're trying...&#10;&#10;Auto-saves as you type."
@@ -753,9 +753,9 @@ function FilesTab({ proj, onUpdate }) {
 
 // ─── Personas / ICP Tab ───────────────────────────────────────────────────────
 const PERSONA_STATUSES = [
-  { id: 'prospect', label: 'Prospect', color: T.accent },
-  { id: 'active',   label: 'Active',   color: T.accent },
-  { id: 'partner',  label: 'Partner',  color: T.accent },
+  { id: 'prospect', label: 'Prospect', color: 'var(--accent-text)' },
+  { id: 'active',   label: 'Active',   color: 'var(--accent-text)' },
+  { id: 'partner',  label: 'Partner',  color: 'var(--accent-text)' },
   { id: 'closed',   label: 'Closed',   color: T.negative },
 ];
 
@@ -898,7 +898,7 @@ function PersonasTab({ proj, onUpdate }) {
                 </div>
                 {p.painPoints && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: T.accent, textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.painPoints}</div>
                   </div>
                 )}
@@ -910,7 +910,7 @@ function PersonasTab({ proj, onUpdate }) {
                 )}
                 {p.outreachAngle && (
                   <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: T.accent, textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
+                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.outreachAngle}</div>
                   </div>
                 )}
@@ -959,7 +959,7 @@ function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
         <div style={{ display: 'flex', gap: 8 }}>
           {['high', 'medium', 'low'].map(p => (
             <div key={p} onClick={() => setVal(prev => ({ ...prev, priority: p }))}
-              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-sm)', color: val.priority === p ? T.accent : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
+              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-sm)', color: val.priority === p ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
               {p}
             </div>
           ))}

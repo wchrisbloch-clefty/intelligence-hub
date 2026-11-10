@@ -47,7 +47,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
       {/* header — yard-line progress */}
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-          <div style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent)', textTransform: 'uppercase' }}>Question {idx + 1} of {questions.length}</div>
+          <div style={{ fontSize: 10, letterSpacing: 2, color: 'var(--accent-text)', textTransform: 'uppercase' }}>Question {idx + 1} of {questions.length}</div>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
           {questions.map((_, i) => {
@@ -84,7 +84,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
           {!revealed
             ? <Btn color={color} disabled={!selected} onClick={() => setRevealed(true)} size="sm">Check answer</Btn>
             : <>
-                <div style={{ fontSize: 'var(--fs-base)', color: selected === q.answer ? 'var(--accent)' : 'var(--red)', padding: '8px 12px', background: selected === q.answer ? 'var(--accent-glow)' : 'rgba(196,85,61,0.08)', borderRadius: 6, marginBottom: 8 }}>
+                <div style={{ fontSize: 'var(--fs-base)', color: selected === q.answer ? 'var(--accent-text)' : 'var(--red)', padding: '8px 12px', background: selected === q.answer ? 'var(--accent-glow)' : 'rgba(196,85,61,0.08)', borderRadius: 6, marginBottom: 8 }}>
                   {selected === q.answer ? '✓ Correct' : `✗ Correct answer: ${q.answer}`}
                 </div>
                 {tierBadge}
@@ -101,7 +101,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginBottom: 14 }}>
             {[1, 2, 3, 4, 5].map(v => (
               <div key={v} onClick={() => setRating(v)}
-                style={{ width: 48, height: 48, borderRadius: 10, border: `2px solid ${rating === v ? 'var(--accent)' : 'var(--line)'}`, background: rating === v ? 'var(--accent-glow)' : 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', fontWeight: 800, color: rating === v ? 'var(--accent)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.1s' }}>
+                style={{ width: 48, height: 48, borderRadius: 10, border: `2px solid ${rating === v ? 'var(--accent)' : 'var(--line)'}`, background: rating === v ? 'var(--accent-glow)' : 'var(--ink)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-lg)', fontWeight: 800, color: rating === v ? 'var(--accent-text)' : 'var(--muted)', cursor: 'pointer', transition: 'all 0.1s' }}>
                 {v}
               </div>
             ))}
@@ -124,7 +124,7 @@ export default function QuizMode({ questions, onComplete, color = 'var(--accent)
                 {q.explanation && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--chalk-dim)', lineHeight: 1.6, marginBottom: 10 }}>{q.explanation}</div>}
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 0 })} style={{ flex: 1, padding: '10px', background: 'rgba(196,85,61,0.10)', border: '1px solid var(--red)', borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer', minHeight: 40 }}>Missed it</div>
-                  <div onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 1 })} style={{ flex: 1, padding: '10px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--accent)', cursor: 'pointer', minHeight: 40 }}>Got it</div>
+                  <div onClick={() => advance({ ...base(), answer: openAnswer, correct: null, score: 1 })} style={{ flex: 1, padding: '10px', background: 'var(--accent-glow)', border: '1px solid var(--accent)', borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', minHeight: 40 }}>Got it</div>
                 </div>
               </>
           }

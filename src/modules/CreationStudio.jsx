@@ -86,7 +86,7 @@ export default function CreationStudio() {
     return (
       <div onClick={() => { setSource({ kind: k, id: item.id, title: item.topic }); setResult(''); }}
         style={{ padding: '10px 12px', marginBottom: 6, borderRadius: 9, cursor: 'pointer', border: `1px solid ${sel ? ACCENT : 'var(--border)'}`, background: sel ? 'var(--accent-glow)' : 'var(--surface)' }}>
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: sel ? ACCENT : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.topic}</div>
+        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: sel ? 'var(--accent-text)' : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.topic}</div>
         <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 }}>{k === 'deepdive' ? 'Deep Dive' : 'Ladder'}</div>
       </div>
     );
@@ -94,7 +94,7 @@ export default function CreationStudio() {
 
   return (
     <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Turn knowledge into deliverables</div>
+      <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Turn knowledge into deliverables</div>
       <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Creation Studio</div>
       <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Generate a document, slide outline, or study guide from any saved Deep Dive or ladder.</div>
 
@@ -118,7 +118,7 @@ export default function CreationStudio() {
           <div key={k.id} onClick={() => setKind(k.id)}
             style={{ padding: '14px', borderRadius: 10, cursor: 'pointer', border: `1px solid ${kind === k.id ? ACCENT : 'var(--border)'}`, background: kind === k.id ? 'var(--accent-glow)' : 'var(--surface)' }}>
             <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 6 }}>{k.icon}</div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: kind === k.id ? ACCENT : 'var(--text)', marginBottom: 2 }}>{k.label}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: kind === k.id ? 'var(--accent-text)' : 'var(--text)', marginBottom: 2 }}>{k.label}</div>
             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{k.desc}</div>
           </div>
         ))}
@@ -132,15 +132,15 @@ export default function CreationStudio() {
       {(loading || result) && (
         <div ref={bottomRef} style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '18px 20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>{CREATION_KINDS.find(k => k.id === kind)?.label} · {source?.title}</div>
+            <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--accent-text)', textTransform: 'uppercase' }}>{CREATION_KINDS.find(k => k.id === kind)?.label} · {source?.title}</div>
             {result && !loading && (
               <div style={{ display: 'flex', gap: 8 }}>
                 <div onClick={copy} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px' }}>{copied ? '✓ Copied' : 'Copy'}</div>
-                <div onClick={download} style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 6, padding: '3px 9px', fontWeight: 700 }}>↓ .md</div>
+                <div onClick={download} style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 6, padding: '3px 9px', fontWeight: 700 }}>↓ .md</div>
               </div>
             )}
           </div>
-          {loading && !stream ? <ThinkingDots color={ACCENT} /> : <MD text={(loading ? stream + '▍' : result)} color={ACCENT} />}
+          {loading && !stream ? <ThinkingDots color="var(--accent-text)" /> : <MD text={(loading ? stream + '▍' : result)} color="var(--accent-text)" />}
         </div>
       )}
     </div>

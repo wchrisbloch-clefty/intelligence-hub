@@ -17,7 +17,7 @@ export default function AskChip({ type, object, label = 'Ask', size = 'sm', styl
   const pad = size === 'sm' ? '4px 10px' : '7px 13px';
   return (
     <button onClick={open} title="Ask the AI about this — it opens with the full context"
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: pad, borderRadius: 8, border: `1px solid ${withAlpha(T.accent, 35)}`, background: withAlpha(T.accent, 8), color: T.accent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', ...style }}>
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: pad, borderRadius: 8, border: `1px solid ${withAlpha(T.accent, 35)}`, background: withAlpha(T.accent, 8), color: 'var(--accent-text)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', ...style }}>
       <MessageSquare size={12} strokeWidth={2} /> {label}
     </button>
   );

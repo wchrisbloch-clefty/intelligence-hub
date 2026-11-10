@@ -193,7 +193,7 @@ function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, o
         const openConf = levelOpenConfirms(ladder, l, state).length;
         return (
           <div key={l.id} onClick={() => onOpen(l.id)} style={{ ...card(), marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: ACCENT, width: 28, flexShrink: 0 }}>L{i + 1}</div>
+            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--accent-text)', width: 28, flexShrink: 0 }}>L{i + 1}</div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
@@ -327,7 +327,7 @@ function renderBlockBody(b) {
     case 'h':
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          {b.n && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', fontWeight: 700, color: ACCENT, background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 30)}`, borderRadius: 5, padding: '1px 6px' }}>{b.n}</span>}
+          {b.n && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 30)}`, borderRadius: 5, padding: '1px 6px' }}>{b.n}</span>}
           <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{b.t}</span>
         </div>
       );
@@ -338,7 +338,7 @@ function renderBlockBody(b) {
         <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
           {(b.items || []).map((it, i) => (
             <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 'var(--fs-base)', lineHeight: 1.6, color: 'var(--text-c)' }}>
-              <span style={{ color: ACCENT, flexShrink: 0 }}>▸</span>
+              <span style={{ color: 'var(--accent-text)', flexShrink: 0 }}>▸</span>
               <HTML html={it} />
             </li>
           ))}
@@ -388,7 +388,7 @@ function renderBlockBody(b) {
           {(b.stages || []).map((s, i) => (
             <div key={i} style={{ minWidth: 150, flexShrink: 0, background: s.us ? withAlpha(ACCENT, 14) : 'var(--surface)', border: `1px solid ${s.us ? withAlpha(ACCENT, 45) : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px' }}>
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{s.n}</div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: s.us ? ACCENT : 'var(--text)', marginTop: 2 }}>{s.nm}</div>
+              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: s.us ? 'var(--accent-text)' : 'var(--text)', marginTop: 2 }}>{s.nm}</div>
               {s.v && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>{s.v}</div>}
               {s.d && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', marginTop: 5, lineHeight: 1.45 }}>{s.d}</div>}
             </div>
@@ -412,7 +412,7 @@ function renderBlockBody(b) {
                 </ul>
               </div>
             )}
-            {b.kill && <BCRow color={ACCENT} label="Kill shot" html={b.kill} />}
+            {b.kill && <BCRow color="var(--accent-text)" label="Kill shot" html={b.kill} />}
             {b.watch && <BCRow color="var(--negative)" label="Watch for" html={b.watch} />}
           </div>
         </div>
@@ -422,7 +422,7 @@ function renderBlockBody(b) {
         <div style={{ background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', fontFamily: 'var(--font-mono)' }}>
           {b.title && <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>{b.title}</div>}
           {(b.lines || []).map((ln, i) => <div key={i} style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{ln || ' '}</div>)}
-          {b.result && <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{b.result}</div>}
+          {b.result && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{b.result}</div>}
         </div>
       );
     default:
@@ -571,7 +571,7 @@ function FieldMode({ ladder, state, onExit, isPhone }) {
                 <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>{s.label}</div>
                 {s.sub && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 2 }}>{s.sub}</div>}
               </div>
-              <span style={{ color: ACCENT, fontSize: 'var(--fs-xl)'}}>→</span>
+              <span style={{ color: 'var(--accent-text)', fontSize: 'var(--fs-xl)'}}>→</span>
             </div>
           ))}
         </div>
@@ -587,7 +587,7 @@ function FieldCard({ scenario }) {
     <div style={{ maxWidth: 640, margin: '0 auto' }}>
       <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 16 }}>{scenario.label}</div>
 
-      <FieldSection label="Open with" color={ACCENT}>
+      <FieldSection label="Open with" color="var(--accent-text)">
         <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.open}</div>
       </FieldSection>
 
@@ -604,7 +604,7 @@ function FieldCard({ scenario }) {
 
       {scenario.ask && (
         <div style={{ background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 40)}`, borderRadius: 10, padding: '14px 16px', marginTop: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: ACCENT, marginBottom: 6 }}>The ask</div>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent-text)', marginBottom: 6 }}>The ask</div>
           <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.ask}</div>
         </div>
       )}
@@ -732,10 +732,10 @@ function SocraticDrill({ ladder, level, onClose }) {
               so empty only exists for the first frame before the call starts. */}
           {messages.map((m, i) => (
             <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', background: m.role === 'user' ? 'var(--u-bubble)' : 'var(--bg)', border: `1px solid ${m.role === 'user' ? 'var(--u-bubble-b)' : 'var(--border)'}`, borderRadius: 12, padding: '10px 14px' }}>
-              {m.role === 'user' ? <div style={{ fontSize: 'var(--fs-base)', color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color={ACCENT} />}
+              {m.role === 'user' ? <div style={{ fontSize: 'var(--fs-base)', color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color="var(--accent-text)" />}
             </div>
           ))}
-          {loading && stream && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}><MD text={stream + '▍'} color={ACCENT} /></div>}
+          {loading && stream && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}><MD text={stream + '▍'} color="var(--accent-text)" /></div>}
           {loading && !stream && <SectionSkeleton rows={2} label="examiner question" />}
           {drillStatus === 'error' && <SectionError label={lastAsk?.first ? 'the first drill question' : 'the examiner’s reply'} onRetry={retry} detail={err} />}
         </div>
@@ -754,7 +754,7 @@ const card = () => ({ background: 'var(--surface)', border: '1px solid var(--bor
 const pill = (color) => ({ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color, border: `1px solid ${withAlpha(color, 40)}`, background: withAlpha(color, 12), borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap' });
 const band = (color) => ({ background: withAlpha(color, 10), border: `1px solid ${withAlpha(color, 40)}`, borderRadius: 10, padding: '10px 14px', fontSize: 11.5, lineHeight: 1.55, color: 'var(--text-c)', marginBottom: 16 });
 
-const Eyebrow = ({ children }) => <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{children}</div>;
+const Eyebrow = ({ children }) => <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{children}</div>;
 const H1 = ({ children }) => <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>{children}</div>;
 const SectionLabel = ({ children, style }) => <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--dim)', textTransform: 'uppercase', fontWeight: 700, margin: '22px 0 10px', ...style }}>{children}</div>;
 const MetaPill = ({ children }) => <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 20, padding: '2px 9px', fontWeight: 600 }}>{children}</span>;
@@ -769,7 +769,7 @@ function Action({ children, onClick, primary, disabled }) {
 }
 
 function BackRow({ onBack, label }) {
-  return <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700, marginBottom: 14, display: 'inline-block' }}>← {label}</div>;
+  return <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700, marginBottom: 14, display: 'inline-block' }}>← {label}</div>;
 }
 
 function StatusBadge({ status, score }) {

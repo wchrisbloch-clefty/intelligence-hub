@@ -133,7 +133,7 @@ export default function DeepDive() {
   if (view === 'home') {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Source-Grounded Research</div>
+        <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Source-Grounded Research</div>
         <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Deep Dive</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>A Deep Dive saves as a reopenable research file. Come back anytime and <strong style={{ color: 'var(--muted)' }}>keep going</strong> — deepen a section, add an angle, or refresh the data. It compounds.</div>
 
@@ -149,7 +149,7 @@ export default function DeepDive() {
             {DEPTHS.map(d => (
               <div key={d} onClick={() => setDepth(d)}
                 style={{ flex: 1, padding: '8px', borderRadius: 8, textAlign: 'center', cursor: 'pointer', border: `1px solid ${depth === d ? ACCENT : 'var(--border)'}`, background: depth === d ? 'var(--accent-glow)' : 'transparent' }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: depth === d ? ACCENT : 'var(--text-b)' }}>{DEPTH_META[d].label}</div>
+                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: depth === d ? 'var(--accent-text)' : 'var(--text-b)' }}>{DEPTH_META[d].label}</div>
                 <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{DEPTH_META[d].blurb}</div>
               </div>
             ))}
@@ -195,13 +195,13 @@ export default function DeepDive() {
   return (
     <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Deep Dives</div>
+        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>← Deep Dives</div>
         <div style={{ display: 'flex', gap: 8 }}>
           <div onClick={() => { const t = prompt('Rename dive', dive.topic); if (t && t.trim()) { renameDive(dive.id, t.trim()); setDive({ ...dive, topic: t.trim() }); refresh(); } }}
             style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 7, padding: '4px 10px' }}>✎ Rename</div>
           {openStudio && dive.sections.length > 0 && (
             <div onClick={() => openStudio({ kind: 'deepdive', id: dive.id, title: dive.topic })}
-              style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 7, padding: '4px 10px', fontWeight: 700 }}>↗ Export</div>
+              style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 7, padding: '4px 10px', fontWeight: 700 }}>↗ Export</div>
           )}
         </div>
       </div>
@@ -224,13 +224,13 @@ export default function DeepDive() {
       {dive.sections.map((s, i) => (
         <div key={s.id} style={{ marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <div style={{ fontSize: 8, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>Pass {i + 1} · {s.title}</div>
+            <div style={{ fontSize: 8, letterSpacing: 2, color: 'var(--accent-text)', textTransform: 'uppercase' }}>Pass {i + 1} · {s.title}</div>
             <ProviderTag provider={s.provider} />
             <div style={{ marginLeft: 'auto' }}>
               <SaveToNotes title={`${dive.topic} — ${s.title}`} content={s.content} source={{ title: dive.topic, tier: 'reported' }} label="Notes" />
             </div>
           </div>
-          <MD text={s.content} color={ACCENT} />
+          <MD text={s.content} color="var(--accent-text)" />
           <DiagramBlock
             content={s.content}
             hint={`Diagram the structure of this pass on "${dive.topic}".`}
@@ -247,7 +247,7 @@ export default function DeepDive() {
 
       {running && stream && (
         <div style={{ marginBottom: 16, background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '16px 18px' }}>
-          <MD text={stream + '▍'} color={ACCENT} />
+          <MD text={stream + '▍'} color="var(--accent-text)" />
         </div>
       )}
       {running && !stream && <SectionSkeleton rows={6} lead label="research pass" />}
@@ -271,7 +271,7 @@ export default function DeepDive() {
       {/* Keep going */}
       {!running && dive.sections.length > 0 && (
         <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '16px 18px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Keep going</div>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Keep going</div>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 8 }}>Go deeper on a section:</div>
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
             {dive.sections.map(s => (

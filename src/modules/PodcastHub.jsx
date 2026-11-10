@@ -118,7 +118,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
       <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
         <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{idx + 1}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: ACCENT, marginBottom: 3, letterSpacing: 0.3 }}>
+          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', marginBottom: 3, letterSpacing: 0.3 }}>
             {ep.emoji} {ep.show}
           </div>
           <div
@@ -148,7 +148,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
           <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
             {aiTabs.map(t => (
               <div key={t.id} onClick={() => handleAI(t.id)}
-                style={{ padding: '4px 10px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, color: aiPanel === t.id ? ACCENT : 'var(--subtle)', background: aiPanel === t.id ? ACCENT_BG : 'transparent', transition: 'all 0.12s' }}>
+                style={{ padding: '4px 10px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, color: aiPanel === t.id ? 'var(--accent-text)' : 'var(--subtle)', background: aiPanel === t.id ? ACCENT_BG : 'transparent', transition: 'all 0.12s' }}>
                 {t.label}
               </div>
             ))}
@@ -162,7 +162,7 @@ function PodCard({ ep, idx, onSaveToVault }) {
           </div>
           {/* AI content */}
           <div data-status={aiStatus} style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
+            <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>
               {aiPanel === 'summary' ? 'AI Summary' : aiPanel === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
             </div>
             {aiStatus === 'loading'
@@ -171,14 +171,14 @@ function PodCard({ ep, idx, onSaveToVault }) {
               ? <SectionError label={aiPanel === 'summary' ? 'the summary' : aiPanel === 'takeaways' ? 'the takeaways' : 'the deep dive'} onRetry={() => genMode(aiPanel)} detail={aiErr[aiPanel]} />
               : aiCache[aiPanel]
                 ? <>
-                    <MD text={aiCache[aiPanel]} color={ACCENT} />
+                    <MD text={aiCache[aiPanel]} color="var(--accent-text)" />
                     {!vaulted && (
                       <div onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }}
-                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
+                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
                         🏛 Save to Vault
                       </div>
                     )}
-                    {vaulted && <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>}
+                    {vaulted && <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>✓ Saved to Vault</div>}
                   </>
                 : null
             }
@@ -198,13 +198,13 @@ function PodCard({ ep, idx, onSaveToVault }) {
         )}
         {aiTabs.map(t => (
           <button key={t.id} onClick={() => handleAI(t.id)} disabled={aiLoading && aiPanel === t.id && !aiCache[t.id]}
-            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: aiPanel === t.id ? ACCENT_BG : 'transparent', color: aiPanel === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: aiPanel === t.id ? ACCENT_BG : 'transparent', color: aiPanel === t.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
             {t.shortLabel} {aiLoading && aiPanel === t.id && !aiCache[t.id] ? '…' : aiPanel === t.id ? 'Hide' : t.id === 'summary' ? 'Summary' : t.id === 'takeaways' ? 'Takeaways' : 'Deep Dive'}
           </button>
         ))}
         {ttsSupported && (
           <button onClick={handleReadAloud}
-            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${reading ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: reading ? ACCENT_BG : 'transparent', color: reading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.12s' }}>
+            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${reading ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: reading ? ACCENT_BG : 'transparent', color: reading ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.12s' }}>
             {reading
               ? <><span style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 10 }}>
                   {[0,1,2,3,4].map(i => <span key={i} style={{ width: 2, background: ACCENT, borderRadius: 1, animation: `bar${i % 3} 0.8s ${i * 0.12}s ease-in-out infinite`, height: [6,10,8,12,7][i] }} />)}
@@ -222,7 +222,7 @@ export default function PodcastHub() {
   const { isMobile, isTablet, notes, setNotes } = useApp();
 
   const saveToVault = async (title, content) => {
-    const note = { id: uid(), title, content, tags: ['podcast'], connections: [], color: ACCENT, createdAt: Date.now() };
+    const note = { id: uid(), title, content, tags: ['podcast'], connections: [], color: 'var(--accent-text)', createdAt: Date.now() };
     const updated = [note, ...notes];
     setNotes(updated);
     await saveNotes(updated);
@@ -335,7 +335,7 @@ export default function PodcastHub() {
         style={{ padding: '10px 12px', background: isActive ? ACCENT_BG : 'var(--surface)', border: `1px solid ${isActive ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.12s', marginBottom: 6 }}>
         <span style={{ fontSize: 'var(--fs-lg)', flexShrink: 0 }}>{isAll ? '🎙️' : pod.emoji}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: isActive ? ACCENT : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: isActive ? 'var(--accent-text)' : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {isAll ? 'All Shows' : pod.name}
           </div>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -354,7 +354,7 @@ export default function PodcastHub() {
         const isActive = pod === null ? !activePod : activePod?.name === pod.name;
         return (
           <div key={i} onClick={() => setActivePod(pod === null ? null : (isActive ? null : pod))}
-            style={{ flexShrink: 0, padding: '6px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 20, border: `1px solid ${isActive ? ACCENT : 'var(--border)'}`, background: isActive ? ACCENT_BG : 'var(--surface)', color: isActive ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+            style={{ flexShrink: 0, padding: '6px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 20, border: `1px solid ${isActive ? ACCENT : 'var(--border)'}`, background: isActive ? ACCENT_BG : 'var(--surface)', color: isActive ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
             {pod === null ? '🎙️ All' : `${pod.emoji} ${pod.name}`}
           </div>
         );
@@ -416,7 +416,7 @@ export default function PodcastHub() {
       {displayEps.length === 0 && (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           {anyLoading
-            ? <><div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 16 }}>Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color={ACCENT} /></>
+            ? <><div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 16 }}>Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color="var(--accent-text)" /></>
             : <><div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>🎙️</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No episodes loaded yet</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Episodes load in the background. Check back in a moment.</div></>
           }
         </div>
@@ -479,13 +479,13 @@ export default function PodcastHub() {
                 { id: 'deepdive',  label: '📄 Deep Dive', short: '📄' },
               ].map(btn => (
                 <button key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteHasContent || (pasteLoading && pasteMode !== btn.id)}
-                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteLoading && pasteMode === btn.id ? `${btn.short} Analyzing…` : btn.label}
                 </button>
               ))}
               {ttsGlobal && (
                 <button onClick={handlePasteReadAloud} disabled={!pasteHasContent && !pasteResult}
-                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
                   {pasteReading ? '⏹ Stop' : '🔊 Read Aloud'}
                 </button>
               )}
@@ -498,19 +498,19 @@ export default function PodcastHub() {
             </div>
             {(pasteLoading || pasteResult || pasteErr) && (
               <div data-status={pasteStatus} style={{ marginTop: 14, background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
+                <div style={{ fontSize: 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 8 }}>
                   {pasteMode === 'summary' ? 'AI Summary' : pasteMode === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
                 </div>
                 {pasteStatus === 'loading' ? <SectionSkeleton rows={pasteMode === 'deepdive' ? 6 : 3} label="podcast analysis" />
                   : pasteStatus === 'error' ? <SectionError label="this analysis" onRetry={() => runPaste(pasteMode)} detail={pasteErr} /> : (
                   <>
-                    <MD text={pasteResult} color={ACCENT} />
+                    <MD text={pasteResult} color="var(--accent-text)" />
                     {!pasteVaulted
                       ? <div onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
-                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
+                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
                           🏛 Save to Vault
                         </div>
-                      : <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>
+                      : <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>✓ Saved to Vault</div>
                     }
                   </>
                 )}

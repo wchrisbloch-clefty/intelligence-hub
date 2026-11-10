@@ -216,13 +216,13 @@ ${TIER_INSTRUCTION}`;
 
         <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
           {talk.tags.map(t => (
-            <span key={t} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 4, color: ACCENT, fontWeight: 600 }}>{t}</span>
+            <span key={t} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 4, color: 'var(--accent-text)', fontWeight: 600 }}>{t}</span>
           ))}
         </div>
 
         <div style={{ display: 'flex', gap: 8 }}>
           <a href={talk.url} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: ACCENT, fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
+            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: 'var(--accent-text)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
             ▶ Watch
           </a>
           <button onClick={analyze}
@@ -244,14 +244,14 @@ ${TIER_INSTRUCTION}`;
                 <SourceGrounding value={userSrc} onSave={(v) => { setUserSrc(v); runAnalysis(); }} onClear={() => setUserSrc(null)} types={SRC_TYPES}
                   label="I have the transcript / notes — paste to ground this" />
               </div>
-              <MD text={analysis} color={ACCENT} />
+              <MD text={analysis} color="var(--accent-text)" />
               {analysis && !vaulted && (
                 <button onClick={saveToVault}
                   style={{ marginTop: 12, fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-c)', cursor: 'pointer', fontFamily: 'inherit' }}>
                   🏛 Save to Vault
                 </button>
               )}
-              {vaulted && <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>}
+              {vaulted && <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>✓ Saved to Vault</div>}
             </>
           )}
         </div>
@@ -285,7 +285,7 @@ export default function TEDHub() {
 
       {/* Header */}
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)' }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Thought Leadership</div>
+        <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 4 }}>Thought Leadership</div>
         <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>
           TED Intelligence Hub
         </div>
@@ -312,7 +312,7 @@ export default function TEDHub() {
       <div style={{ padding: `10px ${pad}`, display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', borderBottom: '1px solid var(--bord2)' }}>
         {TOPIC_FILTERS.map(f => (
           <div key={f.id} onClick={() => setTopicFilter(f.id)}
-            style={{ flexShrink: 0, padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, cursor: 'pointer', transition: 'all 0.12s', border: `1px solid ${topicFilter === f.id ? ACCENT_BORDER : 'var(--border)'}`, background: topicFilter === f.id ? ACCENT_BG : 'transparent', color: topicFilter === f.id ? ACCENT : 'var(--subtle)' }}>
+            style={{ flexShrink: 0, padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, cursor: 'pointer', transition: 'all 0.12s', border: `1px solid ${topicFilter === f.id ? ACCENT_BORDER : 'var(--border)'}`, background: topicFilter === f.id ? ACCENT_BG : 'transparent', color: topicFilter === f.id ? 'var(--accent-text)' : 'var(--subtle)' }}>
             {f.label}
           </div>
         ))}
@@ -337,7 +337,7 @@ export default function TEDHub() {
         <div onClick={() => {
           setChatPrefill('Analyze this TED talk for me: ');
           setChatOpen(true);
-        }} style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700, cursor: 'pointer' }}>
+        }} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700, cursor: 'pointer' }}>
           Open AI Chat to analyze any talk URL →
         </div>
         <div onClick={() => setActiveModule('podcast')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>

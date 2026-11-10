@@ -195,7 +195,7 @@ export default function WhatsHappening() {
         <span style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>Lens</span>
         {[['work', 'Work'], ['personal', 'Personal'], ['both', 'Both']].map(([id, label]) => {
           const on = lens === id;
-          return <button key={id} onClick={() => setLens(id)} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>{label}</button>;
+          return <button key={id} onClick={() => setLens(id)} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent-text)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>{label}</button>;
         })}
       </div>
 
@@ -216,7 +216,7 @@ export default function WhatsHappening() {
                 <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{d.title}</div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                   <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{d.outlets} outlets covering · you follow {sources.filter((s) => s.category === d.category && s.enabled).length}</span>
-                  <button onClick={() => followDiscovery(d)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}><Icon name="Plus" size={13} /> Add {d.suggest}</button>
+                  <button onClick={() => followDiscovery(d)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}><Icon name="Plus" size={13} /> Add {d.suggest}</button>
                 </div>
               </div>
             ))}
@@ -228,7 +228,7 @@ export default function WhatsHappening() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, overflowX: 'auto', scrollbarWidth: 'none' }}>
         {categories.map((c) => {
           const on = filter === c;
-          return <button key={c} onClick={() => setFilter(c)} style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 20, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', minHeight: 34 }}>{c}</button>;
+          return <button key={c} onClick={() => setFilter(c)} style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 20, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent-text)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', minHeight: 34 }}>{c}</button>;
         })}
         <div style={{ flex: 1 }} />
         <button onClick={() => persistDensity(compact ? 'comfortable' : 'compact')} title="Density"
@@ -251,7 +251,7 @@ export default function WhatsHappening() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {sources.map((s) => (
               <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 10px', borderRadius: 20, border: '1px solid var(--rule)', background: s.enabled ? 'var(--bg)' : 'transparent', opacity: s.enabled ? 1 : 0.5 }}>
-                <button onClick={() => toggleSource(s.id)} title={s.enabled ? 'Disable' : 'Enable'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: s.enabled ? 'var(--accent)' : 'var(--text-tertiary)' }}><Icon name={s.enabled ? 'Check' : 'Circle'} size={13} /></button>
+                <button onClick={() => toggleSource(s.id)} title={s.enabled ? 'Disable' : 'Enable'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: s.enabled ? 'var(--accent-text)' : 'var(--text-tertiary)' }}><Icon name={s.enabled ? 'Check' : 'Circle'} size={13} /></button>
                 <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>{s.name}</span>
                 <span style={{ fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 1 }}>{s.category}</span>
                 <button onClick={() => removeSource(s.id)} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-tertiary)' }}><Icon name="X" size={13} /></button>
@@ -265,7 +265,7 @@ export default function WhatsHappening() {
       <div style={{ display: isDesktop ? 'grid' : 'block', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) 280px' : undefined, gap: 28, alignItems: 'start' }}>
         <div>
           {freshCount > 0 && (
-            <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', marginBottom: 12 }}>{freshCount} new since your last visit</div>
+            <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', marginBottom: 12 }}>{freshCount} new since your last visit</div>
           )}
           {loading && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', padding: '12px 0' }}>Loading feed…</div>}
           <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>

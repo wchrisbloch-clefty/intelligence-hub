@@ -44,7 +44,7 @@ export function GoingDeepBanner({ depth = 'expert', note }) {
     <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--accent-glow)', border: `1px solid ${ACCENT}`, borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
       <span style={{ fontSize: 14, animation: 'pulse 1.2s infinite ease-in-out' }}>🔦</span>
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 800, color: ACCENT, letterSpacing: 1, textTransform: 'uppercase' }}>Going Deep · {meta.label}</div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent-text)', letterSpacing: 1, textTransform: 'uppercase' }}>Going Deep · {meta.label}</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.5 }}>
           {note || 'Pulling live sources and building your brief — this takes longer than a quick answer.'}
         </div>

@@ -14,7 +14,7 @@ export default function BookSuggest({ results = [], loading = false, query = '',
     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 20, marginTop: 4, maxHeight: 320, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, boxShadow: '0 6px 24px rgba(0,0,0,0.18)', WebkitOverflowScrolling: 'touch' }}>
       {loading && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 14px', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
-          <ThinkingDots color="var(--accent)" /> Searching the catalog…
+          <ThinkingDots color="var(--accent-text)" /> Searching the catalog…
         </div>
       )}
       {!loading && results.length === 0 && (

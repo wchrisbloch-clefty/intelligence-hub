@@ -103,7 +103,7 @@ export default function LearningLadder() {
   if (view === 'home') {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ marginBottom: 6, fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase' }}>Structured Path</div>
+        <div style={{ marginBottom: 6, fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase' }}>Structured Path</div>
         <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Learning Ladder</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Name a subject. Get an ordered, prereq-gated path — study each rung, pass its quiz, unlock the next.</div>
 
@@ -116,7 +116,7 @@ export default function LearningLadder() {
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
             {GOALS.map(g => (
               <div key={g.id} onClick={() => setGoal(g.id)}
-                style={{ padding: '5px 12px', borderRadius: 16, fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', border: `1px solid ${goal === g.id ? ACCENT : 'var(--border)'}`, color: goal === g.id ? ACCENT : 'var(--muted)', background: goal === g.id ? 'var(--accent-glow)' : 'transparent' }}>
+                style={{ padding: '5px 12px', borderRadius: 16, fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', border: `1px solid ${goal === g.id ? ACCENT : 'var(--border)'}`, color: goal === g.id ? 'var(--accent-text)' : 'var(--muted)', background: goal === g.id ? 'var(--accent-glow)' : 'transparent' }}>
                 {g.label}
               </div>
             ))}
@@ -125,7 +125,7 @@ export default function LearningLadder() {
             style={{ width: '100%', padding: '12px', background: topicInput.trim() && !generating ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !generating ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: topicInput.trim() && !generating ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
             {generating ? 'Designing your path…' : 'Build my ladder →'}
           </button>
-          {generating && <div style={{ marginTop: 12, textAlign: 'center' }}><ThinkingDots color={ACCENT} /></div>}
+          {generating && <div style={{ marginTop: 12, textAlign: 'center' }}><ThinkingDots color="var(--accent-text)" /></div>}
           {genError && <div style={{ marginTop: 10, fontSize: 'var(--fs-base)', color: 'var(--red)', textAlign: 'center' }}>{genError}</div>}
         </div>
 
@@ -142,7 +142,7 @@ export default function LearningLadder() {
                     <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{GOALS.find(g => g.id === l.goal)?.label || l.goal}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: ACCENT }}>{l.progress}%</div>
+                    <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--accent-text)' }}>{l.progress}%</div>
                     <span onClick={e => deleteLadder(l.id, e)} title="Delete" style={{ fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer' }}>🗑</span>
                   </div>
                 </div>
@@ -175,7 +175,7 @@ export default function LearningLadder() {
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Ladders</div>
+        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>← Ladders</div>
       </div>
       <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{ladder.topic}</div>
       <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 14px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -190,13 +190,13 @@ export default function LearningLadder() {
         const done   = m.status === 'done';
         return (
           <div key={m.id} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-            <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 800, border: `1.5px solid ${done ? ACCENT : locked ? 'var(--line)' : ACCENT}`, background: done ? ACCENT : 'transparent', color: done ? T.canvas : locked ? 'var(--dim)' : ACCENT }}>
+            <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 800, border: `1.5px solid ${done ? ACCENT : locked ? 'var(--line)' : ACCENT}`, background: done ? ACCENT : 'transparent', color: done ? T.canvas : locked ? 'var(--dim)' : 'var(--accent-text)' }}>
               {done ? '✓' : locked ? '🔒' : i + 1}
             </div>
             <div style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${locked ? 'var(--border-dim)' : done ? 'var(--border)' : ACCENT}`, borderRadius: 10, padding: '12px 14px', opacity: locked ? 0.6 : 1 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{m.title}</div>
-                <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: done ? ACCENT : locked ? 'var(--dim)' : ACCENT, fontWeight: 700 }}>{m.status}</div>
+                <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: done ? 'var(--accent-text)' : locked ? 'var(--dim)' : 'var(--accent-text)', fontWeight: 700 }}>{m.status}</div>
               </div>
               {m.objectives?.length > 0 && (
                 <ul style={{ margin: '8px 0 0', paddingLeft: 16 }}>
@@ -206,7 +206,7 @@ export default function LearningLadder() {
               {!locked && (
                 <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                   <div onClick={() => { setActiveMod(m); setView('session'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: ACCENT, background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
+                    style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: 'var(--accent-text)', background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
                     {done ? 'Review' : 'Study'}
                   </div>
                   <div onClick={() => { setActiveMod(m); setView('quiz'); }}
@@ -243,10 +243,10 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--bord2)', padding: '12px 20px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ minWidth: 0 }}>
-          <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700, marginBottom: 2 }}>← {topic}</div>
+          <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700, marginBottom: 2 }}>← {topic}</div>
           <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mod.title}</div>
         </div>
-        <div onClick={onQuiz} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: ACCENT, background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Quiz me →</div>
+        <div onClick={onQuiz} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: 'var(--accent-text)', background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Quiz me →</div>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 0' }}>
@@ -256,7 +256,7 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
               <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '10px 14px', maxWidth: '85%', fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
             ) : (
               <div style={{ background: 'var(--surface)', border: '1px solid var(--accent-glow)', borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
-                <MD text={msg.content} color={ACCENT} />
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
@@ -264,7 +264,7 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
         {loading && (
           <div style={{ maxWidth: 760, margin: '0 auto 14px', display: 'flex', justifyContent: 'flex-start' }}>
             <div style={{ background: 'var(--surface)', border: '1px solid var(--accent-glow)', borderRadius: '3px 14px 14px 14px', padding: '12px 16px', maxWidth: '94%' }}>
-              {streamText ? <MD text={streamText + '▍'} color={ACCENT} /> : <ThinkingDots color={ACCENT} />}
+              {streamText ? <MD text={streamText + '▍'} color="var(--accent-text)" /> : <ThinkingDots color="var(--accent-text)" />}
             </div>
           </div>
         )}
@@ -312,7 +312,7 @@ function LadderQuiz({ topic, mod, onComplete, onBack, onDone }) {
   if (outcome) {
     return (
       <div style={{ maxWidth: 620, margin: '0 auto', padding: `40px ${pad}`, textAlign: 'center' }}>
-        <div style={{ fontSize: 'var(--fs-3xl)', fontWeight: 800, color: outcome.passed ? ACCENT : 'var(--red)', marginBottom: 6 }}>{outcome.pct}%</div>
+        <div style={{ fontSize: 'var(--fs-3xl)', fontWeight: 800, color: outcome.passed ? 'var(--accent-text)' : 'var(--red)', marginBottom: 6 }}>{outcome.pct}%</div>
         <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{outcome.passed ? 'Module cleared — next rung unlocked.' : 'Not yet — review and run it again.'}</div>
         <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 24 }}>{outcome.passed ? `You passed "${mod.title}".` : `You need ${PASS_PCT}% to advance. This is data, not judgment.`}</div>
         <div onClick={onDone} style={{ display: 'inline-block', padding: '11px 24px', background: ACCENT, borderRadius: 9, color: T.canvas, fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer' }}>Back to ladder →</div>
@@ -324,15 +324,15 @@ function LadderQuiz({ topic, mod, onComplete, onBack, onDone }) {
     <div style={{ maxWidth: 680, margin: '0 auto', padding: `20px ${pad} 60px` }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700 }}>{mod.title}</div>
+        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700 }}>{mod.title}</div>
       </div>
       {loading || questions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
           <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 16 }}>Building your quiz…</div>
-          <ThinkingDots color={ACCENT} />
+          <ThinkingDots color="var(--accent-text)" />
         </div>
       ) : (
-        <QuizMode questions={questions} color={ACCENT} onComplete={(results) => setOutcome(onComplete(results))} />
+        <QuizMode questions={questions} color="var(--accent-text)" onComplete={(results) => setOutcome(onComplete(results))} />
       )}
     </div>
   );

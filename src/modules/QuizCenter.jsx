@@ -141,7 +141,7 @@ export default function QuizCenter() {
     return (
       <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Back</div>
+          <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>← Back</div>
           <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Quiz History</div>
         </div>
         {history.length === 0 ? (
@@ -154,7 +154,7 @@ export default function QuizCenter() {
                   <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
                   <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
                 </div>
-                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: h.score / h.total >= 0.7 ? T.accent : h.score / h.total >= 0.5 ? ACCENT : T.negative }}>
+                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: h.score / h.total >= 0.7 ? 'var(--accent-text)' : h.score / h.total >= 0.5 ? 'var(--accent-text)' : T.negative }}>
                   {h.score}/{h.total}
                 </div>
               </div>
@@ -181,17 +181,17 @@ export default function QuizCenter() {
         </div>
 
         <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Gap Analysis</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Gap Analysis</div>
           {gapLoading ? (
-            <div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color={ACCENT} /></div>
+            <div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color="var(--accent-text)" /></div>
           ) : (
-            <MD text={gapReport} color={ACCENT} />
+            <MD text={gapReport} color="var(--accent-text)" />
           )}
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <div onClick={() => startQuiz(topic)}
-            style={{ flex: 1, padding: '12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: ACCENT, cursor: 'pointer' }}>
+            style={{ flex: 1, padding: '12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
             Retry Quiz
           </div>
           <div onClick={() => setView('pick')}
@@ -215,15 +215,15 @@ export default function QuizCenter() {
         {generating || questions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 20px' }}>
             <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 16 }}>Building your {topic?.label} quiz…</div>
-            <ThinkingDots color={ACCENT} />
+            <ThinkingDots color="var(--accent-text)" />
           </div>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700 }}>{topic?.label}</div>
+              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700 }}>{topic?.label}</div>
             </div>
-            <QuizMode questions={questions} color={ACCENT} sourceTier={QUIZ_SOURCE_TIER} onComplete={onQuizDone} />
+            <QuizMode questions={questions} color="var(--accent-text)" sourceTier={QUIZ_SOURCE_TIER} onComplete={onQuizDone} />
           </>
         )}
       </div>
@@ -237,7 +237,7 @@ export default function QuizCenter() {
     <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 60 }}>
       <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Self-Assessment</div>
+          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 4 }}>Self-Assessment</div>
           <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
             Knowledge Check
           </div>
@@ -260,7 +260,7 @@ export default function QuizCenter() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {graphTopics.map(t => (
                 <div key={t.title} onClick={() => startQuiz({ id: t.title.toLowerCase().replace(/\s+/g, '_'), label: t.title, icon: '📚', desc: `Your tracked topic — ${t.sessions} sessions` })}
-                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--accent, #D9A441)' }}>
+                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--accent-text)' }}>
                   📚 {t.title} · {t.confidence}/10
                 </div>
               ))}
