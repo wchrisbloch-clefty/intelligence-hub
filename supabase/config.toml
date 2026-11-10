@@ -1,0 +1,13 @@
+# Supabase project config — Intel Hub (ujywrlbuwecitwkvzohb). Batch Z / Order E.
+project_id = "ujywrlbuwecitwkvzohb"
+
+# pg_cron can't present a user JWT; these functions gate on x-cron-secret (Vault).
+[functions.weekly-recap]
+verify_jwt = false
+
+[functions.monthly-review]
+verify_jwt = false
+
+# ground-book is called from the browser with the project's publishable key.
+[functions.ground-book]
+verify_jwt = true
