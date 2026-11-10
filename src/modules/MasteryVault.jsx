@@ -1,4 +1,4 @@
-import { T, withAlpha } from '../theme';
+import { T } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveNotes, callClaude, uid } from '../utils.js';
@@ -9,17 +9,22 @@ const FLASHCARDS_KEY = 'aether_flashcards';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Modal, ThinkingDots } from './shared/Common.jsx';
 import AskChip from './shared/AskChip.jsx';
+import Icon from './shared/Icon.jsx';
+import './mastery-vault.css';
 
+// Mastery Vault (mv-). Every colour lives in mastery-vault.css. A note's stored
+// `color` is passed to the shared components as before (they route it through CSS
+// custom properties) and drives the dot via --nc; text always reads --accent-text.
 const VAULT_ACCENT  = T.accent;
 const NOTE_COLORS   = [T.accent, T.accent, T.accent, T.accent, T.accent, T.accent];
 
 const EXPORT_FORMATS = [
-  { id: 'linkedin',  icon: '💼', label: 'LinkedIn Post',     desc: 'Engaging professional post with hook, body, CTA' },
-  { id: 'newsletter',icon: '📬', label: 'Newsletter Section', desc: 'Reader-friendly article section with narrative flow' },
-  { id: 'thread',    icon: '🐦', label: 'Twitter/X Thread',  desc: '6–8 tweet thread with hooks and punchy insights' },
-  { id: 'course',    icon: '🎓', label: 'Course Outline',    desc: 'Structured course with modules, lessons, exercises' },
-  { id: 'blog',      icon: '📝', label: 'Blog Post',         desc: 'Full blog article with sections, examples, conclusion' },
-  { id: 'brief',     icon: '⚡', label: 'Executive Brief',   desc: 'One-pager: situation, insights, recommendations, action' },
+  { id: 'linkedin',  icon: 'Briefcase',     label: 'LinkedIn Post',     desc: 'Engaging professional post with hook, body, CTA' },
+  { id: 'newsletter',icon: 'Inbox',         label: 'Newsletter Section', desc: 'Reader-friendly article section with narrative flow' },
+  { id: 'thread',    icon: 'MessageSquare', label: 'Twitter/X Thread',  desc: '6–8 tweet thread with hooks and punchy insights' },
+  { id: 'course',    icon: 'GraduationCap', label: 'Course Outline',    desc: 'Structured course with modules, lessons, exercises' },
+  { id: 'blog',      icon: 'PenSquare',     label: 'Blog Post',         desc: 'Full blog article with sections, examples, conclusion' },
+  { id: 'brief',     icon: 'Zap',           label: 'Executive Brief',   desc: 'One-pager: situation, insights, recommendations, action' },
 ];
 
 const DAY_MS = 86_400_000;
@@ -29,7 +34,6 @@ function saveCards(cards) { writeThrough(FLASHCARDS_KEY, cards); }
 
 // ─── Flash Card Study ────────────────────────────────────────────────────────
 function FlashCards({ onCreateFromNote }) {
-  const { isMobile } = useApp();
   const [cards,     setCards]     = useState(loadCards);
   const [mode,      setMode]      = useState('list'); // list | study | create
 
@@ -77,48 +81,47 @@ function FlashCards({ onCreateFromNote }) {
   };
 
   if (mode === 'study' && due.length > 0) return (
-    <div style={{ maxWidth: 520, margin: '0 auto', padding: '24px 0' }}>
-      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', textAlign: 'center', marginBottom: 20 }}>
+    <div className="mv-narrow">
+      <div className="mv-study-count">
         Card {(studyIdx % due.length) + 1} of {due.length} · {cards.filter(c => c.dueDate <= Date.now()).length} due today
       </div>
-      <div style={{ background: 'var(--surface)', border: `2px solid ${revealed ? withAlpha(T.accent, 25) : 'var(--border)'}`, borderRadius: 16, padding: '36px 28px', textAlign: 'center', minHeight: 180, display: 'flex', flexDirection: 'column', justifyContent: 'center', transition: 'border-color 0.2s', marginBottom: 20 }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 12 }}>{revealed ? 'Answer' : 'Question'}</div>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.5 }}>
+      <div className="mv-study-card" data-revealed={revealed ? '' : undefined}>
+        <div className="mv-study-kick">{revealed ? 'Answer' : 'Question'}</div>
+        <div className="mv-study-text">
           {revealed ? studyCard?.back : studyCard?.front}
         </div>
         {!revealed && (
-          <div onClick={() => setRevealed(true)} style={{ marginTop: 24, padding: isMobile ? '13px 28px' : '10px 24px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', display: 'inline-block', alignSelf: 'center', minHeight: 44 }}>
+          <button type="button" className="btn btn-primary mv-reveal" onClick={() => setRevealed(true)}>
             Reveal Answer
-          </div>
+          </button>
         )}
       </div>
       {revealed && (
-        <div style={{ display: 'flex', gap: 12 }}>
-          <div onClick={() => grade(false)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.negative, 8), border: '1px solid #C4553D40', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: T.negative, cursor: 'pointer' }}>
-            ✕ Hard — review again
-          </div>
-          <div onClick={() => grade(true)} style={{ flex: 1, padding: '12px', textAlign: 'center', background: withAlpha(T.accent, 8), border: '1px solid #D9A44140', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
-            ✓ Got it — {Math.min(Math.round((studyCard?.interval || 1) * (studyCard?.easeFactor || 2.5)), 30)}d
-          </div>
+        <div className="mv-grade">
+          <button type="button" className="mv-grade-btn" data-kind="hard" onClick={() => grade(false)}>
+            <Icon name="X" size={16} strokeWidth={2.4} /> Hard — review again
+          </button>
+          <button type="button" className="mv-grade-btn" data-kind="good" onClick={() => grade(true)}>
+            <Icon name="Check" size={16} strokeWidth={2.4} /> Got it — {Math.min(Math.round((studyCard?.interval || 1) * (studyCard?.easeFactor || 2.5)), 30)}d
+          </button>
         </div>
       )}
-      <div onClick={() => { setMode('list'); setRevealed(false); setStudyIdx(0); }} style={{ textAlign: 'center', marginTop: 16, fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer' }}>Exit study session</div>
+      <div className="mv-center">
+        <button type="button" className="mv-link tap" onClick={() => { setMode('list'); setRevealed(false); setStudyIdx(0); }}>Exit study session</button>
+      </div>
     </div>
   );
 
   if (mode === 'create') return (
-    <div style={{ maxWidth: 520, margin: '0 auto', padding: '24px 0' }}>
-      <div onClick={() => setMode('list')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 18 }}>← Back to cards</div>
-      <div style={{ background: 'var(--surface)', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 14, padding: '20px' }}>
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>New Flash Card</div>
-        <textarea value={newCard.front} onChange={e => setNewCard(p => ({ ...p, front: e.target.value }))}
-          placeholder="Front — question, term, or concept…" rows={3}
-          style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
-        <textarea value={newCard.back} onChange={e => setNewCard(p => ({ ...p, back: e.target.value }))}
-          placeholder="Back — answer, definition, or explanation…" rows={3}
-          style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14 }} />
-        <button onClick={addCard} disabled={!newCard.front.trim() || !newCard.back.trim()}
-          style={{ width: '100%', padding: '11px', background: newCard.front.trim() && newCard.back.trim() ? VAULT_ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: newCard.front.trim() && newCard.back.trim() ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
+    <div className="mv-narrow">
+      <button type="button" className="mv-link mv-back tap" onClick={() => setMode('list')}>← Back to cards</button>
+      <div className="mv-panel">
+        <div className="mv-panel-title">New Flash Card</div>
+        <textarea className="mv-input mv-textarea" aria-label="Card front" value={newCard.front} onChange={e => setNewCard(p => ({ ...p, front: e.target.value }))}
+          placeholder="Front — question, term, or concept…" rows={3} />
+        <textarea className="mv-input mv-textarea mv-gap-lg" aria-label="Card back" value={newCard.back} onChange={e => setNewCard(p => ({ ...p, back: e.target.value }))}
+          placeholder="Back — answer, definition, or explanation…" rows={3} />
+        <button type="button" className="btn btn-primary mv-block" onClick={addCard} disabled={!newCard.front.trim() || !newCard.back.trim()}>
           Add Card
         </button>
       </div>
@@ -128,38 +131,38 @@ function FlashCards({ onCreateFromNote }) {
   const dueNow = cards.filter(c => c.dueDate <= Date.now()).length;
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <div>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{cards.length} cards · <span style={{ color: 'var(--accent-text)' }}>{dueNow} due today</span></div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Spaced repetition — review at optimal intervals</div>
+      <div className="mv-fc-head">
+        <div className="mv-min">
+          <div className="mv-fc-count">{cards.length} cards · <span className="mv-accent">{dueNow} due today</span></div>
+          <div className="mv-fc-sub">Spaced repetition — review at optimal intervals</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => setMode('create')} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>+ New Card</div>
-          {cards.length > 0 && <div onClick={() => { setStudyIdx(0); setRevealed(false); setMode('study'); }} style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 700, background: VAULT_ACCENT, borderRadius: 8, color: '#000', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Study {dueNow > 0 ? `(${dueNow} due)` : 'All'} →</div>}
+        <div className="mv-fc-actions">
+          <button type="button" className="btn mv-btn-accent mv-sm tap" onClick={() => setMode('create')}>+ New Card</button>
+          {cards.length > 0 && <button type="button" className="btn btn-primary mv-sm tap" onClick={() => { setStudyIdx(0); setRevealed(false); setMode('study'); }}>Study {dueNow > 0 ? `(${dueNow} due)` : 'All'} →</button>}
         </div>
       </div>
 
       {cards.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-          <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>🃏</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No Flash Cards Yet</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Create cards from your notes or manually. They resurface at spaced intervals for maximum retention.</div>
-          <div onClick={() => setMode('create')} style={{ display: 'inline-block', padding: '10px 22px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Create First Card →</div>
+        <div className="mv-empty" data-size="sm">
+          <div className="mv-empty-ico"><Icon name="Layers" size={40} strokeWidth={1.5} /></div>
+          <div className="mv-empty-title">No Flash Cards Yet</div>
+          <div className="mv-empty-body">Create cards from your notes or manually. They resurface at spaced intervals for maximum retention.</div>
+          <button type="button" className="btn btn-primary mv-cta tap" onClick={() => setMode('create')}>Create First Card →</button>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 12 }}>
+      <div className="mv-fc-grid">
         {cards.map(c => {
           const overdue = c.dueDate <= Date.now();
           return (
-            <div key={c.id} style={{ background: 'var(--surface)', border: `1px solid ${overdue ? VAULT_ACCENT + '50' : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', borderRadius: 4, background: overdue ? `${VAULT_ACCENT}15` : 'var(--bg)', color: overdue ? 'var(--accent-text)' : 'var(--dim)', fontWeight: overdue ? 700 : 400 }}>{overdue ? 'Due' : `in ${Math.ceil((c.dueDate - Date.now()) / DAY_MS)}d`}</span>
-                <span onClick={() => removeCard(c.id)} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer' }}>✕</span>
+            <div key={c.id} className="mv-fc" data-overdue={overdue ? '' : undefined}>
+              <div className="mv-fc-top">
+                <span className="mv-due">{overdue ? 'Due' : `in ${Math.ceil((c.dueDate - Date.now()) / DAY_MS)}d`}</span>
+                <button type="button" className="mv-x tap" aria-label="Delete card" onClick={() => removeCard(c.id)}><Icon name="X" size={16} /></button>
               </div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 6, lineHeight: 1.4 }}>{c.front}</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{c.back}</div>
-              {c.reviews > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 8 }}>Reviewed {c.reviews}× · interval {c.interval}d</div>}
+              <div className="mv-fc-front">{c.front}</div>
+              <div className="mv-fc-back">{c.back}</div>
+              {c.reviews > 0 && <div className="mv-fc-meta">Reviewed {c.reviews}× · interval {c.interval}d</div>}
             </div>
           );
         })}
@@ -170,7 +173,6 @@ function FlashCards({ onCreateFromNote }) {
 
 // ─── Expertise Export ────────────────────────────────────────────────────────
 function ExpertiseExport({ notes }) {
-  const { isMobile } = useApp();
   const [selected,  setSelected]  = useState([]);
   const [format,    setFormat]    = useState('linkedin');
   const [result,    setResult]    = useState('');
@@ -215,70 +217,68 @@ function ExpertiseExport({ notes }) {
   return (
     <div>
       {notes.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-          <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>📤</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No Notes to Export</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Add notes to your vault first, then turn your private knowledge into published content.</div>
+        <div className="mv-empty" data-size="sm">
+          <div className="mv-empty-ico"><Icon name="Share2" size={40} strokeWidth={1.5} /></div>
+          <div className="mv-empty-title">No Notes to Export</div>
+          <div className="mv-empty-body mv-flush">Add notes to your vault first, then turn your private knowledge into published content.</div>
         </div>
       )}
 
       {notes.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)', gap: 24 }}>
+        <div className="mv-export">
 
           {/* Left: select notes + format */}
-          <div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>1. Select Notes</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: 280, overflowY: 'auto', marginBottom: 20 }}>
-              {notes.map(n => (
-                <div key={n.id} onClick={() => toggle(n.id)}
-                  style={{ display: 'flex', gap: 10, alignItems: 'flex-start', padding: '9px 12px', background: selected.includes(n.id) ? `${VAULT_ACCENT}10` : 'var(--surface)', border: `1px solid ${selected.includes(n.id) ? VAULT_ACCENT + '50' : 'var(--border)'}`, borderRadius: 9, cursor: 'pointer', transition: 'all 0.1s' }}>
-                  <div style={{ width: 16, height: 16, borderRadius: 4, border: `2px solid ${selected.includes(n.id) ? VAULT_ACCENT : 'var(--border)'}`, background: selected.includes(n.id) ? VAULT_ACCENT : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-sm)', color: '#000' }}>
-                    {selected.includes(n.id) ? '✓' : ''}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{n.title}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{n.content?.slice(0, 60)}…</div>
-                  </div>
-                </div>
-              ))}
+          <div className="mv-min">
+            <div className="mv-step">1. Select Notes</div>
+            <div className="mv-pick-list">
+              {notes.map(n => {
+                const on = selected.includes(n.id);
+                return (
+                  <button type="button" key={n.id} className="mv-pick" aria-pressed={on} onClick={() => toggle(n.id)}>
+                    <span className="mv-check" aria-hidden="true">{on && <Icon name="Check" size={12} strokeWidth={3} />}</span>
+                    <span className="mv-pick-body">
+                      <span className="mv-pick-title">{n.title}</span>
+                      <span className="mv-pick-sub">{n.content?.slice(0, 60)}…</span>
+                    </span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>2. Choose Format</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginBottom: 16 }}>
+            <div className="mv-step">2. Choose Format</div>
+            <div className="mv-formats">
               {EXPORT_FORMATS.map(f => (
-                <div key={f.id} onClick={() => setFormat(f.id)}
-                  style={{ padding: '9px 12px', background: format === f.id ? `${VAULT_ACCENT}10` : 'var(--surface)', border: `1px solid ${format === f.id ? VAULT_ACCENT + '50' : 'var(--border)'}`, borderRadius: 9, cursor: 'pointer', transition: 'all 0.1s' }}>
-                  <div style={{ fontSize: 'var(--fs-base)', marginBottom: 3 }}>{f.icon}</div>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: format === f.id ? 'var(--accent-text)' : 'var(--text)' }}>{f.label}</div>
-                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4, marginTop: 2 }}>{f.desc}</div>
-                </div>
+                <button type="button" key={f.id} className="mv-format" aria-pressed={format === f.id} onClick={() => setFormat(f.id)}>
+                  <span className="mv-format-ico"><Icon name={f.icon} size={16} /></span>
+                  <span className="mv-format-label">{f.label}</span>
+                  <span className="mv-format-desc">{f.desc}</span>
+                </button>
               ))}
             </div>
 
-            <button onClick={generate} disabled={selected.length === 0 || loading}
-              style={{ width: '100%', padding: '12px', background: selected.length > 0 && !loading ? VAULT_ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: selected.length > 0 && !loading ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            <button type="button" className="btn btn-primary mv-block mv-gen" onClick={generate} disabled={selected.length === 0 || loading} aria-busy={loading}>
               {loading ? 'Generating…' : `Generate ${EXPORT_FORMATS.find(f => f.id === format)?.label} →`}
             </button>
           </div>
 
           {/* Right: result */}
-          <div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 12 }}>3. Your Content</div>
-            <div style={{ background: 'var(--surface)', border: `1px solid ${result ? VAULT_ACCENT + '40' : 'var(--border)'}`, borderRadius: 12, padding: '16px', minHeight: isMobile ? 200 : 320, transition: 'border-color 0.15s' }}>
+          <div className="mv-min">
+            <div className="mv-step">3. Your Content</div>
+            <div className="mv-result" data-filled={result ? '' : undefined}>
               {loading && <ThinkingDots color="var(--accent-text)" />}
               {!loading && !result && (
-                <div style={{ color: 'var(--dim)', fontSize: 'var(--fs-base)', lineHeight: 1.8 }}>
+                <div className="mv-result-empty">
                   Select notes, pick a format, and hit Generate. AI will turn your private knowledge into publish-ready content.
                 </div>
               )}
               {!loading && result && <MD text={result} color="var(--accent-text)" />}
             </div>
             {result && (
-              <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-                <div onClick={copy} style={{ padding: isMobile ? '10px 18px' : '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 8, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, minHeight: isMobile ? 40 : undefined }}>
-                  {copied ? '✓ Copied!' : 'Copy'}
-                </div>
-                <div onClick={() => setResult('')} style={{ padding: isMobile ? '10px 14px' : '7px 12px', fontSize: 'var(--fs-base)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>Clear</div>
+              <div className="mv-result-actions">
+                <button type="button" className="btn mv-btn-accent mv-sm tap" onClick={copy}>
+                  {copied ? <><Icon name="Check" size={14} /> Copied!</> : 'Copy'}
+                </button>
+                <button type="button" className="btn mv-btn-quiet mv-sm tap" onClick={() => setResult('')}>Clear</button>
               </div>
             )}
           </div>
@@ -289,7 +289,7 @@ function ExpertiseExport({ notes }) {
 }
 
 // ─── Note Detail ─────────────────────────────────────────────────────────────
-function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
+function NoteDetail({ note, onBack, onDelete, onCardCreate }) {
   const [aiMode,    setAiMode]    = useState(''); // '' | 'expand' | 'connect' | 'apply'
   const [aiResult,  setAiResult]  = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -313,58 +313,55 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
   };
 
   return (
-    <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 80px', maxWidth: 760, margin: '0 auto' }}>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
-        <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Vault</div>
-        <div onClick={onCardCreate} style={{ fontSize: 'var(--fs-sm)', padding: '4px 12px', border: `1px solid ${VAULT_ACCENT}40`, borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: `${VAULT_ACCENT}10`, fontWeight: 600 }}>🃏 Create Flash Card</div>
+    <div className="mv-detail">
+      <div className="mv-detail-nav">
+        <button type="button" className="mv-link tap" onClick={onBack}>← Vault</button>
+        <button type="button" className="mv-pill tap" onClick={onCardCreate}><Icon name="Layers" size={14} /> Create Flash Card</button>
         <AskChip type="note" object={note} />
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-        <div>
-          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 8 }}>{note.title}</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="mv-detail-head">
+        <div className="mv-min">
+          <div className="mv-detail-title">{note.title}</div>
+          <div className="mv-tags">
             {note.tags?.map(t => <Badge key={t} color={note.color}>{t}</Badge>)}
           </div>
         </div>
-        <div onClick={onDelete} style={{ fontSize: 'var(--fs-sm)', color: T.negative, padding: '5px 10px', border: '1px solid #C4553D40', borderRadius: 6, cursor: 'pointer', flexShrink: 0 }}>Delete</div>
+        <button type="button" className="mv-delete tap" onClick={onDelete}>Delete</button>
       </div>
-      <div style={{ fontSize: 'var(--fs-base)', lineHeight: 1.85, color: 'var(--text-c)', whiteSpace: 'pre-wrap', marginBottom: 24 }}>{note.content}</div>
+      <div className="mv-detail-body">{note.content}</div>
       {note.connections?.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="mv-section">
           <Label>Knowledge Connections</Label>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="mv-chips">
             {note.connections.map(c => (
-              <div key={c} onClick={() => { setChatPrefill(`Tell me more about "${c}" and how it connects to: ${note.title}`); setChatOpen(true); }}
-                style={{ fontSize: 'var(--fs-sm)', padding: isMobile ? '8px 14px' : '5px 12px', background: 'var(--surface)', border: `1px solid ${note.color}25`, color: note.color, borderRadius: 20, cursor: 'pointer', minHeight: isMobile ? 36 : undefined }}>
-                📚 {c}
-              </div>
+              <button type="button" key={c} className="chip mv-conn tap" onClick={() => { setChatPrefill(`Tell me more about "${c}" and how it connects to: ${note.title}`); setChatOpen(true); }}>
+                <Icon name="BookMarked" size={14} /> {c}
+              </button>
             ))}
           </div>
         </div>
       )}
 
       {/* AI Deepen Panel */}
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
-        <Label>✦ Deepen This Note</Label>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+      <div className="mv-deepen">
+        <Label><span className="mv-label-ico"><Icon name="Sparkles" size={11} /> Deepen This Note</span></Label>
+        <div className="mv-deepen-row">
           {[
-            { id: 'expand',  label: '📖 Expand Insight' },
-            { id: 'connect', label: '🔗 Cross-Connect' },
-            { id: 'apply',   label: '🎯 Apply in 30 Days' },
+            { id: 'expand',  icon: 'BookOpen', label: 'Expand Insight' },
+            { id: 'connect', icon: 'Share2',   label: 'Cross-Connect' },
+            { id: 'apply',   icon: 'Target',   label: 'Apply in 30 Days' },
           ].map(btn => (
-            <div key={btn.id} onClick={() => runAI(btn.id)}
-              style={{ padding: isMobile ? '10px 16px' : '6px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${aiMode === btn.id ? note.color : 'var(--border)'}`, borderRadius: 8, color: aiMode === btn.id ? note.color : 'var(--subtle)', background: aiMode === btn.id ? `${note.color}12` : 'var(--surface)', cursor: 'pointer', transition: 'all 0.12s', minHeight: isMobile ? 40 : undefined }}>
-              {btn.label}
-            </div>
+            <button type="button" key={btn.id} className="mv-deep-btn tap" aria-pressed={aiMode === btn.id} onClick={() => runAI(btn.id)}>
+              <Icon name={btn.icon} size={14} /> {btn.label}
+            </button>
           ))}
-          <div onClick={() => { setChatPrefill(`I want to dive deeper into this note: "${note.title}". ${note.content.slice(0, 200)}`); setChatOpen(true); }}
-            style={{ padding: isMobile ? '10px 16px' : '6px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', background: 'var(--surface)', cursor: 'pointer', minHeight: isMobile ? 40 : undefined }}>
-            💬 Ask CB AI
-          </div>
+          <button type="button" className="mv-deep-btn tap" onClick={() => { setChatPrefill(`I want to dive deeper into this note: "${note.title}". ${note.content.slice(0, 200)}`); setChatOpen(true); }}>
+            <Icon name="MessageSquare" size={14} /> Ask CB AI
+          </button>
         </div>
         {aiMode && (aiLoading || aiResult) && (
-          <div style={{ padding: '14px 16px', background: `${note.color}08`, border: `1px solid ${note.color}25`, borderRadius: 10 }}>
-            <div style={{ fontSize: 8, letterSpacing: 3, color: note.color, textTransform: 'uppercase', marginBottom: 10 }}>
+          <div className="mv-ai">
+            <div className="mv-ai-kick">
               {aiMode === 'expand' ? 'Expanded Insight' : aiMode === 'connect' ? 'Cross-Connections' : '30-Day Applications'}
             </div>
             {aiLoading ? <ThinkingDots color={note.color} /> : <MD text={aiResult} color={note.color} />}
@@ -377,7 +374,7 @@ function NoteDetail({ note, isMobile, onBack, onDelete, onCardCreate }) {
 
 // ─── Main Module ─────────────────────────────────────────────────────────────
 export default function MasteryVault() {
-  const { notes, setNotes, graph, isMobile } = useApp();
+  const { notes, setNotes, graph } = useApp();
   const [tab,        setTab]        = useState('notes');
   const [activeNote, setActiveNote] = useState(null);
   const [showNew,    setShowNew]    = useState(false);
@@ -429,36 +426,35 @@ export default function MasteryVault() {
   if (activeNote) {
     const note = notes.find(n => n.id === activeNote);
     if (!note) { setActiveNote(null); return null; }
-    return <NoteDetail note={note} isMobile={isMobile} onBack={() => setActiveNote(null)} onDelete={() => deleteNote(note.id)} onCardCreate={() => addCardFromNote(note)} />;
+    return <NoteDetail note={note} onBack={() => setActiveNote(null)} onDelete={() => deleteNote(note.id)} onCardCreate={() => addCardFromNote(note)} />;
   }
 
   // ── Main view ────────────────────────────────────────────────────────────
   return (
-    <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 960, margin: '0 auto' }}>
+    <div className="mv">
 
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
-        <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Mastery Vault</div>
-          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Knowledge Base</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>{notes.length} notes · flash cards · publish-ready exports</div>
+      <div className="mv-head">
+        <div className="mv-min">
+          <div className="mv-eyebrow">Mastery Vault</div>
+          <div className="mv-title">Your Knowledge Base</div>
+          <div className="mv-sub">{notes.length} notes · flash cards · publish-ready exports</div>
         </div>
         {tab === 'notes' && (
-          <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>+ New Note</div>
+          <button type="button" className="btn btn-primary mv-new tap" onClick={() => setShowNew(true)}>+ New Note</button>
         )}
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 22, borderBottom: '1px solid var(--bord2)', paddingBottom: 14 }}>
+      <div className="mv-tabs" role="tablist" aria-label="Vault sections">
         {[
-          { id: 'notes',      label: `🏛 Notes (${notes.length})` },
-          { id: 'flashcards', label: `🃏 Flash Cards (${loadCards().length})` },
-          { id: 'export',     label: '📤 Export' },
+          { id: 'notes',      icon: 'Landmark', label: `Notes (${notes.length})` },
+          { id: 'flashcards', icon: 'Layers',   label: `Flash Cards (${loadCards().length})` },
+          { id: 'export',     icon: 'Share2',   label: 'Export' },
         ].map(t => (
-          <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? VAULT_ACCENT : 'var(--border)'}`, background: tab === t.id ? `${VAULT_ACCENT}10` : 'var(--surface)', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
-            {t.label}
-          </div>
+          <button type="button" key={t.id} role="tab" className="mv-tab tap" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
+            <Icon name={t.icon} size={14} /> {t.label}
+          </button>
         ))}
       </div>
 
@@ -466,42 +462,41 @@ export default function MasteryVault() {
       {tab === 'notes' && (
         <>
           {allTags.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+            <div className="mv-chips mv-filters">
               {['all', ...allTags].map(t => (
-                <div key={t} onClick={() => setFilterTag(t)}
-                  style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterTag === t ? VAULT_ACCENT : 'var(--bord2)'}`, color: filterTag === t ? 'var(--accent-text)' : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterTag === t ? `${VAULT_ACCENT}18` : 'transparent' }}>
+                <button type="button" key={t} className="mv-filter tap" aria-pressed={filterTag === t} onClick={() => setFilterTag(t)}>
                   {t}
-                </div>
+                </button>
               ))}
             </div>
           )}
 
           {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>🏛</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>Your Mastery Vault is Empty</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Save synthesized insights and cross-references here. These are the notes that compound over time.</div>
-              <div onClick={() => setShowNew(true)} style={{ display: 'inline-block', padding: '10px 20px', background: VAULT_ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Add First Note →</div>
+            <div className="mv-empty">
+              <div className="mv-empty-ico"><Icon name="Landmark" size={40} strokeWidth={1.5} /></div>
+              <div className="mv-empty-title">Your Mastery Vault is Empty</div>
+              <div className="mv-empty-body">Save synthesized insights and cross-references here. These are the notes that compound over time.</div>
+              <button type="button" className="btn btn-primary mv-cta tap" onClick={() => setShowNew(true)}>Add First Note →</button>
             </div>
           )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 14 }}>
+          <div className="mv-notes">
             {filtered.map(note => (
-              <Card key={note.id} color={note.color} onClick={() => setActiveNote(note.id)} style={{ cursor: 'pointer', padding: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: note.color, flexShrink: 0, marginTop: 4 }} />
-                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(note.createdAt).toLocaleDateString()}</div>
+              <Card key={note.id} color={note.color} onClick={() => setActiveNote(note.id)} style={{ padding: '16px' }}>
+                <div className="mv-note-top">
+                  <div className="mv-dot" style={{ '--nc': note.color }} />
+                  <div className="mv-note-date">{new Date(note.createdAt).toLocaleDateString()}</div>
                 </div>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 8, lineHeight: 1.35 }}>{note.title}</div>
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.65, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', marginBottom: 12 }}>
+                <div className="mv-note-title">{note.title}</div>
+                <div className="mv-note-body">
                   {note.content}
                 </div>
                 {note.connections?.length > 0 && (
-                  <div style={{ fontSize: 'var(--fs-sm)', color: note.color, opacity: 0.7 }}>📚 {note.connections.slice(0, 2).join(' · ')}{note.connections.length > 2 ? ` +${note.connections.length - 2}` : ''}</div>
+                  <div className="mv-note-conn"><Icon name="BookMarked" size={13} /> {note.connections.slice(0, 2).join(' · ')}{note.connections.length > 2 ? ` +${note.connections.length - 2}` : ''}</div>
                 )}
                 {note.tags?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-                    {note.tags.slice(0, 3).map(t => <span key={t} style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{t}</span>)}
+                  <div className="mv-note-tags">
+                    {note.tags.slice(0, 3).map(t => <span key={t} className="mv-note-tag">{t}</span>)}
                   </div>
                 )}
               </Card>
@@ -520,44 +515,40 @@ export default function MasteryVault() {
       {showNew && (
         <Modal title="New Note" accent={VAULT_ACCENT} onClose={() => setShowNew(false)} width={560}>
           <div>
-            <input value={newNote.title} onChange={e => setNewNote(p => ({ ...p, title: e.target.value }))} placeholder="Note title..."
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-lg)', outline: 'none', fontFamily: 'inherit', fontWeight: 700, boxSizing: 'border-box', marginBottom: 12 }} />
-            <textarea value={newNote.content} onChange={e => setNewNote(p => ({ ...p, content: e.target.value }))} placeholder="Your insight, synthesis, or breakthrough..." rows={5}
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.7, boxSizing: 'border-box', marginBottom: 12 }} />
+            <input className="mv-input mv-input-title" aria-label="Note title" value={newNote.title} onChange={e => setNewNote(p => ({ ...p, title: e.target.value }))} placeholder="Note title..." />
+            <textarea className="mv-input mv-textarea mv-textarea-note" aria-label="Note content" value={newNote.content} onChange={e => setNewNote(p => ({ ...p, content: e.target.value }))} placeholder="Your insight, synthesis, or breakthrough..." rows={5} />
             <Label>Tags</Label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+            <div className="mv-chips mv-gap-sm">
               {newNote.tags.map(t => (
-                <div key={t} onClick={() => setNewNote(p => ({ ...p, tags: p.tags.filter(x => x !== t) }))}
-                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', background: `${VAULT_ACCENT}15`, border: `1px solid ${VAULT_ACCENT}40`, color: 'var(--accent-text)', borderRadius: 14, cursor: 'pointer' }}>
-                  {t} ✕
-                </div>
+                <button type="button" key={t} className="mv-tag tap" aria-label={`Remove tag ${t}`} onClick={() => setNewNote(p => ({ ...p, tags: p.tags.filter(x => x !== t) }))}>
+                  {t} <Icon name="X" size={12} />
+                </button>
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <input value={tagInput} onChange={e => setTagInput(e.target.value)}
+            <div className="mv-tag-row">
+              <input className="mv-input mv-input-tag" aria-label="Add tag" value={tagInput} onChange={e => setTagInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && tagInput.trim() && (setNewNote(p => ({ ...p, tags: [...new Set([...p.tags, tagInput.trim()])] })), setTagInput(''))}
-                placeholder="Add tag, press Enter..."
-                style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
+                placeholder="Add tag, press Enter..." />
             </div>
             <Label>Connect to Topics</Label>
-            <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 14 }}>
+            <div className="mv-chips mv-topics">
               {topics.slice(0, 10).map(t => (
-                <div key={t} onClick={() => setNewNote(p => ({ ...p, connections: p.connections.includes(t) ? p.connections.filter(x => x !== t) : [...p.connections, t] }))}
-                  style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', border: `1px solid ${newNote.connections.includes(t) ? T.accent : 'var(--bord2)'}`, color: newNote.connections.includes(t) ? 'var(--accent-text)' : 'var(--subtle)', borderRadius: 14, cursor: 'pointer', background: newNote.connections.includes(t) ? withAlpha(T.accent, 8) : 'transparent' }}>
+                <button type="button" key={t} className="mv-topic tap" aria-pressed={newNote.connections.includes(t)}
+                  onClick={() => setNewNote(p => ({ ...p, connections: p.connections.includes(t) ? p.connections.filter(x => x !== t) : [...p.connections, t] }))}>
                   {t}
-                </div>
+                </button>
               ))}
             </div>
             <Label>Color</Label>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-              {NOTE_COLORS.map(c => (
-                <div key={c} onClick={() => setNewNote(p => ({ ...p, color: c }))}
-                  style={{ width: 22, height: 22, borderRadius: '50%', background: c, cursor: 'pointer', border: `2px solid ${newNote.color === c ? 'var(--text)' : 'transparent'}` }} />
+            <div className="mv-swatches">
+              {NOTE_COLORS.map((c, i) => (
+                <button type="button" key={i} className="mv-swatch tap" aria-label={`Colour ${i + 1}`} aria-pressed={newNote.color === c}
+                  style={{ '--sw': c }} onClick={() => setNewNote(p => ({ ...p, color: c }))} />
               ))}
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <div onClick={() => setShowNew(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-              <div onClick={createNote} style={{ flex: 2, padding: '11px', background: VAULT_ACCENT, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Save to Vault →</div>
+            <div className="mv-modal-actions">
+              <button type="button" className="btn mv-cancel" onClick={() => setShowNew(false)}>Cancel</button>
+              <button type="button" className="btn btn-primary mv-save" onClick={createNote}>Save to Vault →</button>
             </div>
           </div>
         </Modal>
