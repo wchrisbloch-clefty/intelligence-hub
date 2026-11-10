@@ -155,7 +155,7 @@ Branch `worktree-agent-a1b4378617896a2c0`, cherry-picked as one commit.
 | ted tap / contrast (scratch audit) | 28 / 30 | 0 / 0 |
 | podcast contrast: white text on a gradient that went white (scratch audit) | 9 | 0 |
 
-Scoreboard after: responsive **88 → 78**, tokens **626 → 376**. `npm run verify:prompts`
+Scoreboard after: responsive **88 → 12**, tokens **626 → 376**. The only cells left are `learn` dark-mode contrast (4 per width), which belong to Learn part B, still in progress. `npm run verify:prompts`
 still passes. Every prompt line in BookClub is byte-identical, and the J1 backfill and
 SectionState wiring are preserved.
 
