@@ -179,3 +179,68 @@ SectionState wiring are preserved.
 - BookClub's 480px breakpoint is gone; it uses 721 and 1101 only.
 
 Screens: `docs/screens/batch-Z2-H-learnA-{books,deepdive,ted,podcast}-*`
+
+## Learn, part B: LearningCenter, FieldManual, Academy, LearningLadder, TranslatorHub, QuizCenter
+
+Branch `worktree-agent-aa5a6d2e797a13911`, cherry-picked as one commit.
+
+| | before | after |
+|---|---|---|
+| tokens (112 / 109 / 5 / 46 / 40 / 36) | 348 | **0** |
+| learn contrast (accent fill used as text, 2.19:1 dark) | 12 | **0** |
+| academy / ladder / translate / quiz tap (scratch audit, now in VIEWS) | 22 / 4 / 56 / 4 | **0** |
+
+Scoreboard after: responsive **12 → 0**, tokens **376 → 28**. `verify:prompts` passes.
+
+- **Bug fixed:** `FieldManual.jsx` rendered `<FieldSection>`, which was **never
+  defined**. Picking a Field Mode scenario threw a ReferenceError.
+- **Visible change (flagged):** Field Manual tier chips now use the real `--tier-*`
+  tokens as text plus a border. They used to be *filled* positive/caution/dim, so
+  **Reported** turns from amber to the accent blue and **Inferred** from grey to amber.
+  The old colours didn't match the tier system used everywhere else.
+- Call-block tones map to a left border and title colour only.
+- "Field Ready" and the Reset-confirm button no longer fill (both failed contrast in
+  dark).
+- **Left as before:** the Ladder and Quiz loading screens still use ThinkingDots, and a
+  failed translation still writes its message into the output panel.
+
+Screens: `docs/screens/batch-Z2-H-learnB-{learn,academy,ladder,translate,quiz}-*`
+
+---
+
+## Order H: close
+
+**All six containers plus What's Happening are extracted.** The remaining 28 token
+violations are all in `CoachAI.jsx`, which is unrouted but **retained** per CLAUDE.md
+("Phase 3 folds its content into the Ask layer"). It's baselined, not extracted.
+
+**Every mode is now guarded.** The 13 secondary modes (notes, inbox, deepdive, ted,
+podcast, academy, ladder, translate, quiz, recaps, vault, growth, decisions) were added
+to the audit's `VIEWS`. That makes **22 views × 3 widths × 2 themes = 132 page loads**.
+**All 22 are zero on all six checks.**
+
+**The ratchet is tightened.** With the baseline empty, the old "refuse to add" check
+would have been skipped. It now refuses any new cell unless a brand-new view is named in
+`AUDIT_NEW_VIEWS`.
+
+**About the order of work:** containers were *built* in parallel in isolated worktrees,
+but each was *integrated and verified* one at a time:
+
+1. cherry-pick;
+2. `npm run build` (check-tokens);
+3. `audit-responsive` for that container's views, which had to print `ok`;
+4. `--update` (both baselines strictly lower);
+5. commit and push.
+
+The order was feed → research → projects/studio → skills → learn A → learn B.
+
+| after | responsive | tokens |
+|---|---|---|
+| start of Z-2 | 545 | 1,432 |
+| shared + I-1 sweep | 190 | 1,206 |
+| feed | 108 | 1,165 |
+| research | 105 | 1,028 |
+| projects + studio | 96 | 803 |
+| skills | 88 | 626 |
+| learn A | 12 | 376 |
+| learn B | **0** | **28** (CoachAI only) |

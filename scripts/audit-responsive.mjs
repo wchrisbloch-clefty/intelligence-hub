@@ -20,10 +20,10 @@
 //              a Home section, or a button/link with text that isn't hidden)
 //   console    any console error / page error
 //
-// RATCHET: five of the six containers are not CSS-extracted yet (Order C goes one
-// container at a time), so scripts/audit-responsive.baseline.json records today's
-// per-view counts. A count may only go DOWN; a view not in the baseline must be
-// clean. `--update` refuses to raise a count. Home and /design are held at zero.
+// RATCHET: scripts/audit-responsive.baseline.json records per-view debt; a count may
+// only go DOWN. Since Batch Z-2 every view is at ZERO, so the baseline is empty and
+// ANY failing cell fails the build. `--update` refuses to add a cell unless the view
+// is brand new to VIEWS and named via AUDIT_NEW_VIEWS.
 //
 // Serves dist/ with scripts/serve-local.mjs (stubbed /api) unless AUDIT_BASE_URL is set.
 //   AUDIT_ONLY=home,design   narrow the views     AUDIT_VERBOSE=1   print samples
@@ -51,6 +51,20 @@ const VIEWS = [
   { id: 'skills',   path: '/?mode=skills' },
   { id: 'projects', path: '/?mode=projects' },
   { id: 'studio',   path: '/?mode=studio' },
+  // Every other mode (Batch Z-2): each container's secondary modes are guarded too.
+  { id: 'notes',     path: '/?mode=notes' },
+  { id: 'inbox',     path: '/?mode=inbox' },
+  { id: 'deepdive',  path: '/?mode=deepdive' },
+  { id: 'ted',       path: '/?mode=ted' },
+  { id: 'podcast',   path: '/?mode=podcast' },
+  { id: 'academy',   path: '/?mode=academy' },
+  { id: 'ladder',    path: '/?mode=ladder' },
+  { id: 'translate', path: '/?mode=translate' },
+  { id: 'quiz',      path: '/?mode=quiz' },
+  { id: 'recaps',    path: '/?mode=recaps' },
+  { id: 'vault',     path: '/?mode=vault' },
+  { id: 'growth',    path: '/?mode=growth' },
+  { id: 'decisions', path: '/?mode=decisions' },
 ];
 const ONLY = (process.env.AUDIT_ONLY || '').split(',').filter(Boolean);
 const CHECKS = ['overflow', 'tap', 'cls', 'contrast', 'zero', 'console'];
@@ -175,7 +189,12 @@ if (process.argv.includes('--update')) {
   for (const [k, n] of Object.entries(counts)) {
     if (!n) continue;
     if (base0[k] !== undefined && n > base0[k]) { console.error(`refusing to RAISE ${k} (${base0[k]} → ${n})`); process.exit(1); }
-    if (Object.keys(base0).length && base0[k] === undefined) { console.error(`refusing to ADD ${k} — fix it instead`); process.exit(1); }
+    // Every guarded view is held where it is (all at ZERO since Batch Z-2). The ONLY
+    // way a new cell enters the baseline is a view being added to VIEWS for the first
+    // time, named explicitly: AUDIT_NEW_VIEWS=<id>[,<id>] — adding coverage, never
+    // raising a ratchet.
+    const newViews = (process.env.AUDIT_NEW_VIEWS || '').split(',').filter(Boolean);
+    if (base0[k] === undefined && !newViews.includes(k.split('@')[0])) { console.error(`refusing to ADD ${k} — fix it instead`); process.exit(1); }
     next[k] = n;
   }
   fs.writeFileSync(BASELINE, JSON.stringify(Object.fromEntries(Object.entries(next).sort()), null, 2) + '\n');

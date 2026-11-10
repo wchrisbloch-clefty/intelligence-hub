@@ -1,9 +1,3 @@
 {
-  "src/modules/Academy.jsx": 5,
-  "src/modules/CoachAI.jsx": 28,
-  "src/modules/LearningCenter.jsx": 112,
-  "src/modules/LearningLadder.jsx": 46,
-  "src/modules/QuizCenter.jsx": 36,
-  "src/modules/TranslatorHub.jsx": 40,
-  "src/modules/academy/FieldManual.jsx": 109
+  "src/modules/CoachAI.jsx": 28
 }
