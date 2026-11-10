@@ -89,7 +89,7 @@ export function requireAuth(req, res) {
 // Functions run the IDENTICAL code against the same table.
 //
 // The service-role key is read HERE and nowhere else in api/. It never reaches
-// the client; there is no VITE_ variant (grep -rn "VITE_" src api → nothing).
+// the client; there is no client-exposed (Vite-prefixed) env var anywhere in src/ or api/.
 import { createKv, kvRoundTrip } from './_kv.js';
 
 function supabaseConfig() {
