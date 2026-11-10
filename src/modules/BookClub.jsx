@@ -554,7 +554,7 @@ export default function BookClub() {
     try {
       // Use the FULL catalog title for retrieval — "Winning" returns noise, the
       // full "Winning: The Unforgiving Race to Greatness" finds the record.
-      const { toc, attempts } = await retrieveTOC({ title: selectedBook.fullTitle || selectedBook.title, author: (selectedBook.authors || []).join(', ') || selectedBook.author, webPass, publisher: selectedBook.publisher || '', deep });
+      const { toc, attempts } = await retrieveTOC({ title: selectedBook.fullTitle || selectedBook.title, author: (selectedBook.authors || []).join(', ') || selectedBook.author, webPass, publisher: selectedBook.publisher || '', deep, catalogVerified: !!selectedBook.verified });
       if (toc) await patchBook({ retrievedTOC: toc, retrievalState: 'found', retrievalAttempts: attempts });
       else await patchBook({ retrievalState: deep ? 'deep-none' : 'none', retrievalAttempts: attempts });
     } catch { await patchBook({ retrievalState: deep ? 'deep-none' : 'none' }); }

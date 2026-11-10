@@ -24,6 +24,7 @@ export const USER_GROUNDING_TYPES = [
 export const groundingTypeMeta = (id) => USER_GROUNDING_TYPES.find((t) => t.id === id) || USER_GROUNDING_TYPES[0];
 
 import { fetchRaw } from '../utils.js';
+import { groundBook } from './groundBook.js';
 
 const clean = (s) => String(s || '').trim();
 
@@ -176,15 +177,32 @@ export async function webTOCBatch(webPass, title, author, { publisher = '', deep
 // and fires the full web batch incl. the publisher domain. Returns
 // { toc, attempts } — toc is the best candidate or null — and always the attempt
 // log so the UI can report exactly what was tried and what each returned.
-export async function retrieveTOC({ title, author, webPass, publisher = '', deep = false } = {}) {
+export async function retrieveTOC({ title, author, webPass, publisher = '', deep = false, catalogVerified = false } = {}) {
   const attempts = [];
   const cands = [];
-  cands.push(await openLibraryTOC(title, author, attempts, deep ? { editions: 8, works: 3 } : { editions: 3, works: 2 }));
-  cands.push(await locTOC(title, author, attempts));
-  // Web batch: one structured query on the light pass, the full batch on deep.
-  cands.push(await webTOCBatch(webPass, title, author, { publisher, deep }, attempts));
+  // Batch Z / Order E3: Open Library + Library of Congress (505) + Firecrawl on the
+  // publisher's own page run SERVER-SIDE in the ground-book Edge Function. loc.gov
+  // no longer goes through the browser CORS-proxy chain at all.
+  const server = await groundBook({ title, author, publisher, catalogVerified, refresh: deep });
+  let groundState = null;
+  if (server && !server.unreachable) {
+    attempts.push(...(server.attempts || []).map((a) => ({ ...a, via: 'ground-book' })));
+    groundState = server.state || null;
+    if (Array.isArray(server.toc) && server.toc.length) {
+      cands.push({ toc: server.toc.join('\n'), source: server.source === 'loc' ? 'loc' : server.source === 'openlibrary' ? 'openlibrary' : 'web', sourceLabel: server.sourceLabel || 'Catalog' });
+    }
+  } else {
+    attempts.push({ source: 'ground-book (server)', unavailable: true, detail: server?.status ? `HTTP ${server.status}` : (server?.error || 'unreachable') });
+    // Server down: Open Library is CORS-friendly, so it still runs from the browser.
+    // loc.gov is NOT retried client-side — that path needed the retired proxy chain.
+    cands.push(await openLibraryTOC(title, author, attempts, deep ? { editions: 8, works: 3 } : { editions: 3, works: 2 }));
+  }
+  // Web batch (job:'web' via /api/chat) stays client-side: one query light, full batch deep.
+  if (!pickBest(cands.filter(Boolean)) || deep) cands.push(await webTOCBatch(webPass, title, author, { publisher, deep }, attempts));
   const best = pickBest(cands.filter(Boolean));
-  return { toc: best || null, attempts };
+  // groundState keeps existence and contents SEPARATE (bookVerify.js tri-state):
+  // 'verified+contents' | 'verified-exists-only' | 'unverified'.
+  return { toc: best || null, attempts, groundState };
 }
 
 // Parse a pasted or retrieved TOC into clean chapter lines — tolerant of leading

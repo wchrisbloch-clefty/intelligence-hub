@@ -19,7 +19,7 @@ import { loadLayout, LAYOUT_KEY } from '../HomeDashboard.jsx';
 import './home.css';
 
 const EAGER = 2;
-const RESERVE_ROWS = { brief: 3, opportunity: 4, connected: 3, skills: 3, projects: 3, signals: 3 };
+const RESERVE_ROWS = { brief: 3, recap: 3, opportunity: 4, connected: 3, skills: 3, projects: 3, signals: 3 };
 
 function LazySection({ section, eager, collapsed, onCollapse }) {
   const ref = useRef(null);
