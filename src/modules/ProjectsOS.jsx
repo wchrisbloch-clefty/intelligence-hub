@@ -1,8 +1,9 @@
-import { T, withAlpha } from '../theme';
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { T } from '../theme';
+import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { saveProjects, uid, callClaude, processFiles, getFileIcon, timeAgo } from '../utils.js';
 import { PROJECT_CATEGORIES, PROJECT_STATUSES, SYSTEM_BASE, ACCEPT_TYPES } from '../constants.js';
+import './projects-os.css';
 
 // Map a free-text inferred category label to a project category key.
 // Category is never mandatory — this only pre-selects a sensible default.
@@ -16,8 +17,14 @@ function inferCategory(labelRaw = '') {
   return 'other';
 }
 import { Badge, Label, Modal, ThinkingDots } from './shared/Common.jsx';
+import { SectionEmpty } from './shared/SectionState.jsx';
+import Icon from './shared/Icon.jsx';
 import MD from './shared/MD.jsx';
 import AskChip from './shared/AskChip.jsx';
+
+// Per-project colour → a CSS custom property. projects-os.css uses --pc for
+// borders and bars only (never text — a stored colour isn't guaranteed 4.5:1).
+const pcVar = p => ({ '--pc': p.color || 'var(--accent)' });
 
 // Adds default workspace fields to old or new projects
 const def = p => ({
@@ -36,9 +43,27 @@ const WORKSPACE_TABS = [
   { id: 'personas', label: 'Personas / ICP' },
 ];
 
+// Checkbox — a real button with checkbox semantics and a 44px hit area.
+function Check({ on, onToggle, label, small }) {
+  return (
+    <button type="button" role="checkbox" aria-checked={!!on} aria-label={label}
+      className={`po-check${small ? ' po-check-sm' : ''} tap`} onClick={onToggle}>
+      {on && <Icon name="Check" size={small ? 9 : 11} strokeWidth={3.5} />}
+    </button>
+  );
+}
+
+function DeleteX({ onClick, label }) {
+  return (
+    <button type="button" className="po-x tap" onClick={onClick} aria-label={label}>
+      <Icon name="X" size={14} />
+    </button>
+  );
+}
+
 // ─── Root list (kanban) ───────────────────────────────────────────────────────
 export default function ProjectsOS() {
-  const { projects, setProjects, isMobile, isPhone, captureRoute, clearCapture } = useApp();
+  const { projects, setProjects, captureRoute, clearCapture } = useApp();
   const [activeId, setActiveId]   = useState(null);
   const [showNew, setShowNew]     = useState(false);
   const [newProj, setNewProj]     = useState({ title: '', emoji: '🚀', description: '', category: 'other', priority: 'high' });
@@ -94,71 +119,67 @@ export default function ProjectsOS() {
   }
 
   return (
-    <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+    <div className="po">
+      <div className="po-head">
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Projects & Execution OS</div>
-          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Your Projects</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
+          <div className="po-eyebrow">Projects & Execution OS</div>
+          <div className="po-title">Your Projects</div>
+          <div className="po-count">{projects.filter(p => p.status === 'active').length} active · {projects.length} total</div>
         </div>
-        <div onClick={() => setShowNew(true)} style={{ padding: '8px 16px', background: T.accent, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Project</div>
+        <button type="button" className="btn btn-primary po-new tap" onClick={() => setShowNew(true)}>+ New Project</button>
       </div>
 
-      <div style={{ display: 'flex', gap: 6, marginBottom: 24, flexWrap: 'wrap' }}>
-        {[{ id: 'all', label: 'All', color: 'var(--subtle)' }, ...PROJECT_STATUSES].map(s => (
-          <div key={s.id} onClick={() => setStatusFilter(s.id)}
-            style={{ padding: isMobile ? '9px 14px' : '5px 14px', fontSize: 'var(--fs-sm)', border: `1px solid ${statusFilter === s.id ? s.color : 'var(--bord2)'}`, color: statusFilter === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: statusFilter === s.id ? `${s.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
+      <div className="po-filters">
+        {[{ id: 'all', label: 'All' }, ...PROJECT_STATUSES].map(s => (
+          <button type="button" key={s.id} className="chip tap" aria-pressed={statusFilter === s.id} onClick={() => setStatusFilter(s.id)}>
             {s.label} ({s.id === 'all' ? projects.length : projects.filter(p => p.status === s.id).length})
-          </div>
+          </button>
         ))}
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 16 }}>
+      <div className="po-board">
         {PROJECT_STATUSES.map(status => {
           const cols = projects.filter(p => p.status === status.id);
           return (
-            <div key={status.id}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <div style={{ fontSize: 9, letterSpacing: 2, color: status.color, textTransform: 'uppercase' }}>{status.label}</div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', background: 'var(--surface)', borderRadius: 10, padding: '1px 7px' }}>{cols.length}</div>
+            <div key={status.id} className="po-col">
+              <div className="po-col-head">
+                <div className="po-col-label">{status.label}</div>
+                <div className="po-col-n">{cols.length}</div>
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div className="po-col-list">
                 {cols.map(proj => {
                   const p = def(proj);
                   const done = p.milestones.filter(m => m.done).length;
                   const pct = p.milestones.length > 0 ? Math.round((done / p.milestones.length) * 100) : 0;
                   const cat = PROJECT_CATEGORIES[p.category];
                   return (
-                    <div key={p.id} onClick={() => setActiveId(p.id)}
-                      style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${p.color}20`, borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                        <div style={{ fontSize: 'var(--fs-xl)'}}>{p.emoji}</div>
+                    <button type="button" key={p.id} className="po-card" style={pcVar(p)} onClick={() => setActiveId(p.id)}>
+                      <span className="po-card-top">
+                        <span className="po-card-emoji">{p.emoji}</span>
                         <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
-                      </div>
-                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.35 }}>{p.title}</div>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 10, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</div>
+                      </span>
+                      <span className="po-card-title">{p.title}</span>
+                      <span className="po-card-desc">{p.description}</span>
                       {p.milestones.length > 0 && (
                         <>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{done}/{p.milestones.length} milestones</div>
-                            <div style={{ fontSize: 'var(--fs-sm)', color: p.color }}>{pct}%</div>
-                          </div>
-                          <div style={{ background: 'var(--border)', borderRadius: 2, height: 2 }}>
-                            <div style={{ width: `${pct}%`, height: '100%', background: p.color, borderRadius: 2 }} />
-                          </div>
+                          <span className="po-card-prog">
+                            <span>{done}/{p.milestones.length} milestones</span>
+                            <span className="po-card-pct">{pct}%</span>
+                          </span>
+                          <span className="po-bar" data-size="xs" style={{ '--pct': `${pct}%` }}><span /></span>
                         </>
                       )}
-                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                        {p.artifacts?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>📎 {p.artifacts.length}</div>}
-                        {p.personas?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>👤 {p.personas.length}</div>}
-                        {p.process?.stages?.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>⚙ {p.process.stages.length} stages</div>}
-                        {p.priority === 'high' && <div style={{ marginLeft: 'auto', fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>▲ HIGH</div>}
-                      </div>
-                    </div>
+                      <span className="po-card-meta">
+                        {p.artifacts?.length > 0 && <span><Icon name="Paperclip" size={13} /> {p.artifacts.length}</span>}
+                        {p.personas?.length > 0 && <span><Icon name="Target" size={13} /> {p.personas.length}</span>}
+                        {p.process?.stages?.length > 0 && <span><Icon name="Cog" size={13} /> {p.process.stages.length} stages</span>}
+                        {p.priority === 'high' && <span className="po-high">▲ HIGH</span>}
+                      </span>
+                    </button>
                   );
                 })}
                 {cols.length === 0 && (
-                  <div style={{ padding: '20px 12px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>
+                  <div className="po-col-empty">
                     {status.id === 'planning' ? 'Add a project' : 'Empty'}
                   </div>
                 )}
@@ -170,7 +191,7 @@ export default function ProjectsOS() {
 
       {showNew && (
         <NewProjectModal onClose={() => setShowNew(false)} onCreate={createProject}
-          val={newProj} setVal={setNewProj} isMobile={isMobile} />
+          val={newProj} setVal={setNewProj} />
       )}
     </div>
   );
@@ -179,23 +200,22 @@ export default function ProjectsOS() {
 // ─── Project Workspace ────────────────────────────────────────────────────────
 function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
   const [tab, setTab] = useState('overview');
-  const { isMobile, isPhone } = useApp();
-  const statusConfig = PROJECT_STATUSES.find(s => s.id === proj.status);
   const cat = PROJECT_CATEGORIES[proj.category];
+  const statusConfig = PROJECT_STATUSES.find(s => s.id === proj.status);
   const done = proj.milestones.filter(m => m.done).length;
   const pct = proj.milestones.length > 0 ? Math.round((done / proj.milestones.length) * 100) : 0;
 
   return (
-    <div style={{ minHeight: '100%' }}>
+    <div className="po-ws" style={pcVar(proj)}>
       {/* Sticky header */}
-      <div style={{ padding: isMobile ? '12px 16px 0' : '16px 28px 0', background: 'var(--surface)', borderBottom: '1px solid var(--border)', position: 'sticky', top: 0, zIndex: 20 }}>
-        <div onClick={onBack} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 10 }}>← All Projects</div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--fs-2xl)', flexShrink: 0 }}>{proj.emoji}</div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ fontSize: isPhone ? 'var(--fs-lg)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.2, marginBottom: 5 }}>{proj.title}</div>
-              <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+      <div className="po-ws-head">
+        <button type="button" className="po-link po-back tap" onClick={onBack}>← All Projects</button>
+        <div className="po-ws-row">
+          <div className="po-ws-id">
+            <div className="po-ws-emoji">{proj.emoji}</div>
+            <div>
+              <div className="po-ws-title">{proj.title}</div>
+              <div className="po-badges">
                 <Badge color={cat?.color || 'var(--subtle)'}>{cat?.label || 'Other'}</Badge>
                 <Badge color={statusConfig?.color || 'var(--subtle)'}>{proj.status}</Badge>
                 {proj.priority === 'high' && <Badge color="var(--accent-text)">high priority</Badge>}
@@ -204,32 +224,29 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 5, flexShrink: 0, flexWrap: 'wrap' }}>
+          <div className="po-status">
             {PROJECT_STATUSES.map(s => (
-              <div key={s.id} onClick={() => onUpdate({ status: s.id })}
-                style={{ padding: '4px 9px', fontSize: 'var(--fs-sm)', border: `1px solid ${proj.status === s.id ? s.color : 'var(--border)'}`, color: proj.status === s.id ? s.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: proj.status === s.id ? `${s.color}12` : 'transparent', whiteSpace: 'nowrap' }}>
+              <button type="button" key={s.id} className="po-seg tap" aria-pressed={proj.status === s.id} onClick={() => onUpdate({ status: s.id })}>
                 {s.label}
-              </div>
+              </button>
             ))}
-            <div onClick={() => { if (confirm('Delete this project?')) onDelete(); }}
-              style={{ padding: '4px 9px', fontSize: 'var(--fs-sm)', border: '1px solid #C4553D40', color: T.negative, borderRadius: 6, cursor: 'pointer' }}>
+            <button type="button" className="po-seg tap" data-tone="negative" onClick={() => { if (confirm('Delete this project?')) onDelete(); }}>
               Delete
-            </div>
+            </button>
           </div>
         </div>
         {/* Tab bar */}
-        <div style={{ display: 'flex', gap: 0, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <div className="po-tabs" role="tablist" data-scroll-x="">
           {WORKSPACE_TABS.map(t => (
-            <div key={t.id} onClick={() => setTab(t.id)}
-              style={{ padding: '8px 14px', fontSize: 'var(--fs-base)', fontWeight: tab === t.id ? 700 : 500, color: tab === t.id ? proj.color : 'var(--subtle)', borderBottom: `2px solid ${tab === t.id ? proj.color : 'transparent'}`, cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+            <button type="button" role="tab" key={t.id} className="po-tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)}>
               {t.label}
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
       {/* Tab content */}
-      <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 80px', maxWidth: 820, margin: '0 auto' }}>
+      <div className="po-ws-body">
         {tab === 'overview' && <OverviewTab proj={proj} pct={pct} done={done} onUpdate={onUpdate} />}
         {tab === 'process'  && <ProcessTab proj={proj} onUpdate={onUpdate} />}
         {tab === 'notes'    && <NotesTab proj={proj} onUpdate={onUpdate} />}
@@ -241,12 +258,19 @@ function ProjectWorkspace({ proj, onBack, onUpdate, onDelete }) {
 }
 
 // ─── Overview Tab ─────────────────────────────────────────────────────────────
+const AI_TOOLS = [
+  { id: 'brief',     icon: 'ClipboardList', label: 'Strategy Brief' },
+  { id: 'obstacles', icon: 'AlertTriangle', label: 'Obstacles' },
+  { id: 'blueocean', icon: 'Waves',         label: 'Blue Ocean' },
+  { id: 'nextmoves', icon: 'Zap',           label: 'Top Moves This Week' },
+];
+
 function OverviewTab({ proj, pct, done, onUpdate }) {
   const [newMilestone, setNewMilestone] = useState('');
   const [aiMode, setAiMode]   = useState('');
   const [aiResult, setAiResult] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
-  const { isMobile, setChatPrefill, setChatOpen } = useApp();
+  const { setChatPrefill, setChatOpen } = useApp();
 
   const runAI = async mode => {
     if (aiMode === mode) { setAiMode(''); return; }
@@ -281,89 +305,72 @@ function OverviewTab({ proj, pct, done, onUpdate }) {
 
   return (
     <div>
-      {proj.description && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 24 }}>{proj.description}</div>}
+      {proj.description && <div className="po-lede po-mb24">{proj.description}</div>}
 
       {proj.milestones.length > 0 && (
-        <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${proj.color}20`, borderRadius: 10, marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <div className="po-progress">
+          <div className="po-spread po-gap8">
             <Label>Progress</Label>
-            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: proj.color, fontFamily: "'Newsreader', serif" }}>{pct}%</div>
+            <div className="po-pct">{pct}%</div>
           </div>
-          <div style={{ background: 'var(--border)', borderRadius: 3, height: 5, marginBottom: 8 }}>
-            <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${proj.color}, ${proj.color}80)`, borderRadius: 3, transition: 'width 0.5s' }} />
-          </div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{done} of {proj.milestones.length} milestones complete</div>
+          <div className="po-bar" style={{ '--pct': `${pct}%` }}><span /></div>
+          <div className="po-sub">{done} of {proj.milestones.length} milestones complete</div>
         </div>
       )}
 
-      <div style={{ marginBottom: 24 }}>
+      <div className="po-mb24">
         <Label>Milestones</Label>
         {proj.milestones.map(m => (
-          <div key={m.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: `1px solid ${m.done ? proj.color + '30' : 'var(--border)'}`, borderRadius: 8, marginBottom: 6 }}>
-            <div onClick={() => toggleMilestone(m.id)}
-              style={{ width: 15, height: 15, borderRadius: 4, border: `2px solid ${m.done ? proj.color : 'var(--dim)'}`, background: m.done ? proj.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, cursor: 'pointer' }}>
-              {m.done && <span style={{ fontSize: 'var(--fs-sm)', color: '#000', fontWeight: 900 }}>✓</span>}
-            </div>
-            <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: m.done ? 'var(--subtle)' : 'var(--text-b)', textDecoration: m.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{m.text}</div>
-            <div onClick={() => deleteMilestone(m.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
+          <div key={m.id} className="po-ms" data-done={m.done ? '' : undefined}>
+            <Check on={m.done} onToggle={() => toggleMilestone(m.id)} label={m.text} />
+            <div className="po-ms-text">{m.text}</div>
+            <DeleteX onClick={() => deleteMilestone(m.id)} label={`Delete milestone: ${m.text}`} />
           </div>
         ))}
-        <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-          <input value={newMilestone} onChange={e => setNewMilestone(e.target.value)}
+        <div className="po-row po-ms-add">
+          <input className="po-input" value={newMilestone} onChange={e => setNewMilestone(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addMilestone()}
-            placeholder="Add milestone..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-          <button onClick={addMilestone}
-            style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            placeholder="Add milestone..." aria-label="Add milestone" />
+          <button type="button" className="btn btn-primary po-act tap" onClick={addMilestone}>Add</button>
         </div>
       </div>
 
       {proj.connections?.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
+        <div className="po-mb24">
           <Label>Knowledge Connections</Label>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <div className="po-conns">
             {proj.connections.map(c => (
-              <div key={c} style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid #D9A44125', color: 'var(--accent-text)', borderRadius: 20 }}>📚 {c}</div>
+              <div key={c} className="po-conn"><Icon name="BookOpen" size={13} /> {c}</div>
             ))}
           </div>
         </div>
       )}
 
       {proj.blueOcean && (
-        <div style={{ padding: '12px 14px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44130', borderRadius: 10, marginBottom: 24 }}>
-          <Label color="var(--accent-text)">🌊 Blue Ocean Insight</Label>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{proj.blueOcean}</div>
+        <div className="po-ocean">
+          <Label color="var(--accent-text)"><span className="po-ico-label"><Icon name="Waves" size={12} /> Blue Ocean Insight</span></Label>
+          <div className="po-ocean-text">{proj.blueOcean}</div>
         </div>
       )}
 
-      <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20 }}>
+      <div className="po-ai">
         <Label>✦ AI Project Intelligence</Label>
-        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 14 }}>
-          {[
-            { id: 'brief',     label: '📋 Strategy Brief' },
-            { id: 'obstacles', label: '⚠ Obstacles' },
-            { id: 'blueocean', label: '🌊 Blue Ocean' },
-            { id: 'nextmoves', label: '⚡ Top Moves This Week' },
-          ].map(btn => (
-            <div key={btn.id} onClick={() => runAI(btn.id)}
-              style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${aiMode === btn.id ? proj.color : 'var(--border)'}`, borderRadius: 8, color: aiMode === btn.id ? proj.color : 'var(--subtle)', background: aiMode === btn.id ? `${proj.color}12` : 'var(--surface)', cursor: 'pointer' }}>
-              {btn.label}
-            </div>
+        <div className="po-tools">
+          {AI_TOOLS.map(btn => (
+            <button type="button" key={btn.id} className="po-tool tap" aria-pressed={aiMode === btn.id} onClick={() => runAI(btn.id)}>
+              <Icon name={btn.icon} size={15} /> {btn.label}
+            </button>
           ))}
-          <div onClick={() => { setChatPrefill(`Help me with my project: ${proj.title}. ${proj.description}`); setChatOpen(true); }}
-            style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', background: 'var(--surface)', cursor: 'pointer' }}>
-            💬 Ask AI
-          </div>
+          <button type="button" className="po-tool tap" onClick={() => { setChatPrefill(`Help me with my project: ${proj.title}. ${proj.description}`); setChatOpen(true); }}>
+            <Icon name="MessageSquare" size={15} /> Ask AI
+          </button>
         </div>
         {aiMode && (aiLoading || aiResult) && (
-          <div style={{ padding: '14px 16px', background: `${proj.color}08`, border: `1px solid ${proj.color}25`, borderRadius: 10 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: proj.color, textTransform: 'uppercase' }}>AI Output</div>
+          <div className="po-out">
+            <div className="po-spread po-out-head">
+              <div className="po-out-label">AI Output</div>
               {aiResult && !aiLoading && (
-                <div onClick={saveAiToFiles}
-                  style={{ fontSize: 'var(--fs-sm)', color: proj.color, cursor: 'pointer', border: `1px solid ${proj.color}40`, borderRadius: 6, padding: '3px 9px' }}>
-                  + Save to Files
-                </div>
+                <button type="button" className="po-mini tap" onClick={saveAiToFiles}>+ Save to Files</button>
               )}
             </div>
             {aiLoading ? <ThinkingDots color={proj.color} /> : <MD text={aiResult} color={proj.color} />}
@@ -383,7 +390,6 @@ function ProcessTab({ proj, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [newStepText, setNewStepText] = useState({});
   const [newStageName, setNewStageName] = useState('');
-  const { isMobile } = useApp();
 
   const stages = proj.process?.stages || [];
   const hasProcess = stages.length > 0;
@@ -448,25 +454,24 @@ ${rawText.slice(0, 3000)}`;
   if (view === 'import') {
     return (
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>Import a Process</div>
-          {hasProcess && <div onClick={() => setView('stages')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer' }}>← Back</div>}
+        <div className="po-spread po-mb14">
+          <div className="po-h2">Import a Process</div>
+          {hasProcess && <button type="button" className="po-link tap" onClick={() => setView('stages')}>← Back</button>}
         </div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 12 }}>
+        <div className="po-lede po-mb12">
           Paste any text — a book framework, sales methodology, your own notes, something you copied online. AI parses it into stages + steps you can customize and build out.
         </div>
-        <textarea value={rawText} onChange={e => setRawText(e.target.value)}
+        <textarea className="po-input po-textarea po-import-text" value={rawText} onChange={e => setRawText(e.target.value)}
           placeholder="Paste your process, playbook, framework, or methodology here..."
-          rows={10}
-          style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
-        {parseError && <div style={{ fontSize: 'var(--fs-base)', color: T.negative, marginBottom: 10 }}>{parseError}</div>}
-        <div style={{ display: 'flex', gap: 8 }}>
+          aria-label="Process text" rows={10} />
+        {parseError && <div className="po-err" role="alert">{parseError}</div>}
+        <div className="po-row">
           {hasProcess && (
-            <button onClick={() => setView('stages')} style={{ flex: 1, padding: '11px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
+            <button type="button" className="btn po-act po-act-grow tap" onClick={() => setView('stages')}>Cancel</button>
           )}
-          <button onClick={parseWithAI} disabled={parsing || !rawText.trim()}
-            style={{ flex: 2, padding: '11px', background: rawText.trim() && !parsing ? proj.color : 'var(--bord2)', border: 'none', borderRadius: 10, color: rawText.trim() && !parsing ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: rawText.trim() && !parsing ? 'pointer' : 'default', fontFamily: 'inherit' }}>
-            {parsing ? 'Parsing with AI...' : '⚡ Parse into Stages'}
+          <button type="button" className="btn btn-primary po-act po-act-grow2 tap" onClick={parseWithAI}
+            disabled={parsing || !rawText.trim()} aria-busy={parsing || undefined}>
+            {parsing ? 'Parsing with AI...' : <><Icon name="Zap" size={15} /> Parse into Stages</>}
           </button>
         </div>
       </div>
@@ -477,30 +482,27 @@ ${rawText.slice(0, 3000)}`;
   if (!hasProcess) {
     return (
       <div>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Build Your BD Process</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.7, marginBottom: 20 }}>
+        <div className="po-h2 po-gap8">Build Your BD Process</div>
+        <div className="po-lede po-mb20">
           No process defined yet. Import one from a framework you've read, paste in your own notes, or build stage by stage from scratch.
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 24 }}>
-          <div onClick={() => setView('import')}
-            style={{ padding: '20px', background: 'var(--surface)', border: `1px solid ${proj.color}30`, borderRadius: 12, cursor: 'pointer', textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>📋</div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Import a Process</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>Paste any framework, playbook, or methodology — AI structures it into actionable stages.</div>
-          </div>
-          <div onClick={() => saveStages([{ id: uid(), name: 'Stage 1 — Prospect', description: 'Define and find ideal prospects', steps: [] }])}
-            style={{ padding: '20px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, cursor: 'pointer', textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>🧱</div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Build from Scratch</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>Add stages and steps manually. Define your own phases as you build the process.</div>
-          </div>
+        <div className="po-choices">
+          <button type="button" className="po-choice" data-pc="" onClick={() => setView('import')}>
+            <span className="po-choice-ico"><Icon name="ClipboardList" size={28} strokeWidth={1.5} /></span>
+            <span className="po-choice-title">Import a Process</span>
+            <span className="po-choice-desc">Paste any framework, playbook, or methodology — AI structures it into actionable stages.</span>
+          </button>
+          <button type="button" className="po-choice" onClick={() => saveStages([{ id: uid(), name: 'Stage 1 — Prospect', description: 'Define and find ideal prospects', steps: [] }])}>
+            <span className="po-choice-ico"><Icon name="Layers" size={28} strokeWidth={1.5} /></span>
+            <span className="po-choice-title">Build from Scratch</span>
+            <span className="po-choice-desc">Add stages and steps manually. Define your own phases as you build the process.</span>
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={newStageName} onChange={e => setNewStageName(e.target.value)}
+        <div className="po-row">
+          <input className="po-input" value={newStageName} onChange={e => setNewStageName(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addStage()}
-            placeholder="Or type a stage name to add directly..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-          <button onClick={addStage} style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Add Stage</button>
+            placeholder="Or type a stage name to add directly..." aria-label="New stage name" />
+          <button type="button" className="btn btn-primary po-act tap" onClick={addStage}>Add Stage</button>
         </div>
       </div>
     );
@@ -509,84 +511,71 @@ ${rawText.slice(0, 3000)}`;
   // Builder view
   const totalSteps = stages.reduce((a, s) => a + s.steps.length, 0);
   const doneSteps  = stages.reduce((a, s) => a + s.steps.filter(st => st.done).length, 0);
+  const procPct = totalSteps > 0 ? Math.round((doneSteps / totalSteps) * 100) : 0;
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div className="po-spread po-mb16">
         <div>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>BD Process</div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{stages.length} stages · {doneSteps}/{totalSteps} steps complete</div>
+          <div className="po-h2 po-mb2">BD Process</div>
+          <div className="po-sub">{stages.length} stages · {doneSteps}/{totalSteps} steps complete</div>
         </div>
-        <div onClick={() => setView('import')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px' }}>
-          Re-import / Edit
-        </div>
+        <button type="button" className="po-mini tap" onClick={() => setView('import')}>Re-import / Edit</button>
       </div>
 
       {totalSteps > 0 && (
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ background: 'var(--border)', borderRadius: 3, height: 4, marginBottom: 4 }}>
-            <div style={{ width: `${Math.round((doneSteps / totalSteps) * 100)}%`, height: '100%', background: proj.color, borderRadius: 3, transition: 'width 0.4s' }} />
-          </div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{Math.round((doneSteps / totalSteps) * 100)}% process complete</div>
+        <div className="po-proc-bar">
+          <div className="po-bar" data-size="sm" style={{ '--pct': `${procPct}%` }}><span /></div>
+          <div className="po-sub">{procPct}% process complete</div>
         </div>
       )}
 
       {stages.map((stage, idx) => (
-        <div key={stage.id} style={{ marginBottom: 14, padding: '14px 16px', background: 'var(--surface)', borderLeft: `3px solid ${proj.color}`, border: `1px solid var(--border)`, borderRadius: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: proj.color, minWidth: 18, marginTop: 1 }}>{idx + 1}</div>
-            <div style={{ flex: 1 }}>
+        <div key={stage.id} className="po-stage">
+          <div className="po-stage-head">
+            <div className="po-stage-n">{idx + 1}</div>
+            <div className="po-stage-main">
               {editingId === stage.id ? (
                 <div>
-                  <input value={stage.name} onChange={e => updateStage(stage.id, { name: e.target.value })}
-                    onBlur={() => setEditingId(null)} autoFocus
-                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${proj.color}`, borderRadius: 6, padding: '6px 9px', color: 'var(--text)', fontSize: 'var(--fs-base)', fontWeight: 700, outline: 'none', fontFamily: 'inherit', marginBottom: 6, boxSizing: 'border-box' }} />
-                  <input value={stage.description} onChange={e => updateStage(stage.id, { description: e.target.value })}
-                    placeholder="Stage description (optional)..."
-                    style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 9px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
+                  <input className="po-input po-stage-in" data-name="" value={stage.name} onChange={e => updateStage(stage.id, { name: e.target.value })}
+                    onBlur={() => setEditingId(null)} autoFocus aria-label="Stage name" />
+                  <input className="po-input po-stage-in" value={stage.description} onChange={e => updateStage(stage.id, { description: e.target.value })}
+                    placeholder="Stage description (optional)..." aria-label="Stage description" />
                 </div>
               ) : (
-                <div onClick={() => setEditingId(stage.id)} style={{ cursor: 'pointer' }}>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: stage.description ? 2 : 0 }}>{stage.name}</div>
-                  {stage.description && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>{stage.description}</div>}
-                  {!stage.description && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>click to edit description</div>}
-                </div>
+                <button type="button" className="po-stage-edit" onClick={() => setEditingId(stage.id)}>
+                  <span className="po-stage-name" data-desc={stage.description ? '' : undefined}>{stage.name}</span>
+                  <span className="po-stage-desc">{stage.description || 'click to edit description'}</span>
+                </button>
               )}
             </div>
-            <div onClick={() => deleteStage(stage.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px', flexShrink: 0 }}>✕</div>
+            <DeleteX onClick={() => deleteStage(stage.id)} label={`Delete stage: ${stage.name}`} />
           </div>
 
-          <div style={{ marginBottom: 8 }}>
+          <div className="po-steps">
             {stage.steps.map(step => (
-              <div key={step.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border-dim)' }}>
-                <div onClick={() => toggleStep(stage.id, step.id)}
-                  style={{ width: 13, height: 13, borderRadius: 3, border: `2px solid ${step.done ? proj.color : 'var(--dim)'}`, background: step.done ? proj.color : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2, cursor: 'pointer' }}>
-                  {step.done && <span style={{ fontSize: 'var(--fs-sm)', color: '#000', fontWeight: 900 }}>✓</span>}
-                </div>
-                <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: step.done ? 'var(--dim)' : 'var(--text-b)', textDecoration: step.done ? 'line-through' : 'none', lineHeight: 1.5 }}>{step.text}</div>
-                <div onClick={() => deleteStep(stage.id, step.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px', flexShrink: 0 }}>✕</div>
+              <div key={step.id} className="po-step" data-done={step.done ? '' : undefined}>
+                <Check small on={step.done} onToggle={() => toggleStep(stage.id, step.id)} label={step.text} />
+                <div className="po-step-text">{step.text}</div>
+                <DeleteX onClick={() => deleteStep(stage.id, step.id)} label={`Delete step: ${step.text}`} />
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-            <input value={newStepText[stage.id] || ''} onChange={e => setNewStepText(p => ({ ...p, [stage.id]: e.target.value }))}
+          <div className="po-row po-step-add">
+            <input className="po-input" value={newStepText[stage.id] || ''} onChange={e => setNewStepText(p => ({ ...p, [stage.id]: e.target.value }))}
               onKeyDown={e => e.key === 'Enter' && addStep(stage.id)}
-              placeholder="Add a step..."
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-            <button onClick={() => addStep(stage.id)}
-              style={{ padding: '6px 11px', background: `${proj.color}20`, border: `1px solid ${proj.color}40`, borderRadius: 6, color: proj.color, fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>+</button>
+              placeholder="Add a step..." aria-label={`Add a step to ${stage.name}`} />
+            <button type="button" className="btn tap" onClick={() => addStep(stage.id)} aria-label="Add step">+</button>
           </div>
         </div>
       ))}
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 6 }}>
-        <input value={newStageName} onChange={e => setNewStageName(e.target.value)}
+      <div className="po-row po-stage-add">
+        <input className="po-input" value={newStageName} onChange={e => setNewStageName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addStage()}
-          placeholder="Add a new stage..."
-          style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-        <button onClick={addStage}
-          style={{ padding: '9px 14px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>+ Stage</button>
+          placeholder="Add a new stage..." aria-label="New stage name" />
+        <button type="button" className="btn btn-primary po-act tap" onClick={addStage}>+ Stage</button>
       </div>
     </div>
   );
@@ -606,14 +595,14 @@ function NotesTab({ proj, onUpdate }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+      <div className="po-spread po-gap10">
         <Label>Project Notes</Label>
-        <div style={{ fontSize: 'var(--fs-sm)', color: saved ? 'var(--accent-text)' : 'var(--dim)' }}>{saved ? '✓ Saved' : 'Saving...'}</div>
+        <div className="po-saved" data-saved={saved ? '' : undefined} aria-live="polite">{saved ? '✓ Saved' : 'Saving...'}</div>
       </div>
-      <textarea value={text} onChange={e => handleChange(e.target.value)}
-        placeholder="Write anything here — meeting notes, ideas, strategy, call summaries, observations, next steps, frameworks you're trying...&#10;&#10;Auto-saves as you type."
-        style={{ width: '100%', minHeight: 440, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '16px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.75, boxSizing: 'border-box' }} />
-      <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>
+      <textarea className="po-input po-textarea po-notes" value={text} onChange={e => handleChange(e.target.value)}
+        aria-label="Project notes"
+        placeholder="Write anything here — meeting notes, ideas, strategy, call summaries, observations, next steps, frameworks you're trying...&#10;&#10;Auto-saves as you type." />
+      <div className="po-notes-count">
         {text.length.toLocaleString()} chars · {text.split(/\s+/).filter(Boolean).length} words
       </div>
     </div>
@@ -668,78 +657,73 @@ function FilesTab({ proj, onUpdate }) {
     return `${(b / (1024 * 1024)).toFixed(1)}MB`;
   };
 
-  const typeIcon = a => ({ file: getFileIcon(a.fileName) || '📎', aiOutput: '✦', note: '📝', persona: '👤' })[a.type] || '📎';
+  // lucide icon NAMES (getFileIcon already returns one per extension).
+  const typeIcon = a => ({ file: getFileIcon(a.fileName) || 'Paperclip', aiOutput: 'Sparkles', note: 'StickyNote', persona: 'Target' })[a.type] || 'Paperclip';
 
   return (
     <div>
       {/* Drop zone */}
-      <div onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
+      <button type="button" className="po-drop" data-drag={dragging ? '' : undefined}
+        onDragOver={e => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
         onDrop={async e => { e.preventDefault(); setDragging(false); await handleFiles(e.dataTransfer.files); }}
-        onClick={() => fileInputRef.current?.click()}
-        style={{ border: `2px dashed ${dragging ? proj.color : 'var(--border)'}`, borderRadius: 12, padding: '28px', textAlign: 'center', marginBottom: 16, cursor: 'pointer', background: dragging ? `${proj.color}08` : 'var(--surface)', transition: 'all 0.15s' }}>
-        <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 6 }}>{uploading ? '⏳' : '📁'}</div>
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-b)', marginBottom: 3 }}>{uploading ? 'Uploading...' : 'Drop files here or click to upload'}</div>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>PDF, Word, Excel, images, text — max 4MB per file</div>
-        <input ref={fileInputRef} type="file" multiple accept={ACCEPT_TYPES} style={{ display: 'none' }}
-          onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
-      </div>
+        onClick={() => fileInputRef.current?.click()} aria-busy={uploading || undefined}>
+        <span className="po-drop-ico"><Icon name={uploading ? 'Clock' : 'Paperclip'} size={28} strokeWidth={1.5} /></span>
+        <span className="po-drop-title">{uploading ? 'Uploading...' : 'Drop files here or click to upload'}</span>
+        <span className="po-drop-sub">PDF, Word, Excel, images, text — max 4MB per file</span>
+      </button>
+      <input ref={fileInputRef} type="file" multiple accept={ACCEPT_TYPES} className="po-hidden" tabIndex={-1} aria-hidden="true"
+        onChange={e => { handleFiles(e.target.files); e.target.value = ''; }} />
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
-        <div onClick={() => setShowNote(!showNote)}
-          style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 13px', cursor: 'pointer' }}>
+      <div className="po-files-actions">
+        <button type="button" className="po-mini tap" aria-expanded={showNote} onClick={() => setShowNote(!showNote)}>
           + Add Note / Paste Text
-        </div>
+        </button>
       </div>
 
       {showNote && (
-        <div style={{ padding: '14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 18 }}>
-          <input value={noteTitle} onChange={e => setNoteTitle(e.target.value)} placeholder="Title..."
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', marginBottom: 8, boxSizing: 'border-box' }} />
-          <textarea value={noteContent} onChange={e => setNoteContent(e.target.value)}
-            placeholder="Paste text, notes, or content here..." rows={5}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 11px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 10 }} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setShowNote(false)} style={{ flex: 1, padding: '9px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={addNote} style={{ flex: 2, padding: '9px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save to Project</button>
+        <div className="po-panel">
+          <input className="po-input po-gap8" value={noteTitle} onChange={e => setNoteTitle(e.target.value)} placeholder="Title..." aria-label="Note title" />
+          <textarea className="po-input po-textarea po-gap10" value={noteContent} onChange={e => setNoteContent(e.target.value)}
+            placeholder="Paste text, notes, or content here..." aria-label="Note content" rows={5} />
+          <div className="po-row">
+            <button type="button" className="btn po-act po-act-grow tap" onClick={() => setShowNote(false)}>Cancel</button>
+            <button type="button" className="btn btn-primary po-act po-act-grow2 tap" onClick={addNote}>Save to Project</button>
           </div>
         </div>
       )}
 
       {artifacts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
-          <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>📂</div>
-          No files or artifacts yet. Upload files, paste notes, or save AI outputs here — everything stays organized by project.
-        </div>
+        <SectionEmpty what="No files or artifacts yet"
+          how="Upload files, paste notes, or save AI outputs here — everything stays organized by project." />
       ) : (
         <div>
           <Label>{artifacts.length} item{artifacts.length !== 1 ? 's' : ''}</Label>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="po-arts">
             {[...artifacts].reverse().map(a => (
-              <div key={a.id} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-                <div style={{ padding: '11px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <div style={{ fontSize: 'var(--fs-xl)', flexShrink: 0 }}>{typeIcon(a)}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-b)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{a.title}</div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                      <div style={{ fontSize: 8, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{a.type}</div>
-                      {a.source && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {a.source}</div>}
-                      {a.fileSize > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {fmtSize(a.fileSize)}</div>}
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>· {timeAgo(a.createdAt)}</div>
+              <div key={a.id} className="po-art">
+                <div className="po-art-row">
+                  <span className="po-art-ico"><Icon name={typeIcon(a)} size={20} /></span>
+                  <div className="po-art-main">
+                    <div className="po-art-title">{a.title}</div>
+                    <div className="po-art-meta">
+                      <span className="po-art-type">{a.type}</span>
+                      {a.source && <span>· {a.source}</span>}
+                      {a.fileSize > 0 && <span>· {fmtSize(a.fileSize)}</span>}
+                      <span>· {timeAgo(a.createdAt)}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <div className="po-art-tools">
                     {a.content && (
-                      <div onClick={() => setExpanded(expanded === a.id ? null : a.id)}
-                        style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 5, padding: '3px 7px' }}>
+                      <button type="button" className="po-mini tap" aria-expanded={expanded === a.id} onClick={() => setExpanded(expanded === a.id ? null : a.id)}>
                         {expanded === a.id ? 'collapse' : 'view'}
-                      </div>
+                      </button>
                     )}
-                    <div onClick={() => deleteArtifact(a.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '3px 5px' }}>✕</div>
+                    <DeleteX onClick={() => deleteArtifact(a.id)} label={`Delete ${a.title}`} />
                   </div>
                 </div>
                 {expanded === a.id && a.content && (
-                  <div style={{ padding: '0 14px 14px 14px', borderTop: '1px solid var(--border-dim)' }}>
-                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.65, marginTop: 10, whiteSpace: 'pre-wrap' }}>{a.content}</div>
+                  <div className="po-art-body">
+                    <div>{a.content}</div>
                   </div>
                 )}
               </div>
@@ -766,7 +750,6 @@ function PersonasTab({ proj, onUpdate }) {
   const [editId, setEditId]     = useState(null);
   const [form, setForm]         = useState(blankPersona());
   const [generating, setGenerating] = useState(false);
-  const { isMobile } = useApp();
   const personas = proj.personas || [];
 
   const savePersona = () => {
@@ -803,38 +786,36 @@ function PersonasTab({ proj, onUpdate }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="po-per-head">
         <div>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Personas & ICP</div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>Ideal customer profiles · CRM connector slot built in</div>
+          <div className="po-h2 po-mb2">Personas & ICP</div>
+          <div className="po-sub">Ideal customer profiles · CRM connector slot built in</div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={generating ? undefined : generateICP}
-            style={{ fontSize: 'var(--fs-sm)', color: generating ? 'var(--dim)' : proj.color, border: `1px solid ${generating ? 'var(--border)' : proj.color + '50'}`, borderRadius: 8, padding: '6px 11px', cursor: generating ? 'default' : 'pointer' }}>
+        <div className="po-row">
+          <button type="button" className="po-mini tap" data-tone="accent" onClick={generateICP}
+            disabled={generating} aria-busy={generating || undefined}>
             {generating ? '...' : '✦ AI Generate'}
-          </div>
-          <div onClick={() => { setForm(blankPersona()); setEditId(null); setShowForm(true); }}
-            style={{ fontSize: 'var(--fs-sm)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 11px', cursor: 'pointer' }}>
+          </button>
+          <button type="button" className="po-mini tap" onClick={() => { setForm(blankPersona()); setEditId(null); setShowForm(true); }}>
             + Add Persona
-          </div>
+          </button>
         </div>
       </div>
 
       {showForm && (
-        <div style={{ padding: '16px', background: 'var(--surface)', border: `1px solid ${proj.color}30`, borderRadius: 12, marginBottom: 20 }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>{editId ? 'Edit Persona' : 'New Persona'}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 10 }}>
+        <div className="po-form">
+          <div className="po-form-title">{editId ? 'Edit Persona' : 'New Persona'}</div>
+          <div className="po-form-grid">
             {[
               { key: 'name',     label: 'Persona Name / Type',   ph: 'e.g. Mid-market CFO, Owner-operator' },
               { key: 'role',     label: 'Job Title',             ph: 'CFO, VP Sales, Founder...' },
               { key: 'company',  label: 'Company Type',          ph: 'SaaS startup, regional CRE firm...' },
               { key: 'industry', label: 'Industry',              ph: 'Real estate, healthcare, finance...' },
             ].map(f => (
-              <div key={f.key}>
-                <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</div>
-                <input value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph}
-                  style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-              </div>
+              <label key={f.key}>
+                <div className="po-kicker">{f.label}</div>
+                <input className="po-input" value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph} />
+              </label>
             ))}
           </div>
           {[
@@ -843,79 +824,75 @@ function PersonasTab({ proj, onUpdate }) {
             { key: 'outreachAngle', label: 'Outreach Angle',    ph: "Best way to open a conversation with this persona..." },
             { key: 'notes',         label: 'Notes',             ph: "Any context, examples, specifics..." },
           ].map(f => (
-            <div key={f.key} style={{ marginBottom: 10 }}>
-              <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</div>
-              <textarea value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph} rows={2}
-                style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' }} />
-            </div>
+            <label key={f.key} className="po-block po-gap10">
+              <div className="po-kicker">{f.label}</div>
+              <textarea className="po-input po-textarea" value={form[f.key] || ''} onChange={e => setF({ [f.key]: e.target.value })} placeholder={f.ph} rows={2} />
+            </label>
           ))}
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 5 }}>CRM Reference <span style={{ color: 'var(--dim)', textTransform: 'none', letterSpacing: 0 }}>(future connector)</span></div>
-            <input value={form.crmRef || ''} onChange={e => setF({ crmRef: e.target.value })}
-              placeholder="ID, link, or ref for your CRM — Salesforce, HubSpot, etc."
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--bord2)', borderRadius: 7, padding: '8px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }} />
-          </div>
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 6 }}>Status</div>
-            <div style={{ display: 'flex', gap: 6 }}>
+          <label className="po-block po-mb12">
+            <div className="po-kicker">CRM Reference <span className="po-kicker-note">(future connector)</span></div>
+            <input className="po-input po-crm-in" value={form.crmRef || ''} onChange={e => setF({ crmRef: e.target.value })}
+              placeholder="ID, link, or ref for your CRM — Salesforce, HubSpot, etc." />
+          </label>
+          <div className="po-mb14">
+            <div className="po-kicker po-mb6">Status</div>
+            <div className="po-pills">
               {PERSONA_STATUSES.map(s => (
-                <div key={s.id} onClick={() => setF({ status: s.id })}
-                  style={{ padding: '5px 11px', fontSize: 'var(--fs-sm)', border: `1px solid ${form.status === s.id ? s.color : 'var(--border)'}`, color: form.status === s.id ? s.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: form.status === s.id ? `${s.color}15` : 'transparent' }}>
+                <button type="button" key={s.id} className="chip po-pill tap" aria-pressed={form.status === s.id}
+                  data-tone={s.id === 'closed' ? 'negative' : undefined} onClick={() => setF({ status: s.id })}>
                   {s.label}
-                </div>
+                </button>
               ))}
             </div>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => { setShowForm(false); setEditId(null); setForm(blankPersona()); }} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={savePersona} style={{ flex: 2, padding: '10px', background: proj.color, border: 'none', borderRadius: 8, color: '#000', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Save Persona</button>
+          <div className="po-row">
+            <button type="button" className="btn po-act po-act-grow tap" onClick={() => { setShowForm(false); setEditId(null); setForm(blankPersona()); }}>Cancel</button>
+            <button type="button" className="btn btn-primary po-act po-act-grow2 tap" onClick={savePersona}>Save Persona</button>
           </div>
         </div>
       )}
 
       {personas.length === 0 && !showForm ? (
-        <div style={{ textAlign: 'center', padding: '36px 20px', color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
-          <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>👤</div>
-          No personas yet. Add your ICPs to focus your BD — or let AI generate them based on your project.
-        </div>
+        <SectionEmpty what="No personas yet"
+          how="Add your ICPs to focus your BD — or let AI generate them based on your project." />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
+        <div className="po-personas">
           {personas.map(p => {
             const st = PERSONA_STATUSES.find(s => s.id === p.status) || PERSONA_STATUSES[0];
             return (
-              <div key={p.id} style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${st.color}25`, borderRadius: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+              <div key={p.id} className="po-persona" style={{ '--st': st.color }}>
+                <div className="po-persona-head">
                   <div>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{p.name || '(unnamed)'}</div>
-                    {p.role && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{p.role}{p.company ? ` · ${p.company}` : ''}</div>}
-                    {p.industry && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{p.industry}</div>}
+                    <div className="po-persona-name">{p.name || '(unnamed)'}</div>
+                    {p.role && <div className="po-sub">{p.role}{p.company ? ` · ${p.company}` : ''}</div>}
+                    {p.industry && <div className="po-sub">{p.industry}</div>}
                   </div>
-                  <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <div className="po-persona-tools">
                     <Badge color={st.color}>{st.label}</Badge>
-                    <div onClick={() => editPersona(p)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✏</div>
-                    <div onClick={() => deletePersona(p.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px' }}>✕</div>
+                    <button type="button" className="po-x tap" onClick={() => editPersona(p)} aria-label={`Edit ${p.name || 'persona'}`}><Icon name="Pencil" size={14} /></button>
+                    <DeleteX onClick={() => deletePersona(p.id)} label={`Delete ${p.name || 'persona'}`} />
                   </div>
                 </div>
                 {p.painPoints && (
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 3 }}>Pain Points</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.painPoints}</div>
+                  <div className="po-persona-sec">
+                    <div className="po-persona-label">Pain Points</div>
+                    <div className="po-persona-text">{p.painPoints}</div>
                   </div>
                 )}
                 {p.valueProp && (
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: proj.color, textTransform: 'uppercase', marginBottom: 3 }}>Value Prop</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.valueProp}</div>
+                  <div className="po-persona-sec">
+                    <div className="po-persona-label" data-muted="">Value Prop</div>
+                    <div className="po-persona-text">{p.valueProp}</div>
                   </div>
                 )}
                 {p.outreachAngle && (
-                  <div style={{ marginBottom: 8 }}>
-                    <div style={{ fontSize: 8, letterSpacing: 1.5, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 3 }}>Outreach Angle</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', lineHeight: 1.5 }}>{p.outreachAngle}</div>
+                  <div className="po-persona-sec">
+                    <div className="po-persona-label">Outreach Angle</div>
+                    <div className="po-persona-text">{p.outreachAngle}</div>
                   </div>
                 )}
                 {p.crmRef && (
-                  <div style={{ padding: '4px 8px', background: 'var(--bg)', border: '1px dashed var(--bord2)', borderRadius: 5, fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 6 }}>
+                  <div className="po-crm">
                     🔌 CRM: {p.crmRef}
                   </div>
                 )}
@@ -929,47 +906,44 @@ function PersonasTab({ proj, onUpdate }) {
 }
 
 // ─── New Project Modal ────────────────────────────────────────────────────────
-function NewProjectModal({ onClose, onCreate, val, setVal, isMobile }) {
+function NewProjectModal({ onClose, onCreate, val, setVal }) {
+  const ready = !!val.title.trim();
   return (
     <Modal title="New Project" accent={T.accent} onClose={onClose}>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
-        <input value={val.emoji} onChange={e => setVal(p => ({ ...p, emoji: e.target.value }))}
-          style={{ width: 50, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px', color: 'var(--text-b)', fontSize: 'var(--fs-xl)', outline: 'none', textAlign: 'center' }} />
-        <input value={val.title} onChange={e => setVal(p => ({ ...p, title: e.target.value }))}
-          onKeyDown={e => e.key === 'Enter' && val.title.trim() && onCreate()}
-          placeholder="Project title..."
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-      </div>
-      <textarea value={val.description} onChange={e => setVal(p => ({ ...p, description: e.target.value }))}
-        placeholder="What is this project about? What's the goal?" rows={3}
-        style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box', marginBottom: 14 }} />
-      <div style={{ marginBottom: 14 }}>
-        <Label>Category <span style={{ color: 'var(--dim)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>· optional, inferred</span></Label>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
-            <div key={k} onClick={() => setVal(p => ({ ...p, category: k }))}
-              style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', border: `1px solid ${val.category === k ? v.color : 'var(--bord2)'}`, color: val.category === k ? v.color : 'var(--subtle)', borderRadius: 6, cursor: 'pointer', background: val.category === k ? `${v.color}15` : 'transparent', minHeight: isMobile ? 40 : undefined }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={v.icon} size={14} /> {v.label}</span>
-            </div>
-          ))}
+      <div className="po-modal">
+        <div className="po-modal-row">
+          <input className="po-input po-emoji-in" value={val.emoji} onChange={e => setVal(p => ({ ...p, emoji: e.target.value }))} aria-label="Project emoji" />
+          <input className="po-input" value={val.title} onChange={e => setVal(p => ({ ...p, title: e.target.value }))}
+            onKeyDown={e => e.key === 'Enter' && val.title.trim() && onCreate()}
+            placeholder="Project title..." aria-label="Project title" />
         </div>
-      </div>
-      <div style={{ marginBottom: 16 }}>
-        <Label>Priority</Label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {['high', 'medium', 'low'].map(p => (
-            <div key={p} onClick={() => setVal(prev => ({ ...prev, priority: p }))}
-              style={{ flex: 1, padding: '8px', border: `1px solid ${val.priority === p ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-sm)', color: val.priority === p ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', textTransform: 'capitalize' }}>
-              {p}
-            </div>
-          ))}
+        <textarea className="po-input po-modal-desc" value={val.description} onChange={e => setVal(p => ({ ...p, description: e.target.value }))}
+          placeholder="What is this project about? What's the goal?" aria-label="Project description" rows={3} />
+        <div className="po-modal-sec">
+          <Label>Category <span className="po-quiet">· optional, inferred</span></Label>
+          <div className="po-pills">
+            {Object.entries(PROJECT_CATEGORIES).map(([k, v]) => (
+              <button type="button" key={k} className="chip tap" aria-pressed={val.category === k} onClick={() => setVal(p => ({ ...p, category: k }))}>
+                <Icon name={v.icon} size={14} /> {v.label}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div style={{ display: 'flex', gap: 8 }}>
-        <div onClick={onClose} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-        <div onClick={val.title.trim() ? onCreate : undefined}
-          style={{ flex: 2, padding: '11px', background: val.title.trim() ? T.accent : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: val.title.trim() ? '#000' : 'var(--dim)', cursor: val.title.trim() ? 'pointer' : 'default' }}>
-          Create Project →
+        <div>
+          <Label>Priority</Label>
+          <div className="po-prio">
+            {['high', 'medium', 'low'].map(p => (
+              <button type="button" key={p} className="po-seg tap" aria-pressed={val.priority === p} onClick={() => setVal(prev => ({ ...prev, priority: p }))}>
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="po-row">
+          <button type="button" className="btn po-act po-act-grow tap" onClick={onClose}>Cancel</button>
+          <button type="button" className="btn btn-primary po-act po-act-grow2 tap" onClick={ready ? onCreate : undefined} disabled={!ready}>
+            Create Project →
+          </button>
         </div>
       </div>
     </Modal>
