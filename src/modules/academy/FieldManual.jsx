@@ -1,4 +1,3 @@
-import { T, withAlpha } from '../../theme';
 import { useState, useEffect, useMemo } from 'react';
 import { useApp } from '../../App.jsx';
 import { callClaude, logSession, uid } from '../../utils.js';
@@ -9,32 +8,31 @@ import { createCard } from '../../lib/reviews.js';
 import { logConcept } from '../../lib/graph.js';
 import { TIER_INSTRUCTION } from '../../lib/rigor.js';
 import MD from '../shared/MD.jsx';
+import Icon from '../shared/Icon.jsx';
 import DiagramBlock from '../shared/DiagramBlock.jsx';
 import { SectionSkeleton, SectionError } from '../shared/SectionState.jsx';
+import './field-manual.css';
 
 // Content packs live entirely in data files (src/data/ladders/*). This component
 // is the engine — it must never special-case a specific ladder. Adding a ladder
 // = adding one file + one import in data/ladders/index.js. Zero edits here.
-const ACCENT     = T.accent;            // module chrome stays quiet/on-system (no hex)
+// Styling lives in field-manual.css (fm-) — tokens only, no inline colour.
 const LADDER_KEY = 'aether_academy_v1';
 const FLASH_KEY  = 'aether_flashcards';
 const STALE_DAYS = 90;
 
 // ── Tiering — the Hub invariant: nothing renders un-tiered ───────────────────
+// Each tier reads its --tier-* token (text + 1px border, never a filled chip).
 const TIER = {
-  verified: { label: 'Verified', color: 'var(--positive)' },
-  reported: { label: 'Reported', color: 'var(--caution)' },
-  inferred: { label: 'Inferred', color: 'var(--dim)' },
+  verified: { label: 'Verified' },
+  reported: { label: 'Reported' },
+  inferred: { label: 'Inferred' },
 };
-const tierOf = (t) => TIER[t] || TIER.inferred; // no tier → inferred, never blank
+const tierKey = (t) => (TIER[t] ? t : 'inferred'); // no tier → inferred, never blank
 
 function TierChip({ tier }) {
-  const t = tierOf(tier);
-  return (
-    <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 0.8, textTransform: 'uppercase', color: t.color, border: `1px solid ${withAlpha(t.color, 40)}`, background: withAlpha(t.color, 12), borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap' }}>
-      {t.label}
-    </span>
-  );
+  const k = tierKey(tier);
+  return <span className="fm-tier" data-tier={k}>{TIER[k].label}</span>;
 }
 
 // ── Storage ──────────────────────────────────────────────────────────────────
@@ -70,7 +68,7 @@ function daysSince(iso) {
 
 // ═════════════════════════════════════════════════════════════════════════════
 export default function FieldManual() {
-  const { graph, setGraph, isMobile, isPhone } = useApp();
+  const { graph, setGraph } = useApp();
   const [state, setState] = useState(loadState);
   const [view, setView]   = useState('shelf');          // shelf | ladder | level | field | ledger
   const [ladderId, setLadderId] = useState(null);
@@ -109,49 +107,47 @@ export default function FieldManual() {
     window.scrollTo?.(0, 0);
   };
 
-  const pad = isPhone ? '14px' : isMobile ? '16px' : '28px';
+  if (view === 'field' && ladder)  return <FieldMode ladder={ladder} state={state} onExit={() => go('shelf')} />;
+  if (view === 'ledger')           return <ConfirmLedger state={state} onResolve={resolveConfirm} onReopen={reopenConfirm} onExit={() => go(ladder ? 'ladder' : 'shelf')} />;
+  if (view === 'level' && level)   return <LevelView ladder={ladder} level={level} state={state} graph={graph} setGraph={setGraph} onResult={setLevelResult} onBack={() => go('ladder')} onLedger={() => go('ledger')} />;
+  if (view === 'ladder' && ladder) return <LadderView ladder={ladder} state={state} onOpen={(lid) => go('level', { levelId: lid })} onField={() => go('field')} onLedger={() => go('ledger')} onReset={resetLadder} onBack={() => go('shelf')} />;
 
-  if (view === 'field' && ladder)  return <FieldMode ladder={ladder} state={state} onExit={() => go('shelf')} isPhone={isPhone} />;
-  if (view === 'ledger')           return <ConfirmLedger state={state} onResolve={resolveConfirm} onReopen={reopenConfirm} onExit={() => go(ladder ? 'ladder' : 'shelf')} pad={pad} />;
-  if (view === 'level' && level)   return <LevelView ladder={ladder} level={level} state={state} pad={pad} isMobile={isMobile} graph={graph} setGraph={setGraph} onResult={setLevelResult} onBack={() => go('ladder')} onLedger={() => go('ledger')} />;
-  if (view === 'ladder' && ladder) return <LadderView ladder={ladder} state={state} pad={pad} isMobile={isMobile} onOpen={(lid) => go('level', { levelId: lid })} onField={() => go('field')} onLedger={() => go('ledger')} onReset={resetLadder} onBack={() => go('shelf')} />;
-
-  return <Shelf state={state} pad={pad} isMobile={isMobile} onOpen={(id) => go('ladder', { ladderId: id })} onField={(id) => go('field', { ladderId: id })} onLedger={(id) => { setLadderId(id); go('ledger'); }} />;
+  return <Shelf state={state} onOpen={(id) => go('ladder', { ladderId: id })} onField={(id) => go('field', { ladderId: id })} onLedger={(id) => { setLadderId(id); go('ledger'); }} />;
 }
 
 // ── Screen 1 · Shelf ─────────────────────────────────────────────────────────
-function Shelf({ state, pad, isMobile, onOpen, onField, onLedger }) {
+function Shelf({ state, onOpen, onField, onLedger }) {
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: `4px ${pad} 60px` }}>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '0 0 22px' }}>
+    <div className="fm-page" data-w="shelf">
+      <div className="fm-lede">
         Field-ready manuals. Every claim is tiered; unverified claims are gated out of customer-facing use until you resolve them.
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 14 }}>
+      <div className="fm-shelf">
         {LADDERS.map((ladder) => {
           const total = ladder.levels.length;
           const ready = ladder.levels.filter((l) => levelStatus(ladder, l, state) === 'field-ready').length;
           const openC = openConfirmCount(ladder, state);
           const stale = daysSince(ladder.lastVerified);
           return (
-            <div key={ladder.id} style={card()}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
-                <div style={{ fontSize: 'var(--fs-2xl)', lineHeight: 1 }}>{ladder.emoji || '🪜'}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{ladder.title}</div>
-                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{ladder.domain}</div>
+            <div key={ladder.id} className="fm-card">
+              <div className="fm-pack-head">
+                <div className="fm-pack-emoji">{ladder.emoji || '🪜'}</div>
+                <div className="fm-pack-text">
+                  <div className="fm-pack-title">{ladder.title}</div>
+                  <div className="fm-pack-domain">{ladder.domain}</div>
                 </div>
                 <ProgressRing done={ready} total={total} />
               </div>
-              {ladder.subtitle && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 12, lineHeight: 1.5 }}>{ladder.subtitle}</div>}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+              {ladder.subtitle && <div className="fm-pack-sub">{ladder.subtitle}</div>}
+              <div className="fm-pack-meta">
                 <MetaPill>{total} levels</MetaPill>
                 <MetaPill>{ready}/{total} field-ready</MetaPill>
                 {ladder.version && <MetaPill>v{ladder.version}{ladder.lastVerified ? ` · ${ladder.lastVerified}` : ''}</MetaPill>}
-                {openC > 0 && <span style={pill('var(--negative)')}>⚠ {openC} unverified</span>}
-                {stale != null && stale > STALE_DAYS && <span style={pill('var(--caution)')}>stale {stale}d</span>}
+                {openC > 0 && <span className="fm-pill" data-fm-tone="negative"><Icon name="AlertTriangle" size={10} aria-hidden="true" /> {openC} unverified</span>}
+                {stale != null && stale > STALE_DAYS && <span className="fm-pill" data-fm-tone="caution">stale {stale}d</span>}
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <div className="fm-row">
                 <Action onClick={() => onOpen(ladder.id)} primary>Open</Action>
                 <Action onClick={() => onField(ladder.id)}>Field Mode</Action>
                 <Action onClick={() => onLedger(ladder.id)}>Confirm Ledger{openC ? ` (${openC})` : ''}</Action>
@@ -165,24 +161,24 @@ function Shelf({ state, pad, isMobile, onOpen, onField, onLedger }) {
 }
 
 // ── Screen 2 · Ladder ────────────────────────────────────────────────────────
-function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, onReset, onBack }) {
+function LadderView({ ladder, state, onOpen, onField, onLedger, onReset, onBack }) {
   const [confirmReset, setConfirmReset] = useState(false);
   const stale = daysSince(ladder.lastVerified);
   const openC = openConfirmCount(ladder, state);
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto', padding: `20px ${pad} 60px` }}>
+    <div className="fm-page" data-w="ladder">
       <BackRow onBack={onBack} label="Shelf" />
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+      <div className="fm-title-row">
         <H1>{ladder.emoji} {ladder.title}</H1>
       </div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 6px' }}>{ladder.summary}</div>
-      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 16 }}>
+      <div className="fm-sub">{ladder.summary}</div>
+      <div className="fm-meta">
         Last verified {ladder.lastVerified}
-        {stale != null && stale > STALE_DAYS && <span style={{ color: 'var(--caution)', fontWeight: 700 }}> · ⚠ {stale} days old — re-verify market figures</span>}
+        {stale != null && stale > STALE_DAYS && <span className="fm-meta-warn"> · ⚠ {stale} days old — re-verify market figures</span>}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-        <Action onClick={onField}>⚡ Field Mode</Action>
+      <div className="fm-actions">
+        <Action onClick={onField}><Icon name="Zap" size={16} /> Field Mode</Action>
         <Action onClick={onLedger}>Confirm Ledger{openC ? ` · ${openC} open` : ''}</Action>
         <Action onClick={() => setConfirmReset(true)}>Reset progress</Action>
       </div>
@@ -192,20 +188,20 @@ function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, o
         const p = levelProgress(state, ladder.id, l.id);
         const openConf = levelOpenConfirms(ladder, l, state).length;
         return (
-          <div key={l.id} onClick={() => onOpen(l.id)} style={{ ...card(), marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--accent-text)', width: 28, flexShrink: 0 }}>L{i + 1}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.title}</div>
-                {l.tag && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, color: 'var(--dim)', textTransform: 'uppercase' }}>{l.tag}</span>}
+          <button type="button" key={l.id} className="fm-card fm-level tap" onClick={() => onOpen(l.id)}>
+            <div className="fm-level-n">L{i + 1}</div>
+            <div className="fm-level-body">
+              <div className="fm-level-top">
+                <div className="fm-level-title">{l.title}</div>
+                {l.tag && <span className="fm-level-tag">{l.tag}</span>}
               </div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2, lineHeight: 1.45 }}>{l.sub}</div>
+              <div className="fm-level-sub">{l.sub}</div>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <div className="fm-level-side">
               <StatusBadge status={status} score={p.bestScore} />
-              {openConf > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--negative)', marginTop: 4, fontWeight: 700 }}>{openConf} unverified</div>}
+              {openConf > 0 && <div className="fm-level-open">{openConf} unverified</div>}
             </div>
-          </div>
+          </button>
         );
       })}
 
@@ -223,7 +219,7 @@ function LadderView({ ladder, state, pad, isMobile, onOpen, onField, onLedger, o
 }
 
 // ── Screen 3 · Level ─────────────────────────────────────────────────────────
-function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onResult, onBack, onLedger }) {
+function LevelView({ ladder, level, state, graph, setGraph, onResult, onBack, onLedger }) {
   const openConfirms = levelOpenConfirms(ladder, level, state);
   const [drill, setDrill] = useState(false);
   const [sent, setSent] = useState(false);
@@ -249,16 +245,16 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
   };
 
   return (
-    <div style={{ maxWidth: 820, margin: '0 auto', padding: `18px ${pad} 80px` }}>
+    <div className="fm-page" data-w="level">
       <BackRow onBack={onBack} label={ladder.title} />
       <H1>{level.title}</H1>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 8px' }}>{level.sub}</div>
-      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 18 }}>~{level.minutes} min</div>
+      <div className="fm-sub" data-gap="level">{level.sub}</div>
+      <div className="fm-meta" data-gap="level">~{level.minutes} min</div>
 
       {openConfirms.length > 0 && (
-        <div style={band('var(--negative)')}>
+        <div className="fm-band">
           <b>This level has {openConfirms.length} unverified claim{openConfirms.length > 1 ? 's' : ''}.</b> The gated blocks below cannot be quoted to a customer, and this level cannot become <b>Field Ready</b> until they are resolved.
-          <span onClick={onLedger} style={{ color: 'var(--negative)', textDecoration: 'underline', cursor: 'pointer', marginLeft: 6, fontWeight: 700 }}>Open the Confirm Ledger →</span>
+          <button type="button" className="fm-band-link tap" onClick={onLedger}>Open the Confirm Ledger →</button>
         </div>
       )}
 
@@ -280,12 +276,12 @@ function LevelView({ ladder, level, state, pad, isMobile, graph, setGraph, onRes
       {level.cards?.length > 0 && (
         <>
           <SectionLabel>Recall — tap to flip</SectionLabel>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(3, 1fr)', gap: 8, marginBottom: 18 }}>
+          <div className="fm-recall">
             {level.cards.map((c, i) => <RecallCard key={i} card={c} />)}
           </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+          <div className="fm-actions" data-gap="lg">
             <Action onClick={sendToVault} disabled={sent} primary>{sent ? '✓ Sent to Vault' : `Send ${level.cards.length} cards to Vault`}</Action>
-            <Action onClick={() => setDrill(true)}>🎯 Drill me (Socratic)</Action>
+            <Action onClick={() => setDrill(true)}><Icon name="Target" size={16} /> Drill me (Socratic)</Action>
           </div>
         </>
       )}
@@ -305,14 +301,14 @@ function BlockView({ block, ladder, state }) {
   const gatedOpen = block.confirm && confirmStatus(ladder, state, block.confirm) === 'open';
   const confirm = gatedOpen ? ladder.confirms.find((c) => c.id === block.confirm) : null;
   return (
-    <div style={{ marginBottom: 14, border: gatedOpen ? `1px solid ${withAlpha('var(--negative)', 45)}` : '1px solid transparent', borderRadius: gatedOpen ? 10 : 0, padding: gatedOpen ? '10px 12px' : 0, background: gatedOpen ? withAlpha('var(--negative)', 6) : 'transparent' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+    <div className="fm-block" data-gated={gatedOpen ? '' : undefined}>
+      <div className="fm-block-chips">
         <TierChip tier={block.tier} />
-        {gatedOpen && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, color: 'var(--negative)', textTransform: 'uppercase', border: `1px solid ${withAlpha('var(--negative)', 50)}`, borderRadius: 5, padding: '1px 6px' }}>⚠ Unverified — do not quote</span>}
+        {gatedOpen && <span className="fm-gate-chip"><Icon name="AlertTriangle" size={10} aria-hidden="true" /> Unverified — do not quote</span>}
       </div>
       {renderBlockBody(block)}
       {gatedOpen && confirm && (
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--negative)', marginTop: 8, lineHeight: 1.5, borderTop: `1px solid ${withAlpha('var(--negative)', 30)}`, paddingTop: 6 }}>
+        <div className="fm-block-why">
           <b>Why gated:</b> {confirm.why}
         </div>
       )}
@@ -320,52 +316,50 @@ function BlockView({ block, ladder, state }) {
   );
 }
 
-const HTML = ({ html, style }) => <div style={style} dangerouslySetInnerHTML={{ __html: html || '' }} />;
+const HTML = ({ html, className }) => <div className={className} dangerouslySetInnerHTML={{ __html: html || '' }} />;
 
 function renderBlockBody(b) {
   switch (b.k) {
     case 'h':
       return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          {b.n && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 30)}`, borderRadius: 5, padding: '1px 6px' }}>{b.n}</span>}
-          <span style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>{b.t}</span>
+        <div className="fm-h">
+          {b.n && <span className="fm-h-n">{b.n}</span>}
+          <span className="fm-h-t">{b.t}</span>
         </div>
       );
     case 'p':
-      return <HTML html={b.html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--text-c)' }} />;
+      return <HTML html={b.html} className="fm-p" />;
     case 'ul':
       return (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        <ul className="fm-ul">
           {(b.items || []).map((it, i) => (
-            <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, fontSize: 'var(--fs-base)', lineHeight: 1.6, color: 'var(--text-c)' }}>
-              <span style={{ color: 'var(--accent-text)', flexShrink: 0 }}>▸</span>
+            <li key={i}>
+              <span className="fm-bullet">▸</span>
               <HTML html={it} />
             </li>
           ))}
         </ul>
       );
     case 'call': {
-      const tone = {
-        key:  ACCENT, sport: 'var(--tier-reported)', win: 'var(--positive)',
-        sell: 'var(--positive)', warn: 'var(--negative)',
-      }[b.tone] || ACCENT;
+      // Tone → token (border + title text only, never a tinted fill).
+      const tone = ['key', 'sport', 'win', 'sell', 'warn'].includes(b.tone) ? b.tone : 'key';
       return (
-        <div style={{ background: withAlpha(tone, 8), border: `1px solid ${withAlpha(tone, 32)}`, borderLeft: `3px solid ${tone}`, borderRadius: 8, padding: '11px 14px' }}>
-          {b.title && <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: tone, marginBottom: 5, letterSpacing: 0.2 }}>{b.title}</div>}
-          <HTML html={b.html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--text-c)' }} />
+        <div className="fm-call" data-tone={tone}>
+          {b.title && <div className="fm-call-title">{b.title}</div>}
+          <HTML html={b.html} className="fm-p" />
         </div>
       );
     }
     case 'table':
       return (
-        <div style={{ overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-          <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 'var(--fs-base)'}}>
+        <div className="fm-table-wrap" data-scroll-x="">
+          <table className="fm-table">
             <thead>
-              <tr>{(b.head || []).map((h, i) => <th key={i} style={{ textAlign: 'left', padding: '8px 10px', color: 'var(--muted)', fontWeight: 700, background: 'var(--surf2)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}><HTML html={h} /></th>)}</tr>
+              <tr>{(b.head || []).map((h, i) => <th key={i}><HTML html={h} /></th>)}</tr>
             </thead>
             <tbody>
               {(b.rows || []).map((row, ri) => (
-                <tr key={ri}>{row.map((cell, ci) => <td key={ci} style={{ padding: '8px 10px', color: 'var(--text-c)', borderBottom: '1px solid var(--bord2)', verticalAlign: 'top' }}><HTML html={cell} /></td>)}</tr>
+                <tr key={ri}>{row.map((cell, ci) => <td key={ci}><HTML html={cell} /></td>)}</tr>
               ))}
             </tbody>
           </table>
@@ -373,68 +367,68 @@ function renderBlockBody(b) {
       );
     case 'pair':
       return (
-        <div style={{ display: 'grid', gap: 6 }}>
+        <div className="fm-pairs">
           {(b.pairs || []).map(([term, meaning], i) => (
-            <div key={i} style={{ display: 'grid', gridTemplateColumns: 'minmax(90px, 160px) 1fr', gap: 10, alignItems: 'start', padding: '8px 10px', background: 'var(--surf2)', borderRadius: 7 }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }} dangerouslySetInnerHTML={{ __html: term }} />
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: meaning }} />
+            <div key={i} className="fm-pair">
+              <div className="fm-pair-term" dangerouslySetInnerHTML={{ __html: term }} />
+              <div className="fm-pair-def" dangerouslySetInnerHTML={{ __html: meaning }} />
             </div>
           ))}
         </div>
       );
     case 'flow':
       return (
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+        <div className="fm-flow" data-scroll-x="">
           {(b.stages || []).map((s, i) => (
-            <div key={i} style={{ minWidth: 150, flexShrink: 0, background: s.us ? withAlpha(ACCENT, 14) : 'var(--surface)', border: `1px solid ${s.us ? withAlpha(ACCENT, 45) : 'var(--border)'}`, borderRadius: 8, padding: '10px 12px' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{s.n}</div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: s.us ? 'var(--accent-text)' : 'var(--text)', marginTop: 2 }}>{s.nm}</div>
-              {s.v && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>{s.v}</div>}
-              {s.d && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-c)', marginTop: 5, lineHeight: 1.45 }}>{s.d}</div>}
+            <div key={i} className="fm-stage" data-us={s.us ? '' : undefined}>
+              <div className="fm-stage-n">{s.n}</div>
+              <div className="fm-stage-nm">{s.nm}</div>
+              {s.v && <div className="fm-stage-v">{s.v}</div>}
+              {s.d && <div className="fm-stage-d">{s.d}</div>}
             </div>
           ))}
         </div>
       );
     case 'bc':
       return (
-        <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ padding: '10px 14px', background: 'var(--surf2)', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>{b.title}</div>
-            {b.sub && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>{b.sub}</div>}
+        <div className="fm-bc">
+          <div className="fm-bc-head">
+            <div className="fm-bc-title">{b.title}</div>
+            {b.sub && <div className="fm-bc-sub">{b.sub}</div>}
           </div>
-          <div style={{ padding: '12px 14px', display: 'grid', gap: 10 }}>
-            {b.win && <BCRow color="var(--caution)" label="Where they win" html={b.win} />}
+          <div className="fm-bc-body">
+            {b.win && <BCRow tone="caution" label="Where they win" html={b.win} />}
             {b.ours?.length > 0 && (
-              <div>
-                <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--positive)', marginBottom: 4 }}>Where we win</div>
-                <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-                  {b.ours.map((o, i) => <li key={i} style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 'var(--fs-base)', lineHeight: 1.55, color: 'var(--text-c)' }}><span style={{ color: 'var(--positive)', flexShrink: 0 }}>▸</span><HTML html={o} /></li>)}
+              <div data-fm-tone="positive">
+                <div className="fm-bc-label">Where we win</div>
+                <ul className="fm-ul">
+                  {b.ours.map((o, i) => <li key={i}><span className="fm-bullet">▸</span><HTML html={o} /></li>)}
                 </ul>
               </div>
             )}
-            {b.kill && <BCRow color="var(--accent-text)" label="Kill shot" html={b.kill} />}
-            {b.watch && <BCRow color="var(--negative)" label="Watch for" html={b.watch} />}
+            {b.kill && <BCRow tone="accent" label="Kill shot" html={b.kill} />}
+            {b.watch && <BCRow tone="negative" label="Watch for" html={b.watch} />}
           </div>
         </div>
       );
     case 'math':
       return (
-        <div style={{ background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', fontFamily: 'var(--font-mono)' }}>
-          {b.title && <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: 'var(--font-sans)' }}>{b.title}</div>}
-          {(b.lines || []).map((ln, i) => <div key={i} style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{ln || ' '}</div>)}
-          {b.result && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700, marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{b.result}</div>}
+        <div className="fm-math">
+          {b.title && <div className="fm-math-title">{b.title}</div>}
+          {(b.lines || []).map((ln, i) => <div key={i} className="fm-math-line">{ln || ' '}</div>)}
+          {b.result && <div className="fm-math-result">{b.result}</div>}
         </div>
       );
     default:
-      return b.html ? <HTML html={b.html} style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-c)' }} /> : null;
+      return b.html ? <div className="fm-p" data-sm="" dangerouslySetInnerHTML={{ __html: b.html }} /> : null;
   }
 }
 
-function BCRow({ color, label, html }) {
+function BCRow({ tone, label, html }) {
   return (
-    <div>
-      <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color, marginBottom: 4 }}>{label}</div>
-      <HTML html={html} style={{ fontSize: 'var(--fs-base)', lineHeight: 1.55, color: 'var(--text-c)' }} />
+    <div data-fm-tone={tone}>
+      <div className="fm-bc-label">{label}</div>
+      <HTML html={html} className="fm-p" />
     </div>
   );
 }
@@ -443,16 +437,16 @@ function RecallCard({ card }) {
   const [front, back, tier] = card;
   const [flip, setFlip] = useState(false);
   return (
-    <div onClick={() => setFlip((f) => !f)} style={{ minHeight: 84, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+    <button type="button" className="fm-rc tap" aria-pressed={flip} onClick={() => setFlip((f) => !f)}>
       {!flip ? (
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', textAlign: 'center' }}>{front}</div>
+        <div className="fm-rc-front">{front}</div>
       ) : (
         <>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5, marginBottom: 6 }}>{back}</div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}><TierChip tier={tier} /></div>
+          <div className="fm-rc-back">{back}</div>
+          <div className="fm-rc-tier"><TierChip tier={tier} /></div>
         </>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -503,38 +497,33 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
   const retry = () => { setAnswers({}); setSubmitted(false); };
 
   return (
-    <div style={{ ...card(), marginTop: 8 }}>
-      <SectionLabel style={{ marginTop: 0 }}>Quiz · {total} questions · optional</SectionLabel>
+    <div className="fm-card fm-quiz">
+      <SectionLabel flush>Quiz · {total} questions · optional</SectionLabel>
       {level.quiz.map((q, i) => (
-        <div key={i} style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }} dangerouslySetInnerHTML={{ __html: `${i + 1}. ${q.q}` }} />
-          <div style={{ display: 'grid', gap: 6 }}>
+        <div key={i} className="fm-q">
+          <div className="fm-q-text" dangerouslySetInnerHTML={{ __html: `${i + 1}. ${q.q}` }} />
+          <div className="fm-opts">
             {q.opts.map((opt, oi) => {
               const chosen = answers[i] === oi;
               const isRight = oi === q.a;
-              const showRes = submitted;
-              const bg = showRes && isRight ? withAlpha('var(--positive)', 14)
-                : showRes && chosen && !isRight ? withAlpha('var(--negative)', 14)
-                : chosen ? withAlpha(ACCENT, 12) : 'var(--bg)';
-              const bd = showRes && isRight ? 'var(--positive)'
-                : showRes && chosen && !isRight ? 'var(--negative)'
-                : chosen ? ACCENT : 'var(--border)';
+              const res = submitted && isRight ? 'right' : submitted && chosen && !isRight ? 'wrong' : undefined;
               return (
-                <div key={oi} onClick={() => !submitted && setAnswers((a) => ({ ...a, [i]: oi }))}
-                  style={{ padding: '8px 12px', borderRadius: 8, border: `1px solid ${bd}`, background: bg, cursor: submitted ? 'default' : 'pointer', fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}
+                <button type="button" key={oi} className="fm-opt tap"
+                  aria-pressed={chosen} aria-disabled={submitted || undefined} data-res={res}
+                  onClick={() => !submitted && setAnswers((a) => ({ ...a, [i]: oi }))}
                   dangerouslySetInnerHTML={{ __html: opt }} />
               );
             })}
           </div>
-          {submitted && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 6, lineHeight: 1.5, borderLeft: `2px solid ${answers[i] === q.a ? 'var(--positive)' : 'var(--negative)'}`, paddingLeft: 8 }}>{q.e}</div>}
+          {submitted && <div className="fm-explain" data-fm-tone={answers[i] === q.a ? 'positive' : 'negative'}>{q.e}</div>}
         </div>
       ))}
       {!submitted ? (
         <Action onClick={submit} disabled={Object.keys(answers).length < total} primary>Submit ({Object.keys(answers).length}/{total})</Action>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: pct >= 80 ? 'var(--positive)' : 'var(--caution)' }}>{correct}/{total} · {pct}%</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>{pct >= 80 ? 'Passing. Resolve any open confirms to reach Field Ready.' : 'Below 80%. Read back and try again — no limit.'}</div>
+        <div className="fm-score-row">
+          <div className="fm-score" data-fm-tone={pct >= 80 ? 'positive' : 'caution'}>{correct}/{total} · {pct}%</div>
+          <div className="fm-score-note">{pct >= 80 ? 'Passing. Resolve any open confirms to reach Field Ready.' : 'Below 80%. Read back and try again — no limit.'}</div>
           <Action onClick={retry}>Try again</Action>
         </div>
       )}
@@ -543,36 +532,37 @@ function Quiz({ ladder, level, graph, setGraph, onResult }) {
 }
 
 // ── Screen 4 · Field Mode ────────────────────────────────────────────────────
-function FieldMode({ ladder, state, onExit, isPhone }) {
+function FieldMode({ ladder, state, onExit }) {
   const scenarios = ladder.field || [];
   const [pick, setPick] = useState(null);
   const openC = openConfirmCount(ladder, state);
   const scenario = pick ? scenarios.find((s) => s.id === pick) : null;
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--bg)', zIndex: 300, overflowY: 'auto', padding: `18px ${isPhone ? '16px' : '24px'} 40px` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, maxWidth: 640, margin: '0 auto 14px' }}>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)' }}>⚡ Field Mode — {ladder.title}</div>
-        <div onClick={scenario ? () => setPick(null) : onExit} style={{ fontSize: 'var(--fs-xl)', color: 'var(--dim)', cursor: 'pointer', lineHeight: 1, padding: 4 }}>✕</div>
+    <div className="fm-field">
+      <div className="fm-field-head">
+        <div className="fm-field-title"><Icon name="Zap" size="header" /> Field Mode — {ladder.title}</div>
+        <button type="button" className="fm-close tap" onClick={scenario ? () => setPick(null) : onExit}
+          aria-label={scenario ? 'Back to situations' : 'Exit Field Mode'}>✕</button>
       </div>
 
       {openC > 0 && (
-        <div style={{ ...band('var(--negative)'), maxWidth: 640, margin: '0 auto 14px' }}>
+        <div className="fm-band">
           <b>{openC} unverified claim{openC > 1 ? 's' : ''} still open.</b> Do not quote gated numbers (heat rate, capex, tax %) in front of a customer until they are resolved.
         </div>
       )}
 
       {!scenario ? (
-        <div style={{ maxWidth: 640, margin: '0 auto', display: 'grid', gap: 10 }}>
-          <div style={{ fontSize: 11, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1.5, fontWeight: 700 }}>Pick the situation</div>
+        <div className="fm-col fm-scenarios">
+          <div className="fm-pick-label">Pick the situation</div>
           {scenarios.map((s) => (
-            <div key={s.id} onClick={() => setPick(s.id)} style={{ ...card(), cursor: 'pointer', minHeight: 56, display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>{s.label}</div>
-                {s.sub && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 2 }}>{s.sub}</div>}
+            <button type="button" key={s.id} className="fm-card fm-scenario tap" onClick={() => setPick(s.id)}>
+              <div className="fm-scenario-body">
+                <div className="fm-scenario-label">{s.label}</div>
+                {s.sub && <div className="fm-scenario-sub">{s.sub}</div>}
               </div>
-              <span style={{ color: 'var(--accent-text)', fontSize: 'var(--fs-xl)'}}>→</span>
-            </div>
+              <span className="fm-scenario-go" aria-hidden="true">→</span>
+            </button>
           ))}
         </div>
       ) : (
@@ -582,30 +572,41 @@ function FieldMode({ ladder, state, onExit, isPhone }) {
   );
 }
 
+// A labelled Field Card section. (Referenced by FieldCard but never defined —
+// picking a scenario threw a ReferenceError and blanked Field Mode.)
+function FieldSection({ label, tone, children }) {
+  return (
+    <div className="fm-fs" data-fm-tone={tone}>
+      <div className="fm-fs-label">{label}</div>
+      {children}
+    </div>
+  );
+}
+
 function FieldCard({ scenario }) {
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto' }}>
-      <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 16 }}>{scenario.label}</div>
+    <div className="fm-col">
+      <div className="fm-fc-title">{scenario.label}</div>
 
-      <FieldSection label="Open with" color="var(--accent-text)">
-        <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.open}</div>
+      <FieldSection label="Open with" tone="accent">
+        <div className="fm-fs-text">{scenario.open}</div>
       </FieldSection>
 
-      <div style={{ background: withAlpha('var(--positive)', 12), border: `1px solid ${withAlpha('var(--positive)', 40)}`, borderLeft: '4px solid var(--positive)', borderRadius: 10, padding: '14px 16px', margin: '14px 0' }}>
-        <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--positive)', marginBottom: 6 }}>Kill shot</div>
-        <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)', fontWeight: 600 }}>{scenario.kill}</div>
+      <div className="fm-kill" data-fm-tone="positive">
+        <div className="fm-fs-label">Kill shot</div>
+        <div className="fm-fs-text">{scenario.kill}</div>
       </div>
 
       <FieldSection label="Objections — tap to reveal">
-        <div style={{ display: 'grid', gap: 8 }}>
+        <div className="fm-objs">
           {(scenario.objections || []).map((o, i) => <Objection key={i} obj={o} />)}
         </div>
       </FieldSection>
 
       {scenario.ask && (
-        <div style={{ background: withAlpha(ACCENT, 12), border: `1px solid ${withAlpha(ACCENT, 40)}`, borderRadius: 10, padding: '14px 16px', marginTop: 14 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase', color: 'var(--accent-text)', marginBottom: 6 }}>The ask</div>
-          <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text)' }}>{scenario.ask}</div>
+        <div className="fm-ask" data-fm-tone="accent">
+          <div className="fm-fs-label">The ask</div>
+          <div className="fm-fs-text">{scenario.ask}</div>
         </div>
       )}
     </div>
@@ -615,16 +616,16 @@ function FieldCard({ scenario }) {
 function Objection({ obj }) {
   const [open, setOpen] = useState(false);
   return (
-    <div onClick={() => setOpen((o) => !o)} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px', cursor: 'pointer', minHeight: 44 }}>
-      <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)' }}>{obj.q}</div>
-      {open && <div style={{ fontSize: 'var(--fs-lg)', lineHeight: 1.5, color: 'var(--text-c)', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--bord2)' }}>{obj.a}</div>}
-      {!open && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 4 }}>tap for the response</div>}
-    </div>
+    <button type="button" className="fm-obj tap" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+      <div className="fm-obj-q">{obj.q}</div>
+      {open && <div className="fm-obj-a">{obj.a}</div>}
+      {!open && <div className="fm-obj-hint">tap for the response</div>}
+    </button>
   );
 }
 
 // ── Screen 5 · Confirm Ledger (all ladders) ──────────────────────────────────
-function ConfirmLedger({ state, onResolve, onReopen, onExit, pad }) {
+function ConfirmLedger({ state, onResolve, onReopen, onExit }) {
   const rows = [];
   for (const ladder of LADDERS) {
     for (const c of ladder.confirms) {
@@ -634,10 +635,10 @@ function ConfirmLedger({ state, onResolve, onReopen, onExit, pad }) {
   rows.sort((a, b) => (a.status === 'open' ? 0 : 1) - (b.status === 'open' ? 0 : 1));
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
+    <div className="fm-page" data-w="ledger">
       <BackRow onBack={onExit} label="Back" />
       <H1>Confirm Ledger</H1>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', margin: '4px 0 20px' }}>
+      <div className="fm-sub" data-gap="ledger">
         Every unverified claim across all packs. A claim is not customer-safe until an owner is assigned and it is resolved. This is a safety label — it never blocks reading or quizzing.
       </div>
       {rows.map(({ ladder, c, status, owner }) => <LedgerRow key={`${ladder.id}-${c.id}`} ladder={ladder} c={c} status={status} owner={owner} onResolve={onResolve} onReopen={onReopen} />)}
@@ -648,23 +649,24 @@ function ConfirmLedger({ state, onResolve, onReopen, onExit, pad }) {
 function LedgerRow({ ladder, c, status, owner, onResolve, onReopen }) {
   const [val, setVal] = useState(owner);
   const open = status === 'open';
+  const tone = open ? 'negative' : 'positive';
   return (
-    <div style={{ ...card(), marginBottom: 10, borderLeft: `3px solid ${open ? 'var(--negative)' : 'var(--positive)'}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-        <span style={pill(open ? 'var(--negative)' : 'var(--positive)')}>{open ? 'OPEN' : 'RESOLVED'}</span>
-        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', fontWeight: 700 }}>{ladder.title}</span>
+    <div className="fm-card fm-lrow" data-fm-tone={tone}>
+      <div className="fm-lrow-top">
+        <span className="fm-pill" data-fm-tone={tone}>{open ? 'OPEN' : 'RESOLVED'}</span>
+        <span className="fm-lrow-pack">{ladder.title}</span>
       </div>
-      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{c.claim}</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.5, marginBottom: 10 }}>{c.why}</div>
+      <div className="fm-lrow-claim">{c.claim}</div>
+      <div className="fm-lrow-why">{c.why}</div>
       {open ? (
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <input value={val} onChange={(e) => setVal(e.target.value)} placeholder="Owner (who verifies this)"
-            style={{ flex: 1, minWidth: 160, padding: '8px 12px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+        <div className="fm-row">
+          <input className="fm-input" value={val} onChange={(e) => setVal(e.target.value)} placeholder="Owner (who verifies this)"
+            aria-label={`Owner for: ${c.claim}`} />
           <Action onClick={() => val.trim() && onResolve(ladder.id, c.id, val)} disabled={!val.trim()} primary>Resolve</Action>
         </div>
       ) : (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>Owner: <b style={{ color: 'var(--text-c)' }}>{owner || '—'}</b></div>
+        <div className="fm-lrow-owner">
+          <div>Owner: <b>{owner || '—'}</b></div>
           <Action onClick={() => onReopen(ladder.id, c.id)}>Reopen</Action>
         </div>
       )}
@@ -721,27 +723,26 @@ function SocraticDrill({ ladder, level, onClose }) {
   useEffect(() => { send(true); /* eslint-disable-next-line */ }, []);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 400, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: '100%', maxWidth: 640, maxHeight: '88vh', background: 'var(--surface)', borderRadius: '16px 16px 0 0', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>🎯 Socratic Drill — {level.title}</div>
-          <div onClick={onClose} style={{ fontSize: 'var(--fs-xl)', color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
+    <div className="fm-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="fm-sheet" role="dialog" aria-modal="true" aria-label={`Socratic Drill — ${level.title}`}>
+        <div className="fm-sheet-head">
+          <div className="fm-sheet-title"><Icon name="Target" size={16} /> Socratic Drill — {level.title}</div>
+          <button type="button" className="fm-close tap" onClick={onClose} aria-label="Close drill">✕</button>
         </div>
-        <div data-status={drillStatus} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div className="fm-thread" data-status={drillStatus}>
           {/* 'empty' has no placeholder: the drill auto-asks its first question on open,
               so empty only exists for the first frame before the call starts. */}
           {messages.map((m, i) => (
-            <div key={i} style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: '90%', background: m.role === 'user' ? 'var(--u-bubble)' : 'var(--bg)', border: `1px solid ${m.role === 'user' ? 'var(--u-bubble-b)' : 'var(--border)'}`, borderRadius: 12, padding: '10px 14px' }}>
-              {m.role === 'user' ? <div style={{ fontSize: 'var(--fs-base)', color: 'var(--u-bubble-text)' }}>{m.content}</div> : <MD text={m.content} color="var(--accent-text)" />}
+            <div key={i} className="fm-msg" data-role={m.role}>
+              {m.role === 'user' ? <div>{m.content}</div> : <MD text={m.content} color="var(--accent-text)" />}
             </div>
           ))}
-          {loading && stream && <div style={{ alignSelf: 'flex-start', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', maxWidth: '90%' }}><MD text={stream + '▍'} color="var(--accent-text)" /></div>}
+          {loading && stream && <div className="fm-msg"><MD text={stream + '▍'} color="var(--accent-text)" /></div>}
           {loading && !stream && <SectionSkeleton rows={2} label="examiner question" />}
           {drillStatus === 'error' && <SectionError label={lastAsk?.first ? 'the first drill question' : 'the examiner’s reply'} onRetry={retry} detail={err} />}
         </div>
-        <div style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8 }}>
-          <input value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Your answer…"
-            style={{ flex: 1, padding: '10px 14px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+        <div className="fm-composer">
+          <input className="fm-input" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send()} placeholder="Your answer…" aria-label="Your answer" />
           <Action onClick={() => send()} disabled={!input.trim() || loading} primary>Send</Action>
         </div>
       </div>
@@ -750,61 +751,56 @@ function SocraticDrill({ ladder, level, onClose }) {
 }
 
 // ── Small shared bits ────────────────────────────────────────────────────────
-const card = () => ({ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 });
-const pill = (color) => ({ fontSize: 9, fontWeight: 800, letterSpacing: 0.5, textTransform: 'uppercase', color, border: `1px solid ${withAlpha(color, 40)}`, background: withAlpha(color, 12), borderRadius: 20, padding: '2px 8px', whiteSpace: 'nowrap' });
-const band = (color) => ({ background: withAlpha(color, 10), border: `1px solid ${withAlpha(color, 40)}`, borderRadius: 10, padding: '10px 14px', fontSize: 11.5, lineHeight: 1.55, color: 'var(--text-c)', marginBottom: 16 });
+const H1 = ({ children }) => <div className="fm-h1">{children}</div>;
+const SectionLabel = ({ children, flush }) => <div className="fm-section-label" data-flush={flush ? '' : undefined}>{children}</div>;
+const MetaPill = ({ children }) => <span className="fm-metapill">{children}</span>;
 
-const Eyebrow = ({ children }) => <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>{children}</div>;
-const H1 = ({ children }) => <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>{children}</div>;
-const SectionLabel = ({ children, style }) => <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--dim)', textTransform: 'uppercase', fontWeight: 700, margin: '22px 0 10px', ...style }}>{children}</div>;
-const MetaPill = ({ children }) => <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', background: 'var(--surf2)', border: '1px solid var(--border)', borderRadius: 20, padding: '2px 9px', fontWeight: 600 }}>{children}</span>;
-
-function Action({ children, onClick, primary, disabled }) {
+function Action({ children, onClick, primary, danger, disabled }) {
   return (
-    <button onClick={onClick} disabled={disabled}
-      style={{ padding: '8px 14px', borderRadius: 8, border: primary ? 'none' : '1px solid var(--border)', background: disabled ? 'var(--surf2)' : primary ? ACCENT : 'transparent', color: disabled ? 'var(--dim)' : primary ? 'var(--on-accent)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: disabled ? 'default' : 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
+    <button type="button" className="fm-action tap" onClick={onClick} disabled={disabled}
+      data-primary={primary ? '' : undefined} data-danger={danger ? '' : undefined}>
       {children}
     </button>
   );
 }
 
 function BackRow({ onBack, label }) {
-  return <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700, marginBottom: 14, display: 'inline-block' }}>← {label}</div>;
+  return <div><button type="button" className="fm-back tap" onClick={onBack}>← {label}</button></div>;
 }
 
 function StatusBadge({ status, score }) {
   const map = {
-    'not-started': { label: 'Not started', color: 'var(--dim)' },
-    'in-progress': { label: `In progress · ${score}%`, color: 'var(--caution)' },
-    'passed':      { label: `Passed · ${score}%`, color: 'var(--positive)' },
-    'field-ready': { label: 'Field Ready', color: 'var(--positive)' },
+    'not-started': { label: 'Not started', tone: 'subtle' },
+    'in-progress': { label: `In progress · ${score}%`, tone: 'caution' },
+    'passed':      { label: `Passed · ${score}%`, tone: 'positive' },
+    'field-ready': { label: 'Field Ready', tone: 'positive' },
   };
   const m = map[status] || map['not-started'];
   const ready = status === 'field-ready';
-  return <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, color: ready ? 'var(--on-accent)' : m.color, background: ready ? 'var(--positive)' : withAlpha(m.color, 12), border: `1px solid ${withAlpha(m.color, 35)}`, borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap' }}>{ready ? '✓ Field Ready' : m.label}</span>;
+  return <span className="fm-status" data-fm-tone={m.tone} data-ready={ready ? '' : undefined}>{ready ? '✓ Field Ready' : m.label}</span>;
 }
 
 function ProgressRing({ done, total }) {
   const pct = total ? done / total : 0;
   const r = 15, c = 2 * Math.PI * r;
   return (
-    <svg width="38" height="38" viewBox="0 0 38 38" style={{ flexShrink: 0 }}>
-      <circle cx="19" cy="19" r={r} fill="none" stroke="var(--border)" strokeWidth="3" />
-      <circle cx="19" cy="19" r={r} fill="none" stroke={ACCENT} strokeWidth="3" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} transform="rotate(-90 19 19)" />
-      <text x="19" y="22" textAnchor="middle" fontSize="10" fontWeight="800" fill="var(--text)">{done}</text>
+    <svg className="fm-ring" width="38" height="38" viewBox="0 0 38 38" aria-label={`${done} of ${total} field-ready`}>
+      <circle className="fm-ring-track" cx="19" cy="19" r={r} fill="none" strokeWidth="3" />
+      <circle className="fm-ring-fill" cx="19" cy="19" r={r} fill="none" strokeWidth="3" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - pct)} transform="rotate(-90 19 19)" />
+      <text className="fm-ring-text" x="19" y="22" textAnchor="middle">{done}</text>
     </svg>
   );
 }
 
 function ConfirmDialog({ title, body, confirmLabel, onConfirm, onCancel }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={(e) => e.target === e.currentTarget && onCancel()}>
-      <div style={{ width: '100%', maxWidth: 380, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>{title}</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 18 }}>{body}</div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+    <div className="fm-overlay" data-center="" onClick={(e) => e.target === e.currentTarget && onCancel()}>
+      <div className="fm-dialog" role="alertdialog" aria-modal="true" aria-label={title}>
+        <div className="fm-dialog-title">{title}</div>
+        <div className="fm-dialog-body">{body}</div>
+        <div className="fm-dialog-actions">
           <Action onClick={onCancel}>Cancel</Action>
-          <button onClick={onConfirm} style={{ padding: '8px 16px', borderRadius: 8, border: 'none', background: 'var(--negative)', color: '#fff', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>{confirmLabel}</button>
+          <Action onClick={onConfirm} danger>{confirmLabel}</Action>
         </div>
       </div>
     </div>

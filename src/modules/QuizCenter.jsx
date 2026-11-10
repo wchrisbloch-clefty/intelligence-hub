@@ -1,4 +1,3 @@
-import { T } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildQuizPrompt } from '../utils.js';
@@ -7,22 +6,22 @@ import { recordQuizResult, createCard } from '../lib/reviews.js';
 import { logConcept } from '../lib/graph.js';
 import { SYSTEM_BASE } from '../constants.js';
 import MD from './shared/MD.jsx';
+import Icon from './shared/Icon.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import './quiz-center.css';
 
-const ACCENT        = T.accent;
-const ACCENT_BG     = 'rgba(217,164,65,0.08)';
-const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
-
+// Styling lives in quiz-center.css (qc-) — tokens only, no inline colour.
+// `icon` is a lucide name rendered through shared/Icon (no emoji in UI chrome).
 const PRESET_TOPICS = [
-  { id: 'realestate',  label: 'Real Estate',          icon: '🏘', desc: 'Multifamily, cash flow, cap rates, market dynamics' },
-  { id: 'leadership',  label: 'Extreme Ownership',     icon: '⚡', desc: 'Jocko\'s framework — accountability, decision-making, discipline' },
-  { id: 'negotiation', label: 'Negotiation',           icon: '🤝', desc: 'Voss tactics, tactical empathy, deal dynamics' },
-  { id: 'longevity',   label: 'Longevity Protocol',    icon: '🏋', desc: 'Attia frameworks — Zone 2, VO₂Max, strength, sleep' },
-  { id: 'bd',          label: 'BD & Sales Systems',    icon: '🚀', desc: 'Pipeline, prospecting, closing, AI-augmented workflows' },
-  { id: 'finance',     label: 'Finance & Investing',   icon: '📈', desc: 'Dividends, covered calls, compounding, risk management' },
-  { id: 'systems',     label: 'Systems Thinking',      icon: '⚙️', desc: 'Tipping points, compounding effects, leverage points' },
-  { id: 'stoic',       label: 'Stoic Philosophy',      icon: '🪨', desc: 'Marcus Aurelius, Seneca, Epictetus — adversity as data' },
+  { id: 'realestate',  label: 'Real Estate',          icon: 'Building2', desc: 'Multifamily, cash flow, cap rates, market dynamics' },
+  { id: 'leadership',  label: 'Extreme Ownership',     icon: 'Zap', desc: 'Jocko\'s framework — accountability, decision-making, discipline' },
+  { id: 'negotiation', label: 'Negotiation',           icon: 'Handshake', desc: 'Voss tactics, tactical empathy, deal dynamics' },
+  { id: 'longevity',   label: 'Longevity Protocol',    icon: 'Dumbbell', desc: 'Attia frameworks — Zone 2, VO₂Max, strength, sleep' },
+  { id: 'bd',          label: 'BD & Sales Systems',    icon: 'Rocket', desc: 'Pipeline, prospecting, closing, AI-augmented workflows' },
+  { id: 'finance',     label: 'Finance & Investing',   icon: 'TrendingUp', desc: 'Dividends, covered calls, compounding, risk management' },
+  { id: 'systems',     label: 'Systems Thinking',      icon: 'Cog', desc: 'Tipping points, compounding effects, leverage points' },
+  { id: 'stoic',       label: 'Stoic Philosophy',      icon: 'Mountain', desc: 'Marcus Aurelius, Seneca, Epictetus — adversity as data' },
 ];
 
 const STORAGE_KEY = 'aether_quiz_results';
@@ -63,7 +62,7 @@ Be direct. No padding. CB-style.`;
 }
 
 export default function QuizCenter() {
-  const { isMobile, graph, setGraph, setChatPrefill, setChatOpen } = useApp();
+  const { graph, setGraph, setChatPrefill, setChatOpen } = useApp();
   const [view,       setView]       = useState('pick');  // pick | quiz | result | history
   const [topic,      setTopic]      = useState(null);
   const [questions,  setQuestions]  = useState([]);
@@ -81,8 +80,6 @@ export default function QuizCenter() {
       }
     });
   }, []);
-
-  const pad = isMobile ? '14px' : '24px';
 
   const startQuiz = async (topicObj) => {
     setTopic(topicObj);
@@ -139,24 +136,22 @@ export default function QuizCenter() {
 
   if (view === 'history') {
     return (
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>← Back</div>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Quiz History</div>
+      <div className="qc" data-pad="">
+        <div className="qc-hhead">
+          <button type="button" className="qc-back tap" data-accent="" onClick={() => setView('pick')}>← Back</button>
+          <div className="qc-htitle">Quiz History</div>
         </div>
         {history.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>No quizzes completed yet.</div>
+          <div className="qc-empty">No quizzes completed yet.</div>
         ) : (
           history.map(h => (
-            <div key={h.id} style={{ padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{h.topic}</div>
-                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(h.date).toLocaleDateString()}</div>
-                </div>
-                <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: h.score / h.total >= 0.7 ? 'var(--accent-text)' : h.score / h.total >= 0.5 ? 'var(--accent-text)' : T.negative }}>
-                  {h.score}/{h.total}
-                </div>
+            <div key={h.id} className="qc-hrow">
+              <div className="qc-hrow-main">
+                <div className="qc-hrow-topic">{h.topic}</div>
+                <div className="qc-hrow-date">{new Date(h.date).toLocaleDateString()}</div>
+              </div>
+              <div className="qc-hrow-score" data-low={h.score / h.total >= 0.5 ? undefined : ''}>
+                {h.score}/{h.total}
               </div>
             </div>
           ))
@@ -170,40 +165,37 @@ export default function QuizCenter() {
     const score   = last?.score || 0;
     const total   = last?.total || 1;
     const pct     = Math.round((score / total) * 100);
-    const scoreColor = pct >= 70 ? T.accent : pct >= 50 ? ACCENT : T.negative;
 
     return (
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '24px 24px 20px', marginBottom: 16, textAlign: 'center' }}>
-          <div style={{ fontSize: 'var(--fs-3xl)', fontWeight: 800, color: scoreColor, marginBottom: 4 }}>{pct}%</div>
-          <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>{score}/{total} correct · {topic?.label}</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>{pct >= 70 ? 'Strong foundation.' : pct >= 50 ? 'Gaps identified — see analysis below.' : 'Significant room to deepen — this is the signal.'}</div>
+      <div className="qc" data-pad="">
+        <div className="qc-score">
+          <div className="qc-score-pct" data-low={pct >= 50 ? undefined : ''}>{pct}%</div>
+          <div className="qc-score-line">{score}/{total} correct · {topic?.label}</div>
+          <div className="qc-score-note">{pct >= 70 ? 'Strong foundation.' : pct >= 50 ? 'Gaps identified — see analysis below.' : 'Significant room to deepen — this is the signal.'}</div>
         </div>
 
-        <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '18px 20px', marginBottom: 16 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Gap Analysis</div>
+        <div className="qc-gap">
+          <div className="qc-gap-label">Gap Analysis</div>
           {gapLoading ? (
-            <div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 8 }}>Analyzing your gaps…</div><ThinkingDots color="var(--accent-text)" /></div>
+            <div><div className="qc-pending">Analyzing your gaps…</div><ThinkingDots color="var(--accent-text)" /></div>
           ) : (
             <MD text={gapReport} color="var(--accent-text)" />
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div onClick={() => startQuiz(topic)}
-            style={{ flex: 1, padding: '12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
+        <div className="qc-btns">
+          <button type="button" className="qc-btn tap" data-accent="" onClick={() => startQuiz(topic)}>
             Retry Quiz
-          </div>
-          <div onClick={() => setView('pick')}
-            style={{ flex: 1, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-b)', cursor: 'pointer' }}>
+          </button>
+          <button type="button" className="qc-btn tap" onClick={() => setView('pick')}>
             New Topic
-          </div>
+          </button>
         </div>
         {gapReport && (
-          <div onClick={() => { setChatPrefill(`Let's go deeper on ${topic?.label}. Based on my quiz gaps, help me build a study plan and explain the key concepts I'm missing.`); setChatOpen(true); }}
-            style={{ marginTop: 10, padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--subtle)', cursor: 'pointer' }}>
+          <button type="button" className="qc-btn tap" data-block=""
+            onClick={() => { setChatPrefill(`Let's go deeper on ${topic?.label}. Based on my quiz gaps, help me build a study plan and explain the key concepts I'm missing.`); setChatOpen(true); }}>
             ✦ Deep Dive with AI →
-          </div>
+          </button>
         )}
       </div>
     );
@@ -211,17 +203,17 @@ export default function QuizCenter() {
 
   if (view === 'quiz') {
     return (
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: `20px ${pad} 60px` }}>
+      <div className="qc" data-pad="" data-w="quiz">
         {generating || questions.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 16 }}>Building your {topic?.label} quiz…</div>
+          <div className="qc-wait">
+            <div className="qc-wait-text">Building your {topic?.label} quiz…</div>
             <ThinkingDots color="var(--accent-text)" />
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <div onClick={() => setView('pick')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700 }}>{topic?.label}</div>
+            <div className="qc-bar">
+              <button type="button" className="qc-back tap" onClick={() => setView('pick')}>← Exit</button>
+              <div className="qc-bar-topic">{topic?.label}</div>
             </div>
             <QuizMode questions={questions} color="var(--accent-text)" sourceTier={QUIZ_SOURCE_TIER} onComplete={onQuizDone} />
           </>
@@ -234,66 +226,60 @@ export default function QuizCenter() {
   const graphTopics = Object.values(graph?.topics || {}).slice(0, 4);
 
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', paddingBottom: 60 }}>
-      <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-        <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 4 }}>Self-Assessment</div>
-          <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
+    <div className="qc" data-w="pick">
+      <div className="qc-head">
+        <div className="qc-head-main">
+          <div className="qc-eyebrow">Self-Assessment</div>
+          <div className="qc-title">
             Knowledge Check
           </div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 4 }}>
+          <div className="qc-lede">
             Find gaps. Deepen signal. AI generates 6 questions calibrated to CB.
           </div>
         </div>
         {history.length > 0 && (
-          <div onClick={() => setView('history')}
-            style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
+          <button type="button" className="qc-ghost tap" onClick={() => setView('history')}>
             History ({history.length})
-          </div>
+          </button>
         )}
       </div>
 
-      <div style={{ padding: `16px ${pad}` }}>
+      <div className="qc-body">
         {graphTopics.length > 0 && (
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Your Learning Topics</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="qc-section">
+            <div className="qc-label">Your Learning Topics</div>
+            <div className="qc-chips">
               {graphTopics.map(t => (
-                <div key={t.title} onClick={() => startQuiz({ id: t.title.toLowerCase().replace(/\s+/g, '_'), label: t.title, icon: '📚', desc: `Your tracked topic — ${t.sessions} sessions` })}
-                  style={{ padding: '8px 14px', background: 'var(--surface)', border: `1px solid var(--accent-glow, rgba(217,164,65,0.2))`, borderRadius: 8, cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--accent-text)' }}>
-                  📚 {t.title} · {t.confidence}/10
-                </div>
+                <button type="button" key={t.title} className="qc-chip tap"
+                  onClick={() => startQuiz({ id: t.title.toLowerCase().replace(/\s+/g, '_'), label: t.title, icon: '📚', desc: `Your tracked topic — ${t.sessions} sessions` })}>
+                  <Icon name="BookOpen" size={16} /> {t.title} · {t.confidence}/10
+                </button>
               ))}
             </div>
           </div>
         )}
 
-        <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Quick Start Topics</div>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
+        <div className="qc-label">Quick Start Topics</div>
+        <div className="qc-grid">
           {PRESET_TOPICS.map(t => (
-            <div key={t.id} onClick={() => startQuiz(t)}
-              style={{ padding: '14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.12s' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = ACCENT}
-              onMouseLeave={e => e.currentTarget.style.borderColor = ACCENT_BORDER}>
-              <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 8 }}>{t.icon}</div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{t.label}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
-            </div>
+            <button type="button" key={t.id} className="qc-topic tap" onClick={() => startQuiz(t)}>
+              <span className="qc-topic-icon"><Icon name={t.icon} size="nav" /></span>
+              <div className="qc-topic-label">{t.label}</div>
+              <div className="qc-topic-desc">{t.desc}</div>
+            </button>
           ))}
         </div>
 
-        <div style={{ padding: '16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Custom Topic</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
-              value={customTopic} onChange={e => setCustomTopic(e.target.value)}
+        <div className="qc-card">
+          <div className="qc-card-title">Custom Topic</div>
+          <div className="qc-inline">
+            <input className="qc-input"
+              value={customTopic} onChange={e => setCustomTopic(e.target.value)} aria-label="Custom quiz topic"
               onKeyDown={e => e.key === 'Enter' && customTopic.trim() && startQuiz({ id: 'custom', label: customTopic.trim(), icon: '🎯', desc: 'Custom quiz' })}
               placeholder="Type any topic (e.g. ERCOT energy markets, Chip War geopolitics…)"
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
             />
-            <button onClick={() => customTopic.trim() && startQuiz({ id: 'custom', label: customTopic.trim(), icon: '🎯', desc: 'Custom quiz' })}
-              disabled={!customTopic.trim()}
-              style={{ padding: '8px 16px', background: customTopic.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: customTopic.trim() ? '#fff' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: customTopic.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+            <button type="button" className="qc-primary tap" onClick={() => customTopic.trim() && startQuiz({ id: 'custom', label: customTopic.trim(), icon: '🎯', desc: 'Custom quiz' })}
+              disabled={!customTopic.trim()}>
               Quiz Me
             </button>
           </div>

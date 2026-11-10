@@ -1,8 +1,8 @@
-import { T, withAlpha } from '../theme';
 import { useState } from 'react';
-import { useApp } from '../App.jsx';
 import { readLocal, writeThrough } from '../lib/storage.js';
 import FieldManual from './academy/FieldManual.jsx';
+import Icon from './shared/Icon.jsx';
+import './academy.css';
 
 // Academy is a thin shell: a mode picker + a router. It owns mode selection,
 // mode persistence, and the header — no learning logic whatsoever. Each mode is
@@ -13,7 +13,7 @@ const MODE_KEY = 'aether_academy_mode';
 const MODES = [
   {
     id: 'manual',
-    icon: '📕',
+    icon: 'BookMarked',
     label: 'Field Manual',
     desc: 'Authored content packs — tiered, confirm-gated, field-ready',
     component: FieldManual,
@@ -22,7 +22,6 @@ const MODES = [
 ];
 
 export default function Academy() {
-  const { isMobile, isPhone } = useApp();
   const [mode, setMode] = useState(() => {
     const saved = readLocal(MODE_KEY, MODES[0].id);
     return MODES.some((m) => m.id === saved) ? saved : MODES[0].id;
@@ -32,31 +31,25 @@ export default function Academy() {
   const Active = active.component;
   const selectMode = (id) => { setMode(id); writeThrough(MODE_KEY, id); };
 
-  const pad = isPhone ? '14px' : isMobile ? '16px' : '28px';
-
   return (
     <div>
       {/* Shell header + mode picker (styled like BookClub's tab bar) */}
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: `20px ${pad} 0` }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Learning</div>
-        <div style={{ fontSize: 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5 }}>Academy</div>
+      <div className="ac-head">
+        <div className="ac-eyebrow">Learning</div>
+        <div className="ac-title">Academy</div>
 
-        <div style={{ display: 'flex', gap: 8, margin: '16px 0 4px', borderBottom: '1px solid var(--border)', paddingBottom: 12, flexWrap: 'wrap' }}>
-          {MODES.map((m) => {
-            const on = m.id === mode;
-            return (
-              <button key={m.id} onClick={() => selectMode(m.id)}
-                title={m.desc}
-                style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36, display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span>{m.icon}</span> {m.label}
-              </button>
-            );
-          })}
+        <div className="ac-modes">
+          {MODES.map((m) => (
+            <button type="button" key={m.id} className="ac-mode tap" aria-pressed={m.id === mode}
+              onClick={() => selectMode(m.id)} title={m.desc}>
+              <Icon name={m.icon} size={16} /> {m.label}
+            </button>
+          ))}
         </div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginTop: 10 }}>{active.desc}</div>
+        <div className="ac-desc">{active.desc}</div>
       </div>
 
-      <div style={{ marginTop: 8 }}>
+      <div className="ac-body">
         <Active />
       </div>
     </div>

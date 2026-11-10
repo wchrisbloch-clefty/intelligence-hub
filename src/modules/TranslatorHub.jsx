@@ -1,13 +1,13 @@
-import { T, withAlpha } from '../theme';
 import { useState, useRef } from 'react';
-import { useApp } from '../App.jsx';
 import Icon from './shared/Icon.jsx';
 import { callClaude } from '../utils.js';
 import { LANGUAGES, TRANSLATION_MODES } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import useVoiceInput from '../hooks/useVoiceInput.js';
+import './translator-hub.css';
 
+// Styling lives in translator-hub.css (tr-) — tokens only, no inline colour.
 const QUICK_PAIRS = [
   { from: 'en-US', to: 'es-MX', label: 'EN → ES (Mexico)' },
   { from: 'en-US', to: 'es-ES', label: 'EN → ES (Spain)' },
@@ -32,35 +32,38 @@ function LangSelector({ label, value, onChange }) {
   const display = findVariant(value);
 
   return (
-    <div style={{ position: 'relative', minWidth: 0 }}>
-      <button onClick={() => setOpen(o => !o)}
-        style={{ width: '100%', padding: '9px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', textAlign: 'left', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, minHeight: 40 }}>
-        <div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 2 }}>{label}</div>
-          <div style={{ color: 'var(--text)' }}>{display}</div>
+    <div className="tr-sel">
+      <button type="button" className="tr-sel-btn tap" aria-expanded={open} aria-haspopup="listbox" onClick={() => setOpen(o => !o)}>
+        <div className="tr-sel-text">
+          <div className="tr-sel-label">{label}</div>
+          <div className="tr-sel-value">{display}</div>
         </div>
-        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+        <span className="tr-sel-caret" aria-hidden="true">{open ? '▲' : '▼'}</span>
       </button>
 
       {open && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, zIndex: 100, maxHeight: 320, overflowY: 'auto', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
-          {LANGUAGES.map(lang => (
-            <div key={lang.code}>
-              {/* Language group header */}
-              {lang.variants && lang.variants.length > 1 ? (
-                <div style={{ padding: '6px 14px 2px', fontSize: 10, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', background: 'var(--bg)' }}>
-                  {lang.flag} {lang.label}
-                </div>
-              ) : null}
-              {/* Variants or single option */}
-              {(lang.variants && lang.variants.length > 1 ? lang.variants : [{ code: lang.code, label: `${lang.flag} ${lang.label}` }]).map(v => (
-                <div key={v.code} onClick={() => { onChange(v.code); setOpen(false); }}
-                  style={{ padding: lang.variants && lang.variants.length > 1 ? '8px 14px 8px 24px' : '8px 14px', fontSize: 'var(--fs-base)', color: value === v.code ? 'var(--accent-text)' : 'var(--text-b)', cursor: 'pointer', background: value === v.code ? 'var(--accent-glow,rgba(217,164,65,0.08))' : 'transparent', fontWeight: value === v.code ? 600 : 400, borderBottom: '1px solid var(--bord2)' }}>
-                  {v.label}
-                </div>
-              ))}
-            </div>
-          ))}
+        <div className="tr-menu" role="listbox" aria-label={label}>
+          {LANGUAGES.map(lang => {
+            const grouped = lang.variants && lang.variants.length > 1;
+            return (
+              <div key={lang.code}>
+                {/* Language group header */}
+                {grouped ? (
+                  <div className="tr-group">
+                    {lang.flag} {lang.label}
+                  </div>
+                ) : null}
+                {/* Variants or single option */}
+                {(grouped ? lang.variants : [{ code: lang.code, label: `${lang.flag} ${lang.label}` }]).map(v => (
+                  <button type="button" key={v.code} role="option" aria-selected={value === v.code} className="tr-opt"
+                    data-variant={grouped ? '' : undefined}
+                    onClick={() => { onChange(v.code); setOpen(false); }}>
+                    {v.label}
+                  </button>
+                ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
@@ -68,7 +71,6 @@ function LangSelector({ label, value, onChange }) {
 }
 
 export default function TranslatorHub() {
-  const { isMobile, isPhone, isTablet } = useApp();
   const [fromLang, setFromLang] = useState('en-US');
   const [toLang,   setToLang]   = useState('es-MX');
   const [mode,     setMode]     = useState('standard');
@@ -160,133 +162,125 @@ Provide only the translation. No preamble, no explanation unless a cultural note
     setLoading(false);
   };
 
-  const pad = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
-
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: isMobile ? 80 : 60 }}>
+    <div className="tr">
 
       {/* Header */}
-      <div style={{ padding: `${pad} ${pad} 0`, marginBottom: 20 }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub</div>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
-          🌐 Translator
+      <div className="tr-head">
+        <div className="tr-eyebrow">Intelligence Hub</div>
+        <div className="tr-title">
+          <span className="tr-title-icon"><Icon name="Globe" size="nav" /></span> Translator
         </div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 5 }}>
+        <div className="tr-lede">
           All languages · Country dialects · Voice input · Document paste
         </div>
       </div>
 
-      <div style={{ padding: `0 ${pad}` }}>
+      <div className="tr-body">
 
         {/* Quick pair shortcuts */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch', marginBottom: 20, paddingBottom: 2 }}>
+        <div className="tr-scroll" data-scroll-x="">
           {QUICK_PAIRS.map(p => (
-            <button key={p.label} onClick={() => { setFromLang(p.from); setToLang(p.to); setOutput(''); }}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${fromLang === p.from && toLang === p.to ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: fromLang === p.from && toLang === p.to ? 'rgba(217,164,65,0.1)' : 'transparent', color: fromLang === p.from && toLang === p.to ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+            <button type="button" key={p.label} className="tr-chip" aria-pressed={fromLang === p.from && toLang === p.to}
+              onClick={() => { setFromLang(p.from); setToLang(p.to); setOutput(''); }}>
               {p.label}
             </button>
           ))}
         </div>
 
         {/* Language selector row */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr auto 1fr' : '1fr 40px 1fr', gap: isMobile ? 8 : 12, alignItems: 'center', marginBottom: 16 }}>
+        <div className="tr-langs">
           <LangSelector label="From" value={fromLang} onChange={setFromLang} />
-          <button onClick={swap}
-            style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', fontSize: 'var(--fs-lg)', cursor: 'pointer', color: 'var(--text-b)', outline: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <button type="button" className="tr-swap tap" onClick={swap} aria-label="Swap languages">
             ⇄
           </button>
           <LangSelector label="To" value={toLang} onChange={setToLang} />
         </div>
 
         {/* Translation mode */}
-        <div style={{ display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', marginBottom: 16 }}>
+        <div className="tr-scroll" data-gap="sm" data-scroll-x="">
           {TRANSLATION_MODES.map(m => (
-            <button key={m.id} onClick={() => setMode(m.id)} title={m.desc}
-              style={{ flexShrink: 0, padding: '5px 12px', borderRadius: 20, border: `1px solid ${mode === m.id ? 'var(--accent,#D9A441)' : 'var(--border)'}`, background: mode === m.id ? 'rgba(217,164,65,0.1)' : 'transparent', color: mode === m.id ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: mode === m.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 32 }}>
+            <button type="button" key={m.id} className="tr-chip" data-weight="normal" aria-pressed={mode === m.id} onClick={() => setMode(m.id)} title={m.desc}>
               <Icon name={m.icon} size={14} /> {m.label}
             </button>
           ))}
         </div>
 
         {/* Input / Output panels */}
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginBottom: 16 }}>
+        <div className="tr-panels">
           {/* Input */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bord2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(fromLang)}</div>
-              <div style={{ display: 'flex', gap: 6 }}>
+          <div className="tr-panel">
+            <div className="tr-panel-head">
+              <div className="tr-panel-lang">{findVariant(fromLang)}</div>
+              <div className="tr-tools">
                 {voiceOk && (
-                  <button onClick={() => toggleVoice((t) => setInput(t))}
-                    style={{ padding: '4px 10px', borderRadius: 6, border: `1px solid ${listening ? T.negative : 'var(--border)'}`, background: listening ? withAlpha(T.negative, 6) : 'transparent', color: listening ? T.negative : 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', outline: 'none', minHeight: 28 }}>
+                  <button type="button" className="tr-tool tap" data-live={listening ? '' : undefined} aria-pressed={listening}
+                    onClick={() => toggleVoice((t) => setInput(t))}>
                     {listening ? '⏹ Stop' : '🎙️ Voice'}
                   </button>
                 )}
-                <button onClick={() => fileRef.current?.click()}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', outline: 'none', minHeight: 28 }}>
-                  📎 File
+                <button type="button" className="tr-tool tap" onClick={() => fileRef.current?.click()}>
+                  <Icon name="Paperclip" size={14} /> File
                 </button>
-                <input ref={fileRef} type="file" accept=".txt,.csv,.md" style={{ display: 'none' }} onChange={handleFile} />
+                <input ref={fileRef} type="file" accept=".txt,.csv,.md" className="tr-hidden" onChange={handleFile} />
               </div>
             </div>
-            <textarea
+            <textarea className="tr-input"
               value={input} onChange={e => setInput(e.target.value)}
-              onPaste={handlePaste}
+              onPaste={handlePaste} aria-label="Text to translate"
               placeholder="Type, paste, or upload text to translate… (Excel/TSV auto-formats to table)"
-              style={{ width: '100%', minHeight: 160, padding: '14px', background: 'transparent', border: 'none', outline: 'none', color: 'var(--text)', fontSize: 'var(--fs-base)', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.7 }}
             />
-            <div style={{ padding: '8px 14px', borderTop: '1px solid var(--bord2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{input.length} chars</div>
-              <button onClick={() => setInput('')} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', padding: '3px 8px', border: '1px solid var(--border)', borderRadius: 5, background: 'transparent', cursor: 'pointer', fontFamily: 'inherit' }}>Clear</button>
+            <div className="tr-panel-foot">
+              <div className="tr-count">{input.length} chars</div>
+              <button type="button" className="tr-tool tap" data-sm="" onClick={() => setInput('')}>Clear</button>
             </div>
           </div>
 
           {/* Output */}
-          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--bord2)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text-c)' }}>{findVariant(toLang)}</div>
+          <div className="tr-panel">
+            <div className="tr-panel-head">
+              <div className="tr-panel-lang">{findVariant(toLang)}</div>
               {output && (
-                <button onClick={() => navigator.clipboard?.writeText(output)}
-                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit', outline: 'none', minHeight: 28 }}>
+                <button type="button" className="tr-tool tap" onClick={() => navigator.clipboard?.writeText(output)}>
                   Copy
                 </button>
               )}
             </div>
-            <div style={{ minHeight: 160, padding: '14px', fontSize: 'var(--fs-base)', color: 'var(--text)', lineHeight: 1.7 }}>
+            <div className="tr-output" aria-live="polite">
               {loading ? (
                 <div>
-                  <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 10, fontStyle: 'italic' }}>Translating…</div>
+                  <div className="tr-pending">Translating…</div>
                   <ThinkingDots />
                 </div>
               ) : output ? (
                 <MD text={output} />
               ) : (
-                <span style={{ color: 'var(--dim)' }}>Translation will appear here</span>
+                <span className="tr-muted">Translation will appear here</span>
               )}
             </div>
           </div>
         </div>
 
         {/* Translate button */}
-        <button onClick={translate} disabled={loading || !input.trim()}
-          style={{ padding: '12px 32px', background: loading || !input.trim() ? 'var(--surf2)' : 'var(--accent,#D9A441)', color: loading || !input.trim() ? 'var(--dim)' : '#000', borderRadius: 10, border: 'none', fontSize: 'var(--fs-lg)', fontWeight: 800, cursor: loading || !input.trim() ? 'default' : 'pointer', fontFamily: 'inherit', width: '100%', marginBottom: 24 }}>
-          {loading ? 'Translating…' : `🌐 Translate`}
+        <button type="button" className="tr-go tap" onClick={translate} disabled={loading || !input.trim()} aria-busy={loading || undefined}>
+          {loading ? 'Translating…' : <><Icon name="Globe" size="header" /> Translate</>}
         </button>
 
         {/* History */}
         {history.length > 0 && (
           <div>
-            <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Recent Translations</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="tr-label">Recent Translations</div>
+            <div className="tr-history">
               {history.map((h, i) => (
-                <div key={i} onClick={() => { setInput(h.fullInput || ''); setOutput(h.full); setFromLang(h.fromCode || fromLang); setToLang(h.toCode || toLang); }}
-                  style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, cursor: 'pointer' }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 700 }}>{h.from} → {h.to}</span>
-                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>·</span>
-                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{h.mode}</span>
+                <button type="button" key={i} className="tr-hist tap"
+                  onClick={() => { setInput(h.fullInput || ''); setOutput(h.full); setFromLang(h.fromCode || fromLang); setToLang(h.toCode || toLang); }}>
+                  <div className="tr-hist-meta">
+                    <span className="tr-hist-pair">{h.from} → {h.to}</span>
+                    <span>·</span>
+                    <span>{h.mode}</span>
                   </div>
-                  <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.5 }}>{h.input}</div>
-                </div>
+                  <div className="tr-hist-text">{h.input}</div>
+                </button>
               ))}
             </div>
           </div>
