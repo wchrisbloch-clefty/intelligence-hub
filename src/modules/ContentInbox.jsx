@@ -1,4 +1,3 @@
-import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
@@ -6,15 +5,12 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { logConcept } from '../lib/graph.js';
 import AskChip from './shared/AskChip.jsx';
 import Icon from './shared/Icon.jsx';
+import './content-inbox.css';
 import { SYSTEM_BASE } from '../constants.js';
 
 const INBOX_KEY = 'aether_inbox';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
-
-const ACCENT        = T.accent;
-const ACCENT_BG     = 'rgba(217,164,65,0.07)';
-const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const FILTERS = [
   { id: 'all',     label: 'All',      icon: 'Inbox' },
@@ -25,10 +21,16 @@ const FILTERS = [
 ];
 
 const TYPE_ICON  = { article: 'Newspaper', video: 'Play', social: 'MessageSquare', note: 'StickyNote' };
-const TYPE_COLOR = { article: T.accent, video: T.accent, social: T.accent, note: T.accent };
 
 // Capture lineage — what a saved item became, for the traceable trail.
-const DERIVED_LABEL = { vault: '🏛 Vault note', deepdive: '🔬 Deep Dive', research: '🔭 Research', project: '🚀 Project', books: '📚 Book', note: '📝 Note' };
+const DERIVED_LABEL = {
+  vault:    { icon: 'Landmark',   label: 'Vault note' },
+  deepdive: { icon: 'Microscope', label: 'Deep Dive' },
+  research: { icon: 'Compass',    label: 'Research' },
+  project:  { icon: 'Rocket',     label: 'Project' },
+  books:    { icon: 'BookOpen',   label: 'Book' },
+  note:     { icon: 'StickyNote', label: 'Note' },
+};
 
 function detectType(url) {
   if (!url) return 'note';
@@ -42,7 +44,7 @@ function shortHost(url) {
 }
 
 export default function ContentInbox() {
-  const { notes, setNotes, isMobile, setPendingArtifact, captureRoute, clearCapture } = useApp();
+  const { notes, setNotes, setPendingArtifact, captureRoute, clearCapture } = useApp();
 
   const [items, setItems] = useState(() => readLocal(INBOX_KEY, []));
 
@@ -165,48 +167,44 @@ export default function ContentInbox() {
   const filtered = filter === 'all' ? items : items.filter(i => i.type === filter);
 
   return (
-    <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 60px', maxWidth: 860, margin: '0 auto' }}>
+    <div className="ci">
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Smart Content Inbox</div>
-        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Capture & Synthesize</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Save articles, videos, links, or paste text — AI extracts what matters for CB.</div>
+      <div className="ci-head">
+        <div className="ci-eyebrow">Smart Content Inbox</div>
+        <div className="ci-title">Capture & Synthesize</div>
+        <div className="ci-sub">Save articles, videos, links, or paste text — AI extracts what matters for CB.</div>
       </div>
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        {[{ id: 'inbox', label: `📥 Inbox (${items.length})` }, { id: 'add', label: '+ Add Content' }].map(t => (
-          <div key={t.id} onClick={() => setTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', transition: 'all 0.12s' }}>
-            {t.label}
-          </div>
+      <div className="ci-tabs">
+        {[{ id: 'inbox', label: `Inbox (${items.length})`, icon: 'Inbox' }, { id: 'add', label: 'Add Content', icon: 'Plus' }].map(t => (
+          <button type="button" key={t.id} className="ci-tab tap" aria-pressed={tab === t.id} onClick={() => setTab(t.id)}>
+            <Icon name={t.icon} size={15} aria-hidden="true" /> {t.label}
+          </button>
         ))}
       </div>
 
       {/* ── Add Content ─────────────────────────────────────────────────────── */}
       {tab === 'add' && (
-        <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '20px 22px' }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 14 }}>Add to Inbox</div>
+        <div className="ci-add">
+          <div className="ci-add-title">Add to Inbox</div>
 
-          <input value={title} onChange={e => setTitle(e.target.value)}
-            placeholder="Title (optional — auto-detected)"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10, minHeight: isMobile ? 44 : undefined }} />
+          <input className="ci-field" value={title} onChange={e => setTitle(e.target.value)}
+            aria-label="Title" placeholder="Title (optional — auto-detected)" />
 
-          <input value={url} onChange={e => setUrl(e.target.value)}
-            placeholder="URL — article, YouTube, Twitter, LinkedIn, any link…"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10, minHeight: isMobile ? 44 : undefined }} />
+          <input className="ci-field" value={url} onChange={e => setUrl(e.target.value)}
+            aria-label="URL" placeholder="URL — article, YouTube, Twitter, LinkedIn, any link…" />
 
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
+          <div className="ci-or">— or paste content directly —</div>
 
-          <textarea value={text} onChange={e => setText(e.target.value)}
+          <textarea className="ci-field" value={text} onChange={e => setText(e.target.value)}
+            aria-label="Content"
             placeholder="Paste article, notes, quotes, email, transcript, or any text…"
-            rows={5}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
+            rows={5} />
 
-          <button onClick={analyze} disabled={analyzing || (!url.trim() && !text.trim())}
-            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: (url.trim() || text.trim()) && !analyzing ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: (url.trim() || text.trim()) && !analyzing ? '#000' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {analyzing ? <><ThinkingDots color="#000" /> Analyzing…</> : '✦ Analyze & Save'}
+          <button type="button" className="btn btn-primary tap ci-analyze" onClick={analyze} disabled={analyzing || (!url.trim() && !text.trim())} aria-busy={analyzing || undefined}>
+            {analyzing ? <><ThinkingDots color="var(--accent-foreground)" /> Analyzing…</> : <><Icon name="Sparkles" size={15} /> Analyze &amp; Save</>}
           </button>
         </div>
       )}
@@ -215,92 +213,91 @@ export default function ContentInbox() {
       {tab === 'inbox' && (
         <>
           {items.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div className="ci-filters">
               {FILTERS.map(f => (
-                <div key={f.id} onClick={() => setFilter(f.id)}
-                  style={{ padding: '4px 12px', fontSize: 'var(--fs-sm)', borderRadius: 20, border: `1px solid ${filter === f.id ? ACCENT : 'var(--border)'}`, background: filter === f.id ? ACCENT_BG : 'transparent', color: filter === f.id ? 'var(--accent-text)' : 'var(--subtle)', cursor: 'pointer', fontWeight: filter === f.id ? 700 : 400 }}>
+                <button type="button" key={f.id} className="chip tap" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
                   <Icon name={f.icon} size={14} /> {f.label}
-                </div>
+                </button>
               ))}
             </div>
           )}
 
           {filtered.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>📥</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>Inbox is Empty</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Save articles, YouTube videos, tweets, or paste any content. AI extracts the signal so you don't have to dig.</div>
-              <div onClick={() => setTab('add')} style={{ display: 'inline-block', padding: '10px 22px', background: ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Add First Item →</div>
+            <div className="ci-empty">
+              <div className="ci-empty-icon" aria-hidden="true"><Icon name="Inbox" size={36} strokeWidth={1.5} /></div>
+              <div className="ci-empty-title">Inbox is Empty</div>
+              <div className="ci-empty-sub">Save articles, YouTube videos, tweets, or paste any content. AI extracts the signal so you don't have to dig.</div>
+              <button type="button" className="btn btn-primary tap ci-empty-cta" onClick={() => setTab('add')}>Add First Item →</button>
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="ci-list">
             {filtered.map(item => {
               const expanded = expandedId === item.id;
+              const toggle = () => setExpandedId(expanded ? null : item.id);
               return (
-                <div key={item.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
-                  <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : item.id)}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <Icon name={TYPE_ICON[item.type] || 'FileText'} size="header" style={{ flexShrink: 0, color: 'var(--text-tertiary)' }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.3 }}>{item.title}</div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div key={item.id} className="ci-item" data-expanded={expanded ? '' : undefined}>
+                  {/* A div, not a button: the header holds its own buttons (host, remove). */}
+                  <div className="ci-item-head focus-ring" role="button" tabIndex={0} aria-expanded={expanded} onClick={toggle}
+                    onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(); } }}>
+                    <div className="ci-item-row">
+                      <span className="ci-type-icon" aria-hidden="true"><Icon name={TYPE_ICON[item.type] || 'FileText'} size="header" /></span>
+                      <div className="ci-item-main">
+                        <div className="ci-item-title">{item.title}</div>
+                        <div className="ci-meta">
                           {item.url && (
-                            <span onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}
-                              style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', cursor: 'pointer' }}>
+                            <button type="button" className="ci-host tap" onClick={e => { e.stopPropagation(); window.open(item.url, '_blank'); }}>
                               ↗ {shortHost(item.url)}
-                            </span>
+                            </button>
                           )}
-                          <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(item.savedAt).toLocaleDateString()}</span>
-                          <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 7px', background: `${TYPE_COLOR[item.type]}15`, color: TYPE_COLOR[item.type], borderRadius: 4, fontWeight: 600 }}>{item.type}</span>
-                          {item.inVault && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 600 }}>✓ Vaulted</span>}
+                          <span className="ci-date">{new Date(item.savedAt).toLocaleDateString()}</span>
+                          <span className="ci-type">{item.type}</span>
+                          {item.inVault && <span className="ci-vaulted"><Icon name="Check" size={13} /> Vaulted</span>}
                         </div>
                         {/* Capture lineage — the trail of what this became */}
                         {item.derivedInto?.length > 0 && (
-                          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: 6 }}>
-                            <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 700, color: 'var(--dim)' }}>Became</span>
-                            {item.derivedInto.map((d, di) => (
-                              <span key={di} style={{ fontSize: 'var(--fs-sm)', padding: '2px 8px', borderRadius: 12, background: withAlpha(T.accent, 10), color: 'var(--accent-text)', fontWeight: 600 }}>
-                                {DERIVED_LABEL[d.module] || d.module}
-                              </span>
-                            ))}
+                          <div className="ci-became">
+                            <span className="ci-became-label">Became</span>
+                            {item.derivedInto.map((d, di) => {
+                              const lab = DERIVED_LABEL[d.module];
+                              return (
+                                <span key={di} className="ci-became-chip">
+                                  {lab ? <><Icon name={lab.icon} size={13} /> {lab.label}</> : d.module}
+                                </span>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-                        <div
-                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', padding: isMobile ? '9px 14px' : '3px 9px', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, fontWeight: 600, minHeight: isMobile ? 40 : undefined, display: 'flex', alignItems: 'center' }}>
-                          {expanded ? '▲ Hide' : '▼ View AI'}
-                        </div>
-                        <div onClick={e => { e.stopPropagation(); remove(item.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                      <div className="ci-item-tools">
+                        <span className="ci-toggle" aria-hidden="true">
+                          <Icon name={expanded ? 'ChevronUp' : 'ChevronDown'} size={13} /> {expanded ? 'Hide' : 'View AI'}
+                        </span>
+                        <button type="button" className="ci-x tap" onClick={e => { e.stopPropagation(); remove(item.id); }} aria-label={`Remove ${item.title}`}><Icon name="X" size={15} /></button>
                       </div>
                     </div>
                   </div>
 
                   {expanded && item.summary && (
-                    <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
-                      <div style={{ fontSize: isMobile ? 10 : 8, letterSpacing: 3, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 10 }}>AI Analysis</div>
+                    <div className="ci-analysis">
+                      <div className="ci-kicker">AI Analysis</div>
                       <MD text={item.summary} color="var(--accent-text)" />
-                      <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-                        <div onClick={() => copyToClipboard(item.id, item.summary)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: copiedId === item.id ? 'var(--accent-text)' : 'var(--accent-text)', cursor: 'pointer', background: copiedId === item.id ? 'rgba(217,164,65,0.08)' : 'transparent', minHeight: isMobile ? 40 : undefined, transition: 'all 0.2s' }}>
-                          {copiedId === item.id ? '✓ Copied!' : 'Copy'}
-                        </div>
-                        <div onClick={() => reanalyze(item)}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: 'var(--accent-text)', cursor: reanalyzing ? 'default' : 'pointer', background: 'transparent', minHeight: isMobile ? 40 : undefined, opacity: reanalyzing === item.id ? 0.6 : 1 }}>
-                          {reanalyzing === item.id ? '⟳ Re-analyzing…' : '⟳ Re-analyze'}
-                        </div>
+                      <div className="ci-acts">
+                        <button type="button" className="ci-act tap" data-done={copiedId === item.id ? '' : undefined} onClick={() => copyToClipboard(item.id, item.summary)}>
+                          {copiedId === item.id ? <><Icon name="Check" size={13} /> Copied!</> : 'Copy'}
+                        </button>
+                        <button type="button" className="ci-act tap" aria-busy={reanalyzing === item.id || undefined} onClick={() => reanalyze(item)}>
+                          <Icon name="RefreshCw" size={13} /> {reanalyzing === item.id ? 'Re-analyzing…' : 'Re-analyze'}
+                        </button>
                         {!item.inVault && (
-                          <div onClick={() => saveToVault(item)}
-                            style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
-                            🏛 Save to Vault
-                          </div>
+                          <button type="button" className="ci-act tap" data-strong="" onClick={() => saveToVault(item)}>
+                            <Icon name="Landmark" size={13} /> Save to Vault
+                          </button>
                         )}
-                        <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}
-                          style={{ padding: isMobile ? '9px 14px' : '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 700, border: '1px solid #D9A44140', borderRadius: 7, color: 'var(--accent-text)', cursor: 'pointer', background: withAlpha(T.accent, 6), minHeight: isMobile ? 40 : undefined }}>
-                          🚀 Save to Project
-                        </div>
-                        <AskChip type="inbox" object={item} style={{ minHeight: isMobile ? 40 : undefined }} />
+                        <button type="button" className="ci-act tap" data-strong="" onClick={() => setPendingArtifact({ type: 'aiOutput', title: item.title || item.url || 'Inbox Analysis', content: item.summary, source: 'inbox' })}>
+                          <Icon name="Rocket" size={13} /> Save to Project
+                        </button>
+                        <AskChip type="inbox" object={item} />
                       </div>
                     </div>
                   )}
