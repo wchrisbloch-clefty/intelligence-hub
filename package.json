@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node scripts/check-tokens.mjs && vite build",
+    "preview": "vite preview",
+    "check:tokens": "node scripts/check-tokens.mjs",
+    "serve:local": "node scripts/serve-local.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.17.0",
@@ -17,6 +19,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "playwright": "^1.63.0",
     "vite": "^5.4.2"
   }
 }

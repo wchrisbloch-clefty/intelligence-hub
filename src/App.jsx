@@ -9,6 +9,7 @@ import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
 import { SideNav, BottomNav, ModeChips } from './modules/shared/ContainerNav.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
+import MobileHome from './modules/home/MobileHome.jsx';
 import WhatsHappening from './modules/WhatsHappening.jsx';
 import Notes from './modules/Notes.jsx';
 import Recaps from './modules/Recaps.jsx';
@@ -146,7 +147,7 @@ export default function App() {
   };
 
   const modules = {
-    home:      <HomeDashboard />,
+    home:      isMobile ? <MobileHome /> : <HomeDashboard />, // phone Home surface (Order C)
     feed:      <WhatsHappening />,
     notes:     <Notes />,
     recaps:    <Recaps />,
