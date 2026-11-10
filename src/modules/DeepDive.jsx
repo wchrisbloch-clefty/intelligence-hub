@@ -1,4 +1,3 @@
-import { T } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildDeepDiveSystem, depthNeedsWeb, extractSources, uid, timeAgo, DEPTH_META } from '../utils.js';
@@ -17,12 +16,14 @@ import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { GoingDeepBanner } from './shared/DepthControls.jsx';
 import { SectionSkeleton, SectionError, SectionEmpty } from './shared/SectionState.jsx';
+import MentalModelChip from './shared/MentalModelChip.jsx';
+import Icon from './shared/Icon.jsx';
+import './deep-dive.css';
 
-const ACCENT = T.accent;
 const DEPTHS = ['deep', 'expert']; // a dive is always a heavy, sourced tier
 
 export default function DeepDive() {
-  const { isMobile, captureRoute, clearCapture, openStudio } = useApp();
+  const { captureRoute, clearCapture, openStudio } = useApp();
   const [view, setView]   = useState('home'); // home | view
   const [index, setIndex] = useState(() => loadIndex());
   const [dive, setDive]   = useState(null);
@@ -42,7 +43,6 @@ export default function DeepDive() {
   const bottomRef = useRef(null);
   // The last pass's arguments, so the error state's Retry re-runs ONLY that pass.
   const lastPassRef = useRef(null);
-  const pad = isMobile ? '14px' : '24px';
 
   useEffect(() => { hydrateIndex().then(r => { if (Array.isArray(r)) setIndex(r); }); }, []);
   useEffect(() => { if (running) bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [stream, running]);
@@ -132,54 +132,51 @@ export default function DeepDive() {
   // ── Home: create + list ─────────────────────────────────────────────────
   if (view === 'home') {
     return (
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 6 }}>Source-Grounded Research</div>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Deep Dive</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>A Deep Dive saves as a reopenable research file. Come back anytime and <strong style={{ color: 'var(--muted)' }}>keep going</strong> — deepen a section, add an angle, or refresh the data. It compounds.</div>
+      <div className="dd dd-home">
+        <div className="dd-eyebrow">Source-Grounded Research</div>
+        <div className="dd-title">Deep Dive</div>
+        <div className="dd-lede">A Deep Dive saves as a reopenable research file. Come back anytime and <strong>keep going</strong> — deepen a section, add an angle, or refresh the data. It compounds.</div>
 
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16, marginBottom: 24 }}>
+        <div className="dd-builder">
           <input value={topicInput} onChange={e => setTopicInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && build()}
             placeholder="What should I research? (e.g. US data-center power demand, GLP-1 market…)"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', marginBottom: 10 }} />
+            aria-label="What should I research?"
+            className="dd-input dd-input-topic" />
           <input value={catInput} onChange={e => setCatInput(e.target.value)}
             placeholder="Category (optional — inferred if blank)"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 'var(--fs-base)', color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none', marginBottom: 12 }} />
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+            aria-label="Category (optional)"
+            className="dd-input dd-input-cat" />
+          <div className="dd-depths">
             {DEPTHS.map(d => (
-              <div key={d} onClick={() => setDepth(d)}
-                style={{ flex: 1, padding: '8px', borderRadius: 8, textAlign: 'center', cursor: 'pointer', border: `1px solid ${depth === d ? ACCENT : 'var(--border)'}`, background: depth === d ? 'var(--accent-glow)' : 'transparent' }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: depth === d ? 'var(--accent-text)' : 'var(--text-b)' }}>{DEPTH_META[d].label}</div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{DEPTH_META[d].blurb}</div>
-              </div>
+              <button type="button" key={d} onClick={() => setDepth(d)} className="dd-depth" aria-pressed={depth === d}>
+                <span className="dd-depth-label">{DEPTH_META[d].label}</span>
+                <span className="dd-depth-blurb">{DEPTH_META[d].blurb}</span>
+              </button>
             ))}
           </div>
-          <div style={{ marginBottom: 12 }}>
+          <div className="dd-ground">
             <SourceGrounding value={userSrc} onSave={setUserSrc} onClear={() => setUserSrc(null)} types={SRC_TYPES}
               label="I have source material for this — paste it" />
           </div>
-          <button onClick={build} disabled={!topicInput.trim() || running}
-            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !running ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !running ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: topicInput.trim() && !running ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
-            ⚡ Build Deep Dive →
+          <button type="button" onClick={build} disabled={!topicInput.trim() || running} className="btn btn-primary dd-build tap">
+            <Icon name="Zap" aria-hidden="true" /> Build Deep Dive →
           </button>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 8, textAlign: 'center' }}>Pulls live sources and cites as it goes — takes longer than a quick answer.</div>
+          <div className="dd-hint">Pulls live sources and cites as it goes — takes longer than a quick answer.</div>
         </div>
 
         {index.length > 0 && (
           <>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Your Research Files</div>
+            <div className="dd-eyebrow-quiet">Your Research Files</div>
             {index.map(d => (
-              <div key={d.id} onClick={() => open(d.id)}
-                style={{ padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 10, cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{d.topic}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>
-                      {DEPTH_META[d.depth]?.label || d.depth}{d.category ? ` · ${d.category}` : ''} · {d.progress} pass{d.progress === 1 ? '' : 'es'} · {timeAgo(d.updatedAt)}
-                    </div>
-                  </div>
-                  <span onClick={e => del(d.id, e)} title="Delete" style={{ fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer', flexShrink: 0 }}>🗑</span>
-                </div>
+              <div key={d.id} className="dd-file">
+                <button type="button" className="dd-file-open" onClick={() => open(d.id)}>
+                  <span className="dd-file-topic">{d.topic}</span>
+                  <span className="dd-file-meta">
+                    {DEPTH_META[d.depth]?.label || d.depth}{d.category ? ` · ${d.category}` : ''} · {d.progress} pass{d.progress === 1 ? '' : 'es'} · {timeAgo(d.updatedAt)}
+                  </span>
+                </button>
+                <button type="button" onClick={e => del(d.id, e)} title="Delete" aria-label={`Delete ${d.topic}`} className="dd-file-del tap">🗑</button>
               </div>
             ))}
           </>
@@ -193,28 +190,27 @@ export default function DeepDive() {
   // Explicit section status for the dive's generated passes.
   const diveStatus = running ? 'loading' : error ? 'error' : dive.sections.length ? 'ready' : 'empty';
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
-        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', fontWeight: 700 }}>← Deep Dives</div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <div onClick={() => { const t = prompt('Rename dive', dive.topic); if (t && t.trim()) { renameDive(dive.id, t.trim()); setDive({ ...dive, topic: t.trim() }); refresh(); } }}
-            style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 7, padding: '4px 10px' }}>✎ Rename</div>
+    <div className="dd dd-view">
+      <div className="dd-top">
+        <button type="button" onClick={() => setView('home')} className="dd-back tap">← Deep Dives</button>
+        <div className="dd-tools">
+          <button type="button" className="dd-tool tap" onClick={() => { const t = prompt('Rename dive', dive.topic); if (t && t.trim()) { renameDive(dive.id, t.trim()); setDive({ ...dive, topic: t.trim() }); refresh(); } }}>
+            <Icon name="Pencil" aria-hidden="true" /> Rename</button>
           {openStudio && dive.sections.length > 0 && (
-            <div onClick={() => openStudio({ kind: 'deepdive', id: dive.id, title: dive.topic })}
-              style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 7, padding: '4px 10px', fontWeight: 700 }}>↗ Export</div>
+            <button type="button" className="dd-tool tap" data-accent onClick={() => openStudio({ kind: 'deepdive', id: dive.id, title: dive.topic })}>↗ Export</button>
           )}
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{dive.topic}</div>
+      <div className="dd-titlerow">
+        <div className="dd-title">{dive.topic}</div>
         <AskChip type="deepdive" object={dive} />
         <FollowButton name={dive.topic} source="deepdive" />
       </div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 18px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+      <div className="dd-meta">
         <span>{DEPTH_META[dive.depth]?.label || dive.depth}{dive.category ? ` · ${dive.category}` : ''} · {dive.sections.length} pass{dive.sections.length === 1 ? '' : 'es'} · certified: cited + confidence-flagged</span>
         {dive.promptVersion != null && <span>· {versionLabel(dive)}</span>}
-        {isStale(dive, 'deepDive') && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>prompt updated → re-run a pass</span>}
+        {isStale(dive, 'deepDive') && <span className="dd-stale">prompt updated → re-run a pass</span>}
       </div>
 
       {running && <div ref={bottomRef}><GoingDeepBanner depth={dive.depth} /></div>}
@@ -222,11 +218,11 @@ export default function DeepDive() {
       <div data-status={diveStatus}>
       {/* Sections */}
       {dive.sections.map((s, i) => (
-        <div key={s.id} style={{ marginBottom: 16, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 18px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <div style={{ fontSize: 8, letterSpacing: 2, color: 'var(--accent-text)', textTransform: 'uppercase' }}>Pass {i + 1} · {s.title}</div>
+        <div key={s.id} className="dd-pass">
+          <div className="dd-pass-head">
+            <div className="dd-pass-label">Pass {i + 1} · {s.title}</div>
             <ProviderTag provider={s.provider} />
-            <div style={{ marginLeft: 'auto' }}>
+            <div className="dd-pass-notes">
               <SaveToNotes title={`${dive.topic} — ${s.title}`} content={s.content} source={{ title: dive.topic, tier: 'reported' }} label="Notes" />
             </div>
           </div>
@@ -246,7 +242,7 @@ export default function DeepDive() {
       ))}
 
       {running && stream && (
-        <div style={{ marginBottom: 16, background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '16px 18px' }}>
+        <div className="dd-pass" data-live>
           <MD text={stream + '▍'} color="var(--accent-text)" />
         </div>
       )}
@@ -258,40 +254,43 @@ export default function DeepDive() {
       )}
       </div>
 
+      {/* On-demand mental-model reframe of the whole dive — nothing runs until tapped. */}
+      {dive.sections.length > 0 && (
+        <MentalModelChip title={dive.topic} disabled={running}
+          body={dive.sections.map(s => `## ${s.title}\n\n${s.content}`).join('\n\n')} />
+      )}
+
       {/* Aggregated sources */}
       {dive.sources.length > 0 && (
-        <div style={{ marginBottom: 16, background: 'var(--bg-alt)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px' }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Sources ({dive.sources.length})</div>
+        <div className="dd-sources">
+          <div className="dd-eyebrow-quiet">Sources ({dive.sources.length})</div>
           {dive.sources.map((src, i) => (
-            <div key={i} style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.6, marginBottom: 3 }}>[{i + 1}] {src}</div>
+            <div key={i} className="dd-source">[{i + 1}] {src}</div>
           ))}
         </div>
       )}
 
       {/* Keep going */}
       {!running && dive.sections.length > 0 && (
-        <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '16px 18px' }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Keep going</div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginBottom: 8 }}>Go deeper on a section:</div>
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div className="dd-keep">
+          <div className="dd-keep-kicker">Keep going</div>
+          <div className="dd-keep-sub">Go deeper on a section:</div>
+          <div className="dd-deepers">
             {dive.sections.map(s => (
-              <div key={s.id} onClick={() => keepGoingDeeper(s.title)}
-                style={{ padding: '5px 11px', borderRadius: 16, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 'var(--fs-base)', cursor: 'pointer' }}>
+              <button type="button" key={s.id} onClick={() => keepGoingDeeper(s.title)} className="dd-deeper tap">
                 ↳ {s.title.length > 28 ? s.title.slice(0, 28) + '…' : s.title}
-              </div>
+              </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          <div className="dd-angle">
             <input value={angle} onChange={e => setAngle(e.target.value)} onKeyDown={e => e.key === 'Enter' && keepGoingAngle()}
-              placeholder="Add a new angle (e.g. regulatory risk in the EU)…"
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 'var(--fs-base)', color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none' }} />
-            <button onClick={keepGoingAngle} disabled={!angle.trim()}
-              style={{ padding: '9px 14px', background: angle.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 8, color: angle.trim() ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: angle.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>Add</button>
+              placeholder="Add a new angle (e.g. regulatory risk in the EU)…" aria-label="Add a new angle"
+              className="dd-input" />
+            <button type="button" onClick={keepGoingAngle} disabled={!angle.trim()} className="btn btn-primary dd-add">Add</button>
           </div>
-          <div onClick={keepGoingRefresh}
-            style={{ padding: '9px 12px', textAlign: 'center', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
-            ⟳ Refresh the data
-          </div>
+          <button type="button" onClick={keepGoingRefresh} className="dd-refresh tap">
+            <Icon name="RefreshCw" aria-hidden="true" /> Refresh the data
+          </button>
         </div>
       )}
     </div>

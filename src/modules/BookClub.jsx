@@ -1,4 +1,3 @@
-import { T, withAlpha } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
@@ -32,6 +31,8 @@ import MD from './shared/MD.jsx';
 import ProviderTag from './shared/ProviderTag.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
 import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
+import MentalModelChip from './shared/MentalModelChip.jsx';
+import './book-club.css';
 
 const STUDY_MODES = [
   { id: 'overview',  label: 'Overview',       icon: 'ClipboardList', desc: 'Executive summary + key thesis' },
@@ -42,19 +43,8 @@ const STUDY_MODES = [
   { id: 'discuss',   label: 'Discussion',     icon: 'Handshake', desc: 'Critical conversation about the book' },
 ];
 
-// Type → theme token. Uses tier + accent tokens from src/theme.js (no new hex),
-// so the `type` field finally reads as colour instead of a dead grey.
-const TYPE_COLOR = {
-  leadership:  T.accent,
-  business:    T.positive,
-  systems:     T.tierReported,
-  negotiation: T.caution,
-  memoir:      T.tierInferred,
-  stoic:       T.tierUncited,
-  fiction:     T.tierVerified,
-  other:       T.textSecondary,
-};
-const typeColor = (t) => TYPE_COLOR[t] || T.textSecondary;
+// Type → colour lives in book-club.css (`.bc [data-type="…"]`, tier + accent
+// tokens, no hex), so the `type` field reads as colour instead of a dead grey.
 const TYPE_IDS = Object.keys(TYPE_META);
 
 const BLANK_FORM = { title: '', author: '', note: '', type: 'other' };
@@ -318,7 +308,7 @@ const PROMPTS = {
 };
 
 export default function BookClub() {
-  const { isMobile, isPhone, isTablet, isDesktop, openStudio, captureRoute, clearCapture } = useApp();
+  const { isMobile, isDesktop, openStudio, captureRoute, clearCapture } = useApp();
   // Lens is remembered PER BOOK — a work-framed read of one title shouldn't
   // reset the personal framing chosen for another. Stored as { [bookId]: lensId }.
   const [lensByBook, setLensByBook] = useState(() => readLocal(LENS_KEY, {}));
@@ -963,66 +953,66 @@ export default function BookClub() {
     openStudio({ kind: 'guide', title: `${selectedBook.title} — Study Guide`, text: guideMarkdown() });
   };
 
-  const pad     = isPhone ? '14px' : isMobile ? '16px' : isTablet ? '22px' : '28px';
-  const gridCol = isPhone ? 'repeat(2,1fr)' : isMobile ? 'repeat(2,1fr)' : isTablet ? 'repeat(3,1fr)' : 'repeat(4,1fr)';
-  const modeCol = isPhone ? 'repeat(2,1fr)' : 'repeat(3,1fr)';
+  // Layout (padding, grid columns, header size) lives in book-club.css media
+  // queries — never sized from JS. The viewport flags below are behaviour only.
+  const onCardKey = (e, fn) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); fn(); } };
 
   return (
-    <div style={{ maxWidth: 1100, margin: '0 auto', paddingBottom: isMobile ? 80 : 60 }}>
+    <div className="bc">
 
       {/* Header */}
-      <div style={{ padding: `${pad} ${pad} 0`, marginBottom: 20 }}>
-        <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub</div>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>
-          📖 Book Club
+      <div className="bc-head">
+        <div className="bc-kicker">Intelligence Hub</div>
+        <div className="bc-title">
+          <Icon name="BookOpen" size="nav" aria-hidden="true" /> Book Club
         </div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 5 }}>
+        <div className="bc-sub">
           Research, deep dive, and master any book with AI
         </div>
       </div>
 
       {/* Tab bar */}
-      <div style={{ padding: `0 ${pad}`, display: 'flex', gap: 8, marginBottom: 20, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
-        {[{ id: 'library', label: '📚 Library' }, { id: 'add', label: editingId ? '✎ Edit Book' : '+ Add Book' }, { id: 'dive', label: '🤿 Deep Dive' }].map(t => (
-          <button key={t.id} onClick={() => (t.id === 'add' ? (editingId ? setTab('add') : openAdd()) : setTab(t.id))}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${tab === t.id ? T.accent : 'var(--border)'}`, background: tab === t.id ? withAlpha(T.accent, 10) : 'transparent', color: tab === t.id ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: tab === t.id ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', whiteSpace: 'nowrap', minHeight: 36 }}>
-            {t.label}
+      <div className="bc-tabs">
+        {[{ id: 'library', label: 'Library', icon: 'Library' }, { id: 'add', label: editingId ? 'Edit Book' : 'Add Book', icon: editingId ? 'Pencil' : 'Plus' }, { id: 'dive', label: 'Deep Dive', icon: 'Waves' }].map(t => (
+          <button type="button" key={t.id} onClick={() => (t.id === 'add' ? (editingId ? setTab('add') : openAdd()) : setTab(t.id))}
+            className="bc-tab tap" aria-pressed={tab === t.id}>
+            <Icon name={t.icon} aria-hidden="true" /> {t.label}
           </button>
         ))}
       </div>
 
-      <div style={{ padding: `0 ${pad}` }}>
+      <div className="bc-body">
 
         {/* Graph cleanup report — what the junk-concept sweep removed on mount. */}
         {pruned.length > 0 && (
-          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.caution, 10), border: `1px solid ${withAlpha(T.caution, 40)}`, borderRadius: 10, color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', display: 'flex', alignItems: 'flex-start', gap: 8, justifyContent: 'space-between' }}>
+          <div className="bc-note bc-note-row" data-kind="caution">
             <span>🧹 Cleaned {pruned.length} polluted concept{pruned.length === 1 ? '' : 's'} from the knowledge graph (markdown section labels wrongly tracked as skills): <b>{pruned.slice(0, 8).join(', ')}</b>{pruned.length > 8 ? ` +${pruned.length - 8} more` : ''}.</span>
-            <button onClick={() => setPruned([])} style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>Dismiss</button>
+            <button type="button" onClick={() => setPruned([])} className="bc-note-dismiss tap">Dismiss</button>
           </div>
         )}
 
         {/* Save error — visible wherever the user is. */}
         {saveError && (
-          <div style={{ marginBottom: 14, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-base)', fontWeight: 600 }}>
+          <div className="bc-note" data-kind="error" data-size="base">
             ⚠ {saveError}
           </div>
         )}
 
         {/* Catalog rate-limited (J1): honest, retryable — never a silent empty shelf. */}
         {tab === 'library' && backfillErr && (
-          <div style={{ marginBottom: 14 }}><SectionError label="catalog details" onRetry={retryBackfill} detail={backfillErr} /></div>
+          <div className="bc-sec-error"><SectionError label="catalog details" onRetry={retryBackfill} detail={backfillErr} /></div>
         )}
 
         {/* ── LIBRARY TAB ──────────────────────────────────────────── */}
         {tab === 'library' && (
           <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div className="bc-search">
               <input value={search} onChange={e => setSearch(e.target.value)}
-                placeholder="Search by title or author..."
-                style={{ flex: 1, minWidth: 180, padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
-              <button onClick={restoreDefaults} disabled={saving}
+                placeholder="Search by title or author..." aria-label="Search by title or author"
+                className="bc-input" />
+              <button type="button" onClick={restoreDefaults} disabled={saving}
                 title="Re-add the 20 built-in books that aren't in your library. Custom books are untouched."
-                style={{ padding: '10px 16px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--muted)', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: saving ? 'default' : 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+                className="bc-btn bc-restore tap">
                 ↻ Restore default library
               </button>
             </div>
@@ -1032,24 +1022,24 @@ export default function BookClub() {
               const recs = recommendBooks({ library: books, lens });
               if (recs.length === 0) return null;
               return (
-                <div style={{ marginBottom: 20, padding: '14px 16px', border: '1px solid var(--rule)', borderRadius: 12, background: 'var(--surface)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                    <Icon name="Sparkles" size={16} style={{ color: 'var(--text-tertiary)' }} />
-                    <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase' }}>What to read next · {LENSES.find(l => l.id === lens)?.label} lens</span>
+                <div className="bc-recs">
+                  <div className="bc-recs-head">
+                    <Icon name="Sparkles" size={16} aria-hidden="true" />
+                    <span className="bc-recs-kicker">What to read next · {LENSES.find(l => l.id === lens)?.label} lens</span>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+                  <div className="bc-recs-grid">
                     {recs.map((r) => (
-                      <div key={r.title} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                          <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)', border: '1px solid var(--rule)', borderRadius: 3, padding: '1px 6px' }}>{r.signal}</span>
-                          <button onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author, type: r.type }])}
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                            <Icon name="Plus" size={13} /> Add
+                      <div key={r.title} className="bc-rec">
+                        <div className="bc-rec-top">
+                          <span className="bc-rec-signal">{r.signal}</span>
+                          <button type="button" onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author, type: r.type }])}
+                            className="bc-addlink tap">
+                            <Icon name="Plus" size={13} aria-hidden="true" /> Add
                           </button>
                         </div>
-                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{r.title}</div>
-                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{r.author}</div>
-                        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>{r.reason}</div>
+                        <div className="bc-rec-title">{r.title}</div>
+                        <div className="bc-rec-author">{r.author}</div>
+                        <div className="bc-rec-reason">{r.reason}</div>
                       </div>
                     ))}
                   </div>
@@ -1057,66 +1047,68 @@ export default function BookClub() {
               );
             })()}
 
-            <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
+            <div className="bc-eyebrow">
               {filtered.length} Books · Click to Deep Dive
             </div>
 
             {filtered.length === 0 && (
-              <div style={{ padding: '32px 20px', textAlign: 'center', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 14 }}>
-                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>📚</div>
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 14 }}>
+              <div className="bc-empty">
+                <div className="bc-empty-glyph"><Icon name="Library" size={32} aria-hidden="true" /></div>
+                <div className="bc-empty-msg">
                   {search ? `No books match "${search}"` : 'No books in your library yet.'}
                 </div>
-                <button onClick={openAdd}
-                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <button type="button" onClick={openAdd} className="btn btn-primary bc-primary tap">
                   + Add a Book
                 </button>
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: gridCol, gap: 10 }}>
+            <div className="bc-grid">
               {filtered.map((book) => {
                 const isSelected = selectedBook?.id === book.id;
-                const c = typeColor(book.type);
+                const openBook = () => { setSelectedBook(book); setMode('overview'); setResult(''); setTab('dive'); };
                 return (
-                  <div key={book.id}
-                    onClick={() => { setSelectedBook(book); setMode('overview'); setResult(''); setTab('dive'); }}
-                    style={{ padding: '14px', background: 'var(--surface)', border: `2px solid ${isSelected ? T.accent : withAlpha(c, 13)}`, borderTop: `3px solid ${c}`, borderRadius: 12, cursor: 'pointer', transition: 'border-color 0.15s', position: 'relative' }}>
-                    <div style={{ fontSize: 9, color: c, fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>
+                  // A div (not a <button>) because it contains the edit/remove buttons;
+                  // role + tabIndex + Enter/Space keep it keyboard-operable.
+                  <div key={book.id} role="button" tabIndex={0}
+                    onClick={openBook} onKeyDown={(e) => onCardKey(e, openBook)}
+                    className="bc-book" data-type={book.type || 'other'} data-selected={isSelected || undefined}
+                    aria-label={`${book.title} — open deep dive`}>
+                    <div className="bc-book-type">
                       {TYPE_META[book.type]?.label || book.type || 'General'}
                     </div>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 4, display: 'flex', alignItems: 'flex-start', gap: 5 }}>
-                      <span style={{ flex: 1, minWidth: 0 }}>{book.title}</span>
-                      {(book.verified || book.fullTitle) && <Icon name="Check" size={13} title={`Verified: ${book.fullTitle || book.title}`} style={{ color: 'var(--tier-verified)', flexShrink: 0, marginTop: 2 }} />}
+                    <div className="bc-book-title">
+                      <span>{book.title}</span>
+                      {(book.verified || book.fullTitle) && <Icon name="Check" size={13} title={`Verified: ${book.fullTitle || book.title}`} className="bc-check" />}
                     </div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{book.author}</div>
+                    <div className="bc-book-author">{book.author}</div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', fontWeight: 700, letterSpacing: 0.5 }}>
+                    <div className="bc-book-foot">
+                      <div className="bc-book-kind">
                         {book.builtin ? 'BUILT-IN' : 'CUSTOM'}
                       </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button onClick={(e) => { e.stopPropagation(); openEdit(book); }}
-                          title="Edit"
-                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✎</button>
-                        <button onClick={(e) => { e.stopPropagation(); removeBook(book); }}
-                          title="Remove"
-                          style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 6px', background: 'transparent', border: 'none', fontFamily: 'inherit' }}>✕</button>
+                      <div className="bc-book-tools">
+                        <button type="button" onClick={(e) => { e.stopPropagation(); openEdit(book); }}
+                          title="Edit" aria-label={`Edit ${book.title}`}
+                          className="bc-iconbtn tap">✎</button>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); removeBook(book); }}
+                          title="Remove" aria-label={`Remove ${book.title}`}
+                          className="bc-iconbtn tap" data-quiet>✕</button>
                       </div>
                     </div>
 
-                    {book.note && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 6, lineHeight: 1.4, fontStyle: 'italic' }}>{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
+                    {book.note && <div className="bc-book-note">{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
                     {(() => {
                       const chs = chaptersOf(book).chapters;
                       if (!chs.length) return null;
                       const dived = Object.values(chapterDives[book.id] || {}).filter((d) => d && !d.error).length;
                       return (
-                        <div style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', fontWeight: 600 }}>
-                          <Icon name="ClipboardList" size={12} /> {dived}/{chs.length} chapters dived
+                        <div className="bc-book-chs">
+                          <Icon name="ClipboardList" size={12} aria-hidden="true" /> {dived}/{chs.length} chapters dived
                         </div>
                       );
                     })()}
-                    <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)', fontWeight: 700 }}>🤿 Deep Dive →</div>
+                    <div className="bc-book-cta"><Icon name="Waves" size={14} aria-hidden="true" /> Deep Dive →</div>
                   </div>
                 );
               })}
@@ -1126,18 +1118,18 @@ export default function BookClub() {
 
         {/* ── ADD / EDIT BOOK TAB ──────────────────────────────────── */}
         {tab === 'add' && (
-          <div style={{ maxWidth: 520 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)', marginBottom: 16 }}>
+          <div className="bc-form">
+            <div className="bc-form-title">
               {editingId ? 'Edit Book' : 'Add a Book'}
             </div>
-            <div style={{ marginBottom: 14, position: 'relative' }}>
-              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Book Title *</label>
-              <input value={form.title}
+            <div className="bc-field" data-anchor>
+              <label className="bc-label" htmlFor="bc-f-title">Book Title *</label>
+              <input id="bc-f-title" value={form.title}
                 onChange={e => { setForm(f => ({ ...f, title: e.target.value })); setFormMatch(null); }}
                 onFocus={() => { if (sugg.results.length) setSugg(s => ({ ...s, open: true })); }}
                 placeholder="Start typing — we’ll find the exact edition"
                 autoComplete="off"
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                className="bc-input" />
 
               {/* Live catalog suggestions — cover, full title, author-as-catalogued,
                   year, publisher. Selecting fills both fields from the record. */}
@@ -1147,45 +1139,44 @@ export default function BookClub() {
 
               {/* What was matched — shown always, never resolved silently. */}
               {formMatch && (
-                <div style={{ marginTop: 8, padding: '10px 12px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                  <Icon name="Check" size={16} style={{ color: 'var(--tier-verified)', marginTop: 2 }} />
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>
-                    Found: <b style={{ color: 'var(--text)' }}>{formMatch.fullTitle}</b> — {(formMatch.authors || []).join(', ')}{(formMatch.publishedDate || '') ? `, ${(formMatch.publishedDate || '').slice(0, 4)}` : ''}{formMatch.publisher ? `, ${formMatch.publisher}` : ''}. Saved as “{form.title.trim()}”.
-                    <button onClick={() => { setFormMatch(null); setSugg(s => ({ ...s, open: true })); }} style={{ marginLeft: 6, color: 'var(--accent-text)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>Not this one</button>
+                <div className="bc-match">
+                  <Icon name="Check" size={16} className="bc-check" aria-hidden="true" />
+                  <span className="bc-match-text">
+                    Found: <b>{formMatch.fullTitle}</b> — {(formMatch.authors || []).join(', ')}{(formMatch.publishedDate || '') ? `, ${(formMatch.publishedDate || '').slice(0, 4)}` : ''}{formMatch.publisher ? `, ${formMatch.publisher}` : ''}. Saved as “{form.title.trim()}”.
+                    <button type="button" onClick={() => { setFormMatch(null); setSugg(s => ({ ...s, open: true })); }} className="bc-link tap">Not this one</button>
                   </span>
                 </div>
               )}
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Author</label>
-              <input value={form.author} onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
+            <div className="bc-field">
+              <label className="bc-label" htmlFor="bc-f-author">Author</label>
+              <input id="bc-f-author" value={form.author} onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
                 placeholder="e.g. Eric Ries"
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }} />
+                className="bc-input" />
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Category</label>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' }}>
+            <div className="bc-field">
+              <label className="bc-label" htmlFor="bc-f-type">Category</label>
+              <select id="bc-f-type" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}
+                className="bc-input">
                 {TYPE_IDS.map(id => (
                   <option key={id} value={id}>{TYPE_META[id]?.label || id}</option>
                 ))}
               </select>
             </div>
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text-c)', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
-              <textarea value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
+            <div className="bc-field" data-last>
+              <label className="bc-label" htmlFor="bc-f-note">Notes (optional)</label>
+              <textarea id="bc-f-note" value={form.note} onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
                 placeholder="Why you're reading it, key questions, context..."
                 rows={3}
-                style={{ width: '100%', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+                className="bc-input" />
             </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={saveBook} disabled={!form.title.trim() || saving}
-                style={{ padding: '11px 24px', background: form.title.trim() && !saving ? T.accent : 'var(--surf2)', color: form.title.trim() && !saving ? T.onAccent : 'var(--dim)', borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: form.title.trim() && !saving ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+            <div className="bc-form-actions">
+              <button type="button" onClick={saveBook} disabled={!form.title.trim() || saving} className="btn btn-primary bc-primary tap">
                 {saving ? 'Saving…' : editingId ? 'Save Changes' : 'Add to Library'}
               </button>
               {editingId && (
-                <button onClick={() => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('library'); }}
-                  style={{ padding: '11px 20px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 9, fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                <button type="button" onClick={() => { setEditingId(null); setForm(BLANK_FORM); setSaveError(''); setTab('library'); }}
+                  className="bc-btn tap">
                   Cancel
                 </button>
               )}
@@ -1197,41 +1188,39 @@ export default function BookClub() {
         {tab === 'dive' && (
           <div>
             {!selectedBook ? (
-              <div style={{ padding: '24px', background: 'var(--surface)', borderRadius: 14, border: '1px dashed var(--border)', textAlign: 'center' }}>
-                <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 12 }}>📖</div>
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 16 }}>Select a book from the Library to deep dive</div>
-                <button onClick={() => setTab('library')}
-                  style={{ padding: '9px 20px', background: T.accent, color: T.onAccent, borderRadius: 8, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+              <div className="bc-empty" data-pad="sm">
+                <div className="bc-empty-glyph"><Icon name="BookOpen" size={32} aria-hidden="true" /></div>
+                <div className="bc-empty-msg">Select a book from the Library to deep dive</div>
+                <button type="button" onClick={() => setTab('library')} className="btn btn-primary bc-primary tap">
                   Browse Library
                 </button>
               </div>
             ) : (
               <div>
                 {/* Selected book header */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', background: 'var(--surface)', border: `1px solid ${withAlpha(typeColor(selectedBook.type), 30)}`, borderLeft: `3px solid ${typeColor(selectedBook.type)}`, borderRadius: 12, marginBottom: 20 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div className="bc-sel" data-type={selectedBook.type || 'other'}>
+                  <div className="bc-sel-main">
+                    <div className="bc-sel-title">
                       {selectedBook.fullTitle || selectedBook.title}
                       {selectedBook.verified && (
-                        <span title={`Verified via ${selectedBook.source}${selectedBook.publishedDate ? ` · ${selectedBook.publishedDate}` : ''}`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-verified)', border: '1px solid var(--tier-verified)', borderRadius: 5, padding: '1px 6px' }}>
-                          <Icon name="Check" size={11} /> Verified{selectedBook.postCutoff ? ' · web-grounded' : ''}
+                        <span title={`Verified via ${selectedBook.source}${selectedBook.publishedDate ? ` · ${selectedBook.publishedDate}` : ''}`} className="bc-chip-tier" data-tone="verified">
+                          <Icon name="Check" size={11} aria-hidden="true" /> Verified{selectedBook.postCutoff ? ' · web-grounded' : ''}
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginTop: 2 }}>
-                      {selectedBook.author}{selectedBook.verified && <button onClick={reverify} style={{ marginLeft: 8, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textDecoration: 'underline' }}>re-verify</button>}
+                    <div className="bc-sel-author">
+                      {selectedBook.author}{selectedBook.verified && <button type="button" onClick={reverify} className="bc-quietlink tap">re-verify</button>}
                     </div>
                   </div>
                   <AskChip type="book" object={selectedBook} />
-                  <button onClick={() => { setSelectedBook(null); setResult(''); }}
-                    style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', padding: '5px 11px', border: '1px solid var(--border)', borderRadius: 7, background: 'var(--bg)', cursor: 'pointer', fontFamily: 'inherit' }}>
+                  <button type="button" onClick={() => { setSelectedBook(null); setResult(''); }} className="bc-btn bc-change tap">
                     Change
                   </button>
                 </div>
 
                 {/* Catalog verification — grounds the guide in the real book */}
                 {!selectedBook.verified && verify.status === 'loading' && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 16, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
+                  <div className="bc-verifying">
                     <ThinkingDots color="var(--accent-text)" /> Verifying against Google Books…
                   </div>
                 )}
@@ -1239,38 +1228,35 @@ export default function BookClub() {
                   const m = verify.matches[verify.idx];
                   const post = isPostCutoff(m.publishedDate);
                   return (
-                    <div style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 12, marginBottom: 16 }}>
-                      <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Found — confirm this is the book{verify.matches.length > 1 ? ` · ${verify.matches.length} editions/matches` : ''}</div>
-                      <div style={{ display: 'flex', gap: 14 }}>
+                    <div className="bc-found">
+                      <div className="bc-eyebrow" data-strong>Found — confirm this is the book{verify.matches.length > 1 ? ` · ${verify.matches.length} editions/matches` : ''}</div>
+                      <div className="bc-found-row">
                         {m.thumbnail
-                          ? <img src={m.thumbnail} alt="" width={64} style={{ borderRadius: 6, flexShrink: 0, alignSelf: 'flex-start', border: '1px solid var(--border)' }} />
-                          : <div style={{ width: 64, height: 92, borderRadius: 6, flexShrink: 0, background: 'var(--surf2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="BookMarked" size={20} style={{ color: 'var(--dim)' }} /></div>}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{[m.title, m.subtitle].filter(Boolean).join(': ')}</div>
-                          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: 2 }}>
+                          ? <img src={m.thumbnail} alt="" width={64} className="bc-cover" />
+                          : <div className="bc-cover-blank"><Icon name="BookMarked" size={20} aria-hidden="true" /></div>}
+                        <div className="bc-found-main">
+                          <div className="bc-found-title">{[m.title, m.subtitle].filter(Boolean).join(': ')}</div>
+                          <div className="bc-found-meta">
                             {(m.authors || []).join(', ') || '—'}{m.publishedDate ? ` · ${m.publishedDate}` : ''}{m.publisher ? ` · ${m.publisher}` : ''} · {m.source === 'google' ? 'Google Books' : 'Open Library'}
                           </div>
                           {post && (
-                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>
-                              <Icon name="Globe" size={11} /> Post-cutoff — will web-ground before generating
+                            <div className="bc-chip-tier" data-tone="inferred">
+                              <Icon name="Globe" size={11} aria-hidden="true" /> Post-cutoff — will web-ground before generating
                             </div>
                           )}
-                          {m.description && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', marginTop: 8, lineHeight: 'var(--lh-read)' }}>{m.description.slice(0, 260)}{m.description.length > 260 ? '…' : ''}</div>}
+                          {m.description && <div className="bc-found-desc">{m.description.slice(0, 260)}{m.description.length > 260 ? '…' : ''}</div>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-                        <button onClick={confirmVerification} disabled={saving}
-                          style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: T.accent, color: T.onAccent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                      <div className="bc-found-actions">
+                        <button type="button" onClick={confirmVerification} disabled={saving} className="btn btn-primary tap">
                           ✓ This is the book
                         </button>
                         {verify.matches.length > 1 && (
-                          <button onClick={nextMatch}
-                            style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                          <button type="button" onClick={nextMatch} className="bc-btn tap">
                             Different edition ({verify.idx + 1}/{verify.matches.length})
                           </button>
                         )}
-                        <button onClick={skipVerification}
-                          style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--dim)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                        <button type="button" onClick={skipVerification} className="bc-btn tap" data-quiet>
                           Use without verifying
                         </button>
                       </div>
@@ -1278,12 +1264,12 @@ export default function BookClub() {
                   );
                 })()}
                 {!selectedBook.verified && verify.status === 'none' && (
-                  <div style={{ padding: '12px 14px', background: withAlpha(T.negative, 8), border: `1px solid ${withAlpha(T.negative, 35)}`, borderRadius: 10, marginBottom: 16, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
-                    ⚠ Couldn’t verify this title against a catalog. You can still generate, but the guide will be <b>marked unverified</b> and may drift on a book published after the model’s cutoff. <button onClick={skipVerification} style={{ marginLeft: 6, color: 'var(--accent-text)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 700 }}>Continue anyway</button>
+                  <div className="bc-note bc-unverified" data-kind="negative">
+                    ⚠ Couldn’t verify this title against a catalog. You can still generate, but the guide will be <b>marked unverified</b> and may drift on a book published after the model’s cutoff. <button type="button" onClick={skipVerification} className="bc-link tap">Continue anyway</button>
                     {verify.attempts?.length > 0 && (
-                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${withAlpha(T.negative, 20)}`, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
-                        <span style={{ fontWeight: 700 }}>Tried:</span> {verify.attempts.map((a, i) => (
-                          <span key={i}>{i > 0 ? ' · ' : ' '}{a.source} <code style={{ fontFamily: 'inherit' }}>{a.query}</code> → {a.error ? `error ${a.error}` : `${a.results} result${a.results === 1 ? '' : 's'}`}</span>
+                      <div className="bc-note-tried">
+                        <b>Tried:</b> {verify.attempts.map((a, i) => (
+                          <span key={i}>{i > 0 ? ' · ' : ' '}{a.source} <code>{a.query}</code> → {a.error ? `error ${a.error}` : `${a.results} result${a.results === 1 ? '' : 's'}`}</span>
                         ))}
                       </div>
                     )}
@@ -1293,11 +1279,11 @@ export default function BookClub() {
                 {/* Grounding gate — generation is blocked on a post-cutoff book
                     with no chapter list until the user chooses. */}
                 {needsGrounding && !selectedBook.userGrounding && !selectedBook.retrievedTOC && (
-                  <div style={{ marginBottom: 12, padding: '12px 14px', background: withAlpha(T.caution, 10), border: `1px solid ${withAlpha(T.caution, 45)}`, borderRadius: 10, color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', lineHeight: 'var(--lh-read)' }}>
-                    <b style={{ color: 'var(--text)' }}>Generation paused — this book has no grounding yet.</b> It published after the model’s training data and no chapter list was found. Search harder or paste your copy’s contents below for a grounded, chapter-by-chapter guide — or continue with an ungrounded (all-<i>inferred</i>) guide.
-                    <div style={{ marginTop: 10 }}>
-                      <button onClick={() => { setProceedUngrounded(true); setNeedsGrounding(false); generateGuide({ ungrounded: true }); }}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+                  <div className="bc-note bc-gate" data-kind="caution">
+                    <b>Generation paused — this book has no grounding yet.</b> It published after the model’s training data and no chapter list was found. Search harder or paste your copy’s contents below for a grounded, chapter-by-chapter guide — or continue with an ungrounded (all-<i>inferred</i>) guide.
+                    <div className="bc-note-actions">
+                      <button type="button" onClick={() => { setProceedUngrounded(true); setNeedsGrounding(false); generateGuide({ ungrounded: true }); }}
+                        className="bc-btn tap">
                         Continue ungrounded →
                       </button>
                     </div>
@@ -1307,7 +1293,7 @@ export default function BookClub() {
                 {/* Source material the model can't reach: automated retrieval
                     leads, "Search harder" widens the net, and only after that
                     fails does the manual paste appear (reframed as the exception). */}
-                <div style={{ marginBottom: 16 }}>
+                <div className="bc-ground">
                   <SourceGrounding
                     value={selectedBook.userGrounding}
                     retrieved={selectedBook.retrievedTOC}
@@ -1333,56 +1319,54 @@ export default function BookClub() {
                   const prog = chapterProgress[bid] || {};
                   const divedCount = chapters.filter((_, i) => dives[i] && !dives[i].error).length;
                   const readCount = chapters.filter((_, i) => prog[i]?.read).length;
-                  const tone = tier === 'verified' ? 'var(--tier-verified)' : 'var(--tier-reported)';
                   const srcLabel = tier === 'verified' ? 'your copy' : (selectedBook.retrievedTOC?.sourceLabel || 'retrieved');
                   return (
-                    <div style={{ marginBottom: 16, border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)', overflow: 'hidden' }}>
-                      <button onClick={() => setTocOpen((o) => !o)}
-                        style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
-                          <Icon name="ClipboardList" size={16} style={{ color: tone }} />
-                          <span style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text)' }}>Table of Contents</span>
-                          <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tone, border: `1px solid ${tone}`, borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap' }}>structure {tier} · {srcLabel}</span>
-                          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{divedCount}/{chapters.length} dived · {readCount} read</span>
+                    <div className="bc-toc" data-tier={tier === 'verified' ? 'verified' : 'reported'}>
+                      <button type="button" onClick={() => setTocOpen((o) => !o)} className="bc-toc-toggle" aria-expanded={tocOpen}>
+                        <span className="bc-toc-head">
+                          <Icon name="ClipboardList" size={16} className="bc-toc-icon" aria-hidden="true" />
+                          <span className="bc-toc-title">Table of Contents</span>
+                          <span className="bc-chip-tier" data-tone={tier === 'verified' ? 'verified' : 'reported'}>structure {tier} · {srcLabel}</span>
+                          <span className="bc-toc-count">{divedCount}/{chapters.length} dived · {readCount} read</span>
                         </span>
-                        <Icon name={tocOpen ? 'ChevronUp' : 'ChevronDown'} size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                        <Icon name={tocOpen ? 'ChevronUp' : 'ChevronDown'} size={16} className="bc-toc-chev" aria-hidden="true" />
                       </button>
                       {tocOpen && (
-                        <div style={{ borderTop: '1px solid var(--rule)' }}>
+                        <div className="bc-toc-list">
                           {chapters.map((ch, i) => {
                             const dive = dives[i];
                             const read = !!prog[i]?.read;
                             const isOpen = openChapter === i;
                             const cLoading = chapterLoading === i;
                             return (
-                              <div key={i} style={{ borderBottom: '1px solid var(--rule)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px' }}>
-                                  <button onClick={() => toggleChapterRead(i)} title={read ? 'Read' : 'Mark read'}
-                                    style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${read ? T.accent : 'var(--border)'}`, background: read ? T.accent : 'transparent', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: 0 }}>
-                                    {read && <Icon name="Check" size={13} />}
+                              <div key={i} className="bc-ch">
+                                <div className="bc-ch-row">
+                                  <button type="button" onClick={() => toggleChapterRead(i)} title={read ? 'Read' : 'Mark read'}
+                                    aria-label={read ? `Chapter ${i + 1} read` : `Mark chapter ${i + 1} read`} aria-pressed={read}
+                                    className="bc-ch-check tap">
+                                    {read && <Icon name="Check" size={13} aria-hidden="true" />}
                                   </button>
-                                  <button onClick={() => { const next = isOpen ? null : i; setOpenChapter(next); if (next != null && !dive && !cLoading) generateChapterDive(i); }}
-                                    style={{ flex: 1, minWidth: 0, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 8, minHeight: 32 }}>
-                                    <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', fontWeight: 700, flexShrink: 0 }}>{i + 1}.</span>
-                                    <span style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', fontWeight: dive && !dive.error ? 700 : 500, lineHeight: 'var(--lh-tight)' }}>{ch}</span>
-                                    {dive && !dive.error && <Icon name="BookOpen" size={13} style={{ color: 'var(--accent-text)', flexShrink: 0 }} />}
+                                  <button type="button" onClick={() => { const next = isOpen ? null : i; setOpenChapter(next); if (next != null && !dive && !cLoading) generateChapterDive(i); }}
+                                    className="bc-ch-open tap" aria-expanded={isOpen}>
+                                    <span className="bc-ch-n">{i + 1}.</span>
+                                    <span className="bc-ch-name" data-dived={(dive && !dive.error) || undefined}>{ch}</span>
+                                    {dive && !dive.error && <Icon name="BookOpen" size={13} className="bc-ch-dived" aria-hidden="true" />}
                                   </button>
-                                  <button onClick={() => { setOpenChapter(i); generateChapterDive(i); }} disabled={cLoading}
-                                    style={{ flexShrink: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '4px 10px', cursor: cLoading ? 'default' : 'pointer', fontFamily: 'inherit' }}>
+                                  <button type="button" onClick={() => { setOpenChapter(i); generateChapterDive(i); }} disabled={cLoading}
+                                    className="bc-btn bc-ch-dive tap">
                                     {cLoading ? '…' : dive && !dive.error ? 'Redive' : 'Dive'}
                                   </button>
                                 </div>
                                 {isOpen && (
-                                  <div data-status={cLoading ? 'loading' : dive?.error ? 'error' : dive ? 'ready' : 'empty'} style={{ padding: '0 14px 14px', background: 'var(--bg)' }}>
+                                  <div data-status={cLoading ? 'loading' : dive?.error ? 'error' : dive ? 'ready' : 'empty'} className="bc-ch-body">
                                     {cLoading ? <SectionSkeleton rows={4} label="chapter dive" /> : dive?.error ? (
                                       <SectionError label="this chapter dive" onRetry={() => generateChapterDive(i)} detail={dive.body} />
                                     ) : dive ? (
                                       <div>
-                                        {dive.provider && <div style={{ marginBottom: 6 }}><ProviderTag provider={dive.provider} /></div>}
+                                        {dive.provider && <div className="bc-ch-provider"><ProviderTag provider={dive.provider} /></div>}
                                         <MD text={dive.body} color="var(--accent-text)" />
                                         {!dive.error && isStale(dive, 'studyGuide') && (
-                                          <button onClick={() => generateChapterDive(i)}
-                                            style={{ marginTop: 8, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'none', border: `1px solid ${T.accent}`, borderRadius: 7, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                                          <button type="button" onClick={() => generateChapterDive(i)} className="bc-btn bc-ch-regen tap" data-accent>
                                             Regenerate (prompt updated)
                                           </button>
                                         )}
@@ -1400,54 +1384,51 @@ export default function BookClub() {
                 })()}
 
                 {/* Life-application lens + the full study-guide engine */}
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '12px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10 }}>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>Lens</span>
+                <div className="bc-engine">
+                  <div className="bc-engine-opts">
+                    <span className="bc-engine-label">Lens</span>
                     {LENSES.map((l) => {
                       const on = lens === l.id;
                       return (
-                        <button key={l.id} onClick={() => setBookLens(l.id)} title={l.clause}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
-                          <Icon name={l.icon} size={14} /> {l.label}
+                        <button type="button" key={l.id} onClick={() => setBookLens(l.id)} title={l.clause}
+                          className="bc-seg tap" aria-pressed={on}>
+                          <Icon name={l.icon} size={14} aria-hidden="true" /> {l.label}
                         </button>
                       );
                     })}
-                    <span style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginLeft: 8 }} title="Epistemic depth: surface=tier chips · standard=+evidence/sources · deep=+lineage/where-it-breaks-down · expert=+disconfirming test/friction">Rigor</span>
+                    <span className="bc-engine-label" data-gap title="Epistemic depth: surface=tier chips · standard=+evidence/sources · deep=+lineage/where-it-breaks-down · expert=+disconfirming test/friction">Rigor</span>
                     {DEPTHS.map((d) => {
                       const on = depth === d;
                       return (
-                        <button key={d} onClick={() => setDepth(d)} title={`Rigor: ${DEPTH_LABELS[d]}`}
-                          style={{ padding: '6px 10px', borderRadius: 8, border: `1px solid ${on ? T.accent : 'var(--border)'}`, background: on ? withAlpha(T.accent, 10) : 'transparent', color: on ? 'var(--accent-text)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                        <button type="button" key={d} onClick={() => setDepth(d)} title={`Rigor: ${DEPTH_LABELS[d]}`}
+                          className="bc-seg tap" data-narrow aria-pressed={on}>
                           {DEPTH_LABELS[d]}
                         </button>
                       );
                     })}
                   </div>
-                  <button onClick={() => generateGuide()} disabled={loading}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: 'none', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 40 }}>
-                    <Icon name="BookOpen" size={14} /> {savedGuide ? 'Regenerate Study Guide' : 'Generate Study Guide'}
+                  <button type="button" onClick={() => generateGuide()} disabled={loading} className="btn btn-primary bc-primary bc-generate tap"
+                    aria-busy={loading ? 'true' : undefined}>
+                    <Icon name="BookOpen" size={14} aria-hidden="true" /> {savedGuide ? 'Regenerate Study Guide' : 'Generate Study Guide'}
                   </button>
                 </div>
 
                 {/* A saved guide is one click away — never lost on refresh. */}
                 {savedGuide && !(isGuide && result) && (() => {
                   const stale = isStale(savedGuide, 'studyGuide');
-                  const tone = stale ? T.tierInferred : T.accent;
                   return (
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '10px 14px', background: withAlpha(tone, 8), border: `1px solid ${withAlpha(tone, 30)}`, borderRadius: 10 }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', flexWrap: 'wrap' }}>
-                        <Icon name={stale ? 'AlertTriangle' : 'BookOpen'} size={14} style={{ color: tone }} />
+                    <div className="bc-saved" data-stale={stale || undefined}>
+                      <span className="bc-saved-text">
+                        <Icon name={stale ? 'AlertTriangle' : 'BookOpen'} size={14} className="bc-saved-icon" aria-hidden="true" />
                         Saved study guide · {LENSES.find((l) => l.id === savedGuide.lens)?.label || 'Both'} lens · {versionLabel(savedGuide)}
-                        {stale && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tone, border: `1px solid ${tone}`, borderRadius: 5, padding: '1px 6px' }}>prompt updated → regenerate (v{PROMPT_VERSION.studyGuide})</span>}
+                        {stale && <span className="bc-chip-tier" data-tone="inferred">prompt updated → regenerate (v{PROMPT_VERSION.studyGuide})</span>}
                       </span>
-                      <span style={{ display: 'inline-flex', gap: 8 }}>
-                        <button onClick={viewSavedGuide}
-                          style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'transparent', border: `1px solid ${T.accent}`, borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                      <span className="bc-saved-actions">
+                        <button type="button" onClick={viewSavedGuide} className="bc-btn tap" data-accent>
                           View guide
                         </button>
                         {stale && (
-                          <button onClick={() => generateGuide()} disabled={loading}
-                            style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.onAccent, background: T.accent, border: 'none', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+                          <button type="button" onClick={() => generateGuide()} disabled={loading} className="btn btn-primary tap">
                             Regenerate
                           </button>
                         )}
@@ -1456,30 +1437,30 @@ export default function BookClub() {
                   );
                 })()}
                 {guideErr && (
-                  <div style={{ marginBottom: 16, padding: '10px 14px', background: withAlpha(T.negative, 10), border: `1px solid ${withAlpha(T.negative, 40)}`, borderRadius: 10, color: T.negative, fontSize: 'var(--fs-sm)', fontWeight: 600 }}>
+                  <div className="bc-note" data-kind="error">
                     ⚠ {guideErr}
                   </div>
                 )}
 
                 {/* Study mode grid */}
-                <div style={{ fontSize: 9, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Choose Study Mode — click any to generate instantly</div>
-                <div style={{ display: 'grid', gridTemplateColumns: modeCol, gap: 8, marginBottom: 20 }}>
+                <div className="bc-eyebrow">Choose Study Mode — click any to generate instantly</div>
+                <div className="bc-modes">
                   {STUDY_MODES.map(m => (
-                    <button key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
-                      style={{ padding: '12px 14px', textAlign: 'left', background: mode === m.id ? withAlpha(T.accent, 12) : 'var(--surface)', border: `1px solid ${mode === m.id ? T.accent : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit', outline: 'none', transition: 'all 0.12s', minHeight: 72 }}>
-                      <Icon name={m.icon} size="header" style={{ color: mode === m.id ? 'var(--accent-text)' : 'var(--text-tertiary)' }} />
-                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: mode === m.id ? 'var(--accent-text)' : 'var(--text)', marginTop: 4 }}>{m.label}</div>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2, lineHeight: 1.4 }}>{m.desc}</div>
+                    <button type="button" key={m.id} onClick={() => { setMode(m.id); setResult(''); handleDeepDiveFor(m.id); }}
+                      className="bc-mode" aria-pressed={mode === m.id}>
+                      <Icon name={m.icon} size="header" className="bc-mode-icon" aria-hidden="true" />
+                      <span className="bc-mode-label">{m.label}</span>
+                      <span className="bc-mode-desc">{m.desc}</span>
                     </button>
                   ))}
                 </div>
 
                 {!isGuide && (
-                  <button onClick={handleDeepDive} disabled={loading}
-                    style={{ padding: '11px 24px', background: loading ? 'var(--surf2)' : T.accent, color: loading ? 'var(--dim)' : T.onAccent, borderRadius: 9, border: 'none', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button type="button" onClick={handleDeepDive} disabled={loading} className="btn btn-primary bc-primary bc-run tap"
+                    aria-busy={loading ? 'true' : undefined}>
                     {loading
                       ? 'Generating…'
-                      : `🤿 ${STUDY_MODES.find(m => m.id === mode)?.label || 'Overview'} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`
+                      : <><Icon name="Waves" aria-hidden="true" /><span>{`${STUDY_MODES.find(m => m.id === mode)?.label || 'Overview'} — ${selectedBook.title.slice(0, 28)}${selectedBook.title.length > 28 ? '…' : ''}`}</span></>
                     }
                   </button>
                 )}
@@ -1494,27 +1475,25 @@ export default function BookClub() {
                 )}
 
                 {result && (
-                  <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 22px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ fontSize: 9, color: 'var(--accent-text)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>
-                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>{isGuide ? <><Icon name="BookOpen" size={12} /> Study Guide · {LENSES.find(l => l.id === guideLens)?.label} lens</> : <><Icon name={STUDY_MODES.find(m => m.id === mode)?.icon} size={12} /> {STUDY_MODES.find(m => m.id === mode)?.label}</>}</span>
+                  <div className="bc-result">
+                    <div className="bc-result-head">
+                      <div className="bc-result-label">
+                        <div className="bc-result-kicker">
+                          {isGuide ? <><Icon name="BookOpen" size={12} aria-hidden="true" /> Study Guide · {LENSES.find(l => l.id === guideLens)?.label} lens</> : <><Icon name={STUDY_MODES.find(m => m.id === mode)?.icon} size={12} aria-hidden="true" /> {STUDY_MODES.find(m => m.id === mode)?.label}</>}
                         </div>
                         <ProviderTag provider={resultProvider} />
                       </div>
-                      <div style={{ display: 'flex', gap: 6 }}>
-                        <button onClick={() => { createCard({ front: `${selectedBook.title} — ${STUDY_MODES.find(m => m.id === mode)?.label}`, back: result.slice(0, 400), source: selectedBook.title, module: 'books', topic: selectedBook.title }); setVaulted(true); }}
-                          style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: vaulted ? withAlpha(T.accent, 12) : 'var(--bg)', border: `1px solid ${vaulted ? T.accent : 'var(--border)'}`, borderRadius: 6, color: vaulted ? 'var(--accent-text)' : 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                      <div className="bc-result-tools">
+                        <button type="button" onClick={() => { createCard({ front: `${selectedBook.title} — ${STUDY_MODES.find(m => m.id === mode)?.label}`, back: result.slice(0, 400), source: selectedBook.title, module: 'books', topic: selectedBook.title }); setVaulted(true); }}
+                          className="bc-btn bc-mini tap" data-quiet={!vaulted || undefined} aria-pressed={vaulted}>
                           {vaulted ? '✓ In Vault' : '+ Vault'}
                         </button>
                         <SaveToNotes title={`${selectedBook.title} — ${isGuide ? 'Study Guide' : STUDY_MODES.find(m => m.id === mode)?.label}`} content={result} source={{ title: selectedBook.title, tier: 'reported' }} label="Notes" />
-                        <button onClick={copyGuide}
-                          style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: copied ? withAlpha(T.accent, 12) : 'var(--bg)', border: `1px solid ${copied ? T.accent : 'var(--border)'}`, borderRadius: 6, color: copied ? 'var(--accent-text)' : 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                        <button type="button" onClick={copyGuide} className="bc-btn bc-mini tap" aria-pressed={copied}>
                           {copied ? '✓ Copied' : 'Copy'}
                         </button>
                         {isGuide && (
-                          <button onClick={downloadGuide}
-                            style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>
+                          <button type="button" onClick={downloadGuide} className="bc-btn bc-mini tap">
                             ↓ .md
                           </button>
                         )}
@@ -1523,9 +1502,13 @@ export default function BookClub() {
                     {isGuide
                       ? <ArtifactSections text={result} color="var(--accent-text)" isMobile={isMobile} isDesktop={isDesktop} />
                       : <MD text={result} color="var(--accent-text)" />}
+                    {/* On-demand mental-model reframe of the guide shown — nothing runs until tapped. */}
                     {isGuide && !loading && (
-                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
-                        <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>Visualize the frameworks</div>
+                      <MentalModelChip title={selectedBook.title} body={result} />
+                    )}
+                    {isGuide && !loading && (
+                      <div className="bc-extra">
+                        <div className="bc-eyebrow">Visualize the frameworks</div>
                         <DiagramBlock
                           // Keyed to the guide's generation stamp so it REMOUNTS
                           // when the guide is regenerated — otherwise the previous
@@ -1544,41 +1527,37 @@ export default function BookClub() {
                       </div>
                     )}
                     {isGuide && !loading && readNext.length > 0 && (
-                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
-                        <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700, marginBottom: 10 }}>Read next · networked</div>
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
-                          {readNext.map((r, i) => {
-                            const relTone = r.relation === 'contradicts' ? 'var(--tier-inferred)' : r.relation === 'precedes' ? 'var(--tier-reported)' : 'var(--tier-verified)';
-                            return (
-                              <div key={i} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                                  <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: relTone, border: `1px solid ${relTone}`, borderRadius: 4, padding: '1px 6px' }}>{r.relation}</span>
-                                  {r.owned && <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>✓ in library</span>}
-                                </div>
-                                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{r.title}</div>
-                                {r.author && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{r.author}</div>}
-                                {r.reason && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)' }}>{r.reason}</div>}
-                                {!r.owned && (
-                                  <button onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author || 'Unknown', type: 'other' }])}
-                                    style={{ alignSelf: 'flex-start', marginTop: 2, display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}>
-                                    <Icon name="Plus" size={13} /> Add to library
-                                  </button>
-                                )}
+                      <div className="bc-extra">
+                        <div className="bc-eyebrow" data-gap>Read next · networked</div>
+                        <div className="bc-recs-grid">
+                          {readNext.map((r, i) => (
+                            <div key={i} className="bc-rec" data-tight>
+                              <div className="bc-rec-top">
+                                <span className="bc-rec-rel" data-rel={r.relation}>{r.relation}</span>
+                                {r.owned && <span className="bc-rec-owned">✓ in library</span>}
                               </div>
-                            );
-                          })}
+                              <div className="bc-rec-title">{r.title}</div>
+                              {r.author && <div className="bc-rec-author">{r.author}</div>}
+                              {r.reason && <div className="bc-rec-reason">{r.reason}</div>}
+                              {!r.owned && (
+                                <button type="button" onClick={() => persist([...books, { id: uid(), title: r.title, author: r.author || 'Unknown', type: 'other' }])}
+                                  className="bc-addlink tap" data-bottom>
+                                  <Icon name="Plus" size={13} aria-hidden="true" /> Add to library
+                                </button>
+                              )}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
                     {isGuide && !loading && (
-                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center', marginTop: 16, paddingTop: 14, borderTop: '1px solid var(--bord2)' }}>
+                      <div className="bc-extra" data-row>
                         {guideCards > 0 && (
-                          <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent-text)', background: withAlpha(T.accent, 10), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 20, padding: '4px 12px' }}>
+                          <span className="bc-cards-pill">
                             ✓ {guideCards} self-quiz card{guideCards === 1 ? '' : 's'} added to Vault
                           </span>
                         )}
-                        <button onClick={sendGuideToStudio}
-                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: `1px solid ${T.accent}`, background: 'transparent', color: 'var(--accent-text)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                        <button type="button" onClick={sendGuideToStudio} className="bc-btn bc-studio tap" data-accent>
                           Send to Studio ↗
                         </button>
                       </div>

@@ -1,4 +1,3 @@
-import { T } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveNotes, uid } from '../utils.js';
@@ -9,13 +8,11 @@ import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
 import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
+import Icon from './shared/Icon.jsx';
+import './ted-hub.css';
 
 // Non-book surfaces accept a transcript/notes the model can't reach.
 const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
-
-const ACCENT        = T.accent;
-const ACCENT_BG     = 'rgba(217,164,65,0.07)';
-const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
 
 const TOPIC_FILTERS = [
   { id: 'all',        label: 'All Talks' },
@@ -130,11 +127,10 @@ const CURATED_TALKS = [
 ];
 
 function RelevanceDot({ score }) {
-  const color = score >= 9 ? T.accent : score >= 7 ? T.accent : T.accent;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-      <div style={{ width: 7, height: 7, borderRadius: '50%', background: color }} />
-      <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color }}>{score}/10</span>
+    <div className="ted-score">
+      <div className="ted-score-dot" />
+      <span className="ted-score-val">{score}/10</span>
     </div>
   );
 }
@@ -202,56 +198,53 @@ ${TIER_INSTRUCTION}`;
   };
 
   return (
-    <div style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
-      <div style={{ padding: '14px 16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8, gap: 10 }}>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.3, marginBottom: 4 }}>{talk.title}</div>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)' }}>{talk.speaker} · {talk.year} · {talk.duration}</div>
+    <div className="ted-card" data-expanded={expanded || undefined}>
+      <div className="ted-card-body">
+        <div className="ted-card-top">
+          <div className="ted-card-main">
+            <div className="ted-card-title">{talk.title}</div>
+            <div className="ted-card-meta">{talk.speaker} · {talk.year} · {talk.duration}</div>
           </div>
           <RelevanceDot score={talk.relevance} />
         </div>
 
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.5, marginBottom: 10 }}>{talk.relevanceNote}</div>
+        <div className="ted-note">{talk.relevanceNote}</div>
 
-        <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginBottom: 10 }}>
+        <div className="ted-tags">
           {talk.tags.map(t => (
-            <span key={t} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 4, color: 'var(--accent-text)', fontWeight: 600 }}>{t}</span>
+            <span key={t} className="ted-tag">{t}</span>
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <a href={talk.url} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 7, color: 'var(--accent-text)', fontWeight: 700, textDecoration: 'none', flexShrink: 0 }}>
-            ▶ Watch
+        <div className="ted-actions">
+          <a href={talk.url} target="_blank" rel="noopener noreferrer" className="ted-watch tap">
+            <Icon name="Play" aria-hidden="true" /> Watch
           </a>
-          <button onClick={analyze}
-            style={{ fontSize: 'var(--fs-base)', padding: '6px 12px', background: expanded && analysis ? 'var(--surf2)' : 'var(--bg)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-b)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flex: 1, textAlign: 'left' }}>
+          <button type="button" onClick={analyze} className="ted-analyze tap" data-open={(expanded && analysis) || undefined} aria-expanded={expanded}>
             {loading ? 'Analyzing…' : analysis ? (expanded ? 'Hide analysis' : 'Show analysis') : 'Analyze talk'}
           </button>
         </div>
       </div>
 
       {expanded && (
-        <div data-status={status} style={{ borderTop: `1px solid ${ACCENT_BORDER}`, padding: '14px 16px', background: ACCENT_BG }}>
+        <div data-status={status} className="ted-brief">
           {status === 'loading' ? (
             <SectionSkeleton rows={4} lead label="talk brief" />
           ) : status === 'error' ? (
             <SectionError label="the talk brief" onRetry={runAnalysis} detail={err} />
           ) : (
             <>
-              <div style={{ marginBottom: 12 }}>
+              <div className="ted-ground">
                 <SourceGrounding value={userSrc} onSave={(v) => { setUserSrc(v); runAnalysis(); }} onClear={() => setUserSrc(null)} types={SRC_TYPES}
                   label="I have the transcript / notes — paste to ground this" />
               </div>
               <MD text={analysis} color="var(--accent-text)" />
               {analysis && !vaulted && (
-                <button onClick={saveToVault}
-                  style={{ marginTop: 12, fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--text-c)', cursor: 'pointer', fontFamily: 'inherit' }}>
-                  🏛 Save to Vault
+                <button type="button" onClick={saveToVault} className="ted-vault tap">
+                  <Icon name="Landmark" aria-hidden="true" /> Save to Vault
                 </button>
               )}
-              {vaulted && <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--accent-text)' }}>✓ Saved to Vault</div>}
+              {vaulted && <div className="ted-vaulted"><Icon name="Check" aria-hidden="true" /> Saved to Vault</div>}
             </>
           )}
         </div>
@@ -261,7 +254,7 @@ ${TIER_INSTRUCTION}`;
 }
 
 export default function TEDHub() {
-  const { isMobile, notes, setNotes, setActiveModule, setChatPrefill, setChatOpen } = useApp();
+  const { notes, setNotes, setActiveModule, setChatPrefill, setChatOpen } = useApp();
   const [topicFilter, setTopicFilter] = useState('all');
   const [sortBy,      setSortBy]      = useState('relevance');
   const [search,      setSearch]      = useState('');
@@ -278,50 +271,45 @@ export default function TEDHub() {
     .filter(t => !search || t.title.toLowerCase().includes(search.toLowerCase()) || t.speaker.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => sortBy === 'relevance' ? b.relevance - a.relevance : b.year - a.year);
 
-  const pad = isMobile ? '14px' : '24px';
-
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 60 }}>
+    <div className="ted">
 
       {/* Header */}
-      <div style={{ padding: `20px ${pad} 16px`, borderBottom: '1px solid var(--bord2)' }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--accent-text)', textTransform: 'uppercase', marginBottom: 4 }}>Thought Leadership</div>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>
-          TED Intelligence Hub
-        </div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>
+      <div className="ted-head">
+        <div className="ted-eyebrow">Thought Leadership</div>
+        <div className="ted-title">TED Intelligence Hub</div>
+        <div className="ted-sub">
           {CURATED_TALKS.length} curated talks · scored for CB's interests · AI analysis on demand
         </div>
       </div>
 
       {/* Controls */}
-      <div style={{ padding: `14px ${pad}`, borderBottom: '1px solid var(--bord2)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 10 }}>
+      <div className="ted-controls">
         <input
           value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search talks or speakers…"
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }}
+          placeholder="Search talks or speakers…" aria-label="Search talks or speakers"
+          className="ted-input"
         />
-        <select value={sortBy} onChange={e => setSortBy(e.target.value)}
-          style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 'var(--fs-base)', color: 'var(--text-b)', fontFamily: 'inherit', outline: 'none', cursor: 'pointer' }}>
+        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="ted-select" aria-label="Sort talks">
           <option value="relevance">Sort: Relevance</option>
           <option value="year">Sort: Newest</option>
         </select>
       </div>
 
       {/* Topic filters */}
-      <div style={{ padding: `10px ${pad}`, display: 'flex', gap: 6, overflowX: 'auto', scrollbarWidth: 'none', borderBottom: '1px solid var(--bord2)' }}>
+      <div className="ted-filters" data-scroll-x>
         {TOPIC_FILTERS.map(f => (
-          <div key={f.id} onClick={() => setTopicFilter(f.id)}
-            style={{ flexShrink: 0, padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, cursor: 'pointer', transition: 'all 0.12s', border: `1px solid ${topicFilter === f.id ? ACCENT_BORDER : 'var(--border)'}`, background: topicFilter === f.id ? ACCENT_BG : 'transparent', color: topicFilter === f.id ? 'var(--accent-text)' : 'var(--subtle)' }}>
+          <button type="button" key={f.id} onClick={() => setTopicFilter(f.id)}
+            className="chip ted-filter tap" aria-pressed={topicFilter === f.id}>
             {f.label}
-          </div>
+          </button>
         ))}
       </div>
 
       {/* Talks grid */}
-      <div style={{ padding: `16px ${pad}`, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: 12 }}>
+      <div className="ted-grid">
         {filtered.length === 0 ? (
-          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: 40, color: 'var(--dim)', fontSize: 'var(--fs-base)'}}>
+          <div className="ted-none">
             No talks match your filter.
           </div>
         ) : (
@@ -332,17 +320,17 @@ export default function TEDHub() {
       </div>
 
       {/* Add your own */}
-      <div style={{ margin: `0 ${pad} 20px`, padding: '16px 20px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 12, textAlign: 'center' }}>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', marginBottom: 6 }}>Want to analyze a specific TED talk or YouTube talk?</div>
-        <div onClick={() => {
+      <div className="ted-own">
+        <div className="ted-own-q">Want to analyze a specific TED talk or YouTube talk?</div>
+        <button type="button" className="ted-link tap" onClick={() => {
           setChatPrefill('Analyze this TED talk for me: ');
           setChatOpen(true);
-        }} style={{ fontSize: 'var(--fs-base)', color: 'var(--accent-text)', fontWeight: 700, cursor: 'pointer' }}>
+        }}>
           Open AI Chat to analyze any talk URL →
-        </div>
-        <div onClick={() => setActiveModule('podcast')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', fontWeight: 600, cursor: 'pointer', marginTop: 4 }}>
+        </button>
+        <button type="button" className="ted-link tap" data-quiet onClick={() => setActiveModule('podcast')}>
           Or go to Podcast Hub to paste a URL
-        </div>
+        </button>
       </div>
     </div>
   );
