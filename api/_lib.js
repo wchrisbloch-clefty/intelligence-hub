@@ -83,55 +83,42 @@ export function requireAuth(req, res) {
   return false;
 }
 
-// ─── UPSTASH REDIS (REST) ───────────────────────────────────────────────────
-// Supports both the Upstash-native and Vercel-KV env var names.
-function redisConfig() {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  return url && token ? { url, token } : null;
+// ─── SUPABASE KV ────────────────────────────────────────────────────────────
+// Batch Z / Order B: Supabase is the single store. The PostgREST client lives in
+// ./_kv.js (runtime-neutral: plain fetch, no Node APIs) so the Supabase Edge
+// Functions run the IDENTICAL code against the same table.
+//
+// The service-role key is read HERE and nowhere else in api/. It never reaches
+// the client; there is no VITE_ variant (grep -rn "VITE_" src api → nothing).
+import { createKv, kvRoundTrip } from './_kv.js';
+
+function supabaseConfig() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  return url && key ? { url, key } : null;
 }
 
-export function storageConfigured() { return !!redisConfig(); }
+// Env presence ONLY. Present credentials are not a working store — that is
+// what storageRoundTrip() (used by /api/health) exists to prove.
+export function storageCredentialsPresent() { return !!supabaseConfig(); }
 
-async function redisCommand(command) {
-  const cfg = redisConfig();
-  if (!cfg) throw new Error('Storage not configured');
-  const r = await fetch(cfg.url, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${cfg.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!r.ok) throw new Error(`Redis ${r.status}`);
-  const data = await r.json();
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
-
-export const store = {
-  async get(key) {
-    const v = await redisCommand(['GET', key]);
-    return v == null ? null : v;
-  },
-  async set(key, value) {
-    return redisCommand(['SET', key, value]);
-  },
-  async del(key) {
-    return redisCommand(['DEL', key]);
-  },
-  async list(prefix) {
-    const match = `${prefix || ''}*`;
-    let cursor = '0';
-    const keys = [];
-    do {
-      const [next, batch] = await redisCommand(['SCAN', cursor, 'MATCH', match, 'COUNT', '500']);
-      cursor = next;
-      if (Array.isArray(batch)) keys.push(...batch);
-    } while (cursor !== '0');
-    return keys;
-  },
-  async ping() {
-    try { return (await redisCommand(['PING'])) === 'PONG' ? 'ok' : 'unexpected'; }
-    catch (e) { return `error: ${e.message}`; }
-  },
+const lazyKv = () => {
+  const cfg = supabaseConfig();
+  if (!cfg) throw new Error('Storage credentials not present');
+  return createKv(cfg);
 };
+
+// Same shape the Redis-backed store had: get/set/del/list.
+export const store = {
+  get:  (key) => lazyKv().get(key),
+  set:  (key, value) => lazyKv().set(key, value),
+  del:  (key) => lazyKv().del(key),
+  list: (prefix) => lazyKv().list(prefix),
+};
+
+// → { credentialsPresent, roundTripOk, durationMs, detail }
+export async function storageRoundTrip() {
+  const cfg = supabaseConfig();
+  if (!cfg) return { credentialsPresent: false, roundTripOk: false, durationMs: 0, detail: 'SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set' };
+  return { credentialsPresent: true, ...(await kvRoundTrip(createKv(cfg))) };
+}

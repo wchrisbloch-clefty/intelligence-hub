@@ -7,7 +7,7 @@
 // machine bridge. It fails CLOSED: with no MCP_TOKEN set the bridge is off, and
 // it never reads or returns ACCESS_CODE, provider keys, or Upstash credentials.
 import crypto from 'node:crypto';
-import { store, storageConfigured } from './_lib.js';
+import { store, storageCredentialsPresent } from './_lib.js';
 
 export const KEYS = {
   GRAPH: 'aether_graph_v1',
@@ -226,7 +226,7 @@ const TOOL_MAP = Object.fromEntries(TOOLS.map((t) => [t.name, t]));
 export async function callTool(name, args) {
   const tool = TOOL_MAP[name];
   if (!tool) throw new Error(`Unknown tool: ${name}`);
-  if (!storageConfigured()) throw new Error('Storage is not configured.');
+  if (!storageCredentialsPresent()) throw new Error('Storage is not configured.');
   return tool.handler(args || {});
 }
 

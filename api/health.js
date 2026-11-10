@@ -1,5 +1,5 @@
 // api/health.js — quick diagnostics. Auth-gated like every other route.
-// → { ok, storage, ai, providers:{ Groq:{key,envVar,test,status,detail}, … },
+// → { ok, storage:{credentialsPresent,roundTripOk,durationMs,detail}, ai, providers:{ Groq:{key,envVar,test,status,detail}, … },
 //     accessCode }
 // Each provider reports its exact env var name plus a LIVE minimal test call, so
 // three failure modes are all visible in one look:
@@ -9,7 +9,7 @@
 //   key 'configured', test 'failed', status 401/402/429 → present but broken
 //                                    (unfunded / invalid / rate-limited)
 // Pass ?deep=0 to skip the live calls and report key presence only (fast).
-import { requireAuth, store, storageConfigured } from './_lib.js';
+import { requireAuth, storageRoundTrip } from './_lib.js';
 import { providerKeyStatus, testAllProviders, JOB_ORDER } from './_providers.js';
 
 export const config = { maxDuration: 30 };
@@ -20,11 +20,16 @@ export default async function handler(req, res) {
   let deep = true;
   try { deep = new URL(req.url, 'http://x').searchParams.get('deep') !== '0'; } catch {}
 
-  const storage = storageConfigured() ? await store.ping() : 'not_configured';
-  const providers = deep ? await testAllProviders() : providerKeyStatus();
+  // Storage is a REAL round trip (write → read → compare → delete), never env
+  // presence. Runs in parallel with the provider probes.
+  const [storage, providers] = await Promise.all([
+    storageRoundTrip(),
+    deep ? testAllProviders() : providerKeyStatus(),
+  ]);
   const claude = providers.Claude;
   return res.status(200).json({
     ok: true,
+    // { credentialsPresent, roundTripOk, durationMs, detail }
     storage,
     // back-compat: a string summary of Claude's status
     ai: typeof claude === 'string' ? claude : `${claude?.key || 'unknown'}${claude?.test ? `/${claude.test}` : ''}${claude?.status ? ` (${claude.status})` : ''}`,

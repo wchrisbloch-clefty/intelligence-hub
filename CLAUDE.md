@@ -43,16 +43,21 @@ deployed on Vercel. Single user (CB).
   guide had exported byte-identical to the pre-#29 one because nothing
   invalidated. **Bump the type's number whenever its generation prompt changes.**
   Academy packs are static data and carry their own `version`/`lastVerified`.
-- **Persistence is Upstash Redis via `/api/storage`**, keys prefixed `aether_*`.
-  **Not Supabase.** `api/_lib.js` reads creds as
-  `process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL` (same
-  fallback for the token) — mirror that anywhere credentials are read.
+- **Persistence is Supabase `kv` via `/api/storage`** (Batch Z / Order B), keys
+  prefixed `aether_*`. **Upstash is retired — do not re-add it.** One table,
+  `public.kv (key, value, updated_at)`, RLS on with NO policies (service role only),
+  `text_pattern_ops` index for prefix scans. The PostgREST client is
+  `api/_kv.js` (runtime-neutral fetch — Supabase Edge Functions import the same
+  file); `api/_lib.js` reads `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` and is
+  the ONLY place the key is read. `storageCredentialsPresent()` is env presence
+  only; `/api/health` storage is a real write→read→compare→delete round trip
+  (`storageRoundTrip`). Never a direct Postgres connection.
 - **Auth is an `ACCESS_CODE` cookie gate.** Server routes sit behind
   `requireAuth` (`api/_lib.js`); anything calling `/api/storage` from outside the
   browser (e.g. a cron job) will 401. Scheduled functions read Upstash directly
   instead.
-- **Theme is a CSS-variable token system** in `index.html` (`:root` +
-  `[data-theme="dark"]`) plus `src/theme.js` (the `T` token bridge / `withAlpha`).
+- **Theme is a CSS-variable token system** in `src/styles/tokens.css` (`:root` +
+  `[data-theme="dark"]`; legacy names are aliases — never rename call sites) plus `src/theme.js` (the `T` token bridge / `withAlpha`).
   **No hardcoded hex** — a 405-replacement codemod (`scripts/migrate-colors.mjs`)
   removed it all. Use tokens, never raw hex.
 - **Type + space scale** live in `index.html` `:root`: `--fs-xs…--fs-3xl`
