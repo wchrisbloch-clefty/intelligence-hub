@@ -45,7 +45,7 @@ const MIN_CHAPTERS = 3;
 const isUsable = (toc) => parseTOC(toc).length >= MIN_CHAPTERS;
 // Rank retrieved candidates: a fuller chapter list wins (a reported list of 13 is
 // far more useful than a formal 3), tie broken by source trust.
-const SOURCE_RANK = { loc: 3, openlibrary: 2, web: 1 };
+const SOURCE_RANK = { loc: 3, catalog: 3, openlibrary: 2, web: 1 };   // catalog = OPAC MARC 505 (typed, like LoC)
 const pickBest = (cands) => cands
   .filter((c) => c && c.toc && isUsable(c.toc))
   .map((c) => ({ ...c, n: parseTOC(c.toc).length }))
@@ -189,7 +189,7 @@ export async function retrieveTOC({ title, author, webPass, publisher = '', deep
     attempts.push(...(server.attempts || []).map((a) => ({ ...a, via: 'ground-book' })));
     groundState = server.state || null;
     if (Array.isArray(server.toc) && server.toc.length) {
-      cands.push({ toc: server.toc.join('\n'), source: server.source === 'loc' ? 'loc' : server.source === 'openlibrary' ? 'openlibrary' : 'web', sourceLabel: server.sourceLabel || 'Catalog' });
+      cands.push({ toc: server.toc.join('\n'), source: ['loc', 'catalog', 'openlibrary'].includes(server.source) ? server.source : 'web', sourceLabel: server.sourceLabel || 'Catalog' });
     }
   } else {
     attempts.push({ source: 'ground-book (server)', unavailable: true, detail: server?.status ? `HTTP ${server.status}` : (server?.error || 'unreachable') });

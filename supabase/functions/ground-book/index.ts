@@ -5,8 +5,14 @@
 //      contents / description). Also the EXISTENCE check.
 //   2. Library of Congress — MARC 505 contents note via loc.gov fo=json. Server-side,
 //      so no CORS proxy (this retires allorigins/corsproxy for loc.gov).
-//   3. Firecrawl — the PUBLISHER's own page only (search restricted to the
-//      publisher's domain, then scrape). Retail sites are refused outright.
+//   3. Library catalogs (OPACs) — MARC 505 from public-library records that ingest
+//      OCLC copy (VuFind staff view first). loc.gov often has NO 505 for a new
+//      title while OCLC-fed OPACs carry the full one. A 505 is a TYPED field: it
+//      structurally cannot contain review blurbs or "Publisher: Scribner".
+//      1–3 run IN PARALLEL (client budget).
+//   4. Firecrawl — the PUBLISHER's own page only (search restricted to the
+//      publisher's domain, then scrape), and ONLY if 1–3 found nothing.
+//      Retail sites are refused outright.
 //
 // Returns the tri-state bookVerify.js keeps — existence and contents are DIFFERENT
 // facts, never collapsed:
@@ -103,6 +109,78 @@ async function libraryOfCongress(title: string, author: string, attempts: any[])
   return null;
 }
 
+// ── Library catalogs: MARC 505 from OPAC staff views ─────────────────────────
+// Discovery: a web search for the record's own furniture ("Staff View" only
+// appears on catalog record pages) surfaces VuFind / Aspen /Record/<id> URLs.
+// Each record is scraped at /Record/<id>/Details (VuFind's MARC staff view) and
+// the 505 row parsed. A record must BE this book: its 245 title must START with
+// the requested title (a "Summary of …" record does not) and the author's
+// surname must appear in it. Tier: reported (a catalog record, not primary text).
+const RECORD_RE = /^(https?:\/\/[^/]+)\/Record\/([^/?#]+)/i;
+const BACK_MATTER = /^(acknowledg|notes?$|index$|bibliograph|references$|sources$|about the author|further reading|credits$)/i;
+const norm = (s: string) => clean(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+export function marcRows(md: string, tag: string): string[] {
+  return String(md || '').split('\n').filter((l) => new RegExp(`^\\|\\s*${tag}\\s*\\|`).test(l));
+}
+export function subfields(row: string): { code: string; value: string }[] {
+  const re = /\*\*\\?\|([a-z0-9])\*\*/g; const hits: { code: string; at: number; end: number }[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(row))) hits.push({ code: m[1], at: m.index, end: m.index + m[0].length });
+  return hits.map((h, i) => ({ code: h.code, value: row.slice(h.end, i + 1 < hits.length ? hits[i + 1].at : row.length)
+    .replace(/<br\s*\/?>/gi, ' ').replace(/\s*\|\s*$/, '').replace(/\\/g, '').trim() }));
+}
+export function parse505(md: string): { toc: string[]; raw: string } {
+  const rows = marcRows(md, '505');
+  if (!rows.length) return { toc: [], raw: '' };
+  const subs = rows.flatMap(subfields);
+  const raw = subs.filter((x) => x.code === 'a' || x.code === 't').map((x) => x.value).join(' -- ');
+  // Enhanced 505 (|t per title) vs basic 505 (one |a joined with " -- ").
+  const parts = subs.some((x) => x.code === 't') ? subs.filter((x) => x.code === 't').map((x) => x.value)
+    : subs.filter((x) => x.code === 'a').flatMap((x) => x.value.split(/\s+--\s+/));
+  const toc = parts.map((x) => clean(x).replace(/\s*[/.;:,-]+\s*$/, '').trim()).filter((x) => x && !BACK_MATTER.test(x)).slice(0, 60);
+  return { toc, raw };
+}
+export function recordMatches(md: string, title: string, author: string): boolean {
+  const t245 = norm(subfields(marcRows(md, '245')[0] || '').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' '));
+  if (!t245 || !t245.startsWith(norm(title))) return false;
+  const surname = norm(author).split(' ').filter(Boolean).pop();
+  if (!surname) return true;
+  return norm([...marcRows(md, '100'), ...marcRows(md, '245'), ...marcRows(md, '700')].join(' ')).includes(surname);
+}
+async function libraryCatalogs(title: string, author: string, attempts: any[]) {
+  const SRC = 'Library catalogs (MARC 505)';
+  const key = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!key) { attempts.push({ source: SRC, unavailable: true, detail: 'FIRECRAWL_API_KEY not set' }); return null; }
+  const fc = (path: string, body: unknown, ms: number) => getJson(`https://api.firecrawl.dev/v2/${path}`, {
+    method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, ms);
+  try {
+    const queries = [`"${title}" ${author} "Staff View"`, `"${title}" ${author} "Table of Contents" library catalog`];
+    const found = await Promise.allSettled(queries.map((q) => fc('search', { query: q, limit: 8 }, 20000)));
+    const records = new Map<string, string>();
+    for (const f of found) if (f.status === 'fulfilled') for (const x of (f.value.data?.web || f.value.data || [])) {
+      const mm = RECORD_RE.exec(String(x?.url || ''));
+      if (!mm || RETAIL.test(new URL(mm[1]).hostname)) continue;
+      const id = `${mm[1]}/Record/${mm[2]}`;
+      if (!records.has(id)) records.set(id, `${id}/Details`);
+    }
+    const urls = [...records.values()].slice(0, 4);
+    if (!urls.length) { attempts.push({ source: SRC, detail: 'no catalog records found by search', results: 0 }); return null; }
+    const scraped = await Promise.allSettled(urls.map((url) => fc('scrape', { url, formats: ['markdown'], onlyMainContent: true }, 30000).then((r) => ({ url, md: String(r.data?.markdown || '') }))));
+    let best: any = null; const seen: string[] = [];
+    for (const r of scraped) {
+      if (r.status !== 'fulfilled') { seen.push('scrape failed'); continue; }
+      const { url, md } = r.value; const host = new URL(url).hostname;
+      if (!marcRows(md, '505').length) { seen.push(`${host}: no 505`); continue; }
+      if (!recordMatches(md, title, author)) { seen.push(`${host}: 245/100 is a different book`); continue; }
+      const { toc, raw } = parse505(md);
+      seen.push(`${host}: 505 with ${toc.length} entries`);
+      if (toc.length >= MIN && (!best || toc.length > best.toc.length)) best = { toc, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url };
+    }
+    attempts.push({ source: SRC, detail: `${urls.length} record(s): ${seen.join('; ')}`, results: best ? 1 : 0 });
+    return best;
+  } catch (e) { attempts.push({ source: SRC, detail: 'search', error: String((e as Error).message || e) }); return null; }
+}
+
 // Every edition's publisher, not just Open Library's first one — K2 live run
 // picked "Allen & Unwin Aotearoa NZ" for The Way of Excellence (US: HarperOne,
 // UK: Kings Road). Up to 2 distinct known publisher domains are tried, in order.
@@ -196,7 +274,7 @@ Deno.serve(async (req: Request) => {
   // key was unset must not shadow a real lookup once CB adds it. Hits are kept
   // forever; misses expire after MISS_TTL_MS so a newly-catalogued book resolves.
   const fc = Deno.env.get('FIRECRAWL_API_KEY') ? 'fc1' : 'fc0';
-  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}`;
+  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v2`;   // v2 = catalog pass added: older misses must not shadow it
   const store = kv();
   if (!body.refresh) {
     try {
@@ -212,15 +290,19 @@ Deno.serve(async (req: Request) => {
   if (!quota.ok) return withCors(json(quota.status!, quota.body));
 
   const attempts: any[] = [];
-  const ol = await openLibrary(title, author, attempts);
-  const loc = await libraryOfCongress(title, author, attempts);
+  // Structured sources first, in parallel: Open Library, LoC 505, OPAC 505.
+  const a1: any[] = [], a2: any[] = [], a3: any[] = [];
+  const [ol, loc, cat] = await Promise.all([openLibrary(title, author, a1), libraryOfCongress(title, author, a2), libraryCatalogs(title, author, a3)]);
+  attempts.push(...a1, ...a2, ...a3);
   const publishers = [rawPublisher, ...(ol.publishers || [])].filter(Boolean);
-  const cands = [ol.best, loc].filter(Boolean) as any[];
+  const cands = [ol.best, loc, cat].filter(Boolean) as any[];
   if (!cands.some((c) => c.toc.length >= MIN)) { const fc = await firecrawlPublisher(title, author, publishers, attempts); if (fc) cands.push(fc); }
-  const best = cands.sort((a, b) => b.toc.length - a.toc.length)[0] || null;
-  const exists = ol.exists || !!loc || !!body.catalogVerified;
+  // A typed MARC 505 (catalog / LoC) beats a longer HTML-scraped list.
+  const RANK: Record<string, number> = { catalog: 3, loc: 3, openlibrary: 2, publisher: 1 };
+  const best = cands.sort((a, b) => (RANK[b.source] || 0) - (RANK[a.source] || 0) || b.toc.length - a.toc.length)[0] || null;
+  const exists = ol.exists || !!loc || !!cat || !!body.catalogVerified;
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
-  const out = { state, toc: best?.toc || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null,
+  const out = { state, toc: best?.toc || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null, raw505: best?.raw505 || null,
     tier: best ? 'reported' : 'inferred', record: ol.record, attempts, at: new Date().toISOString() };
   // Cache EVERY result, hit or miss — the same book never spends twice (a miss for
   // 7 days). { refresh: true } re-tries deliberately and still counts against the cap.

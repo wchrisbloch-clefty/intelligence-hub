@@ -1,6 +1,6 @@
 // src/lib/groundBook.js — client for the `ground-book` Supabase Edge Function
 // (Batch Z / Order E3). Server-side Open Library + Library of Congress (MARC 505)
-// + Firecrawl-on-the-publisher's-page, so the browser no longer needs the
+// + public-library catalogs (OPAC MARC 505) + Firecrawl-on-the-publisher's-page, so the browser no longer needs the
 // allorigins/corsproxy chain for loc.gov.
 //
 // The project URL and PUBLISHABLE (anon) key are public by design — they grant
@@ -12,7 +12,7 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // → { state:'verified+contents'|'verified-exists-only'|'unverified', toc:[...]|null,
 //     source, sourceLabel, tier, record, attempts } — or null if the function is
 //     unreachable (the caller logs that as an `unavailable` attempt and carries on).
-export async function groundBook({ title, author = '', publisher = '', catalogVerified = false, refresh = false }, timeoutMs = 60000) {
+export async function groundBook({ title, author = '', publisher = '', catalogVerified = false, refresh = false }, timeoutMs = 90000) {   // OL + LoC + OPAC catalogs run in parallel; publisher pass only on a miss
   try {
     const r = await fetch(`${SUPABASE_URL}/functions/v1/ground-book`, {
       method: 'POST',
