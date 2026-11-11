@@ -28,7 +28,7 @@ const PUBLISHER_DOMAINS: Record<string, string> = {
   'harpercollins': 'harpercollins.com', 'harper': 'harpercollins.com', 'hachette': 'hachettebookgroup.com',
   'little, brown': 'hachettebookgroup.com', 'macmillan': 'us.macmillan.com', "st. martin": 'us.macmillan.com',
   'wiley': 'wiley.com', 'hay house': 'hayhouse.com', 'harvard business': 'store.hbr.org',
-  'kings road': 'kingsroadpublishing.com', 'allen & unwin': 'allenandunwin.com', 'bonnier': 'bonnierbooks.co.uk', 'w. w. norton': 'wwnorton.com', 'norton': 'wwnorton.com',
+  'harperone': 'harpercollins.com', 'kings road': 'kingsroadpublishing.com', 'allen & unwin': 'allenandunwin.com', 'bonnier': 'bonnierbooks.co.uk', 'w. w. norton': 'wwnorton.com', 'norton': 'wwnorton.com',
 };
 const clean = (s: unknown) => String(s ?? '').trim();
 function parseTOC(text: string): string[] {
@@ -37,6 +37,30 @@ function parseTOC(text: string): string[] {
     .replace(/^\s*(chapter|ch\.?|part|section)\s+[\divxlc]+\s*[:.)\-–—]?\s*/i, '')
     .replace(/^\s*\d+\s*[.):\-–—]\s*/, '').replace(/\[([^\]]+)\]\([^)]*\)/g, '$1').trim())
     .filter((l) => l && l.length <= 140).slice(0, 40);
+}
+// A scraped page is NOT a chapter list just because the word "contents" appears on
+// it. K2 live run: Chip War's S&S page returned review blurbs + product details
+// ("Publisher: Scribner", "Raves and Reviews", an author photo) as 25 "chapters",
+// stamped verified+contents. So: (1) require a real CONTENTS heading line, (2) cut
+// at the next heading, (3) reject page furniture, (4) refuse the whole block if
+// much of it was furniture — a near-miss is a miss, never fake grounding.
+const TOC_HEADING = /^\s*(?:#{1,6}\s*)?(?:\*\*|__)?\s*(?:table\s+of\s+)?contents\s*(?:\*\*|__)?\s*:?\s*$/im;
+const FURNITURE = /!\[|\*\*|https?:|isbn|publisher|pages?:|length:|on sale|price|format:|reviews?|raves?|praise|bestseller|award|winner|shortlisted|best book|photograph|product details|browse|related|share|buy|add to cart|read more|about the author|^—|\s>\s|^_.*_$/i;
+export function extractTOC(md: string): { toc: string[]; rejected: number } {
+  const m = TOC_HEADING.exec(md || '');
+  if (!m) return { toc: [], rejected: 0 };
+  const after = md.slice(m.index + m[0].length).split('\n');
+  const block: string[] = [];
+  for (const line of after) {
+    if (/^\s*#{1,6}\s+\S/.test(line) && block.some((l) => l.trim())) break;   // next section
+    block.push(line);
+    if (block.length >= 80) break;
+  }
+  const cand = parseTOC(block.join('\n'));
+  const keep = cand.filter((l) => !FURNITURE.test(l) && l.split(/\s+/).length <= 12 && !/[.!?]["”]?$/.test(l));
+  const rejected = cand.length - keep.length;
+  if (cand.length && rejected / cand.length > 0.25) return { toc: [], rejected };
+  return { toc: keep, rejected };
 }
 async function getJson(url: string, init: RequestInit = {}, ms = 12000) {
   const r = await fetch(url, { ...init, signal: AbortSignal.timeout(ms) });
@@ -61,13 +85,13 @@ async function openLibrary(title: string, author: string, attempts: any[]) {
     }
     attempts.push({ source: 'Open Library', detail: `${docs.length} work(s), ${checked} edition(s)`, results: best ? 1 : 0 });
     const top = docs[0];
-    return { best, exists: docs.length > 0, record: top ? { title: top.title, author: top.author_name?.[0], year: top.first_publish_year, publisher: top.publisher?.[0] } : null };
-  } catch (e) { attempts.push({ source: 'Open Library', detail: 'search', error: String((e as Error).message || e) }); return { best: null, exists: false, record: null }; }
+    return { best, exists: docs.length > 0, publishers: docs.flatMap((d: any) => d.publisher || []) as string[], record: top ? { title: top.title, author: top.author_name?.[0], year: top.first_publish_year, publisher: top.publisher?.[0] } : null };
+  } catch (e) { attempts.push({ source: 'Open Library', detail: 'search', error: String((e as Error).message || e) }); return { best: null, exists: false, publishers: [] as string[], record: null }; }
 }
 
 async function libraryOfCongress(title: string, author: string, attempts: any[]) {
   try {
-    const s = await getJson(`https://www.loc.gov/books/?q=${encodeURIComponent(`${title} ${author}`.trim())}&fo=json&c=5&at=results`);
+    const s = await getJson(`https://www.loc.gov/books/?q=${encodeURIComponent(`${title} ${author}`.trim())}&fo=json&c=5&at=results`, {}, 25000);   // 12s timed out on all 3 in the K2 live run
     const results = s.results || [];
     for (const r of results.slice(0, 3)) {
       const c = (Array.isArray(r.contents) ? r.contents : []).map(clean).filter(Boolean);
@@ -79,12 +103,27 @@ async function libraryOfCongress(title: string, author: string, attempts: any[])
   return null;
 }
 
-async function firecrawlPublisher(title: string, author: string, publisher: string, attempts: any[]) {
+// Every edition's publisher, not just Open Library's first one — K2 live run
+// picked "Allen & Unwin Aotearoa NZ" for The Way of Excellence (US: HarperOne,
+// UK: Kings Road). Up to 2 distinct known publisher domains are tried, in order.
+function publisherDomains(publishers: string[]): string[] {
+  const out: string[] = [];
+  for (const pub of publishers) {
+    const p = clean(pub).toLowerCase();
+    const d = Object.entries(PUBLISHER_DOMAINS).find(([n]) => p.includes(n))?.[1];
+    if (d && !out.includes(d)) out.push(d);
+  }
+  return out.slice(0, 2);
+}
+async function firecrawlPublisher(title: string, author: string, publishers: string[], attempts: any[]) {
   const key = Deno.env.get('FIRECRAWL_API_KEY');
   if (!key) { attempts.push({ source: 'Firecrawl (publisher page)', unavailable: true, detail: 'FIRECRAWL_API_KEY not set' }); return null; }
-  const p = clean(publisher).toLowerCase();
-  const domain = Object.entries(PUBLISHER_DOMAINS).find(([n]) => p.includes(n))?.[1];
-  if (!domain) { attempts.push({ source: 'Firecrawl (publisher page)', detail: `publisher domain unknown (${publisher || 'no publisher'}) — skipped; retail is never a fallback`, results: 0 }); return null; }
+  const domains = publisherDomains(publishers);
+  if (!domains.length) { attempts.push({ source: 'Firecrawl (publisher page)', detail: `publisher domain unknown (${publishers.slice(0, 3).join(', ') || 'no publisher'}) — skipped; retail is never a fallback`, results: 0 }); return null; }
+  for (const domain of domains) { const r = await firecrawlDomain(title, author, domain, key, attempts); if (r) return r; }
+  return null;
+}
+async function firecrawlDomain(title: string, author: string, domain: string, key: string, attempts: any[]) {
   try {
     const s = await getJson('https://api.firecrawl.dev/v2/search', {
       method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
@@ -93,17 +132,18 @@ async function firecrawlPublisher(title: string, author: string, publisher: stri
     const urls = (s.data?.web || s.data || []).map((x: any) => x.url).filter((u: string) => {
       try { const h = new URL(u).hostname; return h.endsWith(domain) && !RETAIL.test(h); } catch { return false; }
     });
+    const notes: string[] = [];
     for (const url of urls.slice(0, 2)) {
       const sc = await getJson('https://api.firecrawl.dev/v2/scrape', {
         method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: true }),
       }, 30000);
       const md: string = sc.data?.markdown || '';
-      const at = md.search(/(table of )?contents/i);
-      const lines = at >= 0 ? parseTOC(md.slice(at).split('\n').slice(1, 60).join('\n')).filter((l) => !/^(about|reviews?|praise|buy|share)/i.test(l)) : [];
+      const { toc: lines, rejected } = extractTOC(md);
       if (lines.length >= MIN) { attempts.push({ source: 'Firecrawl (publisher page)', detail: url, results: 1 }); return { toc: lines, source: 'publisher', sourceLabel: `Publisher (${domain})`, url }; }
+      if (rejected) notes.push(`${url}: contents block rejected (${rejected} non-chapter lines)`);
     }
-    attempts.push({ source: 'Firecrawl (publisher page)', detail: `${urls.length} publisher page(s) on ${domain}`, results: 0 });
+    attempts.push({ source: 'Firecrawl (publisher page)', detail: `${urls.length} publisher page(s) on ${domain}, no chapter list${notes.length ? ' — ' + notes.join('; ') : ''}`, results: 0 });
   } catch (e) { attempts.push({ source: 'Firecrawl (publisher page)', detail: domain, error: String((e as Error).message || e) }); }
   return null;
 }
@@ -174,9 +214,9 @@ Deno.serve(async (req: Request) => {
   const attempts: any[] = [];
   const ol = await openLibrary(title, author, attempts);
   const loc = await libraryOfCongress(title, author, attempts);
-  const publisher = rawPublisher || ol.record?.publisher || '';
+  const publishers = [rawPublisher, ...(ol.publishers || [])].filter(Boolean);
   const cands = [ol.best, loc].filter(Boolean) as any[];
-  if (!cands.some((c) => c.toc.length >= MIN)) { const fc = await firecrawlPublisher(title, author, publisher, attempts); if (fc) cands.push(fc); }
+  if (!cands.some((c) => c.toc.length >= MIN)) { const fc = await firecrawlPublisher(title, author, publishers, attempts); if (fc) cands.push(fc); }
   const best = cands.sort((a, b) => b.toc.length - a.toc.length)[0] || null;
   const exists = ol.exists || !!loc || !!body.catalogVerified;
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
