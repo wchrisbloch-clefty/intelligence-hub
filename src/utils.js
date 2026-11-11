@@ -1,4 +1,4 @@
-import { CB_IDENTITY, CB_LEARNING_SPINE } from './constants.js';
+import { SYSTEM_BASE, SYSTEM_LEARNING } from './constants.js';
 import { GRAPH_KEY, PROJECTS_KEY, NOTES_KEY, RESEARCH_KEY } from './constants.js';
 import { SEED_GRAPH, SEED_PROJECTS, SEED_NOTES, SEED_RESEARCH } from './seedData.js';
 import { storage } from './lib/storage.js';
@@ -227,18 +227,18 @@ export async function processFiles(files) {
 // the dynamic part (graph history + mode instructions) uncached.
 export function buildSystem(entryMode, sessionMode, context, graph) {
   const graphSummary = graph && Object.keys(graph.topics || {}).length > 0
-    ? '\n\nCB\'S LEARNING HISTORY (use this to personalize):\n' +
+    ? '\n\nREADER\'S LEARNING HISTORY (context only — never a source of examples):\n' +
       Object.values(graph.topics).slice(-10).map(t => `- ${t.title} (${t.type}): ${t.sessions} sessions, ${t.totalMin}min, confidence ${t.confidence}/10`).join('\n')
     : '';
 
   // Truth seeker uses identity-only — objective analysis, no forced connections
-  const spine = (entryMode === null && context.chatMode === 'truth') ? CB_IDENTITY : CB_LEARNING_SPINE;
+  const spine = (entryMode === null && context.chatMode === 'truth') ? SYSTEM_BASE : SYSTEM_LEARNING;
 
   if (entryMode === 'book') {
     const instructions = {
-      package: 'SESSION: FULL PACKAGE. Ask CB: (1) format recommendation — propose yours, ask if he agrees. (2) depth level. Then generate: thesis, frameworks, CB applications, cross-book connections, master expert domain knowledge, decisive recommendation.',
+      package: 'SESSION: FULL PACKAGE. Ask CB: (1) format recommendation — propose yours, ask if he agrees. (2) depth level. Then generate: thesis, frameworks, examples from the subject itself, cross-book connections, master expert domain knowledge, decisive recommendation.',
       readalong: 'SESSION: READ-ALONG. Pre-load full book structure silently. Ask where CB is. Work that section deeply. End every exchange with "watch for next" — no spoilers unless asked.',
-      reference: 'SESSION: DEEP REFERENCE. Master-expert depth on whatever CB asks. Always: definition → why it matters → CB application → cross-book link → action. Flag proactively what he might be missing.',
+      reference: 'SESSION: DEEP REFERENCE. Master-expert depth on whatever CB asks. Always: definition → why it matters → example from the subject itself → cross-book link → action. Flag proactively what he might be missing.',
       socratic: `SESSION: SOCRATIC MODE. You are the examiner, CB is the student. Ask one focused question at a time about "${context.book?.title}". Never lecture. Wait for CB's answer. Respond with: what he got right, what he missed, the correct answer, then the NEXT question. After 5 questions, scorecard: what he knows cold, what needs work. Start with: "Let's test your knowledge of ${context.book?.title}. First question:" then ask it.`,
       chat: 'SESSION: OPEN DISCUSSION. Follow CB\'s lead but stay ahead. Surface what he hasn\'t asked. Always end with recommendation or next question CB should be asking.',
     };
@@ -258,7 +258,7 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
   if (entryMode === 'topic') {
     const socraticNote = sessionMode === 'socratic'
       ? '\n\nSOCRATIC MODE ACTIVE: Do NOT lecture. Ask CB one question at a time about this topic. Wait for his answer. Correct, affirm, and deepen. Track weak spots. After 5 questions give a scorecard.'
-      : '\n\nBuild: thesis → prerequisite check → 4-7 module course outline → teach each module (concept → analogy → CB application → action) → resources → decisive bet.\nAsk first: full course outline or dive into a specific module?';
+      : '\n\nBuild: thesis → prerequisite check → 4-7 module course outline → teach each module (concept → analogy → example from the subject itself → action) → resources → decisive bet.\nAsk first: full course outline or dive into a specific module?';
     return {
       cached: spine,
       dynamic: graphSummary + `\n\nSESSION: TOPIC / COURSE BUILDER\nTopic: "${context.topic}"\nYou are world-class master expert in this topic and all surrounding domains.` + socraticNote,
@@ -283,7 +283,7 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
       : 'NOTE: Could not retrieve the page content. Be transparent about this, then use your knowledge of the source/topic.';
     const socraticNote = sessionMode === 'socratic'
       ? '\n\nSOCRATIC MODE: Ask CB one question at a time about this content. Wait for answers. Correct and build.'
-      : '\n\nTeach: orient → thesis → key points → CB translation → cross-reference to his mental models → decisive action.';
+      : '\n\nTeach: orient → thesis → key points → example from the material itself → a bookshelf link only if one genuinely applies → decisive action.';
     return {
       cached: spine,
       dynamic: graphSummary + '\n\nSESSION: UNIVERSAL CAPTURE INTELLIGENCE\n' + src + '\nTitle: ' + title + '\n\n' + body + socraticNote,
@@ -294,7 +294,7 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
   const modeInstructions = {
     synthesis: 'MODE: SYNTHESIS. Connect the user\'s question to their knowledge graph, mental models, goals, and active projects. Find non-obvious intersections. End with a decisive insight or action.',
     socratic: 'MODE: SOCRATIC. Ask CB one powerful question at a time. No lectures. Wait for answers. Correct and build.',
-    reference: 'MODE: DEEP REFERENCE. Master-expert depth. Always: definition → why it matters → CB application → cross-book link → action.',
+    reference: 'MODE: DEEP REFERENCE. Master-expert depth. Always: definition → why it matters → example from the subject itself → cross-book link → action.',
     advisor: 'MODE: PROJECT ADVISOR. CB is asking about his active projects. Apply his knowledge and mental models directly to project decisions. Be decisive.',
     truth: 'MODE: TRUTH SEEKER. Strip away narrative, consensus, and noise. Give CB the signal. What\'s actually true? What do most people get wrong? End with the contrarian insight.',
   };
@@ -306,25 +306,25 @@ export function buildSystem(entryMode, sessionMode, context, graph) {
 
 export function buildReadingSystem({ contentType, goal, depth, progress, content, graph }) {
   const graphSummary = graph && Object.keys(graph.topics || {}).length > 0
-    ? '\n\nCB\'S LEARNING HISTORY:\n' +
+    ? '\n\nREADER\'S LEARNING HISTORY (context only — never a source of examples):\n' +
       Object.values(graph.topics).slice(-8).map(t => `- ${t.title}: confidence ${t.confidence}/10`).join('\n')
     : '';
 
   const typeInstructions = {
-    nonfiction:  `CONTENT TYPE: Non-Fiction / Business\nApproach: Thesis-first. Extract frameworks, CB applications, cross-references to mental models.\nEvery response: Core concept → Why it matters → CB application → Action.`,
+    nonfiction:  `CONTENT TYPE: Non-Fiction / Business\nApproach: Thesis-first. Extract frameworks in the book's own terms; worked examples from the book's own world.\nEvery response: Core concept → Why it matters → Example from the material's world → Action.`,
     fiction:     `CONTENT TYPE: Literary Fiction\nApproach: Literary analysis — character psychology, themes, symbolism, narrative craft, author technique.\nCRITICAL: Never reveal plot points beyond where the reader currently is.`,
     scifi:       `CONTENT TYPE: Sci-Fi / Fantasy\nApproach: World-building logic, scientific plausibility vs. speculation, allegorical meaning.\nCRITICAL: No spoilers beyond the reader's current position. Explore internal consistency, real-world parallels, social allegory.`,
     history:     `CONTENT TYPE: History / Biography\nApproach: Evidence-first. For every claim surface: (1) What supports it? (2) Who disagrees and why? (3) Present-day parallel.\nBiography: narrator reliability, era context, gap between self-presentation and reality.`,
     academic:    `CONTENT TYPE: Academic / Textbook\nApproach: Concept ladder — check prerequisites first, never assume prior knowledge.\nTeach: definition → intuition → formal statement → example → common misconception → exam angle.\nAfter teaching: ask the reader to explain the core idea back in their own words.`,
     reference:   `CONTENT TYPE: Reference / Technical Document\nApproach: Precision. No paraphrase that loses meaning. Flag scope of applicability.\nAlways: exact terminology → context of use → what this does NOT cover → when to escalate to a professional.`,
-    training:    `CONTENT TYPE: Training / Professional Development\nApproach: Performance coach. Map every concept to the reader's actual role and goals.\nFor each concept: translate to CB's context → concrete scenario → competency benchmark.\nEnd every section: "How would you apply this in the next 7 days?"`,
+    training:    `CONTENT TYPE: Training / Professional Development\nApproach: Performance coach. Map every concept to the reader's actual role and goals.\nFor each concept: concrete scenario in the training's own domain → competency benchmark.\nEnd every section: "How would you apply this in the next 7 days?"`,
     philosophy:  `CONTENT TYPE: Philosophy / Theory\nApproach: Dialectical. Present the argument → steelman it → challenge it.\nAlways: What is it claiming? What does it assume? What's the strongest counterargument? Share your genuine assessment.`,
   };
 
   const goalInstructions = {
     master:  `GOAL: DEEP MASTERY\nAfter explaining each concept, ask the reader to explain it back. Track gaps. Confirm what's solid, surface what's fuzzy.`,
     exam:    `GOAL: EXAM / CERT PREP\nFocus on high-yield concepts, likely question formats, common traps. After each concept generate a practice question. Track everything the reader struggles with.`,
-    apply:   `GOAL: APPLY TO WORK\nFilter through CB's context: BD, real estate, business building. Extract the framework → translate to CB's situation → give a concrete next action.`,
+    apply:   `GOAL: APPLY TO WORK\nThe reader chose to apply this. Explain the framework on its own terms first, THEN translate it to a general work situation and give a concrete next action. Do not reach for finance, investing, real estate or business development unless the material is about them.`,
     discuss: `GOAL: DISCUSS & EXPLORE\nOpen dialogue. Follow intellectual curiosity. Offer counterarguments, thought experiments. End every response with a question that advances the conversation.`,
     quick:   `GOAL: QUICK UNDERSTANDING\nEfficiency mode. Core idea only. Format: essential insight → one practical implication → done.`,
   };
@@ -343,7 +343,7 @@ export function buildReadingSystem({ contentType, goal, depth, progress, content
     `\n\n${depthProtocol(depth)}` +
     `\n\n${progressInstructions[progress] || progressInstructions.start}`;
 
-  return { cached: CB_LEARNING_SPINE, dynamic };
+  return { cached: SYSTEM_LEARNING, dynamic };
 }
 
 // Canonical quiz-prompt builder — shared by QuizCenter and LearningCenter.
@@ -356,9 +356,7 @@ export function buildQuizPrompt({ subject, count = 5, includeRate = false }) {
     : '';
   return `Generate a ${count}-question self-assessment quiz for CB about: "${subject}".
 
-CB's context: BD professional, Houston TX. Interests: real estate, leadership, longevity, AI-augmented work, stoic philosophy. Tailor questions to his learning style and goals (passive income, BD, longevity).
-
-Mix: multiple choice (4 options each, labelled A/B/C/D), one application question (a specific scenario in CB's world), and one open insight question.${includeRate ? ' Include one self-rating question.' : ''}
+Questions test the subject on its own terms. Mix: multiple choice (4 options each, labelled A/B/C/D), one application question (a specific scenario from the subject's own world — not finance, investing or business development unless the subject is about them), and one open insight question.${includeRate ? ' Include one self-rating question.' : ''}
 
 Return ONLY valid JSON — no markdown fences, no preamble:
 {"questions":[
@@ -416,7 +414,7 @@ export function buildDeepDiveSystem(topic, category, depth = 'expert', focusSect
 7. Outlook
 Cross-reference CB's mental model library where it genuinely applies (Chip War chokepoints, Blue Ocean, Buffett economics/moats, Tipping Point).`;
   return {
-    cached: CB_LEARNING_SPINE,
+    cached: SYSTEM_LEARNING,
     dynamic: `\n\nDEEP DIVE RESEARCH FILE\nTopic: "${topic}"${category ? `\nCategory: ${category}` : ''}\n\n${depthProtocol(depth)}\n\n${scaffold}\n\nWrite as a structured brief with clear section headers, not a chat reply. Be decisive.`,
   };
 }
@@ -470,7 +468,7 @@ Return ONLY valid JSON, no markdown:
 Intent: "${text.replace(/"/g, "'").slice(0, 500)}"`;
   const fallback = { route: 'learn', topic: text.trim().slice(0, 120), suggestedCategory: '', suggestedDepth: looksDeep(text) ? 'deep' : 'standard', rationale: 'Defaulted (router unavailable).' };
   try {
-    const raw = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 300 });
+    const raw = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompt }], maxTokens: 300 });
     const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
     if (!CAPTURE_ROUTES.includes(parsed.route)) parsed.route = fallback.route;
     if (!DEPTH_META[parsed.suggestedDepth]) parsed.suggestedDepth = fallback.suggestedDepth;
@@ -487,7 +485,7 @@ export function buildLadderPrompt(topic, goal) {
   return `Design a structured learning ladder for CB to master: "${topic}".
 Goal: ${goal || 'deep, applied mastery'}.
 
-CB's context: BD professional, Houston TX. Systems thinker, learns big-picture first, sports analogies, applies everything to passive income / BD / longevity.
+The learner is a systems thinker who learns big-picture first and likes sports analogies. Keep every objective in the topic's own domain — do not bend modules toward finance, investing or business development unless the topic is about them.
 
 Produce 5–7 sequential modules from fundamentals to mastery. Each builds on prior ones. For each module give 2–4 concrete learning objectives and list the indexes of the modules that are prerequisites (earlier modules only).
 

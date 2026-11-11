@@ -1,8 +1,7 @@
-import { T } from '../theme';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildLadderPrompt, buildQuizPrompt } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import { loadIndex, hydrateIndex, loadLadder, hydrateLadder, saveLadder, removeLadder, buildLadder, completeModule } from '../lib/ladders.js';
 import { isStale, versionLabel } from '../lib/promptVersion.js';
 import useChatThread from '../hooks/useChatThread.js';
@@ -11,8 +10,9 @@ import { logConcept } from '../lib/graph.js';
 import MD from './shared/MD.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import './learning-ladder.css';
 
-const ACCENT = T.accent;
+// Styling lives in learning-ladder.css (ll-) — tokens only, no inline colour.
 const PASS_PCT = 70;
 
 const GOALS = [
@@ -25,19 +25,14 @@ const GOALS = [
 // ── Yard-line progress motif ────────────────────────────────────────────────
 function YardLines({ modules }) {
   return (
-    <div style={{ display: 'flex', gap: 3 }}>
-      {modules.map(m => (
-        <div key={m.id} style={{
-          flex: 1, height: 4, borderRadius: 2,
-          background: m.status === 'done' ? ACCENT : m.status === 'active' ? 'var(--accent-glow)' : 'var(--line)',
-        }} />
-      ))}
+    <div className="ll-yard">
+      {modules.map(m => <span key={m.id} data-s={m.status} />)}
     </div>
   );
 }
 
 export default function LearningLadder() {
-  const { isMobile, graph, captureRoute, clearCapture } = useApp();
+  const { captureRoute, clearCapture } = useApp();
   const [view,   setView]   = useState('home'); // home | view | session | quiz
   const [index,  setIndex]  = useState(() => loadIndex());
   const [ladder, setLadder] = useState(null);
@@ -47,8 +42,6 @@ export default function LearningLadder() {
   const [goal, setGoal] = useState('master');
   const [generating, setGenerating] = useState(false);
   const [genError, setGenError] = useState('');
-
-  const pad = isMobile ? '14px' : '24px';
 
   useEffect(() => { hydrateIndex().then(r => { if (Array.isArray(r)) setIndex(r); }); }, []);
   useEffect(() => { if (view !== 'home' && !ladder) setView('home'); }, [view, ladder]);
@@ -62,7 +55,7 @@ export default function LearningLadder() {
     setGenerating(true); setGenError('');
     try {
       const raw = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: buildLadderPrompt(topicInput.trim(), GOALS.find(g => g.id === goal)?.label) }],
         maxTokens: 1600,
       });
@@ -102,53 +95,47 @@ export default function LearningLadder() {
   // ── Home: create + list ───────────────────────────────────────────────────
   if (view === 'home') {
     return (
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-        <div style={{ marginBottom: 6, fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase' }}>Structured Path</div>
-        <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Learning Ladder</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Name a subject. Get an ordered, prereq-gated path — study each rung, pass its quiz, unlock the next.</div>
+      <div className="ll-page">
+        <div className="ll-eyebrow">Structured Path</div>
+        <div className="ll-title">Learning Ladder</div>
+        <div className="ll-lede">Name a subject. Get an ordered, prereq-gated path — study each rung, pass its quiz, unlock the next.</div>
 
         {/* Create */}
-        <div style={{ background: 'var(--surface)', border: `1px solid var(--border)`, borderRadius: 12, padding: 16, marginBottom: 24 }}>
-          <input value={topicInput} onChange={e => setTopicInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && build()}
-            placeholder="What do you want to master? (e.g. Multifamily underwriting, Chip War geopolitics…)"
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none', marginBottom: 12 }} />
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+        <div className="ll-card">
+          <input className="ll-input" value={topicInput} onChange={e => setTopicInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && build()} aria-label="Subject to master"
+            placeholder="What do you want to master? (e.g. Multifamily underwriting, Chip War geopolitics…)" />
+          <div className="ll-goals">
             {GOALS.map(g => (
-              <div key={g.id} onClick={() => setGoal(g.id)}
-                style={{ padding: '5px 12px', borderRadius: 16, fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer', border: `1px solid ${goal === g.id ? ACCENT : 'var(--border)'}`, color: goal === g.id ? ACCENT : 'var(--muted)', background: goal === g.id ? 'var(--accent-glow)' : 'transparent' }}>
+              <button type="button" key={g.id} className="ll-goal tap" aria-pressed={goal === g.id} onClick={() => setGoal(g.id)}>
                 {g.label}
-              </div>
+              </button>
             ))}
           </div>
-          <button onClick={build} disabled={!topicInput.trim() || generating}
-            style={{ width: '100%', padding: '12px', background: topicInput.trim() && !generating ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: topicInput.trim() && !generating ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: topicInput.trim() && !generating ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+          <button type="button" className="ll-primary tap" data-block="" onClick={build} disabled={!topicInput.trim() || generating} aria-busy={generating || undefined}>
             {generating ? 'Designing your path…' : 'Build my ladder →'}
           </button>
-          {generating && <div style={{ marginTop: 12, textAlign: 'center' }}><ThinkingDots color={ACCENT} /></div>}
-          {genError && <div style={{ marginTop: 10, fontSize: 'var(--fs-base)', color: 'var(--red)', textAlign: 'center' }}>{genError}</div>}
+          {generating && <div className="ll-center"><ThinkingDots color="var(--accent-text)" /></div>}
+          {genError && <div className="ll-err">{genError}</div>}
         </div>
 
         {/* Existing ladders */}
         {index.length > 0 && (
           <>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Your Ladders</div>
+            <div className="ll-label">Your Ladders</div>
             {index.map(l => (
-              <div key={l.id} onClick={() => openLadder(l.id)}
-                style={{ padding: '14px 16px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, marginBottom: 10, cursor: 'pointer' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, marginBottom: 8 }}>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.topic}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{GOALS.find(g => g.id === l.goal)?.label || l.goal}</div>
+              <div key={l.id} className="ll-item">
+                <button type="button" className="ll-open tap" onClick={() => openLadder(l.id)}>
+                  <div className="ll-item-top">
+                    <div className="ll-item-main">
+                      <div className="ll-item-title">{l.topic}</div>
+                      <div className="ll-item-sub">{GOALS.find(g => g.id === l.goal)?.label || l.goal}</div>
+                    </div>
+                    <div className="ll-item-pct">{l.progress}%</div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                    <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: ACCENT }}>{l.progress}%</div>
-                    <span onClick={e => deleteLadder(l.id, e)} title="Delete" style={{ fontSize: 'var(--fs-base)', color: 'var(--red)', cursor: 'pointer' }}>🗑</span>
-                  </div>
-                </div>
-                <div style={{ height: 4, borderRadius: 2, background: 'var(--line)', overflow: 'hidden' }}>
-                  <div style={{ width: `${l.progress}%`, height: '100%', background: ACCENT, transition: 'width 0.3s' }} />
-                </div>
+                  <div className="ll-bar" style={{ '--pct': `${l.progress}%` }}><span /></div>
+                </button>
+                <button type="button" className="ll-del tap" title="Delete" aria-label={`Delete ladder: ${l.topic}`} onClick={e => deleteLadder(l.id, e)}>🗑</button>
               </div>
             ))}
           </>
@@ -173,49 +160,46 @@ export default function LearningLadder() {
   // ── Ladder view ───────────────────────────────────────────────────────────
   if (!ladder) return null;
   return (
-    <div style={{ maxWidth: 760, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-        <div onClick={() => setView('home')} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700 }}>← Ladders</div>
-      </div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5 }}>{ladder.topic}</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', margin: '4px 0 14px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+    <div className="ll-page">
+      <div><button type="button" className="ll-back tap" onClick={() => setView('home')}>← Ladders</button></div>
+      <div className="ll-title" data-flush="">{ladder.topic}</div>
+      <div className="ll-meta">
         <span>{GOALS.find(g => g.id === ladder.goal)?.label || ladder.goal} · {ladder.progress}% complete</span>
         {ladder.promptVersion != null && <span>· {versionLabel(ladder)}</span>}
-        {isStale(ladder, 'ladder') && <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--tier-inferred)', border: '1px solid var(--tier-inferred)', borderRadius: 5, padding: '1px 6px' }}>prompt updated → rebuild</span>}
+        {isStale(ladder, 'ladder') && <span className="ll-stale">prompt updated → rebuild</span>}
       </div>
-      <div style={{ marginBottom: 22 }}><YardLines modules={ladder.modules} /></div>
+      <YardLines modules={ladder.modules} />
 
       {ladder.modules.map((m, i) => {
         const locked = m.status === 'locked';
         const done   = m.status === 'done';
+        const s = done ? 'done' : locked ? 'locked' : 'open';
         return (
-          <div key={m.id} style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
-            <div style={{ flexShrink: 0, width: 30, height: 30, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 800, border: `1.5px solid ${done ? ACCENT : locked ? 'var(--line)' : ACCENT}`, background: done ? ACCENT : 'transparent', color: done ? T.canvas : locked ? 'var(--dim)' : ACCENT }}>
+          <div key={m.id} className="ll-rung">
+            <div className="ll-node" data-s={s}>
               {done ? '✓' : locked ? '🔒' : i + 1}
             </div>
-            <div style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${locked ? 'var(--border-dim)' : done ? 'var(--border)' : ACCENT}`, borderRadius: 10, padding: '12px 14px', opacity: locked ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{m.title}</div>
-                <div style={{ fontSize: 8, letterSpacing: 1.5, textTransform: 'uppercase', color: done ? ACCENT : locked ? 'var(--dim)' : ACCENT, fontWeight: 700 }}>{m.status}</div>
+            <div className="ll-mod" data-s={s}>
+              <div className="ll-mod-top">
+                <div className="ll-mod-title">{m.title}</div>
+                <div className="ll-mod-status">{m.status}</div>
               </div>
               {m.objectives?.length > 0 && (
-                <ul style={{ margin: '8px 0 0', paddingLeft: 16 }}>
-                  {m.objectives.map((o, j) => <li key={j} style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.6 }}>{o}</li>)}
+                <ul className="ll-objs">
+                  {m.objectives.map((o, j) => <li key={j}>{o}</li>)}
                 </ul>
               )}
               {!locked && (
-                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                  <div onClick={() => { setActiveMod(m); setView('session'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: ACCENT, background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
+                <div className="ll-mod-actions">
+                  <button type="button" className="ll-btn tap" data-accent="" onClick={() => { setActiveMod(m); setView('session'); }}>
                     {done ? 'Review' : 'Study'}
-                  </div>
-                  <div onClick={() => { setActiveMod(m); setView('quiz'); }}
-                    style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', color: 'var(--text-b)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>
+                  </button>
+                  <button type="button" className="ll-btn tap" onClick={() => { setActiveMod(m); setView('quiz'); }}>
                     {done ? 'Re-quiz' : 'Take quiz →'}
-                  </div>
+                  </button>
                 </div>
               )}
-              {locked && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 8 }}>Complete the prerequisite modules to unlock.</div>}
+              {locked && <div className="ll-locked-note">Complete the prerequisite modules to unlock.</div>}
             </div>
           </div>
         );
@@ -229,8 +213,8 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
   const bottomRef = useRef(null);
   const buildRequest = useCallback(() => ({
     system: {
-      cached: CB_LEARNING_SPINE,
-      dynamic: `\n\nLEARNING LADDER — SCOPED SESSION\nSubject: "${topic}"\nGoal: ${goalLabel || 'mastery'}\nModule: "${mod.title}"\nObjectives:\n${(mod.objectives || []).map(o => `- ${o}`).join('\n')}\n\nTeach ONLY toward these objectives: concept → analogy → CB application → check for understanding. Stay on this rung; don't jump ahead. When CB seems ready, tell him to take the module quiz.`,
+      cached: SYSTEM_LEARNING,
+      dynamic: `\n\nLEARNING LADDER — SCOPED SESSION\nSubject: "${topic}"\nGoal: ${goalLabel || 'mastery'}\nModule: "${mod.title}"\nObjectives:\n${(mod.objectives || []).map(o => `- ${o}`).join('\n')}\n\nTeach ONLY toward these objectives: concept → analogy → example from the subject itself → check for understanding. Stay on this rung; don't jump ahead. When CB seems ready, tell him to take the module quiz.`,
     },
   }), [topic, goalLabel, mod]);
 
@@ -240,45 +224,43 @@ function LadderSession({ topic, goalLabel, mod, onQuiz, onBack }) {
   useEffect(() => { send(`Teach me the first objective of "${mod.title}". Big picture first.`); /* eslint-disable-next-line */ }, []);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--bord2)', padding: '12px 20px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ minWidth: 0 }}>
-          <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: ACCENT, cursor: 'pointer', fontWeight: 700, marginBottom: 2 }}>← {topic}</div>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mod.title}</div>
+    <div className="ll-session">
+      <div className="ll-shead">
+        <div className="ll-shead-main">
+          <button type="button" className="ll-back tap" onClick={onBack}>← {topic}</button>
+          <div className="ll-shead-title">{mod.title}</div>
         </div>
-        <div onClick={onQuiz} style={{ flexShrink: 0, padding: '7px 14px', borderRadius: 8, border: `1px solid ${ACCENT}`, color: ACCENT, background: 'var(--accent-glow)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Quiz me →</div>
+        <button type="button" className="ll-btn tap" data-accent="" onClick={onQuiz}>Quiz me →</button>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 0' }}>
+      <div className="ll-thread">
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: 14, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 14px' }}>
+          <div key={i} className="ll-msg" data-role={msg.role}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '10px 14px', maxWidth: '85%', fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
+              <div className="ll-ubub">{msg.content}</div>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid var(--accent-glow)', borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
-                <MD text={msg.content} color={ACCENT} />
+              <div className="ll-abub">
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
         ))}
         {loading && (
-          <div style={{ maxWidth: 760, margin: '0 auto 14px', display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid var(--accent-glow)', borderRadius: '3px 14px 14px 14px', padding: '12px 16px', maxWidth: '94%' }}>
-              {streamText ? <MD text={streamText + '▍'} color={ACCENT} /> : <ThinkingDots color={ACCENT} />}
+          <div className="ll-msg">
+            <div className="ll-abub" data-pending="">
+              {streamText ? <MD text={streamText + '▍'} color="var(--accent-text)" /> : <ThinkingDots color="var(--accent-text)" />}
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ padding: '10px 16px 16px', borderTop: '1px solid var(--bord2)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', maxWidth: 760, margin: '0 auto' }}>
-          <textarea value={input} onChange={e => setInput(e.target.value)}
+      <div className="ll-composer">
+        <div className="ll-compose-row">
+          <textarea className="ll-composer-input" value={input} onChange={e => setInput(e.target.value)} aria-label="Ask about this objective"
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
-            rows={1} placeholder="Ask about this objective…"
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
-          <button onClick={() => send(input)} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+            rows={1} placeholder="Ask about this objective…" />
+          <button type="button" className="ll-primary ll-send tap" aria-label="Send" onClick={() => send(input)} disabled={!input.trim() || loading}>→</button>
         </div>
       </div>
     </div>
@@ -307,32 +289,30 @@ function LadderQuiz({ topic, mod, onComplete, onBack, onDone }) {
     return () => { alive = false; };
   }, [topic, mod]);
 
-  const pad = 24;
-
   if (outcome) {
     return (
-      <div style={{ maxWidth: 620, margin: '0 auto', padding: `40px ${pad}`, textAlign: 'center' }}>
-        <div style={{ fontSize: 'var(--fs-3xl)', fontWeight: 800, color: outcome.passed ? ACCENT : 'var(--red)', marginBottom: 6 }}>{outcome.pct}%</div>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>{outcome.passed ? 'Module cleared — next rung unlocked.' : 'Not yet — review and run it again.'}</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 24 }}>{outcome.passed ? `You passed "${mod.title}".` : `You need ${PASS_PCT}% to advance. This is data, not judgment.`}</div>
-        <div onClick={onDone} style={{ display: 'inline-block', padding: '11px 24px', background: ACCENT, borderRadius: 9, color: T.canvas, fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer' }}>Back to ladder →</div>
+      <div className="ll-outcome">
+        <div className="ll-outcome-pct" data-fail={outcome.passed ? undefined : ''}>{outcome.pct}%</div>
+        <div className="ll-outcome-head">{outcome.passed ? 'Module cleared — next rung unlocked.' : 'Not yet — review and run it again.'}</div>
+        <div className="ll-outcome-sub">{outcome.passed ? `You passed "${mod.title}".` : `You need ${PASS_PCT}% to advance. This is data, not judgment.`}</div>
+        <button type="button" className="ll-primary tap" data-wide="" onClick={onDone}>Back to ladder →</button>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div onClick={onBack} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>← Exit</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: ACCENT, fontWeight: 700 }}>{mod.title}</div>
+    <div className="ll-page" data-w="quiz">
+      <div className="ll-quiz-head">
+        <button type="button" className="ll-back tap" data-quiet="" onClick={onBack}>← Exit</button>
+        <div className="ll-quiz-mod">{mod.title}</div>
       </div>
       {loading || questions.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 16 }}>Building your quiz…</div>
-          <ThinkingDots color={ACCENT} />
+        <div className="ll-wait">
+          <div className="ll-wait-text">Building your quiz…</div>
+          <ThinkingDots color="var(--accent-text)" />
         </div>
       ) : (
-        <QuizMode questions={questions} color={ACCENT} onComplete={(results) => setOutcome(onComplete(results))} />
+        <QuizMode questions={questions} color="var(--accent-text)" onComplete={(results) => setOutcome(onComplete(results))} />
       )}
     </div>
   );

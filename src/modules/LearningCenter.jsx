@@ -1,4 +1,4 @@
-import { T, withAlpha } from '../theme';
+import { T } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import {
@@ -19,7 +19,12 @@ import ProviderTag from './shared/ProviderTag.jsx';
 import DiagramBlock from './shared/DiagramBlock.jsx';
 import QuizMode from './shared/QuizMode.jsx';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
-import { Btn, Input, Textarea, Label, Card, Badge, ThinkingDots, BottomSheet } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError, SectionEmpty } from './shared/SectionState.jsx';
+import { Btn, Input, Textarea, Label, Card, Badge, BottomSheet } from './shared/Common.jsx';
+import './learning-center.css';
+
+// Styling lives in learning-center.css (lc-) — tokens only, no inline colour.
+const Back = ({ onClick, children }) => <button type="button" className="lc-back tap" onClick={onClick}>{children}</button>;
 
 const READING_QUICK_PROMPTS = {
   nonfiction:  ["What's the single most important framework?", 'Connect this to my other reading', 'How does this apply to my goals?', 'What is the author getting wrong?', 'Quiz me on this section'],
@@ -64,6 +69,12 @@ export default function LearningCenter() {
   const [quizMode, setQuizMode] = useState(false);
   const [quizQuestions, setQuizQuestions] = useState([]);
   const [quizLoading, setQuizLoading] = useState(false);
+  // Failures as STATE, not content: a failed reply used to be appended to the
+  // transcript as if the assistant had said it, and a failed opener was replaced
+  // by a fake "Ready." greeting.
+  const [sessionErr, setSessionErr] = useState('');
+  const [quizErr, setQuizErr] = useState('');
+  const lastFailRef = useRef(null); // { kind:'send', history } | { kind:'open', args }
   const [searchEnabled, setSearchEnabled] = useState(false);
   const [showAnnotation, setShowAnnotation] = useState(false);
   const [annotationText, setAnnotationText] = useState('');
@@ -84,6 +95,8 @@ export default function LearningCenter() {
   const currentContentType = CONTENT_TYPES.find(t => t.id === contentType) || CONTENT_TYPES[0];
   const accentColor = T.accent; // one confident accent — the active session is gold
   const sessionTitle = entryMode === 'reading' ? context.title : entryMode === 'topic' ? context.topic : entryMode === 'youtube' ? context.title : entryMode === 'capture' ? context.title : 'Document';
+  // Explicit status of the session's generated replies (the primary artifact).
+  const sessionStatus = loading ? 'loading' : sessionErr ? 'error' : messages.some(m => m.role === 'assistant') ? 'ready' : 'empty';
 
   const send = async (text, attachments = []) => {
     if ((!text.trim() && attachments.length === 0) || loading) return;
@@ -92,8 +105,15 @@ export default function LearningCenter() {
     setMessages(newHistory);
     setInput('');
     setUploadedFiles([]);
+    await respond(newHistory);
+  };
+
+  // The reply half of send(), split out so Retry re-runs ONLY the failed reply
+  // against the same history (the user's message is already in the transcript).
+  const respond = async (newHistory) => {
     setLoading(true);
     setStream('');
+    setSessionErr('');
     try {
       const apiMessages = await buildApiMessages(newHistory);
       // Reading mode summarizes EXTERNAL material the user acts on → tier its
@@ -107,7 +127,8 @@ export default function LearningCenter() {
       const reply = await callClaude({ system, messages: apiMessages, searchEnabled: useWeb, job: useWeb ? 'web' : 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
       setMessages(prev => [...prev, { role: 'assistant', content: reply, provider }]);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed — retry.') }]);
+      lastFailRef.current = { kind: 'send', history: newHistory };
+      setSessionErr(e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed.'));
     }
     setStream('');
     setLoading(false);
@@ -128,6 +149,7 @@ export default function LearningCenter() {
     setSessionStart(Date.now());
     setLoading(true);
     setStream('');
+    setSessionErr('');
     let opener = '';
     if (eMode === 'reading') {
       const t = ctx.title;
@@ -162,24 +184,34 @@ export default function LearningCenter() {
       let provider = '';
       const reply = await callClaude({ system, messages: [{ role: 'user', content: opener }], job: 'reason', onToken: (t) => setStream(s => s + t), onProvider: (p) => { provider = p; } });
       setMessages([{ role: 'assistant', content: reply, provider }]);
-    } catch {
-      setMessages([{ role: 'assistant', content: 'Ready. What would you like to explore?' }]);
+    } catch (e) {
+      lastFailRef.current = { kind: 'open', args: [eMode, sMode, ctx, cType, goal, depth, progress] };
+      setSessionErr(e?.message || 'The AI providers were unavailable.');
     }
     setStream('');
     setLoading(false);
   };
 
   const generateQuiz = async () => {
-    setQuizLoading(true);
+    if (quizLoading) return;
+    setQuizLoading(true); setQuizErr('');
     try {
       const reply = await callClaude({ system: '', messages: [{ role: 'user', content: buildQuizPrompt({ subject: sessionTitle, count: 5, includeRate: false }) }] });
       const parsed = JSON.parse(reply.replace(/```json|```/g, '').trim());
       setQuizQuestions(parsed.questions || []);
       setQuizMode(true);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Quiz generation failed. Ask me to quiz you directly.' }]);
+    } catch (e) {
+      setQuizErr(e?.message || 'Quiz generation failed.');
     }
     setQuizLoading(false);
+  };
+
+  // Retry re-runs ONLY the failed call — the reply or the session opener.
+  const retrySession = () => {
+    const f = lastFailRef.current;
+    if (!f || loading) return;
+    if (f.kind === 'send') respond(f.history);
+    else autoOpen(...f.args);
   };
 
   const onQuizComplete = (results) => {
@@ -268,312 +300,301 @@ export default function LearningCenter() {
     return qp[entryMode] || qp.topic;
   };
 
-  const pad = isMobile ? '16px 16px 70px' : '24px 28px 80px';
+  // Hidden file input lives OUTSIDE the drop-zone button (no nested controls).
+  const fileInput = (
+    <input ref={fileRef} type="file" multiple accept={ACCEPT_TYPES} className="lc-hidden" onChange={async e => { const files = await processFiles(e.target.files); setUploadedFiles(p => [...p, ...files]); }} />
+  );
 
   if (screen === 'home') return (
-    <div style={{ padding: pad, maxWidth: 800, margin: '0 auto' }}>
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 6 }}>CB · Learning Center</div>
-        <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 6 }}>What do you want to learn?</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Capture · Books · Documents · Topics · YouTube — all tracked, all connected.</div>
+    <div className="lc-page">
+      <div className="lc-intro">
+        <div className="lc-eyebrow">CB · Learning Center</div>
+        <div className="lc-title">What do you want to learn?</div>
+        <div className="lc-lede">Capture · Books · Documents · Topics · YouTube — all tracked, all connected.</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 24 }}>
+      <div className="lc-entries">
         {[
-          { icon: '⚡', label: 'Universal Capture', desc: 'Paste anything — a link, an article, a YouTube URL, or raw text. I detect it and teach you.', color: T.accent, action: () => { setEntryMode('capture'); setScreen('capture-input'); } },
-          { icon: '📚', label: 'Reading Companion', desc: 'Any book, paper, manual, or novel — personal mentor as you read.', color: T.accent, action: () => setScreen('reading-add') },
-          { icon: '🎓', label: 'Topic / Course', desc: 'Name any subject. I build a structured course.', color: T.accent, action: () => { setEntryMode('topic'); setScreen('topic-input'); } },
-          { icon: '▶️', label: 'YouTube', desc: 'Paste a URL. Transcript extraction + deep analysis.', color: T.negative, action: () => { setEntryMode('youtube'); setScreen('youtube-input'); } },
-          { icon: '📄', label: 'Document', desc: 'PDF, Word, Excel, image, or web link.', color: T.accent, action: () => { setEntryMode('document'); setScreen('doc-upload'); } },
+          { icon: 'Zap', label: 'Universal Capture', desc: 'Paste anything — a link, an article, a YouTube URL, or raw text. I detect it and teach you.', color: 'var(--accent-text)', action: () => { setEntryMode('capture'); setScreen('capture-input'); } },
+          { icon: 'Library', label: 'Reading Companion', desc: 'Any book, paper, manual, or novel — personal mentor as you read.', color: 'var(--accent-text)', action: () => setScreen('reading-add') },
+          { icon: 'GraduationCap', label: 'Topic / Course', desc: 'Name any subject. I build a structured course.', color: 'var(--accent-text)', action: () => { setEntryMode('topic'); setScreen('topic-input'); } },
+          { icon: 'Play', label: 'YouTube', desc: 'Paste a URL. Transcript extraction + deep analysis.', color: T.negative, tone: 'negative', action: () => { setEntryMode('youtube'); setScreen('youtube-input'); } },
+          { icon: 'FileText', label: 'Document', desc: 'PDF, Word, Excel, image, or web link.', color: 'var(--accent-text)', action: () => { setEntryMode('document'); setScreen('doc-upload'); } },
         ].map(m => (
-          <Card key={m.label} color={m.color} onClick={m.action} style={{ padding: '16px 18px', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <div style={{ fontSize: 'var(--fs-2xl)'}}>{m.icon}</div>
-              <div>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: m.color, marginBottom: 3 }}>{m.label}</div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.55 }}>{m.desc}</div>
+          <Card key={m.label} color={m.color} onClick={m.action}>
+            <div className="lc-entry lc-entry-row" data-lc-tone={m.tone || 'accent'}>
+              <span className="lc-entry-icon"><Icon name={m.icon} size="nav" /></span>
+              <div className="lc-entry-text">
+                <div className="lc-entry-label">{m.label}</div>
+                <div className="lc-entry-desc">{m.desc}</div>
               </div>
             </div>
           </Card>
         ))}
       </div>
 
-      <div style={{ marginBottom: 12 }}>
+      <div className="lc-graph">
         <Label>Knowledge Graph</Label>
-        <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+        <div className="lc-stats">
           {[
-            ['Topics', Object.keys(graph?.topics || {}).length, T.accent],
-            ['Sessions', (graph?.sessions || []).length, T.accent],
-            ['Minutes', graph?.totalTime || 0, T.accent],
-            ['Avg Conf', (Object.values(graph?.topics || {}).length ? Math.round(Object.values(graph.topics).reduce((s, t) => s + t.confidence, 0) / Object.values(graph.topics).length) : 0) + '/10', T.accent],
-          ].map(([label, val, color]) => (
-            <div key={label} style={{ background: 'var(--surface)', border: `1px solid ${color}20`, borderRadius: 8, padding: '10px 8px', textAlign: 'center' }}>
-              <div style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "'Newsreader', serif" }}>{val}</div>
-              <div style={{ fontSize: 9, letterSpacing: 1.5, color: 'var(--dim)', textTransform: 'uppercase', marginTop: 2 }}>{label}</div>
+            ['Topics', Object.keys(graph?.topics || {}).length],
+            ['Sessions', (graph?.sessions || []).length],
+            ['Minutes', graph?.totalTime || 0],
+            ['Avg Conf', (Object.values(graph?.topics || {}).length ? Math.round(Object.values(graph.topics).reduce((s, t) => s + t.confidence, 0) / Object.values(graph.topics).length) : 0) + '/10'],
+          ].map(([label, val]) => (
+            <div key={label} className="lc-stat">
+              <div className="lc-stat-val">{val}</div>
+              <div className="lc-stat-label">{label}</div>
             </div>
           ))}
         </div>
         {Object.values(graph?.topics || {}).slice(0, 4).map(t => (
-          <div key={t.title}
-            onClick={() => { setContext({ topic: t.title }); setEntryMode('topic'); setSessionMode('chat'); setScreen('session'); autoOpen('topic', 'chat', { topic: t.title }); }}
-            style={{ padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 5, display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}>
-            <div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)' }}>{t.title}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 1 }}>{t.sessions} sessions · {t.totalMin}min · tap to continue</div>
+          <button type="button" key={t.title} className="lc-row tap"
+            onClick={() => { setContext({ topic: t.title }); setEntryMode('topic'); setSessionMode('chat'); setScreen('session'); autoOpen('topic', 'chat', { topic: t.title }); }}>
+            <div className="lc-row-main">
+              <div className="lc-row-title">{t.title}</div>
+              <div className="lc-row-sub">{t.sessions} sessions · {t.totalMin}min · tap to continue</div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: t.confidence >= 7 ? T.accent : t.confidence >= 4 ? T.accent : T.accent }}>{t.confidence}/10</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>→</div>
+            <div className="lc-row-side">
+              <div className="lc-row-conf">{t.confidence}/10</div>
+              <div className="lc-row-go" aria-hidden="true">→</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
-      <div onClick={() => setScreen('book-select')} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', textAlign: 'center', padding: '10px', borderTop: '1px solid var(--bord2)', marginTop: 8 }}>
+      <button type="button" className="lc-link-row tap" onClick={() => setScreen('book-select')}>
         Browse CB Reading List →
-      </div>
+      </button>
     </div>
   );
 
   if (screen === 'reading-add') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Learn</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>📚 Reading Companion</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 6 }}>What are you reading?</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 24 }}>Book, paper, manual, textbook, novel — anything.</div>
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('home')}>← Learn</Back>
+      <div className="lc-eyebrow" data-lc-tone="accent"><Icon name="Library" size={14} /> Reading Companion</div>
+      <div className="lc-title">What are you reading?</div>
+      <div className="lc-lede" data-gap="xxl">Book, paper, manual, textbook, novel — anything.</div>
 
-      <input value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Title *"
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '12px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-lg)', outline: 'none', fontFamily: 'inherit', fontWeight: 700, boxSizing: 'border-box', marginBottom: 10 }} />
-      <input value={customAuthor} onChange={e => setCustomAuthor(e.target.value)} placeholder="Author / Source (optional)"
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 20 }} />
+      <input className="lc-input" data-size="lg" value={customTitle} onChange={e => setCustomTitle(e.target.value)} placeholder="Title *" aria-label="Title" />
+      <input className="lc-input" data-gap="lg" value={customAuthor} onChange={e => setCustomAuthor(e.target.value)} placeholder="Author / Source (optional)" aria-label="Author or source" />
 
       <Label>Quick-add from reading list</Label>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="lc-chips">
         {KNOWN_BOOKS.slice(0, 10).map(b => (
-          <div key={b.title} onClick={() => { setCustomTitle(b.title); setCustomAuthor(b.author); }}
-            style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: customTitle === b.title ? `${b.color}20` : 'var(--surface)', border: `1px solid ${customTitle === b.title ? b.color : 'var(--border)'}`, color: customTitle === b.title ? b.color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer' }}>
+          <button type="button" key={b.title} className="lc-chip tap" aria-pressed={customTitle === b.title}
+            onClick={() => { setCustomTitle(b.title); setCustomAuthor(b.author); }}>
             {b.title}
-          </div>
+          </button>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 10 }}>
-        <div onClick={() => setScreen('book-select')} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Browse Full List</div>
-        <div onClick={() => { if (!customTitle.trim()) return; setContext({ title: customTitle.trim(), author: customAuthor.trim() }); setScreen('content-type'); }}
-          style={{ flex: 2, padding: '11px', background: customTitle.trim() ? T.accent : 'var(--bord2)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: customTitle.trim() ? '#000' : 'var(--dim)', cursor: customTitle.trim() ? 'pointer' : 'default' }}>
+      <div className="lc-btns">
+        <button type="button" className="lc-btn tap" onClick={() => setScreen('book-select')}>Browse Full List</button>
+        <button type="button" className="lc-btn tap" data-grow="2" data-primary="" disabled={!customTitle.trim()}
+          onClick={() => { if (!customTitle.trim()) return; setContext({ title: customTitle.trim(), author: customAuthor.trim() }); setScreen('content-type'); }}>
           Continue →
-        </div>
+        </button>
       </div>
     </div>
   );
 
   if (screen === 'content-type') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('reading-add')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Step 1 of 2</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>What type of content is this?</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 20 }}>"{context.title}"</div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 24 }}>
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('reading-add')}>← Back</Back>
+      <div className="lc-eyebrow" data-tight="" data-lc-tone="accent">Step 1 of 2</div>
+      <div className="lc-title" data-gap="sm">What type of content is this?</div>
+      <div className="lc-lede" data-gap="lg">"{context.title}"</div>
+      <div className="lc-types">
         {CONTENT_TYPES.map(t => (
-          <div key={t.id} onClick={() => setContentType(t.id)}
-            style={{ padding: '12px 14px', borderRadius: 10, border: `1px solid ${contentType === t.id ? t.color : 'var(--bord2)'}`, background: contentType === t.id ? `${t.color}12` : 'var(--surface)', cursor: 'pointer' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-              <Icon name={t.icon} size="header" style={{ color: contentType === t.id ? t.color : 'var(--text-tertiary)' }} />
-              <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: contentType === t.id ? t.color : 'var(--text)' }}>{t.label}</span>
+          <button type="button" key={t.id} className="lc-opt tap" aria-pressed={contentType === t.id} onClick={() => setContentType(t.id)}>
+            <div className="lc-opt-head">
+              <Icon name={t.icon} size="header" />
+              <span className="lc-opt-label">{t.label}</span>
             </div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5 }}>{t.examples}</div>
-          </div>
+            <div className="lc-opt-desc">{t.examples}</div>
+          </button>
         ))}
       </div>
-      <div onClick={() => setScreen('reader-setup')}
-        style={{ width: '100%', padding: '12px', background: currentContentType.color, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', boxSizing: 'border-box' }}>
+      <button type="button" className="lc-btn tap" data-primary="" data-block="" onClick={() => setScreen('reader-setup')}>
         Continue →
-      </div>
+      </button>
     </div>
   );
 
   if (screen === 'reader-setup') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('content-type')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: currentContentType.color, textTransform: 'uppercase', marginBottom: 6 }}>Step 2 of 2</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>How do you want to engage?</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 22 }}>"{context.title}"</div>
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('content-type')}>← Back</Back>
+      <div className="lc-eyebrow" data-tight="" data-lc-tone="muted">Step 2 of 2</div>
+      <div className="lc-title" data-gap="sm">How do you want to engage?</div>
+      <div className="lc-lede" data-gap="xl">"{context.title}"</div>
 
       <Label>Your Goal</Label>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 20 }}>
+      <div className="lc-goals">
         {READER_GOALS.map(g => (
-          <div key={g.id} onClick={() => setReaderGoal(g.id)}
-            style={{ padding: '11px 14px', borderRadius: 10, border: `1px solid ${readerGoal === g.id ? currentContentType.color : 'var(--bord2)'}`, background: readerGoal === g.id ? `${currentContentType.color}10` : 'var(--surface)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Icon name={g.icon} size="header" style={{ color: 'var(--text-tertiary)' }} />
+          <button type="button" key={g.id} className="lc-opt lc-goal tap" aria-pressed={readerGoal === g.id} onClick={() => setReaderGoal(g.id)}>
+            <Icon name={g.icon} size="header" />
             <div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: readerGoal === g.id ? currentContentType.color : 'var(--text)' }}>{g.label}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{g.desc}</div>
+              <div className="lc-opt-label">{g.label}</div>
+              <div className="lc-opt-desc">{g.desc}</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
 
       <Label>Depth Level</Label>
-      <div style={{ display: 'flex', gap: 7, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="lc-flexopts">
         {DEPTH_LEVELS.map(d => (
-          <div key={d.id} onClick={() => setDepthLevel(d.id)}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${depthLevel === d.id ? currentContentType.color : 'var(--bord2)'}`, background: depthLevel === d.id ? `${currentContentType.color}15` : 'var(--surface)', cursor: 'pointer', flex: 1, textAlign: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: depthLevel === d.id ? currentContentType.color : 'var(--text)' }}>{d.label}</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', marginTop: 2 }}>{d.desc}</div>
-          </div>
+          <button type="button" key={d.id} className="lc-opt lc-depth tap" aria-pressed={depthLevel === d.id} onClick={() => setDepthLevel(d.id)}>
+            <div className="lc-opt-label">{d.label}</div>
+            <div className="lc-opt-desc">{d.desc}</div>
+          </button>
         ))}
       </div>
 
       <Label>Where are you in this content?</Label>
-      <div style={{ display: 'flex', gap: 7, marginBottom: 24, flexWrap: 'wrap' }}>
+      <div className="lc-flexopts" data-gap="lg">
         {READING_PROGRESS_OPTIONS.map(p => (
-          <div key={p.id} onClick={() => setReadingProgress(p.id)}
-            style={{ padding: '7px 14px', borderRadius: 8, border: `1px solid ${readingProgress === p.id ? currentContentType.color : 'var(--bord2)'}`, background: readingProgress === p.id ? `${currentContentType.color}15` : 'var(--surface)', cursor: 'pointer', fontSize: 'var(--fs-base)', fontWeight: readingProgress === p.id ? 700 : 400, color: readingProgress === p.id ? currentContentType.color : 'var(--subtle)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button type="button" key={p.id} className="lc-opt lc-prog tap" aria-pressed={readingProgress === p.id} onClick={() => setReadingProgress(p.id)}>
             <Icon name={p.icon} size={16} /> {p.label}
-          </div>
+          </button>
         ))}
       </div>
 
-      <div onClick={() => { setEntryMode('reading'); setScreen('session'); autoOpen('reading', sessionMode, context, contentType, readerGoal, depthLevel, readingProgress); }}
-        style={{ width: '100%', padding: '13px', background: currentContentType.color, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', boxSizing: 'border-box' }}>
+      <button type="button" className="lc-btn tap" data-primary="" data-block="lg"
+        onClick={() => { setEntryMode('reading'); setScreen('session'); autoOpen('reading', sessionMode, context, contentType, readerGoal, depthLevel, readingProgress); }}>
         Start Session →
-      </div>
+      </button>
     </div>
   );
 
   if (screen === 'book-select') return (
-    <div style={{ padding: pad, maxWidth: 800, margin: '0 auto' }}>
-      <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Learn</div>
-      <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase', marginBottom: 14 }}>CB Reading List · {KNOWN_BOOKS.length} Books</div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+    <div className="lc-page">
+      <Back onClick={() => setScreen('home')}>← Learn</Back>
+      <div className="lc-eyebrow" data-tight="">CB Reading List · {KNOWN_BOOKS.length} Books</div>
+      <div className="lc-chips" data-gap="md">
         {['all', ...Object.keys(TYPE_META)].map(t => (
-          <div key={t} onClick={() => setFilterType(t)}
-            style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${filterType === t ? T.accent : 'var(--bord2)'}`, color: filterType === t ? T.accent : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: filterType === t ? withAlpha(T.accent, 9) : 'transparent' }}>
+          <button type="button" key={t} className="lc-chip tap" data-kind="filter" aria-pressed={filterType === t} onClick={() => setFilterType(t)}>
             {t === 'all' ? 'All' : TYPE_META[t]?.label}
-          </div>
+          </button>
         ))}
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 8, marginBottom: 24 }}>
+      <div className="lc-books">
         {(filterType === 'all' ? KNOWN_BOOKS : KNOWN_BOOKS.filter(b => b.type === filterType)).map(book => (
-          <div key={book.title} onClick={() => { setContext({ title: book.title, author: book.author }); setContentType('nonfiction'); setScreen('reader-setup'); }}
-            style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid var(--bord2)', background: 'var(--surface)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{book.title}</div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>{book.author}</div>
+          <button type="button" key={book.title} className="lc-row lc-book tap"
+            onClick={() => { setContext({ title: book.title, author: book.author }); setContentType('nonfiction'); setScreen('reader-setup'); }}>
+            <div className="lc-row-main">
+              <div className="lc-book-title">{book.title}</div>
+              <div className="lc-book-author">{book.author}</div>
             </div>
-            <div style={{ fontSize: 9, color: book.color, textAlign: 'right' }}>
-              <Icon name={TYPE_META[book.type]?.icon} size={16} style={{ color: book.color }} />
-              <div style={{ marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' }}>{TYPE_META[book.type]?.label}</div>
+            <div className="lc-book-type">
+              <Icon name={TYPE_META[book.type]?.icon} size={16} />
+              <div>{TYPE_META[book.type]?.label}</div>
             </div>
-          </div>
+          </button>
         ))}
       </div>
-      <div onClick={() => setScreen('reading-add')} style={{ textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: 10 }}>
+      <button type="button" className="lc-link-row tap" data-plain="" onClick={() => setScreen('reading-add')}>
         + Add any other book or content
-      </div>
+      </button>
     </div>
   );
 
   if (screen === 'doc-upload') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>📄 Document Intelligence</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>Upload Your Document</div>
-      <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('home')}>← Back</Back>
+      <div className="lc-eyebrow" data-lc-tone="accent"><Icon name="FileText" size={14} /> Document Intelligence</div>
+      <div className="lc-title" data-gap="lg">Upload Your Document</div>
+      <button type="button" className="lc-drop tap" data-over={dragOver ? '' : undefined}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
         onDrop={async e => { e.preventDefault(); setDragOver(false); const files = await processFiles(e.dataTransfer.files); setUploadedFiles(p => [...p, ...files]); }}
-        onClick={() => fileRef.current?.click()}
-        style={{ border: `2px dashed ${dragOver ? T.accent : 'var(--border)'}`, borderRadius: 12, padding: '28px 20px', textAlign: 'center', cursor: 'pointer', marginBottom: 14, background: dragOver ? withAlpha(T.accent, 3) : 'transparent' }}>
-        <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 8 }}>📂</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 3 }}>Drop files or tap to browse</div>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)' }}>PDF · Word · Excel · PowerPoint · Images</div>
-        <input ref={fileRef} type="file" multiple accept={ACCEPT_TYPES} style={{ display: 'none' }} onChange={async e => { const files = await processFiles(e.target.files); setUploadedFiles(p => [...p, ...files]); }} />
-      </div>
-      <div style={{ marginBottom: 14 }}>
+        onClick={() => fileRef.current?.click()}>
+        <span className="lc-drop-icon"><Icon name="FileText" size="nav" /></span>
+        <div className="lc-drop-title">Drop files or tap to browse</div>
+        <div className="lc-drop-sub">PDF · Word · Excel · PowerPoint · Images</div>
+      </button>
+      {fileInput}
+      <div className="lc-block" data-gap="sm">
         <Label>Or Paste a Web Link</Label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <input value={webUrl} onChange={e => setWebUrl(e.target.value)}
+        <div className="lc-inline">
+          <input className="lc-input" value={webUrl} onChange={e => setWebUrl(e.target.value)} aria-label="Web link"
             onKeyDown={e => e.key === 'Enter' && webUrl.trim() && (setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]), setWebUrl(''))}
-            placeholder="https://..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit' }} />
-          <button onClick={() => { if (webUrl.trim()) { setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]); setWebUrl(''); } }}
-            style={{ padding: '10px 14px', background: T.accent, border: 'none', borderRadius: 8, color: '#fff', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: 'pointer' }}>Add</button>
+            placeholder="https://..." />
+          <button type="button" className="lc-add" onClick={() => { if (webUrl.trim()) { setUploadedFiles(p => [...p, { type: 'url', url: webUrl, name: webUrl, icon: '🔗', label: 'Web Link' }]); setWebUrl(''); } }}>Add</button>
         </div>
       </div>
       {uploadedFiles.length > 0 && (
-        <div style={{ marginBottom: 14 }}>
+        <div className="lc-block" data-gap="sm">
           {uploadedFiles.map((f, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 6 }}>
+            <div key={i} className="lc-file">
               <Icon name={f.icon} size="header" />
-              <div style={{ flex: 1, fontSize: 'var(--fs-base)', color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</div>
-              <div onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer', fontSize: 'var(--fs-lg)'}}>✕</div>
+              <div className="lc-file-name">{f.name}</div>
+              <button type="button" className="lc-x tap" aria-label={`Remove ${f.name}`} onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))}>✕</button>
             </div>
           ))}
         </div>
       )}
-      <Btn color={T.accent} disabled={uploadedFiles.length === 0} onClick={() => { setContext({ files: uploadedFiles }); setEntryMode('document'); setScreen('session'); autoOpen('document', sessionMode, { files: uploadedFiles }); }}>
+      <Btn color="var(--accent-text)" disabled={uploadedFiles.length === 0} onClick={() => { setContext({ files: uploadedFiles }); setEntryMode('document'); setScreen('session'); autoOpen('document', sessionMode, { files: uploadedFiles }); }}>
         Analyze {uploadedFiles.length > 1 ? `${uploadedFiles.length} documents` : 'document'}
       </Btn>
     </div>
   );
 
   if (screen === 'topic-input') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>🎓 Topic / Course Builder</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>What do you want to master?</div>
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('home')}>← Back</Back>
+      <div className="lc-eyebrow" data-lc-tone="accent"><Icon name="GraduationCap" size={14} /> Topic / Course Builder</div>
+      <div className="lc-title" data-gap="lg">What do you want to master?</div>
       <Textarea value={topicInput} onChange={setTopicInput} rows={3} placeholder={'ERCOT energy markets\nReal estate underwriting\nSemiconductor supply chain\nNegotiation psychology'} />
-      <div style={{ marginBottom: 16 }}>
+      <div className="lc-block">
         <Label>Mode</Label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[{ id: 'chat', label: 'Course Build' }, { id: 'socratic', label: '🧠 Quiz Me' }].map(m => (
-            <div key={m.id} onClick={() => setSessionMode(m.id)}
-              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? T.accent : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: sessionMode === m.id ? T.accent : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? withAlpha(T.accent, 3) : 'transparent' }}>
-              {m.label}
-            </div>
+        <div className="lc-modes">
+          {[{ id: 'chat', label: 'Course Build' }, { id: 'socratic', label: 'Quiz Me', icon: 'Brain' }].map(m => (
+            <button type="button" key={m.id} className="lc-mode tap" aria-pressed={sessionMode === m.id} onClick={() => setSessionMode(m.id)}>
+              {m.icon && <Icon name={m.icon} size={16} />}{m.label}
+            </button>
           ))}
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div className="lc-chips">
         {['ERCOT energy markets', 'Real estate underwriting', 'Semiconductor supply chain', 'Options basics', 'Negotiation psychology', 'Longevity & biohacking', 'AI agents', 'Dividend investing'].map(s => (
-          <div key={s} onClick={() => setTopicInput(s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--muted)', borderRadius: 20, cursor: 'pointer' }}>{s}</div>
+          <button type="button" key={s} className="lc-chip tap" data-muted="" onClick={() => setTopicInput(s)}>{s}</button>
         ))}
       </div>
-      <Btn color={T.accent} disabled={!topicInput.trim()} onClick={() => { setContext({ topic: topicInput }); setEntryMode('topic'); setScreen('session'); autoOpen('topic', sessionMode, { topic: topicInput }); }}>
+      <Btn color="var(--accent-text)" disabled={!topicInput.trim()} onClick={() => { setContext({ topic: topicInput }); setEntryMode('topic'); setScreen('session'); autoOpen('topic', sessionMode, { topic: topicInput }); }}>
         {sessionMode === 'socratic' ? 'Start Quiz →' : 'Build My Course →'}
       </Btn>
     </div>
   );
 
   if (screen === 'capture-input') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => { setScreen('home'); setCaptureInput(''); }} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Learn</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>⚡ Universal Capture</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', marginBottom: 8, fontFamily: "'Newsreader', serif" }}>Paste anything</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 16 }}>YouTube · Article URL · Development plan · Any text.</div>
-      <textarea value={captureInput} onChange={e => setCaptureInput(e.target.value)}
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => { setScreen('home'); setCaptureInput(''); }}>← Learn</Back>
+      <div className="lc-eyebrow" data-lc-tone="accent"><Icon name="Zap" size={14} /> Universal Capture</div>
+      <div className="lc-title" data-gap="md">Paste anything</div>
+      <div className="lc-lede" data-gap="md">YouTube · Article URL · Development plan · Any text.</div>
+      <textarea className="lc-input lc-textarea" value={captureInput} onChange={e => setCaptureInput(e.target.value)} aria-label="Content to capture"
         onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && captureInput.trim() && !ytLoading) handleCapture(); }}
-        rows={6} placeholder={'https://youtube.com/watch?v=…\nhttps://an-article.com/…\n\nOr paste a development plan, notes, a transcript — anything.'}
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '12px 14px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', boxSizing: 'border-box', marginBottom: 16, lineHeight: 1.6 }} />
-      <Btn color={T.accent} disabled={!captureInput.trim() || ytLoading} onClick={() => handleCapture()}>
+        rows={6} placeholder={'https://youtube.com/watch?v=…\nhttps://an-article.com/…\n\nOr paste a development plan, notes, a transcript — anything.'} />
+      <Btn color="var(--accent-text)" disabled={!captureInput.trim() || ytLoading} onClick={() => handleCapture()}>
         {ytLoading ? 'Reading & analyzing…' : 'Analyze →'}
       </Btn>
     </div>
   );
 
   if (screen === 'youtube-input') return (
-    <div style={{ padding: pad, maxWidth: 640, margin: '0 auto' }}>
-      <div onClick={() => setScreen('home')} style={{ fontSize: 11, color: 'var(--subtle)', cursor: 'pointer', marginBottom: 16 }}>← Back</div>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: T.negative, textTransform: 'uppercase', marginBottom: 8 }}>▶️ YouTube Intelligence</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', marginBottom: 20, fontFamily: "'Newsreader', serif" }}>Paste a YouTube URL</div>
+    <div className="lc-page" data-w="narrow">
+      <Back onClick={() => setScreen('home')}>← Back</Back>
+      <div className="lc-eyebrow" data-lc-tone="negative"><Icon name="Play" size={14} /> YouTube Intelligence</div>
+      <div className="lc-title" data-gap="lg">Paste a YouTube URL</div>
       <Input label="YouTube URL" value={youtubeUrl} onChange={setYoutubeUrl} placeholder="https://youtube.com/watch?v=..." />
-      {ytError && <div style={{ fontSize: 'var(--fs-base)', color: T.negative, marginBottom: 12, padding: '8px 12px', background: withAlpha(T.negative, 7), borderRadius: 6 }}>{ytError}</div>}
-      <div style={{ marginBottom: 16 }}>
+      {ytError && <div className="lc-err">{ytError}</div>}
+      <div className="lc-block">
         <Label>Mode</Label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[{ id: 'chat', label: 'Teach Me' }, { id: 'socratic', label: '🧠 Quiz Me' }].map(m => (
-            <div key={m.id} onClick={() => setSessionMode(m.id)}
-              style={{ flex: 1, padding: '10px', border: `1px solid ${sessionMode === m.id ? T.negative : 'var(--bord2)'}`, borderRadius: 8, textAlign: 'center', fontSize: 'var(--fs-base)', color: sessionMode === m.id ? T.negative : 'var(--subtle)', cursor: 'pointer', background: sessionMode === m.id ? withAlpha(T.negative, 3) : 'transparent' }}>
-              {m.label}
-            </div>
+        <div className="lc-modes">
+          {[{ id: 'chat', label: 'Teach Me' }, { id: 'socratic', label: 'Quiz Me', icon: 'Brain' }].map(m => (
+            <button type="button" key={m.id} className="lc-mode tap" aria-pressed={sessionMode === m.id} onClick={() => setSessionMode(m.id)}>
+              {m.icon && <Icon name={m.icon} size={16} />}{m.label}
+            </button>
           ))}
         </div>
       </div>
@@ -586,59 +607,58 @@ export default function LearningCenter() {
   if (screen === 'session') {
     const sessionModeLabel = SESSION_MODES.find(m => m.id === sessionMode);
     const prompts = getQuickPrompts();
+    const canSend = (input.trim() || annotationText.trim() || uploadedFiles.length > 0) && !loading;
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-        <div style={{ padding: '10px 16px', background: 'var(--bg)', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: 3 }}>
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={entryMode === 'reading' ? currentContentType.icon : sessionModeLabel?.icon} size={14} /> {entryMode === 'reading' ? currentContentType.label : sessionModeLabel?.label}</span>
+      <div className="lc-session">
+        <div className="lc-shead">
+          <div className="lc-shead-row">
+            <div className="lc-shead-main">
+              <div className="lc-eyebrow">
+                <span className="lc-shead-kind"><Icon name={entryMode === 'reading' ? currentContentType.icon : sessionModeLabel?.icon} size={14} /> {entryMode === 'reading' ? currentContentType.label : sessionModeLabel?.label}</span>
                 {sessionTitle ? ` · ${sessionTitle.slice(0, isMobile ? 24 : 40)}${sessionTitle.length > (isMobile ? 24 : 40) ? '...' : ''}` : ''}
               </div>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="lc-tools">
                 {entryMode === 'reading' && (
-                  <div style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', background: `${accentColor}15`, border: `1px solid ${accentColor}30`, borderRadius: 6, color: accentColor }}>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><Icon name={READER_GOALS.find(g => g.id === readerGoal)?.icon} size={13} /> {READER_GOALS.find(g => g.id === readerGoal)?.label}</span>
-                  </div>
+                  <span className="lc-tag" data-accent="">
+                    <Icon name={READER_GOALS.find(g => g.id === readerGoal)?.icon} size={13} /> {READER_GOALS.find(g => g.id === readerGoal)?.label}
+                  </span>
                 )}
-                <div onClick={() => setSearchEnabled(s => !s)}
-                  style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 6, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>
-                  🔍 Web {searchEnabled ? 'ON' : 'OFF'}
-                </div>
-                <div onClick={generateQuiz} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', border: `1px solid ${accentColor}40`, borderRadius: 6, color: accentColor, cursor: 'pointer', background: `${accentColor}10` }}>
-                  {quizLoading ? '...' : '🧠 Quiz'}
-                </div>
+                <button type="button" className="lc-tag tap" aria-pressed={searchEnabled} onClick={() => setSearchEnabled(s => !s)}>
+                  <Icon name="Search" size={13} /> Web {searchEnabled ? 'ON' : 'OFF'}
+                </button>
+                <button type="button" className="lc-tag tap" data-accent="" aria-busy={quizLoading || undefined} onClick={generateQuiz}>
+                  {quizLoading ? '...' : <><Icon name="Brain" size={13} /> Quiz</>}
+                </button>
                 {entryMode === 'reading' && (
-                  <div onClick={() => setShowAnnotation(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '2px 7px', border: `1px solid ${showAnnotation ? accentColor : 'var(--border)'}`, borderRadius: 6, color: showAnnotation ? accentColor : 'var(--dim)', cursor: 'pointer', background: showAnnotation ? `${accentColor}10` : 'transparent' }}>
-                    📌 Passage
-                  </div>
+                  <button type="button" className="lc-tag tap" aria-pressed={showAnnotation} onClick={() => setShowAnnotation(s => !s)}>
+                    <Icon name="MapPin" size={13} /> Passage
+                  </button>
                 )}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 5 }}>
-              <div onClick={() => setShowLogModal(true)} style={{ fontSize: 'var(--fs-sm)', color: accentColor, padding: '5px 10px', border: `1px solid ${accentColor}40`, borderRadius: 6, cursor: 'pointer' }}>Save session</div>
-              <div onClick={() => { setScreen('home'); setContext({}); setMessages([]); setUploadedFiles([]); setQuizMode(false); setShowAnnotation(false); }} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', padding: '5px 10px', border: '1px solid var(--bord2)', borderRadius: 6, cursor: 'pointer' }}>← Learn</div>
+            <div className="lc-shead-actions">
+              <button type="button" className="lc-shead-btn tap" data-accent="" onClick={() => setShowLogModal(true)}>Save session</button>
+              <button type="button" className="lc-shead-btn tap" onClick={() => { setScreen('home'); setContext({}); setMessages([]); setUploadedFiles([]); setQuizMode(false); setShowAnnotation(false); setSessionErr(''); setQuizErr(''); }}>← Learn</button>
             </div>
           </div>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 200px' }}>
-          {messages.length === 0 && !loading && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 10 }}><Icon name={entryMode === 'reading' ? currentContentType.icon : 'BookMarked'} size={28} style={{ color: 'var(--text-tertiary)' }} /></div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Initializing...</div>
+        <div className="lc-thread" data-status={sessionStatus}>
+          {sessionStatus === 'empty' && messages.length === 0 && (
+            <div className="lc-col" data-flush="">
+              <SectionEmpty what="No session yet" how="Ask a question below — or use Summarize / Quiz me — to start this session." />
             </div>
           )}
           {messages.map((msg, i) => (
-            <div key={i} style={{ marginBottom: 18, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 720, margin: '0 auto 18px' }}>
+            <div key={i} className="lc-msg" data-role={msg.role}>
               {msg.role === 'user' ? (
-                <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '85%', fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
+                <div className="lc-ubub">{msg.content}</div>
               ) : (
-                <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-                    <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase' }}>
+                <div className="lc-abub">
+                  <div className="lc-abub-head">
+                    <div className="lc-abub-label">
                       {entryMode === 'reading' ? `${currentContentType.label} · ${DEPTH_LEVELS.find(d => d.id === depthLevel)?.label}` : 'CB Intelligence'}
-                      {searchEnabled ? ' · 🔍 Web' : ''}
+                      {searchEnabled ? ' · Web' : ''}
                     </div>
                     <ProviderTag provider={msg.provider} />
                   </div>
@@ -650,77 +670,92 @@ export default function LearningCenter() {
               )}
             </div>
           ))}
+          {(quizLoading || quizErr) && (
+            <div className="lc-col" data-status={quizLoading ? 'loading' : 'error'}>
+              {quizLoading
+                ? <SectionSkeleton rows={5} label="quiz" />
+                : <SectionError label="the quiz" onRetry={generateQuiz} detail={quizErr} />}
+            </div>
+          )}
           {quizMode && quizQuestions.length > 0 && (
-            <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div className="lc-col" data-flush="">
               <QuizMode questions={quizQuestions} color={accentColor} onComplete={onQuizComplete} />
             </div>
           )}
-          {loading && (
-            <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 720, margin: '0 auto 18px' }}>
-              <div style={{ background: 'var(--surface)', border: `1px solid ${accentColor}18`, borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
-                <div style={{ fontSize: 9, letterSpacing: 3, color: accentColor, textTransform: 'uppercase', marginBottom: stream ? 10 : 8 }}>CB Intelligence</div>
-                {stream
-                  ? <MD text={stream + '▍'} color={accentColor} />
-                  : <ThinkingDots color={accentColor} />}
+          {loading && stream && (
+            <div className="lc-msg">
+              <div className="lc-abub">
+                <div className="lc-abub-label">CB Intelligence</div>
+                <MD text={stream + '▍'} color={accentColor} />
               </div>
+            </div>
+          )}
+          {/* Skeleton only until the first streamed token arrives. */}
+          {loading && !stream && (
+            <div className="lc-col">
+              <SectionSkeleton rows={messages.length ? 3 : 5} lead={!messages.length} label="response" />
+            </div>
+          )}
+          {sessionStatus === 'error' && (
+            <div className="lc-col">
+              <SectionError label={lastFailRef.current?.kind === 'open' ? 'the session opener' : 'this reply'} onRetry={retrySession} detail={sessionErr} />
             </div>
           )}
           <div ref={bottomRef} />
         </div>
 
         {!quizMode && (
-          <div style={{ position: 'sticky', bottom: 72, left: 0, right: 0, padding: '0 12px 6px', background: 'linear-gradient(transparent, var(--bg) 30%)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div className="lc-dock">
             {/* Prominent action chips — surface the instant content loads */}
             {messages.length <= 1 && (
-              <div style={{ display: 'flex', gap: 7, overflowX: 'auto' }}>
+              <div className="lc-scroll" data-scroll-x="">
                 {[
-                  { label: '✦ Summarize', onClick: () => send('Give me the CB-style summary — thesis first, then key points.') },
-                  { label: '🧠 Quiz me', onClick: generateQuiz },
-                  { label: '🔗 Recommend related', onClick: () => send('Recommend related content, creators, and books connected to my mental model library.') },
+                  { label: 'Summarize', icon: 'Sparkles', onClick: () => send('Give me the CB-style summary — thesis first, then key points.') },
+                  { label: 'Quiz me', icon: 'Brain', onClick: generateQuiz },
+                  { label: 'Recommend related', icon: 'Share2', onClick: () => send('Recommend related content, creators, and books connected to my mental model library.') },
                 ].map(a => (
-                  <div key={a.label} onClick={a.onClick}
-                    style={{ fontSize: 'var(--fs-base)', fontWeight: 700, padding: '9px 15px', background: `${accentColor}14`, border: `1px solid ${accentColor}40`, color: accentColor, borderRadius: 22, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>
-                    {a.label}
-                  </div>
+                  <button type="button" key={a.label} className="lc-action" onClick={a.onClick}>
+                    <Icon name={a.icon} size={16} /> {a.label}
+                  </button>
                 ))}
               </div>
             )}
-            <div style={{ display: 'flex', gap: 5, overflowX: 'auto' }}>
+            <div className="lc-scroll" data-gap="sm" data-scroll-x="">
               {prompts.slice(0, isMobile ? 2 : 5).map(p => (
-                <div key={p} onClick={() => send(p)} style={{ fontSize: 'var(--fs-sm)', padding: '5px 11px', background: 'var(--surface)', border: '1px solid var(--bord2)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, minHeight: 44, display: 'flex', alignItems: 'center' }}>{p}</div>
+                <button type="button" key={p} className="lc-qp" onClick={() => send(p)}>{p}</button>
               ))}
             </div>
           </div>
         )}
 
-        <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', borderTop: '1px solid var(--bord2)', padding: '8px 12px 12px' }}>
+        <div className="lc-composer">
           {showAnnotation && (
-            <div style={{ marginBottom: 8 }}>
-              <div style={{ fontSize: 'var(--fs-sm)', color: accentColor, letterSpacing: 1, marginBottom: 4 }}>📌 PASTE A PASSAGE FROM YOUR TEXT</div>
-              <textarea value={annotationText} onChange={e => setAnnotationText(e.target.value)}
+            <div className="lc-passage">
+              <div className="lc-passage-label"><Icon name="MapPin" size={13} /> PASTE A PASSAGE FROM YOUR TEXT</div>
+              <textarea className="lc-passage-input" value={annotationText} onChange={e => setAnnotationText(e.target.value)} aria-label="Passage from your text"
                 placeholder="Paste any passage, paragraph, or excerpt you want analyzed..."
-                rows={3} style={{ width: '100%', background: `${accentColor}08`, border: `1px solid ${accentColor}30`, borderRadius: 8, padding: '8px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', boxSizing: 'border-box' }} />
+                rows={3} />
             </div>
           )}
           {uploadedFiles.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 7 }}>
+            <div className="lc-attached">
               {uploadedFiles.map((f, i) => (
-                <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44130', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Icon name={f.icon} size={16} /> {f.name.slice(0, 16)}<span onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
+                <div key={i} className="lc-attached-chip">
+                  <Icon name={f.icon} size={16} /> {f.name.slice(0, 16)}
+                  <button type="button" className="lc-x tap" data-sm="" aria-label={`Remove ${f.name}`} onClick={() => setUploadedFiles(p => p.filter((_, j) => j !== i))}>✕</button>
                 </div>
               ))}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 7, maxWidth: 720, margin: '0 auto', alignItems: 'flex-end' }}>
-            <div onClick={() => fileRef.current?.click()} style={{ padding: '9px 10px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--subtle)', fontSize: 'var(--fs-base)', flexShrink: 0 }}>📎</div>
-            <input ref={fileRef} type="file" multiple accept={ACCEPT_TYPES} style={{ display: 'none' }} onChange={async e => { const files = await processFiles(e.target.files); setUploadedFiles(p => [...p, ...files]); }} />
-            <textarea value={input} onChange={e => setInput(e.target.value)}
+          <div className="lc-compose-row">
+            <button type="button" className="lc-attach tap" aria-label="Attach files" onClick={() => fileRef.current?.click()}><Icon name="Paperclip" size={16} /></button>
+            {fileInput}
+            <textarea className="lc-composer-input" value={input} onChange={e => setInput(e.target.value)} aria-label="Message"
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); showAnnotation ? sendWithAnnotation() : send(input, uploadedFiles); } }}
-              rows={1} placeholder={showAnnotation ? 'Add your question about the passage...' : 'Ask anything...'}
-              style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '9px 13px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 90 }} />
-            <button onClick={() => showAnnotation ? sendWithAnnotation() : send(input, uploadedFiles)}
-              disabled={(!input.trim() && !annotationText.trim() && uploadedFiles.length === 0) || loading}
-              style={{ padding: '9px 14px', background: (input.trim() || annotationText.trim() || uploadedFiles.length > 0) && !loading ? accentColor : 'var(--bord2)', border: 'none', borderRadius: 9, color: (input.trim() || annotationText.trim() || uploadedFiles.length > 0) && !loading ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
+              rows={1} placeholder={showAnnotation ? 'Add your question about the passage...' : 'Ask anything...'} />
+            <button type="button" className="lc-send tap" aria-label="Send"
+              onClick={() => showAnnotation ? sendWithAnnotation() : send(input, uploadedFiles)}
+              disabled={!canSend}>→</button>
           </div>
         </div>
 
@@ -737,17 +772,17 @@ function LogSessionModal({ title, onLog, onSkip, color }) {
   const [notes, setNotes] = useState('');
   return (
     <BottomSheet title={`Save session — ${title}`} accent={color} onClose={onSkip}>
-      <div style={{ marginBottom: 16 }}>
+      <div className="lc-block">
         <Label>Confidence Level: {conf}/10</Label>
-        <input type="range" min={1} max={10} value={conf} onChange={e => setConf(+e.target.value)} style={{ width: '100%', accentColor: color }} />
-        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 4 }}>
+        <input type="range" className="lc-range" min={1} max={10} value={conf} onChange={e => setConf(+e.target.value)} aria-label="Confidence level" />
+        <div className="lc-scale">
           <span>Just started</span><span>Fuzzy</span><span>Solid</span><span>Mastered</span>
         </div>
       </div>
       <Textarea value={notes} onChange={setNotes} placeholder="Key insight or note (optional)..." rows={2} />
-      <div style={{ display: 'flex', gap: 8 }}>
-        <div onClick={onSkip} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Skip</div>
-        <div onClick={() => onLog(conf, notes)} style={{ flex: 2, padding: '11px', background: color, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Save session</div>
+      <div className="lc-btns">
+        <button type="button" className="lc-btn tap" onClick={onSkip}>Skip</button>
+        <button type="button" className="lc-btn tap" data-grow="2" data-primary="" onClick={() => onLog(conf, notes)}>Save session</button>
       </div>
     </BottomSheet>
   );

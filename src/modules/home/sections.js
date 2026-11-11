@@ -4,6 +4,7 @@ import SignalFeed from './SignalFeed.jsx';
 import ActiveProjects from './ActiveProjects.jsx';
 import SkillSnapshot from './SkillSnapshot.jsx';
 import ConnectedKnowledge from './ConnectedKnowledge.jsx';
+import RecapCard from '../shared/RecapCard.jsx';
 
 // The Home section registry. HomeDashboard is a renderer over this list —
 // nothing is inline, so sections can be reordered, hidden, and collapsed.
@@ -11,6 +12,8 @@ import ConnectedKnowledge from './ConnectedKnowledge.jsx';
 // the user's saved layout (aether_home_layout) overrides them.
 export const SECTIONS = [
   { id: 'brief',      label: 'Daily Brief',        icon: 'Zap',       component: DailyBrief,        defaultVisible: true, defaultOrder: 0 },
+  // Batch Z / Order E: the scheduled agent's output, back on Home (also in Skills → Recaps).
+  { id: 'recap',      label: 'Recaps',             icon: 'CalendarClock', component: RecapCard, defaultVisible: true, defaultOrder: 1 },
   { id: 'opportunity',label: 'Blue Ocean Signals', icon: 'Waves',     component: OpportunityCards,   defaultVisible: true, defaultOrder: 1 },
   { id: 'connected',  label: 'Connected Knowledge',icon: 'Share2',    component: ConnectedKnowledge, defaultVisible: true, defaultOrder: 2 },
   { id: 'skills',     label: 'Skill Snapshot',     icon: 'Target',    component: SkillSnapshot,      defaultVisible: true, defaultOrder: 3 },

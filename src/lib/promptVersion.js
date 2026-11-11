@@ -10,15 +10,17 @@
 //
 // BUMP the number for an artifact type whenever its generation prompt changes.
 export const PROMPT_VERSION = {
-  studyGuide: 7, // shared VOICE fragment — meaning-level framing + sports analogies, no fake-precision telemetry
+  studyGuide: 8, // Batch Z / Order D: LENS + SUBJECT_FIDELITY replace CB_IDENTITY; examples from the book's own world; reader context only via Layer 3 (disabled)
+  // (v7 was: shared VOICE fragment — meaning-level framing + sports analogies, no fake-precision telemetry)
   // (v6 was: source grounding / user copy + TOC retrieval / chapter-anchored generation + chapter dives / verified tier from a physical copy)
   // (v5 was: three-state grounding / never assert non-existence + frameworks produced even when contents unavailable)
   // (v4 was: tier ceiling / no false [verified] + grounding-constrained frameworks + per-framework disconfirming + diagram regenerates)
   // (v3 was PR B: depth-bound rigor + networked read-next + analytical diagram)
   // (v2 was #29: grounding + tier chips + "Where This Breaks Down" + no telemetry leak)
-  deepDive: 1,
-  ladder: 1,
-  signals: 2, // + shared VOICE fragment (meaning-level framing, no fake-precision telemetry)
+  deepDive: 2, // Batch Z / Order D: system prompt is LENS + SUBJECT_FIDELITY (no reader goals)
+  ladder: 2, // Batch Z / Order D: ladder prompt no longer bends modules toward passive income / BD
+  signals: 3, // Batch Z / Order D: VOICE composes from LENS; system prompt has no reader goals
+  // (v2 was: + shared VOICE fragment)
 };
 
 // Stamp onto an artifact at generation time: { ...artifact, ...stampVersion('studyGuide') }.

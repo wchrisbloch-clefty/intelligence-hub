@@ -1,0 +1,66 @@
+/* Notes (nt-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default, capability added at 721. */
+
+.nt { max-width: 900px; margin: 0 auto; padding: 20px 16px 80px; min-width: 0; }
+@media (min-width: 721px) { .nt { padding: 20px 28px 80px; } }
+
+.nt-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
+.nt-head > div { min-width: 0; }
+.nt-eyebrow { font-size: 9px; letter-spacing: 3px; color: var(--text-subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.nt-title { font-size: var(--fs-2xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; line-height: var(--lh-tight); }
+@media (min-width: 721px) { .nt-title { font-size: var(--fs-3xl); } }
+.nt-new { flex-shrink: 0; min-height: 40px; padding: 8px 14px; gap: 6px; }
+
+.nt-err { margin-bottom: 14px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); border-left: 2px solid var(--negative);
+  color: var(--negative); font-size: var(--fs-sm); font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+/* Search */
+.nt-search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0 13px; margin-bottom: 16px; color: var(--text-subtle); }
+.nt-search:focus-within { border-color: var(--ring); }
+.nt-search-input { flex: 1; min-width: 0; min-height: 44px; background: none; border: none; outline: none; color: var(--text); font: inherit; font-size: var(--fs-base); }
+.nt-search-input::placeholder { color: var(--text-subtle); }
+
+/* Composer */
+.nt-compose { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 18px; min-width: 0; }
+.nt-field { display: block; width: 100%; min-height: 44px; background: var(--background); border: 1px solid var(--border); border-radius: 8px;
+  padding: 9px 12px; color: var(--text); font: inherit; font-size: var(--fs-base); outline: none; margin-bottom: 10px; }
+.nt-field::placeholder { color: var(--text-subtle); }
+.nt-field:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.nt-field[data-kind="title"] { font-size: var(--fs-lg); font-weight: 700; }
+.nt-field[data-kind="body"] { resize: vertical; line-height: var(--lh-read); }
+.nt-src-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.nt-src-row > .nt-field { flex: 1 1 140px; width: auto; min-width: 0; margin-bottom: 0; padding: 8px 11px; font-size: var(--fs-sm); }
+.nt-src-row > select.nt-field { flex: 0 0 auto; color: var(--text-muted); }
+.nt-compose-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.nt-compose-actions > .btn { border-radius: 8px; }
+.nt-cancel { font-weight: 400; color: var(--text-muted); }
+
+/* List */
+.nt-empty { text-align: center; padding: 48px 20px; border: 1px dashed var(--border); border-radius: 12px; font-size: var(--fs-base); color: var(--text-subtle); }
+.nt-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+@media (min-width: 721px) { .nt-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.nt-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: var(--s5); min-width: 0; }
+.nt-card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 6px; }
+.nt-card-title { font-size: var(--fs-lg); font-weight: 800; color: var(--text); line-height: var(--lh-tight); min-width: 0; overflow-wrap: anywhere; }
+.nt-x { flex-shrink: 0; display: inline-flex; background: none; border: none; cursor: pointer; color: var(--text-subtle); padding: 2px; border-radius: var(--radius-sm); }
+.nt-x:hover { color: var(--text); background: var(--surface-muted); }
+.nt-body { font-size: var(--fs-base); color: var(--text-muted); line-height: var(--lh-read); margin-bottom: 10px;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.nt-src { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; max-width: 100%; min-width: 0; }
+/* Tier marker — text + 1px border, never filled. */
+.nt-tier { font-size: 8px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--tier-c);
+  border: 1px solid color-mix(in srgb, var(--tier-c) 40%, transparent); padding: 1px 6px; border-radius: 3px; }
+.nt-tier[data-tier="verified"] { --tier-c: var(--tier-verified); }
+.nt-tier[data-tier="reported"] { --tier-c: var(--tier-reported); }
+.nt-tier[data-tier="inferred"] { --tier-c: var(--tier-inferred); }
+/* --tier-uncited is a decorative grey (≈3:1); as TEXT it uses --text-subtle. */
+.nt-tier[data-tier="uncited"] { --tier-c: var(--text-subtle); }
+.nt-src-link { display: inline-block; font-size: var(--fs-sm); color: var(--accent-text); text-decoration: none; overflow-wrap: anywhere; min-width: 0; }
+.nt-src-link:hover { text-decoration: underline; }
+.nt-src-text { font-size: var(--fs-sm); color: var(--text-subtle); overflow-wrap: anywhere; min-width: 0; }
+.nt-acts { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.nt-act { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted);
+  background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 4px 10px; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.nt-act:hover { background: var(--surface-muted); }

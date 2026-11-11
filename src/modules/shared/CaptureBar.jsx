@@ -1,10 +1,7 @@
-import { T } from '../../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { routeIntent } from '../../utils.js';
-import { ThinkingDots } from './Common.jsx';
-
-const ACCENT = T.accent;
+import './capture-bar.css';
 const ROUTES = [
   { id: 'learn',    label: 'Learn' },
   { id: 'ladder',   label: 'Ladder' },
@@ -47,41 +44,32 @@ export default function CaptureBar() {
   };
 
   return (
-    <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 14, padding: '14px 16px', marginBottom: 18 }}>
-      <div style={{ fontSize: 9, fontWeight: 700, color: ACCENT, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>✦ Capture — just start typing</div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        <input ref={inputRef} value={text} onChange={e => setText(e.target.value)}
+    <div className="cb">
+      <label className="cb-kicker" htmlFor="cb-input">Capture — just start typing</label>
+      <div className="cb-row">
+        <input id="cb-input" ref={inputRef} className="cb-input" value={text} onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') classify(); }}
-          placeholder="A topic, a question, an idea — no category needed. I'll route it."
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 9, padding: '11px 13px', fontSize: 'var(--fs-base)', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
-        <button onClick={classify} disabled={!text.trim() || busy}
-          style={{ padding: '11px 16px', background: text.trim() && !busy ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 9, color: text.trim() && !busy ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-lg)', fontWeight: 800, cursor: text.trim() && !busy ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+          placeholder="A topic, a question, an idea — no category needed. I'll route it." />
+        <button type="button" className="btn btn-primary cb-go tap" onClick={classify} disabled={!text.trim() || busy}
+          aria-busy={busy ? 'true' : undefined} aria-label="Route it">→</button>
       </div>
 
-      {busy && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 12 }}>
-          <ThinkingDots color={ACCENT} /><span style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Reading your intent…</span>
-        </div>
-      )}
+      {busy && <div className="cb-busy" aria-live="polite">Reading your intent…</div>}
 
       {result && (
-        <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--bord2)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)' }}>
-              → Routing to <strong style={{ color: ACCENT }}>{label(result.route)}</strong>
-              {result.topic ? <span style={{ color: 'var(--muted)' }}> · {result.topic}</span> : null}
+        <div className="cb-result">
+          <div className="cb-result-row">
+            <div className="cb-route">
+              → Routing to <strong>{label(result.route)}</strong>
+              {result.topic ? <span className="cb-topic"> · {result.topic}</span> : null}
             </div>
-            <div onClick={() => go(result.route)}
-              style={{ padding: '6px 14px', background: ACCENT, borderRadius: 8, color: T.canvas, fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer' }}>Go →</div>
+            <button type="button" className="btn btn-primary tap" onClick={() => go(result.route)}>Go →</button>
           </div>
-          {result.rationale && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 4 }}>{result.rationale}</div>}
-          <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 10, alignItems: 'center' }}>
-            <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>change:</span>
+          {result.rationale && <div className="cb-why">{result.rationale}</div>}
+          <div className="cb-alts">
+            <span className="cb-why">change:</span>
             {ROUTES.filter(r => r.id !== result.route).map(r => (
-              <div key={r.id} onClick={() => go(r.id)}
-                style={{ padding: '3px 10px', borderRadius: 14, border: '1px solid var(--border)', color: 'var(--subtle)', fontSize: 'var(--fs-sm)', cursor: 'pointer' }}>
-                {r.label}
-              </div>
+              <button type="button" key={r.id} className="chip tap" onClick={() => go(r.id)}>{r.label}</button>
             ))}
           </div>
         </div>

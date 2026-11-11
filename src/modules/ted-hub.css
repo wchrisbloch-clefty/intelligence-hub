@@ -1,0 +1,75 @@
+/* TEDHub (ted-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default, capability added at 721 (iPad).
+ * Legacy gold wash/border → --surface-muted / --border-strong (the contract
+ * aliases --accent-wash / --accent-border resolve to exactly these). */
+
+.ted { max-width: 900px; margin: 0 auto; padding-bottom: 60px; min-width: 0; --ted-pad: 14px; }
+@media (min-width: 721px) { .ted { --ted-pad: 24px; } }
+
+/* ── Header ───────────────────────────────────────────────────────────── */
+.ted-head { padding: 20px var(--ted-pad) 16px; border-bottom: 1px solid var(--border); }
+.ted-eyebrow { font-size: 9px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 4px; }
+.ted-title { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 800; color: var(--text); letter-spacing: -0.5px; margin-bottom: 4px; }
+.ted-sub { font-size: var(--fs-base); color: var(--text-subtle); }
+@media (min-width: 721px) { .ted-title { font-size: var(--fs-2xl); } }
+
+/* ── Controls ─────────────────────────────────────────────────────────── */
+.ted-controls { padding: 14px var(--ted-pad); border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; }
+@media (min-width: 721px) { .ted-controls { flex-direction: row; } }
+.ted-input, .ted-select { min-height: 44px; border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px;
+  font: inherit; font-size: var(--fs-base); outline: none; min-width: 0; }
+.ted-input { flex: 1; background: var(--background); color: var(--text); }
+.ted-input::placeholder { color: var(--text-subtle); }
+.ted-select { background: var(--surface); color: var(--text); cursor: pointer; }
+.ted-input:focus-visible, .ted-select:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ── Topic filters (a horizontal scroller — ::after is clipped, so touch gets a real 44px) */
+.ted-filters { padding: 10px var(--ted-pad); display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid var(--border); }
+.ted-filter { flex-shrink: 0; }
+@media (pointer: coarse) { .ted-filter { min-height: 44px; } }
+
+/* ── Grid ─────────────────────────────────────────────────────────────── */
+.ted-grid { padding: 16px var(--ted-pad); display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (min-width: 721px) { .ted-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ted-none { grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-subtle); font-size: var(--fs-base); }
+
+/* ── Talk card ────────────────────────────────────────────────────────── */
+.ted-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; min-width: 0;
+  transition: border-color var(--dur-color) ease; }
+.ted-card[data-expanded] { border-color: var(--border-strong); }
+.ted-card-body { padding: 14px 16px; }
+.ted-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 10px; }
+.ted-card-main { flex: 1; min-width: 0; }
+.ted-card-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
+.ted-card-meta { font-size: var(--fs-base); color: var(--text-muted); }
+.ted-score { display: flex; align-items: center; gap: 4px; flex-shrink: 0; color: var(--accent-text); }
+.ted-score-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.ted-score-val { font-size: var(--fs-sm); font-weight: 700; }
+.ted-note { font-size: var(--fs-sm); color: var(--text-subtle); line-height: 1.5; margin-bottom: 10px; }
+.ted-tags { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+.ted-tag { font-size: var(--fs-sm); padding: 2px 7px; background: var(--surface-muted); border: 1px solid var(--border-strong); border-radius: var(--radius-sm);
+  color: var(--accent-text); font-weight: 600; }
+.ted-actions { display: flex; gap: 8px; }
+.ted-watch { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; font-size: var(--fs-base); padding: 6px 12px;
+  background: var(--surface-muted); border: 1px solid var(--border-strong); border-radius: 7px; color: var(--accent-text); font-weight: 700; text-decoration: none; }
+.ted-analyze { flex: 1; min-width: 0; text-align: left; font: inherit; font-size: var(--fs-base); padding: 6px 12px; background: var(--background);
+  border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-weight: 600; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.ted-analyze:hover, .ted-analyze[data-open] { background: var(--surface-muted); }
+.ted-watch:focus-visible, .ted-analyze:focus-visible, .ted-vault:focus-visible, .ted-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ── Expanded brief ───────────────────────────────────────────────────── */
+.ted-brief { border-top: 1px solid var(--border-strong); padding: 14px 16px; background: var(--surface); }
+.ted-ground { margin-bottom: 12px; }
+.ted-vault { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; font: inherit; font-size: var(--fs-sm); padding: 5px 12px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 7px; color: var(--text-muted); cursor: pointer; }
+.ted-vault:hover { color: var(--text); }
+.ted-vaulted { display: flex; align-items: center; gap: 6px; margin-top: 8px; font-size: var(--fs-sm); color: var(--accent-text); }
+
+/* ── Add your own ─────────────────────────────────────────────────────── */
+.ted-own { margin: 0 var(--ted-pad) 20px; padding: 16px 20px; background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius-lg);
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.ted-own-q { font-size: var(--fs-base); color: var(--text-muted); margin-bottom: 2px; }
+.ted-link { background: none; border: 0; padding: 0; font: inherit; font-size: var(--fs-base); font-weight: 700; color: var(--accent-text); cursor: pointer; }
+.ted-link[data-quiet] { font-weight: 600; color: var(--text-subtle); }
+.ted-link:hover { text-decoration: underline; }

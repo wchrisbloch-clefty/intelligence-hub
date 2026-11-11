@@ -1,0 +1,105 @@
+/* Translator (tr-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 default, capability added at 721 (iPad) and 1101 (desktop).
+ * Selected = accent border + --accent-text (the legacy gold wash is gone).
+ * Chips inside the horizontal scrollers get a REAL 44px height on touch — the
+ * .tap ::after is clipped by an overflow container. */
+
+.tr { max-width: 1100px; margin: 0 auto; padding-bottom: 80px; min-width: 0; --pad: 16px; }
+@media (max-width: 479px) { .tr { --pad: 14px; } }
+@media (min-width: 721px)  { .tr { --pad: 22px; padding-bottom: 60px; } }
+@media (min-width: 1101px) { .tr { --pad: 28px; } }
+
+.tr-head { padding: var(--pad) var(--pad) 0; margin-bottom: 20px; }
+.tr-eyebrow { font-size: 9px; letter-spacing: 3px; color: var(--text-subtle); text-transform: uppercase; margin-bottom: 4px; }
+.tr-title { display: flex; align-items: center; gap: 10px; font-size: var(--fs-xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; }
+@media (min-width: 721px) { .tr-title { font-size: var(--fs-2xl); } }
+.tr-title-icon { display: inline-flex; color: var(--text-subtle); }
+.tr-lede { font-size: var(--fs-base); color: var(--text-muted); margin-top: 5px; }
+.tr-body { padding: 0 var(--pad); min-width: 0; }
+
+.tr-scroll { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin-bottom: 20px; padding-bottom: 2px; }
+.tr-scroll::-webkit-scrollbar { display: none; }
+.tr-scroll[data-gap="sm"] { margin-bottom: 16px; padding-bottom: 0; }
+.tr-chip { flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-base); font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.tr-chip:hover { background: var(--surface-muted); }
+.tr-chip[data-weight="normal"] { font-weight: 500; }
+.tr-chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.tr-chip[aria-pressed="true"][data-weight="normal"] { font-weight: 700; }
+
+/* From ⇄ To */
+.tr-langs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--s2); align-items: center; margin-bottom: 16px; }
+@media (min-width: 721px) { .tr-langs { grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 12px; } }
+.tr-swap { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); border: 1px solid var(--border); font: inherit; font-size: var(--fs-lg); color: var(--text); cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.tr-swap:hover { background: var(--surface-muted); }
+
+.tr-sel { position: relative; min-width: 0; }
+.tr-sel-btn { width: 100%; min-height: 40px; padding: 9px 14px; display: flex; justify-content: space-between; align-items: center; gap: var(--s2);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; color: var(--text); font: inherit; font-size: var(--fs-base);
+  font-weight: 600; text-align: left; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.tr-sel-btn:hover { background: var(--surface-muted); }
+.tr-sel-text { min-width: 0; }
+.tr-sel-label { font-size: var(--fs-sm); color: var(--text-subtle); margin-bottom: 2px; font-weight: 400; }
+.tr-sel-value { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tr-sel-caret { font-size: var(--fs-sm); color: var(--text-subtle); flex-shrink: 0; }
+/* Dropdown is an overlay — the one place --shadow-lg is allowed. */
+.tr-menu { position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; z-index: 100; max-height: 320px; overflow-y: auto; box-shadow: var(--shadow-lg); }
+.tr-group { padding: 6px 14px 2px; font-size: 10px; font-weight: 700; color: var(--text-subtle); letter-spacing: 1px; text-transform: uppercase; background: var(--background); }
+.tr-opt { display: block; width: 100%; min-height: 40px; text-align: left; padding: 8px 14px; font: inherit; font-size: var(--fs-base);
+  color: var(--text); background: transparent; border: 0; border-bottom: 1px solid var(--border); cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.tr-opt[data-variant] { padding-left: 24px; }
+.tr-opt:hover { background: var(--surface-muted); }
+.tr-opt[aria-selected="true"] { color: var(--accent-text); font-weight: 600; }
+
+/* Panels */
+.tr-panels { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin-bottom: 16px; }
+@media (min-width: 721px) { .tr-panels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tr-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; min-width: 0; }
+.tr-panel-head { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: var(--s2); }
+.tr-panel-lang { font-size: var(--fs-base); font-weight: 700; color: var(--text-muted); min-width: 0; }
+.tr-tools { display: flex; gap: 6px; flex-shrink: 0; }
+.tr-tool { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--text-subtle); font: inherit; font-size: var(--fs-base); cursor: pointer;
+  transition: background-color var(--dur-color) ease, color var(--dur-color) ease; }
+.tr-tool:hover { background: var(--surface-muted); color: var(--text); }
+.tr-tool[data-live] { border-color: var(--negative); color: var(--negative); }
+.tr-tool[data-sm] { font-size: var(--fs-sm); padding: 3px 8px; border-radius: 5px; min-height: 0; }
+.tr-hidden { display: none; }
+.tr-input { display: block; width: 100%; min-height: 160px; padding: 14px; background: transparent; border: 0; outline: none; color: var(--text);
+  font: inherit; font-size: var(--fs-base); resize: vertical; line-height: 1.7; }
+.tr-input::placeholder { color: var(--text-subtle); }
+.tr-input:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+@media (max-width: 720px) { .tr-input { font-size: var(--fs-lg); } }
+.tr-panel-foot { padding: 8px 14px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+.tr-count { font-size: var(--fs-sm); color: var(--text-subtle); }
+.tr-output { min-height: 160px; padding: 14px; font-size: var(--fs-base); color: var(--text); line-height: 1.7; min-width: 0; }
+.tr-muted { color: var(--text-subtle); }
+.tr-pending { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 10px; font-style: italic; }
+
+.tr-go { display: flex; align-items: center; justify-content: center; gap: var(--s2); width: 100%; margin-bottom: 24px; padding: 12px 32px;
+  background: var(--accent); border: 1px solid var(--accent); border-radius: 10px; color: var(--accent-foreground);
+  font: inherit; font-size: var(--fs-lg); font-weight: 800; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.tr-go:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.tr-go[disabled] { background: var(--surface-muted); border-color: var(--surface-muted); color: var(--text-subtle); cursor: default; }
+
+/* History */
+.tr-label { font-size: 9px; color: var(--text-subtle); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.tr-history { display: flex; flex-direction: column; gap: var(--s2); }
+.tr-hist { display: block; width: 100%; text-align: left; padding: 10px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  font: inherit; color: inherit; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.tr-hist:hover { background: var(--surface-muted); }
+.tr-hist-meta { display: flex; gap: var(--s2); align-items: center; margin-bottom: 4px; font-size: var(--fs-sm); color: var(--text-subtle); flex-wrap: wrap; }
+.tr-hist-pair { color: var(--accent-text); font-weight: 700; }
+.tr-hist-text { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.5; overflow-wrap: anywhere; }
+
+/* Hover fill is --surface-muted; --text-subtle on it is 4.47:1 in light. */
+.tr-sel-btn:hover .tr-sel-label, .tr-sel-btn:hover .tr-sel-caret, .tr-hist:hover .tr-hist-meta { color: var(--text-muted); }
+
+@media (pointer: coarse) {
+  .tr-scroll .tr-chip, .tr-opt { min-height: 44px; }
+}

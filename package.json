@@ -5,8 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "node scripts/gen-prompts.mjs --check && node scripts/sync-edge-shared.mjs --check && node scripts/check-tokens.mjs && vite build",
+    "preview": "vite preview",
+    "check:tokens": "node scripts/check-tokens.mjs",
+    "serve:local": "node scripts/serve-local.mjs",
+    "gen:prompts": "node scripts/gen-prompts.mjs",
+    "verify:prompts": "node scripts/verify-prompts.mjs",
+    "audit:responsive": "node scripts/audit-responsive.mjs"
   },
   "dependencies": {
     "lucide-react": "^1.17.0",
@@ -17,6 +22,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
+    "playwright": "^1.63.0",
     "vite": "^5.4.2"
   }
 }

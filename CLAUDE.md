@@ -43,16 +43,21 @@ deployed on Vercel. Single user (CB).
   guide had exported byte-identical to the pre-#29 one because nothing
   invalidated. **Bump the type's number whenever its generation prompt changes.**
   Academy packs are static data and carry their own `version`/`lastVerified`.
-- **Persistence is Upstash Redis via `/api/storage`**, keys prefixed `aether_*`.
-  **Not Supabase.** `api/_lib.js` reads creds as
-  `process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL` (same
-  fallback for the token) — mirror that anywhere credentials are read.
+- **Persistence is Supabase `kv` via `/api/storage`** (Batch Z / Order B), keys
+  prefixed `aether_*`. **Upstash is retired — do not re-add it.** One table,
+  `public.kv (key, value, updated_at)`, RLS on with NO policies (service role only),
+  `text_pattern_ops` index for prefix scans. The PostgREST client is
+  `api/_kv.js` (runtime-neutral fetch — Supabase Edge Functions import the same
+  file); `api/_lib.js` reads `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` and is
+  the ONLY place the key is read. `storageCredentialsPresent()` is env presence
+  only; `/api/health` storage is a real write→read→compare→delete round trip
+  (`storageRoundTrip`). Never a direct Postgres connection.
 - **Auth is an `ACCESS_CODE` cookie gate.** Server routes sit behind
   `requireAuth` (`api/_lib.js`); anything calling `/api/storage` from outside the
-  browser (e.g. a cron job) will 401. Scheduled functions read Upstash directly
-  instead.
-- **Theme is a CSS-variable token system** in `index.html` (`:root` +
-  `[data-theme="dark"]`) plus `src/theme.js` (the `T` token bridge / `withAlpha`).
+  browser (e.g. a cron job) will 401. Scheduled functions (Supabase Edge) read
+  the `kv` table directly with the service role instead.
+- **Theme is a CSS-variable token system** in `src/styles/tokens.css` (`:root` +
+  `[data-theme="dark"]`; legacy names are aliases — never rename call sites) plus `src/theme.js` (the `T` token bridge / `withAlpha`).
   **No hardcoded hex** — a 405-replacement codemod (`scripts/migrate-colors.mjs`)
   removed it all. Use tokens, never raw hex.
 - **Type + space scale** live in `index.html` `:root`: `--fs-xs…--fs-3xl`
@@ -61,6 +66,37 @@ deployed on Vercel. Single user (CB).
   a codemod (`scripts/migrate-fontsize.mjs`) swept them all to `--fs-*`; use the
   tokens. Eyebrow labels (uppercase + letter-spaced kickers) are the one thing
   allowed below 13px and are left as small literals.
+
+## Batch Z-2 — the gates are now at zero (keep them there)
+
+- **Every module is on co-located CSS** (`<module>.css`, module-prefixed classes).
+  `scripts/check-tokens.mjs` (in `npm run build`) fails on any literal colour in CSS
+  outside `src/styles/tokens.css` and any colour/background/border inline style in JSX.
+  Only `CoachAI.jsx` (unrouted) remains in `check-tokens.baseline.json`.
+- **`--accent` is a FILL colour** (primary button, active nav/tab). Text that should read
+  as accent is `--accent-text`; text ON an accent fill is `--accent-foreground`. Using
+  `--accent` as text fails contrast in dark (2.19:1) — `scripts/codemod-accent-text.mjs`
+  swept 306 such uses.
+- **`npm run audit:responsive`** guards **22 views** (every mode) × 390/820/1280 × both
+  themes on overflow / tap<44 / CLS>0.05 / contrast / 0×0 / console. The baseline is
+  `{}` — ANY failing cell fails CI. Adding a new view: add it to `VIEWS` and run
+  `--update` with `AUDIT_NEW_VIEWS=<id>`; existing views can never gain a cell.
+- Controls inside an `overflow:auto` scroller need a real 44px min-height on touch — the
+  `.tap` `::after` hit area is clipped there.
+- `.fr-main` has `scrollbar-gutter: stable` — without it a feed growing past the viewport
+  narrows the column and reflows every card (CLS 0.11).
+- **Desktop rail:** `shared/PageWithRail` (340px `--rail-width`, ≥1101; stacks below
+  under 1101). Occupants: ConnectedKnowledge, `shared/ProvenancePanel` (tier legend),
+  Research's Source Library, What's Happening's Trending/Topics.
+- **"Through my mental models"** (`shared/MentalModelChip`, `lib/mentalModels.js`) —
+  on-demand reframe against `prompts/library-v1.md`, on the study guide and deep dive.
+  Automatic connection to the bookshelf is OFF by default; this chip is the opt-in.
+- **Catalog requests** (`lib/bookVerify.js`) go through one throttled queue with a 429
+  circuit breaker and a kv cache (`aether_bookverify_v1`). Never bypass it with a raw
+  fetch to Google Books / Open Library.
+- **`ground-book`** is a spend endpoint called with the PUBLIC anon key: input
+  validation, every result cached in kv (misses 7 days, keyed on Firecrawl
+  availability), and a fail-closed 40/day cap via `ground_book_consume()`.
 
 ## Home feed rebuild + What's Happening + Notes (later phase)
 
@@ -602,14 +638,19 @@ nobody; now they feed a shared graph and a shared card deck.
 Three-part effort. **Sequencing matters: storage layer (Part 3) → book library
 (Part 2); Part 2 depends on Part 3's error reporting. Part 1 is independent.**
 
-### PART 1 — Recap schedule on Vercel Cron  ✅ DONE (merged, PR #11)
-The recap Edge Functions only used Supabase as a scheduler (PR #9 pointed them at
-Upstash); Vercel already has Cron. Ported `supabase/functions/{weekly-recap,
-monthly-review}` → `api/weekly-recap.js` / `api/monthly-review.js` (Node,
-GET-only, `Authorization: Bearer ${CRON_SECRET}`, `maxDuration: 300`), shared
-helpers in `api/_recap.js` (reusing `_lib.js`'s `store`), crons in `vercel.json`
-(`0 13 * * 5`, `0 14 1 * *`), and the whole `supabase/` directory deleted.
-**Do not rebuild this.**
+### PART 1 — Recap schedule  ➜ MOVED to Supabase in Batch Z / Order E
+The Vercel cron routes (`api/weekly-recap.js`, `api/monthly-review.js`,
+`api/_recap.js`) and the `crons` block in `vercel.json` are **deleted** (Vercel is
+now at 10/12 functions). The recaps run as **Supabase Edge Functions**
+(`supabase/functions/{weekly-recap,monthly-review}`) on project
+`ujywrlbuwecitwkvzohb`, scheduled by **pg_cron** (`0 13 * * 5`, `0 14 1 * *` UTC),
+reading/writing the SAME `kv` table the app uses. Gate: `x-cron-secret`, a value
+generated in **Vault** (`cron_secret`) and checked by `public.verify_cron_secret()`
+(service_role only) — nobody ever types or sees it. No `ANTHROPIC_API_KEY` Edge
+secret → 200 `{degraded, needsKey}` and the previous recap is kept.
+`supabase/functions/_shared/{kv,prompts.generated,models.generated}.js` are
+GENERATED by `scripts/sync-edge-shared.mjs` (build fails if they drift).
+**Do not re-add Vercel crons.**
 
 ### PART 2 — Fully editable book library
 Stored `aether_bookclub` is the single source of truth; `KNOWN_BOOKS` (20 entries

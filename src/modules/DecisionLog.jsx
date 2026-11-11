@@ -1,22 +1,19 @@
-import { T, withAlpha } from '../theme';
 import { useState, useEffect } from 'react';
-import { useApp } from '../App.jsx';
 import { callClaude, uid } from '../utils.js';
 import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 
 const DECISIONS_KEY = 'aether_decisions';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import { SectionEmpty } from './shared/SectionState.jsx';
+import Icon from './shared/Icon.jsx';
 import AskChip from './shared/AskChip.jsx';
-
-const ACCENT        = T.accent;
-const ACCENT_BG     = 'rgba(217,164,65,0.07)';
-const ACCENT_BORDER = 'rgba(217,164,65,0.22)';
+import './decision-log.css';
 
 const STATUS_META = {
-  thinking: { label: 'Thinking',    color: T.accent },
-  decided:  { label: 'Decided',     color: T.accent },
+  thinking: { label: 'Thinking',    color: 'var(--accent-text)' },
+  decided:  { label: 'Decided',     color: 'var(--accent-text)' },
   closed:   { label: 'Archived',    color: 'var(--dim)' },
 };
 
@@ -27,8 +24,6 @@ const BLANK_FORM = {
 function daysAgo(ts) { return Math.floor((Date.now() - ts) / 86_400_000); }
 
 export default function DecisionLog() {
-  const { isMobile } = useApp();
-
   const [decisions, setDecisions] = useState(() => readLocal(DECISIONS_KEY, []));
 
   // Cross-device: pull the server copy after mount.
@@ -87,7 +82,7 @@ export default function DecisionLog() {
     ).join('\n\n---\n\n');
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `Analyze CB's decision log for patterns and quality. Provide:\n1. CB's decision-making strengths\n2. Cognitive biases or blind spots you detect\n3. Patterns in what CB avoids vs favors\n4. Quality of reasoning (evidence, mental models used)\n5. Three specific, actionable recommendations to sharpen CB's decision quality\n\nDecisions log:\n${summary}` }],
         maxTokens: 1100,
       });
@@ -104,7 +99,7 @@ export default function DecisionLog() {
     const prompt = `Analyze this specific decision for CB and give actionable feedback:\n\nTitle: ${d.title}\nContext: ${d.context || 'Not provided'}\nOptions considered: ${d.options.join(' | ') || 'Not listed'}\nChosen option: ${d.options[d.chosen] || '—'}\nReasoning: ${d.reasoning || 'Not provided'}\nStatus: ${d.status}\n\nProvide:\n1. Quality of reasoning (strengths and blind spots)\n2. What mental models apply here\n3. Risks or second-order effects CB may not have considered\n4. A decisive recommendation or validation`;
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 800,
       });
@@ -121,82 +116,80 @@ export default function DecisionLog() {
 
   const setOption = (i, val) => setForm(p => ({ ...p, options: p.options.map((o, j) => j === i ? val : o) }));
 
+  const toggleCard = (id, expanded) => setExpandedId(expanded ? null : id);
+
   return (
-    <div style={{ padding: isMobile ? '16px 16px 80px' : '24px 28px 60px', maxWidth: 860, margin: '0 auto' }}>
+    <div className="dl">
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Decision Log</div>
-        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Decisions That Compound</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
+      <div className="dl-head">
+        <div className="dl-eyebrow">Decision Log</div>
+        <div className="dl-title">Decisions That Compound</div>
+        <div className="dl-lede">Track every significant decision. Review outcomes. Let AI surface your patterns.</div>
       </div>
 
       {/* Review due banner */}
       {reviewDue.length > 0 && (
-        <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, padding: '10px 16px', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 'var(--fs-xl)'}}>⏰</span>
+        <div className="dl-banner" role="status">
+          <Icon name="Clock" size={20} />
           <div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: ACCENT }}>{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>How did they turn out? Record the outcome to build your pattern library.</div>
+            <div className="dl-banner-title">{reviewDue.length} decision{reviewDue.length > 1 ? 's' : ''} ready for 30-day review</div>
+            <div className="dl-banner-sub">How did they turn out? Record the outcome to build your pattern library.</div>
           </div>
         </div>
       )}
 
       {/* Tab bar */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
+      <div className="dl-tabs" role="tablist">
         {[
-          { id: 'log',      label: `📋 Log (${decisions.length})` },
+          { id: 'log',      icon: 'ClipboardList', label: `Log (${decisions.length})` },
           { id: 'new',      label: '+ Log Decision' },
           { id: 'patterns', label: '✦ AI Patterns' },
         ].map(t => (
-          <div key={t.id}
-            onClick={() => t.id === 'patterns' ? analyzePatterns() : setTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${tab === t.id ? ACCENT : 'var(--border)'}`, background: tab === t.id ? ACCENT_BG : 'var(--surface)', color: tab === t.id ? ACCENT : 'var(--muted)', transition: 'all 0.12s' }}>
-            {t.label}
-          </div>
+          <button type="button" role="tab" key={t.id} className="dl-tab tap" aria-selected={tab === t.id}
+            onClick={() => t.id === 'patterns' ? analyzePatterns() : setTab(t.id)}>
+            {t.icon && <Icon name={t.icon} size={15} />}{t.label}
+          </button>
         ))}
       </div>
 
       {/* ── New Decision Form ──────────────────────────────────────────────── */}
       {tab === 'new' && (
-        <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '20px 22px' }}>
-          <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
+        <div className="dl-panel">
+          <input className="dl-input" data-title="" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
             onKeyDown={e => { if (e.key === 'Enter' && form.title.trim()) addDecision(); }}
-            placeholder="Decision title (e.g. 'Take on the new contract')"
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', fontWeight: 700, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 12, minHeight: isMobile ? 44 : undefined }} />
+            placeholder="Decision title (e.g. 'Take on the new contract')" aria-label="Decision title" />
 
-          <textarea value={form.context} onChange={e => setForm(p => ({ ...p, context: e.target.value }))}
+          <textarea className="dl-input dl-textarea" data-ctx="" value={form.context} onChange={e => setForm(p => ({ ...p, context: e.target.value }))}
             placeholder="Context — what's the situation? What's at stake? What constraints exist?"
-            rows={3}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
+            aria-label="Context" rows={3} />
 
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Options — click radio to mark your chosen option</div>
-          {form.options.map((opt, i) => (
-            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <div onClick={() => setForm(p => ({ ...p, chosen: i }))}
-                style={{ width: isMobile ? 22 : 18, height: isMobile ? 22 : 18, borderRadius: '50%', border: `2px solid ${form.chosen === i ? ACCENT : 'var(--border)'}`, background: form.chosen === i ? ACCENT : 'transparent', flexShrink: 0, cursor: 'pointer', transition: 'all 0.12s' }} />
-              <input value={opt} onChange={e => setOption(i, e.target.value)}
-                placeholder={`Option ${i + 1}${i === 0 ? ' (required)' : ' (optional)'}`}
-                style={{ flex: 1, background: 'var(--bg)', border: `1px solid ${form.chosen === i ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, padding: isMobile ? '12px 14px' : '8px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', minHeight: isMobile ? 44 : undefined }} />
-            </div>
-          ))}
-
-          <textarea value={form.reasoning} onChange={e => setForm(p => ({ ...p, reasoning: e.target.value }))}
-            placeholder="Your reasoning — why this option? Mental models? Long-game view?"
-            rows={3}
-            style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: isMobile ? '12px 14px' : '9px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginTop: 14, marginBottom: 14, minHeight: isMobile ? 44 : undefined }} />
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            {[{ id: 'thinking', label: '🤔 Still Deciding' }, { id: 'decided', label: '✅ Already Decided' }].map(s => (
-              <div key={s.id} onClick={() => setForm(p => ({ ...p, status: s.id }))}
-                style={{ padding: isMobile ? '10px 16px' : '7px 14px', fontSize: 'var(--fs-base)', fontWeight: 600, borderRadius: 8, cursor: 'pointer', border: `1px solid ${form.status === s.id ? ACCENT : 'var(--border)'}`, background: form.status === s.id ? ACCENT_BG : 'transparent', color: form.status === s.id ? ACCENT : 'var(--subtle)', transition: 'all 0.12s', minHeight: isMobile ? 44 : 34 }}>
-                {s.label}
+          <div className="dl-opts-label" id="dl-opts-label">Options — click radio to mark your chosen option</div>
+          <div role="radiogroup" aria-labelledby="dl-opts-label">
+            {form.options.map((opt, i) => (
+              <div key={i} className="dl-opt">
+                <button type="button" role="radio" className="dl-radio tap" aria-checked={form.chosen === i}
+                  aria-label={`Choose option ${i + 1}`} onClick={() => setForm(p => ({ ...p, chosen: i }))} />
+                <input className="dl-input" data-opt="" data-chosen={form.chosen === i ? '' : undefined} value={opt} onChange={e => setOption(i, e.target.value)}
+                  placeholder={`Option ${i + 1}${i === 0 ? ' (required)' : ' (optional)'}`} aria-label={`Option ${i + 1}`} />
               </div>
             ))}
           </div>
 
-          <button onClick={addDecision} disabled={!form.title.trim()}
-            style={{ width: '100%', padding: isMobile ? '14px 16px' : '12px', background: form.title.trim() ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: form.title.trim() ? '#000' : 'var(--dim)', cursor: form.title.trim() ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+          <textarea className="dl-input dl-textarea" data-why="" value={form.reasoning} onChange={e => setForm(p => ({ ...p, reasoning: e.target.value }))}
+            placeholder="Your reasoning — why this option? Mental models? Long-game view?"
+            aria-label="Reasoning" rows={3} />
+
+          <div className="dl-seg">
+            {[{ id: 'thinking', icon: 'Brain', label: 'Still Deciding' }, { id: 'decided', icon: 'Check', label: 'Already Decided' }].map(s => (
+              <button type="button" key={s.id} className="dl-choice tap" aria-pressed={form.status === s.id}
+                onClick={() => setForm(p => ({ ...p, status: s.id }))}>
+                <Icon name={s.icon} size={15} /> {s.label}
+              </button>
+            ))}
+          </div>
+
+          <button type="button" className="btn btn-primary dl-submit tap" onClick={addDecision} disabled={!form.title.trim()}>
             Log Decision →
           </button>
         </div>
@@ -204,19 +197,18 @@ export default function DecisionLog() {
 
       {/* ── AI Patterns ────────────────────────────────────────────────────── */}
       {tab === 'patterns' && (
-        <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 14, padding: '20px 22px' }}>
-          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 14 }}>AI Pattern Analysis</div>
+        <div className="dl-panel">
+          <div className="dl-eyebrow dl-eyebrow-gap" data-tight="">AI Pattern Analysis</div>
           {aiLoading
-            ? <ThinkingDots color={ACCENT} />
+            ? <ThinkingDots color="var(--accent-text)" />
             : patterns
               ? <>
-                  <MD text={patterns} color={ACCENT} />
-                  <div onClick={() => { setPatterns(''); analyzePatterns(); }}
-                    style={{ marginTop: 14, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
+                  <MD text={patterns} color="var(--accent-text)" />
+                  <button type="button" className="dl-link tap" onClick={() => { setPatterns(''); analyzePatterns(); }}>
                     Refresh analysis
-                  </div>
+                  </button>
                 </>
-              : <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Log at least 3 decisions to unlock pattern analysis.</div>
+              : <div className="dl-quiet">Log at least 3 decisions to unlock pattern analysis.</div>
           }
         </div>
       )}
@@ -225,15 +217,12 @@ export default function DecisionLog() {
       {tab === 'log' && (
         <>
           {decisions.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>⚖️</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No Decisions Logged</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Log every significant decision — big and small. The compound insight comes from reviewing them over time.</div>
-              <div onClick={() => setTab('new')} style={{ display: 'inline-block', padding: '10px 22px', background: ACCENT, borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Log First Decision →</div>
-            </div>
+            <SectionEmpty what="No decisions logged"
+              how="Log every significant decision — big and small. The compound insight comes from reviewing them over time."
+              actionLabel="Log First Decision →" onAction={() => setTab('new')} />
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="dl-list">
             {decisions.map(d => {
               const expanded = expandedId === d.id;
               const meta     = STATUS_META[d.status] || STATUS_META.thinking;
@@ -241,84 +230,87 @@ export default function DecisionLog() {
               const reviewReady = d.status === 'decided' && days !== null && days >= 28;
 
               return (
-                <div key={d.id} style={{ background: 'var(--surface)', border: `1px solid ${expanded ? ACCENT_BORDER : reviewReady ? 'rgba(217,164,65,0.3)' : 'var(--border)'}`, borderRadius: 12, overflow: 'hidden', transition: 'border-color 0.15s' }}>
-                  <div style={{ padding: '13px 16px', cursor: 'pointer' }} onClick={() => setExpandedId(expanded ? null : d.id)}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 5, lineHeight: 1.3 }}>{d.title}</div>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', padding: '2px 8px', background: `${meta.color}15`, color: meta.color, borderRadius: 4, fontWeight: 600 }}>{meta.label}</span>
-                          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{new Date(d.createdAt).toLocaleDateString()}</span>
-                          {days !== null && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{days}d since decision</span>}
-                          {reviewReady && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>⏰ Review ready</span>}
+                <div key={d.id} className="dl-card" data-open={expanded ? '' : undefined} data-review={reviewReady ? '' : undefined}>
+                  {/* A div, not a button: it holds the Ask + delete buttons. */}
+                  <div className="dl-card-head focus-ring" role="button" tabIndex={0} aria-expanded={expanded}
+                    onClick={() => toggleCard(d.id, expanded)}
+                    onKeyDown={e => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggleCard(d.id, expanded); } }}>
+                    <div className="dl-card-row">
+                      <div className="dl-card-main">
+                        <div className="dl-card-title">{d.title}</div>
+                        <div className="dl-meta">
+                          <span className="dl-status" data-status={d.status}>{meta.label}</span>
+                          <span>{new Date(d.createdAt).toLocaleDateString()}</span>
+                          {days !== null && <span>{days}d since decision</span>}
+                          {reviewReady && <span className="dl-review"><Icon name="Clock" size={13} /> Review ready</span>}
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                      <div className="dl-card-tools">
                         <AskChip type="decision" object={d} />
-                        <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', display: 'inline-block', transform: `rotate(${expanded ? 180 : 0}deg)`, transition: 'transform 0.2s' }}>▼</span>
-                        <div onClick={e => { e.stopPropagation(); remove(d.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                        <span className="dl-chev" aria-hidden="true"><Icon name="ChevronDown" size={16} /></span>
+                        <button type="button" className="dl-x tap" aria-label={`Delete decision: ${d.title}`}
+                          onClick={e => { e.stopPropagation(); remove(d.id); }} onKeyDown={e => e.stopPropagation()}>
+                          <Icon name="X" size={15} />
+                        </button>
                       </div>
                     </div>
                   </div>
 
                   {expanded && (
-                    <div style={{ borderTop: '1px solid var(--bord2)', padding: '14px 16px' }}>
+                    <div className="dl-body">
                       {d.context && (
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Context</div>
-                          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{d.context}</div>
+                        <div className="dl-sec">
+                          <div className="dl-sec-label">Context</div>
+                          <div className="dl-sec-text">{d.context}</div>
                         </div>
                       )}
 
                       {d.options.length > 0 && (
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Options</div>
+                        <div className="dl-sec">
+                          <div className="dl-sec-label" data-gap="">Options</div>
                           {d.options.map((opt, i) => (
-                            <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6, padding: '7px 12px', background: i === d.chosen ? ACCENT_BG : 'var(--bg)', border: `1px solid ${i === d.chosen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8 }}>
-                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? ACCENT : 'var(--dim)' }}>{i === d.chosen ? '✓' : '○'}</span>
-                              <span style={{ fontSize: 'var(--fs-base)', color: i === d.chosen ? 'var(--text)' : 'var(--muted)', flex: 1 }}>{opt}</span>
-                              {i === d.chosen && <span style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: ACCENT, fontWeight: 700 }}>CHOSEN</span>}
+                            <div key={i} className="dl-optrow" data-chosen={i === d.chosen ? '' : undefined}>
+                              <span className="dl-optrow-mark">{i === d.chosen ? '✓' : '○'}</span>
+                              <span className="dl-optrow-text">{opt}</span>
+                              {i === d.chosen && <span className="dl-chosen">CHOSEN</span>}
                             </div>
                           ))}
                         </div>
                       )}
 
                       {d.reasoning && (
-                        <div style={{ marginBottom: 14 }}>
-                          <div style={{ fontSize: isMobile ? 10 : 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 5 }}>Reasoning</div>
-                          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)', lineHeight: 1.7 }}>{d.reasoning}</div>
+                        <div className="dl-sec" data-last="">
+                          <div className="dl-sec-label">Reasoning</div>
+                          <div className="dl-sec-text">{d.reasoning}</div>
                         </div>
                       )}
 
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 14 }}>
+                      <div className="dl-actions">
                         {d.status === 'thinking' && (
-                          <div onClick={() => updateStatus(d.id, 'decided')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: 'pointer', background: withAlpha(T.accent, 8), border: '1px solid #D9A44130', color: T.accent, minHeight: isMobile ? 44 : 34 }}>
+                          <button type="button" className="dl-act tap" data-tone="accent" onClick={() => updateStatus(d.id, 'decided')}>
                             ✓ Mark Decided
-                          </div>
+                          </button>
                         )}
                         {d.status !== 'closed' && (
-                          <div onClick={() => updateStatus(d.id, 'closed')}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 7, cursor: 'pointer', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--subtle)', minHeight: isMobile ? 44 : 34 }}>
+                          <button type="button" className="dl-act tap" onClick={() => updateStatus(d.id, 'closed')}>
                             Archive
-                          </div>
+                          </button>
                         )}
                         {!decisionAI[d.id] && (
-                          <div onClick={() => analyzeDecision(d)}
-                            style={{ padding: isMobile ? '10px 16px' : '5px 13px', fontSize: 'var(--fs-sm)', fontWeight: 700, borderRadius: 7, cursor: decisionAILoading === d.id ? 'default' : 'pointer', background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, minHeight: isMobile ? 44 : 34, display: 'flex', alignItems: 'center', gap: 5, opacity: decisionAILoading === d.id ? 0.7 : 1 }}>
-                            {decisionAILoading === d.id ? <><ThinkingDots color={ACCENT} /> Analyzing…</> : '✦ Get AI Feedback'}
-                          </div>
+                          <button type="button" className="dl-act tap" data-tone="accent" onClick={() => analyzeDecision(d)}
+                            aria-busy={decisionAILoading === d.id || undefined}>
+                            {decisionAILoading === d.id ? <><ThinkingDots color="var(--accent-text)" /> Analyzing…</> : '✦ Get AI Feedback'}
+                          </button>
                         )}
                       </div>
 
                       {decisionAI[d.id] && (
-                        <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px', marginBottom: 8 }}>
-                          <div style={{ fontSize: isMobile ? 10 : 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 10 }}>AI Decision Analysis</div>
-                          <MD text={decisionAI[d.id]} color={ACCENT} />
-                          <div onClick={() => setDecisionAI(prev => { const n = { ...prev }; delete n[d.id]; return n; })}
-                            style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', textDecoration: 'underline' }}>
+                        <div className="dl-analysis">
+                          <div className="dl-eyebrow">AI Decision Analysis</div>
+                          <MD text={decisionAI[d.id]} color="var(--accent-text)" />
+                          <button type="button" className="dl-link tap" onClick={() => setDecisionAI(prev => { const n = { ...prev }; delete n[d.id]; return n; })}>
                             Clear analysis
-                          </div>
+                          </button>
                         </div>
                       )}
                     </div>

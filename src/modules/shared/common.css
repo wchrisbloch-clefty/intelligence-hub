@@ -1,0 +1,90 @@
+/* Common primitives (cm-). Tokens only. Caller-supplied colours arrive as
+   --c (stroke/fill) and --ct (the same colour used as TEXT — the accent maps to
+   --accent-text there). Accent fills are reserved for the primary Btn. */
+
+/* ── Btn ─────────────────────────────────────────────────────────────── */
+.cm-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border-radius: 10px; font: inherit; font-weight: 700; cursor: pointer; border: 1px solid transparent;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.cm-btn[disabled] { cursor: default; }
+.cm-btn-sm { padding: 7px 14px; font-size: var(--fs-sm); }
+.cm-btn-md { padding: 11px 18px; font-size: var(--fs-base); }
+.cm-btn-lg { padding: 14px 22px; font-size: var(--fs-base); }
+
+.cm-btn-fill { width: 100%; background: var(--c, var(--accent)); border-color: var(--c, var(--accent)); color: var(--fg, var(--accent-foreground)); }
+.cm-btn-fill[data-accent]:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.cm-btn-fill[disabled] { background: var(--border); border-color: var(--border); color: var(--text-subtle); }
+
+.cm-btn-outline { background: transparent; border-color: color-mix(in srgb, var(--c, var(--accent)) 40%, transparent); color: var(--ct, var(--accent-text)); }
+.cm-btn-outline:hover:not([disabled]) { background: var(--surface-muted); }
+.cm-btn-outline[disabled] { border-color: var(--border); color: var(--text-subtle); }
+
+.cm-btn-ghost { background: transparent; border-color: transparent; color: var(--ct, var(--accent-text)); }
+.cm-btn-ghost:hover:not([disabled]) { background: var(--surface-muted); }
+.cm-btn-ghost[disabled] { color: var(--text-subtle); }
+
+/* ── Input / Textarea ────────────────────────────────────────────────── */
+.cm-field { display: block; margin-bottom: 14px; min-width: 0; }
+.cm-field-label { display: block; font-size: 9px; letter-spacing: 2px; color: var(--text-subtle); text-transform: uppercase; margin-bottom: var(--s2); }
+.cm-input { display: block; width: 100%; min-height: 44px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 14px; color: var(--text); font: inherit; font-size: var(--fs-base); outline: none;
+  transition: border-color var(--dur-color) ease; }
+.cm-input::placeholder { color: var(--text-subtle); }
+.cm-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.cm-textarea { resize: vertical; line-height: 1.65; }
+
+/* ── Card ────────────────────────────────────────────────────────────── */
+.cm-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s4); min-width: 0;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.cm-card[data-tint] { border-color: color-mix(in srgb, var(--c) 30%, var(--border)); }
+.cm-card[data-click] { cursor: pointer; }
+.cm-card[data-click]:hover { background: var(--surface-muted); }
+
+/* ── Badge / Label ───────────────────────────────────────────────────── */
+.cm-badge { display: inline-block; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700;
+  color: var(--ct, var(--accent-text)); background: transparent;
+  border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 35%, transparent); border-radius: var(--radius-sm); padding: 3px 7px; }
+.cm-label { font-size: 9px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--ct, var(--text-subtle)); margin-bottom: var(--s2); font-weight: 600; }
+
+/* ── Spinner / ThinkingDots ──────────────────────────────────────────── */
+.cm-spinner { width: var(--size, 18px); height: var(--size, 18px); border-radius: 50%; flex-shrink: 0;
+  border: 2px solid color-mix(in srgb, var(--c, var(--accent)) 13%, transparent); border-top-color: var(--c, var(--accent));
+  animation: spin 0.8s linear infinite; }
+.cm-dots { display: flex; gap: 4px; align-items: center; }
+.cm-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--c, var(--accent)); animation: pulse 1.2s infinite ease-in-out; }
+.cm-dot:nth-child(2) { animation-delay: 0.2s; }
+.cm-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Divider ─────────────────────────────────────────────────────────── */
+.cm-divider { border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ── Modal / BottomSheet (overlays — the one place --shadow-lg is allowed) ── */
+.cm-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.cm-overlay[data-sheet] { align-items: flex-end; padding: 0; }
+.cm-modal { width: 100%; max-width: var(--w, 520px); min-width: 0; background: var(--surface); border-radius: 16px; overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--c, var(--border)) 25%, var(--border)); box-shadow: var(--shadow-lg); animation: fadeUp 0.2s ease; }
+.cm-modal-head { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+.cm-modal-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); min-width: 0; }
+.cm-modal-body { padding: 20px; }
+.cm-close { background: none; border: none; font: inherit; font-size: var(--fs-lg); line-height: 1; color: var(--text-subtle); cursor: pointer; padding: 0 4px; flex-shrink: 0; }
+.cm-close:hover { color: var(--text); }
+.cm-sheet { width: 100%; max-width: 680px; min-width: 0; margin: 0 auto; background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px 20px 40px;
+  border: 1px solid color-mix(in srgb, var(--c, var(--border)) 25%, var(--border)); box-shadow: var(--shadow-lg); animation: fadeUp 0.2s ease; }
+.cm-sheet-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); margin-bottom: 16px; }
+
+/* ── ProgressBar / YardDots ("yard lines") ───────────────────────────── */
+.cm-progress { position: relative; background: var(--border); border-radius: 2px; height: var(--h, 6px); overflow: hidden; }
+.cm-progress-fill { position: absolute; top: 0; left: 0; bottom: 0; width: var(--pct, 0%); background: var(--c, var(--accent)); border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.cm-progress-tick { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--background); opacity: 0.55; }
+.cm-yard { display: flex; gap: 4px; align-items: center; }
+.cm-yard-dot { height: 3px; flex: 1; border-radius: 2px; background: var(--border); transition: background-color 0.3s ease; }
+.cm-yard-dot[data-on] { background: var(--c, var(--accent)); }
+
+/* ── ChipRow ─────────────────────────────────────────────────────────── */
+.cm-chiprow { display: flex; gap: 6px; flex-wrap: wrap; }
+.cm-chip { padding: 4px 12px; font: inherit; font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 20px; cursor: pointer;
+  border: 1px solid var(--border); color: var(--text-subtle); background: transparent;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.cm-chip:hover { background: var(--surface-muted); }
+.cm-chip[aria-pressed="true"] { border-color: var(--c, var(--accent)); color: var(--ct, var(--accent-text)); }

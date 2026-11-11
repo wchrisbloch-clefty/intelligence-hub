@@ -14,8 +14,9 @@ import { useState } from 'react';
 import Icon from './Icon.jsx';
 import { USER_GROUNDING_TYPES, groundingTypeMeta, parseTOC } from '../../lib/sourceGrounding.js';
 import { ThinkingDots } from './Common.jsx';
+import './source-grounding.css';
 
-const tierColor = (tier) => tier === 'verified' ? 'var(--tier-verified)' : tier === 'reported' ? 'var(--tier-reported)' : 'var(--tier-inferred)';
+const tierKey = (tier) => (tier === 'verified' || tier === 'reported' ? tier : 'inferred');
 
 export default function SourceGrounding({
   value,                 // current userGrounding { type, text, source, addedAt } | null
@@ -46,7 +47,7 @@ export default function SourceGrounding({
   };
 
   const chip = (tier, note) => (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: tierColor(tier), border: `1px solid ${tierColor(tier)}`, borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap' }}>
+    <span className="sg-chip" data-tier={tierKey(tier)}>
       <Icon name={tier === 'verified' ? 'Check' : tier === 'reported' ? 'BookMarked' : 'Sparkles'} size={11} /> {tier}{note ? ` · ${note}` : ''}
     </span>
   );
@@ -56,19 +57,19 @@ export default function SourceGrounding({
     const m = groundingTypeMeta(value.type);
     const lines = value.type === 'toc' ? parseTOC(value.text).length : 0;
     return (
-      <div style={{ padding: '12px 14px', border: `1px solid ${tierColor(m.tier)}`, borderRadius: 12, background: 'var(--surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, minWidth: 0, flexWrap: 'wrap' }}>
-            <Icon name={m.icon} size={16} style={{ color: tierColor(m.tier) }} />
-            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)' }}>Your {m.label.toLowerCase()}{lines ? ` · ${lines} chapters` : ''}</span>
+      <div className="sg-box" data-tier={tierKey(m.tier)}>
+        <div className="sg-row">
+          <span className="sg-row-l">
+            <Icon name={m.icon} size={16} className="sg-icon" data-tier={tierKey(m.tier)} />
+            <span className="sg-name">Your {m.label.toLowerCase()}{lines ? ` · ${lines} chapters` : ''}</span>
             {chip(m.tier, 'your copy')}
           </span>
-          <span style={{ display: 'inline-flex', gap: 8 }}>
-            <button onClick={startEdit} style={linkBtn}>Edit</button>
-            <button onClick={() => onClear?.()} style={{ ...linkBtn, color: 'var(--text-tertiary)' }}>Remove</button>
+          <span className="sg-row-r">
+            <button type="button" className="sg-link tap" onClick={startEdit}>Edit</button>
+            <button type="button" className="sg-link tap" data-tone="quiet" onClick={() => onClear?.()}>Remove</button>
           </span>
         </div>
-        <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', maxHeight: 66, overflow: 'hidden', whiteSpace: 'pre-wrap' }}>{value.text.slice(0, 260)}{value.text.length > 260 ? '…' : ''}</div>
+        <div className="sg-preview">{value.text.slice(0, 260)}{value.text.length > 260 ? '…' : ''}</div>
       </div>
     );
   }
@@ -76,27 +77,24 @@ export default function SourceGrounding({
   // ── Editor (open) ──────────────────────────────────────────────────────────
   if (open) {
     return (
-      <div style={{ padding: '14px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+      <div className="sg-box" data-pad="sq">
+        <div className="sg-types">
           {types.map((t) => {
             const on = type === t.id;
             return (
-              <button key={t.id} onClick={() => setType(t.id)}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--border)'}`, background: on ? 'var(--accent-glow)' : 'transparent', color: on ? 'var(--accent)' : 'var(--muted)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+              <button type="button" key={t.id} className="sg-type tap" aria-pressed={on} onClick={() => setType(t.id)}>
                 <Icon name={t.icon} size={13} /> {t.label}
               </button>
             );
           })}
         </div>
         <textarea value={text} onChange={(e) => setText(e.target.value)} placeholder={meta.placeholder}
-          rows={6} autoFocus
-          style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 12px', color: 'var(--text)', fontSize: 'var(--fs-base)', lineHeight: 'var(--lh-read)', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }} />
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>Tags as {chip(meta.tier, meta.tier === 'verified' ? 'primary source' : 'your account')}</span>
-          <span style={{ flex: 1 }} />
-          <button onClick={() => { setOpen(false); setText(''); }} style={{ ...linkBtn, color: 'var(--muted)' }}>Cancel</button>
-          <button onClick={save} disabled={!text.trim()}
-            style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: text.trim() ? 'var(--accent)' : 'var(--surf2)', color: text.trim() ? 'var(--on-accent)' : 'var(--dim)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: text.trim() ? 'pointer' : 'default', fontFamily: 'inherit', minHeight: 36 }}>
+          rows={6} autoFocus className="sg-text" aria-label={meta.label || 'Source material'} />
+        <div className="sg-foot">
+          <span className="sg-foot-note">Tags as {chip(meta.tier, meta.tier === 'verified' ? 'primary source' : 'your account')}</span>
+          <span className="sg-spacer" />
+          <button type="button" className="sg-link tap" data-tone="muted" onClick={() => { setOpen(false); setText(''); }}>Cancel</button>
+          <button type="button" className="sg-btn tap" data-kind="primary" data-size="sm" onClick={save} disabled={!text.trim()}>
             Save source
           </button>
         </div>
@@ -108,16 +106,16 @@ export default function SourceGrounding({
   if (retrieved?.toc) {
     const chapters = parseTOC(retrieved.toc);
     return (
-      <div style={{ padding: '12px 14px', border: '1px solid var(--tier-reported)', borderRadius: 12, background: 'var(--surface)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', justifyContent: 'space-between' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', minWidth: 0 }}>
-            <Icon name="ClipboardList" size={16} style={{ color: 'var(--tier-reported)' }} />
-            <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)' }}>Retrieved table of contents · {chapters.length} chapters</span>
+      <div className="sg-box" data-tier="reported">
+        <div className="sg-row">
+          <span className="sg-row-l">
+            <Icon name="ClipboardList" size={16} className="sg-icon" data-tier="reported" />
+            <span className="sg-name">Retrieved table of contents · {chapters.length} chapters</span>
             {chip('reported', retrieved.sourceLabel)}
           </span>
-          <button onClick={startEdit} style={linkBtn}>Not right? Add your copy</button>
+          <button type="button" className="sg-link tap" onClick={startEdit}>Not right? Add your copy</button>
         </div>
-        <div style={{ marginTop: 8, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', maxHeight: 88, overflow: 'hidden' }}>
+        <div className="sg-preview" data-tall="">
           {chapters.slice(0, 8).join(' · ')}{chapters.length > 8 ? ' …' : ''}
         </div>
       </div>
@@ -127,8 +125,8 @@ export default function SourceGrounding({
   // ── Searching (automated retrieval in flight) ──────────────────────────────
   if (phase === 'searching' || retrieving) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px', border: '1px solid var(--border)', borderRadius: 10, background: 'var(--surface)', fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>
-        <ThinkingDots color="var(--accent)" /> <span style={{ minWidth: 0 }}>Searching catalogs and the web for the table of contents…</span>
+      <div className="sg-searching" aria-live="polite">
+        <ThinkingDots color="var(--accent-text)" /> <span>Searching catalogs and the web for the table of contents…</span>
       </div>
     );
   }
@@ -136,8 +134,8 @@ export default function SourceGrounding({
   // The attempt log — same pattern as the provider chain, so a miss says what was
   // tried rather than a bare "couldn't verify".
   const attemptLog = attempts.length > 0 && (
-    <div style={{ marginTop: 10, paddingTop: 8, borderTop: '1px solid var(--rule)', fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', overflowWrap: 'anywhere', lineHeight: 'var(--lh-read)' }}>
-      <span style={{ fontWeight: 700 }}>Tried:</span>{' '}
+    <div className="sg-log">
+      <b>Tried:</b>{' '}
       {attempts.map((a, i) => (
         <span key={i}>{i > 0 ? ' · ' : ''}{a.source}{a.detail ? ` (${a.detail})` : ''} → {a.unavailable ? 'unavailable (blocked)' : a.error ? `error ${a.error}` : `${a.results ?? 0} result${a.results === 1 ? '' : 's'}`}</span>
       ))}
@@ -147,16 +145,15 @@ export default function SourceGrounding({
   // ── Light miss — offer "Search harder" before the manual path appears ──────
   if (phase === 'none') {
     return (
-      <div style={{ padding: '14px 16px', border: '1px solid var(--border)', borderRadius: 12, background: 'var(--surface)' }}>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', marginBottom: 10 }}>
+      <div className="sg-box" data-pad="lg">
+        <div className="sg-msg">
           Didn’t find a chapter list in a first pass. Let me look harder — more editions, the publisher’s own page, and the author’s site.
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={() => onSearchHarder?.()}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+        <div className="sg-actions">
+          <button type="button" className="sg-btn tap" data-kind="primary" onClick={() => onSearchHarder?.()}>
             <Icon name="Search" size={14} /> Search harder
           </button>
-          <button onClick={startEdit} style={{ ...linkBtn, color: 'var(--text-tertiary)' }}>or paste it yourself</button>
+          <button type="button" className="sg-link tap" data-tone="quiet" onClick={startEdit}>or paste it yourself</button>
         </div>
         {attemptLog}
       </div>
@@ -166,12 +163,11 @@ export default function SourceGrounding({
   // ── Deep miss — the manual path, reframed as the exception it is ───────────
   if (phase === 'deep-none') {
     return (
-      <div style={{ padding: '14px 16px', border: '1px solid var(--tier-inferred)', borderRadius: 12, background: 'var(--surface)' }}>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--lh-read)', marginBottom: 10 }}>
+      <div className="sg-box" data-pad="lg" data-tier="inferred">
+        <div className="sg-msg">
           Couldn’t find a chapter list for this one. If you have a copy, you can paste the contents — that gives the strongest possible grounding (a <b>verified</b> primary source with real chapter locations).
         </div>
-        <button onClick={startEdit}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+        <button type="button" className="sg-btn tap" data-kind="primary" onClick={startEdit}>
           <Icon name="BookMarked" size={14} /> {label}
         </button>
         {attemptLog}
@@ -181,19 +177,15 @@ export default function SourceGrounding({
 
   // ── Idle — no retrieval attempted yet (e.g. a book the model already knows) ──
   return (
-    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+    <div className="sg-actions">
       {retrievable && (
-        <button onClick={() => onRetrieve?.()}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+        <button type="button" className="sg-btn tap" data-kind="outline" data-size="sm" onClick={() => onRetrieve?.()}>
           <Icon name="Search" size={14} /> Find the table of contents
         </button>
       )}
-      <button onClick={startEdit}
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '7px 13px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-tertiary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 36 }}>
+      <button type="button" className="sg-btn tap" data-kind="ghost" data-size="sm" onClick={startEdit}>
         <Icon name="BookMarked" size={14} /> {label}
       </button>
     </div>
   );
 }
-
-const linkBtn = { background: 'none', border: 'none', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', padding: 0 };
