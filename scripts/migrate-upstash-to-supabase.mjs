@@ -19,6 +19,10 @@
 // Also accepts the Vercel-KV names (KV_REST_API_URL / KV_REST_API_TOKEN).
 import { createKv } from '../api/_kv.js';
 
+// `vercel env pull .env.migrate` writes the credentials to a file; read it here so
+// no value is ever typed or pasted. Delete the file when done (the script reminds you).
+const ENV_FILE = '.env.migrate';
+try { process.loadEnvFile(ENV_FILE); console.log(`(read credentials from ${ENV_FILE} — delete it when finished: rm ${ENV_FILE})`); } catch { /* env already set */ }
 const WRITE = process.argv.includes('--write');
 const up = {
   url: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL,
@@ -36,6 +40,16 @@ async function redis(cmd) {
 
 const keys = []; let cursor = '0';
 do { const [next, batch] = await redis(['SCAN', cursor, 'MATCH', '*', 'COUNT', '500']); cursor = next; keys.push(...batch); } while (cursor !== '0');
+// The Upstash database was SHARED with other projects. Only this app's keys may
+// land in this app's kv table: aether_* plus the two recap keys. Everything else
+// is listed (so you can see what's there) and never copied.
+const ALLOW = (k) => k.startsWith('aether_') || k === 'weekly_recap_latest' || k === 'monthly_review_latest';
+const foreign = keys.filter((k) => !ALLOW(k)).sort();
+const allKeys = keys.length;
+keys.splice(0, keys.length, ...keys.filter(ALLOW).sort());
+console.log(`Upstash holds ${allKeys} keys: ${keys.length} belong to this app, ${foreign.length} do NOT and will never be copied.`);
+if (foreign.length) { console.log('  NOT copied (other projects / unknown):'); for (const k of foreign) console.log(`    - ${k}`); }
+console.log('  App keys:'); for (const k of keys) console.log(`    + ${k}`);
 keys.sort();
 console.log(`Upstash: ${keys.length} keys`);
 
