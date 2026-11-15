@@ -25,6 +25,7 @@
 // fail-closed per-day cap on uncached lookups — see DAILY_CAP below.
 // verify_jwt = true (called with the PUBLIC anon key — not an auth boundary).
 import { json, kv } from '../_shared/edge.js';
+import { typeTOC, type505, toLines, breakdown, score505 } from '../_shared/toc-types.js';
 
 const MIN = 3;
 const RETAIL = /(^|\.)(amazon|audible|barnesandnoble|bn|bookshop|booksamillion|walmart|target|ebay|abebooks|thriftbooks|bookdepository|kobo|apple|play\.google)\./i;
@@ -117,7 +118,6 @@ async function libraryOfCongress(title: string, author: string, attempts: any[])
 // the requested title (a "Summary of …" record does not) and the author's
 // surname must appear in it. Tier: reported (a catalog record, not primary text).
 const RECORD_RE = /^(https?:\/\/[^/]+)\/Record\/([^/?#]+)/i;
-const BACK_MATTER = /^(acknowledg|notes?$|index$|bibliograph|references$|sources$|about the author|further reading|credits$)/i;
 const norm = (s: string) => clean(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 export function marcRows(md: string, tag: string): string[] {
   return String(md || '').split('\n').filter((l) => new RegExp(`^\\|\\s*${tag}\\s*\\|`).test(l));
@@ -129,16 +129,22 @@ export function subfields(row: string): { code: string; value: string }[] {
   return hits.map((h, i) => ({ code: h.code, value: row.slice(h.end, i + 1 < hits.length ? hits[i + 1].at : row.length)
     .replace(/<br\s*\/?>/gi, ' ').replace(/\s*\|\s*$/, '').replace(/\\/g, '').trim() }));
 }
-export function parse505(md: string): { toc: string[]; raw: string } {
+// → { raw, entries }. `raw` is the 505 exactly as catalogued (|a, or the |t titles
+// joined with " -- " for an enhanced 505) — never modified. `entries` is the typed
+// VIEW over it (src/lib/tocTypes.js): front / part / chapter / back.
+export function parse505(md: string): { raw: string; entries: any[] } {
   const rows = marcRows(md, '505');
-  if (!rows.length) return { toc: [], raw: '' };
+  if (!rows.length) return { raw: '', entries: [] };
   const subs = rows.flatMap(subfields);
-  const raw = subs.filter((x) => x.code === 'a' || x.code === 't').map((x) => x.value).join(' -- ');
-  // Enhanced 505 (|t per title) vs basic 505 (one |a joined with " -- ").
-  const parts = subs.some((x) => x.code === 't') ? subs.filter((x) => x.code === 't').map((x) => x.value)
-    : subs.filter((x) => x.code === 'a').flatMap((x) => x.value.split(/\s+--\s+/));
-  const toc = parts.map((x) => clean(x).replace(/\s*[/.;:,-]+\s*$/, '').trim()).filter((x) => x && !BACK_MATTER.test(x)).slice(0, 60);
-  return { toc, raw };
+  // Enhanced 505: |g carries a label ("Part I.", "Chapter 3.") for the |t that
+  // follows — keep it with its title, in the catalogue's own order and words.
+  const items: string[] = []; let g = '';
+  for (const x of subs) {
+    if (x.code === 'g') g = x.value.replace(/\s*--\s*$/, '').trim();
+    else if (x.code === 't') { const t = x.value.replace(/\s*(--|\/)\s*$/, '').trim(); items.push(g ? `${g} ${t}` : t); g = ''; }
+  }
+  const raw = items.length ? items.join(' -- ') : subs.filter((x) => x.code === 'a').map((x) => x.value).join(' -- ');
+  return { raw, entries: type505(raw) };
 }
 export function recordMatches(md: string, title: string, author: string): boolean {
   const t245 = norm(subfields(marcRows(md, '245')[0] || '').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' '));
@@ -163,20 +169,24 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
       const id = `${mm[1]}/Record/${mm[2]}`;
       if (!records.has(id)) records.set(id, `${id}/Details`);
     }
-    const urls = [...records.values()].slice(0, 4);
+    const urls = [...records.values()].slice(0, 6);   // L2: score more candidates; cleanest wins
     if (!urls.length) { attempts.push({ source: SRC, detail: 'no catalog records found by search', results: 0 }); return null; }
     const scraped = await Promise.allSettled(urls.map((url) => fc('scrape', { url, formats: ['markdown'], onlyMainContent: true }, 30000).then((r) => ({ url, md: String(r.data?.markdown || '') }))));
-    let best: any = null; const seen: string[] = [];
+    let best: any = null; const seen: string[] = []; const candidates: any[] = [];
     for (const r of scraped) {
       if (r.status !== 'fulfilled') { seen.push('scrape failed'); continue; }
       const { url, md } = r.value; const host = new URL(url).hostname;
       if (!marcRows(md, '505').length) { seen.push(`${host}: no 505`); continue; }
       if (!recordMatches(md, title, author)) { seen.push(`${host}: 245/100 is a different book`); continue; }
-      const { toc, raw } = parse505(md);
-      seen.push(`${host}: 505 with ${toc.length} entries`);
-      if (toc.length >= MIN && (!best || toc.length > best.toc.length)) best = { toc, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url };
+      const { raw, entries } = parse505(md);
+      const sc = score505(raw); const b = breakdown(entries);
+      seen.push(`${host}: score ${sc.score} (${sc.reasons.join(', ')})`);
+      candidates.push({ host, url, score: sc.score, reasons: sc.reasons, breakdown: b });
+      // L2: SCORE the candidates and keep the cleanest, not the first that passes.
+      if (b.chapter >= MIN && (!best || sc.score > best.score || (sc.score === best.score && b.chapter > best.breakdown.chapter)))
+        best = { toc: toLines(entries), entries, breakdown: b, score: sc.score, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url };
     }
-    attempts.push({ source: SRC, detail: `${urls.length} record(s): ${seen.join('; ')}`, results: best ? 1 : 0 });
+    attempts.push({ source: SRC, detail: `${urls.length} record(s): ${seen.join('; ')}`, results: best ? 1 : 0, candidates });
     return best;
   } catch (e) { attempts.push({ source: SRC, detail: 'search', error: String((e as Error).message || e) }); return null; }
 }
@@ -274,7 +284,7 @@ Deno.serve(async (req: Request) => {
   // key was unset must not shadow a real lookup once CB adds it. Hits are kept
   // forever; misses expire after MISS_TTL_MS so a newly-catalogued book resolves.
   const fc = Deno.env.get('FIRECRAWL_API_KEY') ? 'fc1' : 'fc0';
-  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v2`;   // v2 = catalog pass added: older misses must not shadow it
+  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v3`;   // v3 = typed entries + scored records (v2 = catalog pass)
   const store = kv();
   if (!body.refresh) {
     try {
@@ -295,14 +305,15 @@ Deno.serve(async (req: Request) => {
   const [ol, loc, cat] = await Promise.all([openLibrary(title, author, a1), libraryOfCongress(title, author, a2), libraryCatalogs(title, author, a3)]);
   attempts.push(...a1, ...a2, ...a3);
   const publishers = [rawPublisher, ...(ol.publishers || [])].filter(Boolean);
-  const cands = [ol.best, loc, cat].filter(Boolean) as any[];
-  if (!cands.some((c) => c.toc.length >= MIN)) { const fc = await firecrawlPublisher(title, author, publishers, attempts); if (fc) cands.push(fc); }
+  const typed = (c: any) => { if (!c || c.entries) return c; const entries = typeTOC(c.toc); return { ...c, entries, breakdown: breakdown(entries), toc: toLines(entries) }; };
+  const cands = [ol.best, loc, cat].filter(Boolean).map(typed) as any[];
+  if (!cands.some((c) => (c.breakdown?.chapter ?? c.toc.length) >= MIN)) { const fc = await firecrawlPublisher(title, author, publishers, attempts); if (fc) cands.push(typed(fc)); }
   // A typed MARC 505 (catalog / LoC) beats a longer HTML-scraped list.
   const RANK: Record<string, number> = { catalog: 3, loc: 3, openlibrary: 2, publisher: 1 };
-  const best = cands.sort((a, b) => (RANK[b.source] || 0) - (RANK[a.source] || 0) || b.toc.length - a.toc.length)[0] || null;
+  const best = cands.sort((a, b) => (RANK[b.source] || 0) - (RANK[a.source] || 0) || (b.breakdown?.chapter || 0) - (a.breakdown?.chapter || 0))[0] || null;
   const exists = ol.exists || !!loc || !!cat || !!body.catalogVerified;
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
-  const out = { state, toc: best?.toc || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null, raw505: best?.raw505 || null,
+  const out = { state, toc: best?.toc || null, entries: best?.entries || null, breakdown: best?.breakdown || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null, raw505: best?.raw505 || null,
     tier: best ? 'reported' : 'inferred', record: ol.record, attempts, at: new Date().toISOString() };
   // Cache EVERY result, hit or miss — the same book never spends twice (a miss for
   // 7 days). { refresh: true } re-tries deliberately and still counts against the cap.

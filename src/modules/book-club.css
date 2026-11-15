@@ -270,3 +270,11 @@ textarea.bc-input { resize: vertical; }
    subtle text inside a hovered control steps up to --text-muted. */
 .bc-mode:hover .bc-mode-desc, .bc-btn[data-quiet]:hover:not([disabled]), .bc-toc-toggle:hover .bc-toc-count,
 .bc-toc-toggle:hover .bc-toc-chev { color: var(--text-muted); }
+
+/* Z-3 / L1 — typed TOC: a Part is a group heading, front/back matter is listed but
+   not a chapter (no dive, no progress). Eyebrow label is the allowed small literal. */
+.bc-toc-part { padding: 12px 14px 6px; border-bottom: 1px solid var(--rule); background: var(--surface-muted);
+  font-size: var(--fs-sm); font-weight: 800; color: var(--text); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.bc-toc-part-label { font-size: 10px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--text-tertiary); margin-right: 6px; }
+.bc-toc-matter { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: var(--fs-sm); color: var(--text-subtle);
+  font-style: italic; line-height: var(--lh-tight); overflow-wrap: anywhere; }

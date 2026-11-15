@@ -10,7 +10,7 @@
 //
 // BUMP the number for an artifact type whenever its generation prompt changes.
 export const PROMPT_VERSION = {
-  studyGuide: 8, // Batch Z / Order D: LENS + SUBJECT_FIDELITY replace CB_IDENTITY; examples from the book's own world; reader context only via Layer 3 (disabled)
+  studyGuide: 9, // Batch Z-3 / L1: typed TOC — guide walks chapters only, grouped by Part; chapter dives only for chapters. (8: Batch Z / Order D: LENS + SUBJECT_FIDELITY replace CB_IDENTITY; examples from the book's own world; reader context only via Layer 3 (disabled))
   // (v7 was: shared VOICE fragment — meaning-level framing + sports analogies, no fake-precision telemetry)
   // (v6 was: source grounding / user copy + TOC retrieval / chapter-anchored generation + chapter dives / verified tier from a physical copy)
   // (v5 was: three-state grounding / never assert non-existence + frameworks produced even when contents unavailable)

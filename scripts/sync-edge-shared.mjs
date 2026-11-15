@@ -4,6 +4,7 @@
 //   api/_kv.js                  → _shared/kv.js            (the kv PostgREST client)
 //   prompts/prompts.generated.js→ _shared/prompts.generated.js (LENS, SUBJECT_FIDELITY, packs)
 //   api/_providers.js MODELS    → _shared/models.generated.js  (model ids live in ONE place)
+//   src/lib/tocTypes.js         → _shared/toc-types.js     (typed TOC view + 505 scoring, Z-3 L1/L2)
 // Edge Functions can't import outside their bundle, so these are copies — but
 // generated, never hand-edited. `--check` (in npm run build) fails if any drifted.
 import fs from 'node:fs';
@@ -17,6 +18,7 @@ const { MODELS } = await import(path.join(ROOT, 'api/_providers.js'));
 const files = {
   'kv.js': HEADER('api/_kv.js') + fs.readFileSync(path.join(ROOT, 'api/_kv.js'), 'utf8'),
   'prompts.generated.js': HEADER('prompts/prompts.generated.js') + fs.readFileSync(path.join(ROOT, 'prompts/prompts.generated.js'), 'utf8'),
+  'toc-types.js': HEADER('src/lib/tocTypes.js') + fs.readFileSync(path.join(ROOT, 'src/lib/tocTypes.js'), 'utf8'),
   'models.generated.js': HEADER('api/_providers.js MODELS') + `export const MODELS = ${JSON.stringify(MODELS, null, 2)};\n`,
 };
 

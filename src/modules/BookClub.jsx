@@ -9,6 +9,7 @@ import { buildSkills } from '../lib/skills.js';
 import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { toVerifiedRecord, isPostCutoff, searchBooks, mainTitle, verifyBookCached, hydrateVerifyCache } from '../lib/bookVerify.js';
 import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/sourceGrounding.js';
+import { typeTOC, chaptersOnly, chapterKey, breakdown } from '../lib/tocTypes.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import BookSuggest from './shared/BookSuggest.jsx';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
@@ -49,15 +50,31 @@ const TYPE_IDS = Object.keys(TYPE_META);
 
 const BLANK_FORM = { title: '', author: '', note: '', type: 'other' };
 
-// A book's chapter list + how trustworthy its STRUCTURE is: a user-typed TOC (or
-// photo transcription) is `verified`, a retrieved TOC is `reported`, none → null.
+// A book's TYPED table of contents + how trustworthy its STRUCTURE is: a
+// user-typed TOC (or photo transcription) is `verified`, a retrieved TOC is
+// `reported`, none → null. (Batch Z-3 / L1) Every entry is typed front / part /
+// chapter / back (lib/tocTypes.js) — only `chapter` entries are divable or count
+// toward progress, so Excellence reads "of 19", not "of 26". `legacy` is the old
+// flat list, used ONLY to read dives/progress saved under a flat index before
+// they were keyed by chapter title.
 const chaptersOf = (book) => {
-  if (!book) return { chapters: [], tier: null };
+  const empty = { entries: [], chapters: [], tier: null, legacy: [] };
+  if (!book) return empty;
   const ug = book.userGrounding;
   const userToc = ug && ['toc', 'photo-ocr'].includes(ug.type) ? ug.text : '';
-  if (userToc) return { chapters: parseTOC(userToc), tier: 'verified' };
-  if (book.retrievedTOC?.toc) return { chapters: parseTOC(book.retrievedTOC.toc), tier: 'reported' };
-  return { chapters: [], tier: null };
+  const text = userToc || book.retrievedTOC?.toc || '';
+  if (!text) return empty;
+  const entries = typeTOC(text);
+  return { entries, chapters: chaptersOnly(entries), tier: userToc ? 'verified' : 'reported', legacy: parseTOC(text) };
+};
+// Per-chapter state (a dive or a progress record) by chapter-title key, falling
+// back to a legacy flat-index key saved before Z-3.
+const chapterState = (store, ch, legacy) => {
+  if (!store || !ch) return undefined;
+  const k = chapterKey(ch.title);
+  if (store[k] != null) return store[k];
+  const li = (legacy || []).findIndex((t) => chapterKey(t) === k);
+  return li >= 0 ? store[li] : undefined;
 };
 
 // Dedupe/identity key — lowercased title + author.
@@ -163,6 +180,16 @@ export const buildGuidePrompt = (b, lensClause, personal = '', grounding = {}, d
   const title = grounding.fullTitle || b.title;
   const chapters = Array.isArray(grounding.tocChapters) ? grounding.tocChapters : [];
   const hasTOC = chapters.length >= 3;
+  // Z-3 / L1: a typed TOC. The guide walks CHAPTERS only; the source's own Part
+  // structure is kept as the top-level grouping; front/back matter is context.
+  const tocEntries = Array.isArray(grounding.tocEntries) && grounding.tocEntries.length ? grounding.tocEntries : null;
+  const tocBreakdown = tocEntries ? breakdown(tocEntries) : { part: 0 };
+  const hasParts = tocBreakdown.part > 0;
+  const tocOutline = tocEntries
+    ? tocEntries.map((e) => (e.type === 'part' ? `${e.label.toUpperCase()} — ${e.title}`
+      : e.type === 'chapter' ? `${hasParts ? '  ' : ''}Ch. ${e.n}. ${e.title}`
+      : `[${e.type === 'front' ? 'front matter' : 'back matter'} — context only, not a chapter] ${e.title}`)).join('\n')
+    : chapters.map((c, i) => `Ch. ${i + 1}. ${c}`).join('\n');
   const hasUserMaterial = !!grounding.userMaterial;
   const hasContents = !!(grounding.description || grounding.webThesis);
   const grounded = hasContents || hasTOC || hasUserMaterial;
@@ -173,7 +200,7 @@ export const buildGuidePrompt = (b, lensClause, personal = '', grounding = {}, d
     grounding.webThesis ? `RETRIEVED THESIS, CHAPTERS & KEY CONCEPTS (from a live web pass, THIS book specifically):\n${grounding.webThesis}` : '',
     grounding.description ? `PUBLISHER DESCRIPTION (secondary — match this, never the author's other books):\n${grounding.description}` : '',
     hasUserMaterial ? `SOURCE MATERIAL THE READER TYPED FROM THEIR OWN COPY (${grounding.userMaterialLabel || 'excerpt/notes'} — first-hand, authoritative):\n${grounding.userMaterial}` : '',
-    hasTOC ? `TABLE OF CONTENTS (${grounding.tocSourceLabel || 'retrieved'}):\n${chapters.map((c, i) => `${i + 1}. ${c}`).join('\n')}` : '',
+    hasTOC ? `TABLE OF CONTENTS (${grounding.tocSourceLabel || 'retrieved'}${hasParts ? `; ${chapters.length} chapters in ${tocBreakdown.part} parts` : `; ${chapters.length} chapters`}):\n${tocOutline}` : '',
   ].filter(Boolean).join('\n\n');
   const rigor = rigorPrompt(depth, { tiers: false });
   // Tier ceiling written into the prompt (and enforced again on the output). The
@@ -195,7 +222,7 @@ export const buildGuidePrompt = (b, lensClause, personal = '', grounding = {}, d
     ? `## Core Thesis
 The book's central argument in one tight paragraph, grounded in the material above.
 ## Chapter Guide
-Work through the book IN ORDER using the table of contents above. For EACH chapter, use its title as a \`### \` heading, then in 2–4 sentences give: its core argument, the key framework(s) it introduces (**bold** each framework name), and one worked example from the book's own world. ${grounding.tocIsUser ? 'Cite the chapter as the location for what you draw from it.' : ''} ${lensClause}
+Work through the book IN ORDER using the table of contents above. Cover EVERY numbered chapter (Ch. 1 – Ch. ${chapters.length}) and ONLY those: the Parts${hasParts ? '' : ' (if any)'}, the introduction, the conclusion and any appendices are NOT chapters — never give them their own chapter section. ${hasParts ? 'Keep the book\'s Part structure: give each Part a `### ` heading (its label and title), and each chapter under it a `#### ` heading with its title.' : 'Use each chapter\'s title as a `### ` heading.'} For each chapter, in 2–4 sentences give: its core argument, the key framework(s) it introduces (**bold** each framework name), and one worked example from the book's own world. ${grounding.tocIsUser ? 'Cite the chapter as the location for what you draw from it.' : ''} ${lensClause}
 ## Key Frameworks
 The 3–5 through-line frameworks that span the chapters. Put EACH on its own line as \`**Name** — \` one-line essence, then a **Disconfirming signal:** — one concrete thing a practitioner would OBSERVE if it's failing, plus a review horizon (metric or date).
 ${tierRule}`
@@ -329,8 +356,8 @@ export default function BookClub() {
   // Per-chapter deep dives + read/dived progress, keyed by book id.
   const [chapterDives, setChapterDives] = useState(() => readLocal(CHAPTER_DIVES_KEY, {}));
   const [chapterProgress, setChapterProgress] = useState(() => readLocal(CHAPTER_PROGRESS_KEY, {}));
-  const [openChapter, setOpenChapter] = useState(null);   // idx currently expanded
-  const [chapterLoading, setChapterLoading] = useState(null); // idx generating
+  const [openChapter, setOpenChapter] = useState(null);   // chapterKey currently expanded
+  const [chapterLoading, setChapterLoading] = useState(null); // chapterKey generating
   const [tocOpen, setTocOpen] = useState(true);
   // Catalog verification for the selected book. status: idle|loading|done|none
   const [verify, setVerify] = useState({ status: 'idle', matches: [], idx: 0, attempts: [] });
@@ -569,44 +596,47 @@ export default function BookClub() {
     if (!r.localOk) { setChapterDives(prev); return false; }
     return true;
   };
-  const toggleChapterRead = async (idx) => {
-    if (!selectedBook) return;
+  const toggleChapterRead = async (ch) => {
+    if (!selectedBook || !ch) return;
     const bid = selectedBook.id;
     const prev = chapterProgress;
-    const wasRead = !!chapterProgress[bid]?.[idx]?.read;
-    const next = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [idx]: { ...(chapterProgress[bid]?.[idx] || {}), read: !wasRead } } };
+    const { legacy } = chaptersOf(selectedBook);
+    const cur = chapterState(chapterProgress[bid], ch, legacy) || {};
+    const key = chapterKey(ch.title);
+    const next = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [key]: { ...cur, read: !cur.read } } };
     setChapterProgress(next);
     const r = await writeThrough(CHAPTER_PROGRESS_KEY, next);
     if (!r.localOk) setChapterProgress(prev);
   };
-  const generateChapterDive = async (idx) => {
-    if (!selectedBook || chapterLoading != null) return;
-    const { chapters, tier } = chaptersOf(selectedBook);
-    const chapter = chapters[idx];
-    if (!chapter) return;
-    setChapterLoading(idx); setOpenChapter(idx);
+  // Only `chapter` entries reach here — a Part header or an Appendix is not a
+  // chapter and is never offered a dive (Z-3 / L1).
+  const generateChapterDive = async (ch) => {
+    if (!selectedBook || !ch || ch.type !== 'chapter' || chapterLoading != null) return;
+    const { tier, legacy } = chaptersOf(selectedBook);
+    const key = chapterKey(ch.title);
+    setChapterLoading(key); setOpenChapter(key);
     let provider = '';
+    const bid = selectedBook.id;
     try {
       const reply = await callClaude({
         system: SYSTEM_LEARNING,
-        messages: [{ role: 'user', content: buildChapterPrompt(selectedBook, chapter, idx, lensClauseOf(lens), tier) }],
+        messages: [{ role: 'user', content: buildChapterPrompt(selectedBook, ch.title, ch.n - 1, lensClauseOf(lens), tier) }],
         maxTokens: 1600, job: 'reason', onProvider: (p) => { provider = p; },
       });
       // Cap at the STRUCTURE tier — the chapter title can hold [verified]/[reported]
       // while the analysis the model marked [inferred] stays inferred.
-      const body = capTierMarkers(reply.trim(), tier || 'inferred', { reportedSource: `${selectedBook.fullTitle || selectedBook.title}, Ch. ${idx + 1}` });
-      const bid = selectedBook.id;
-      const dive = { body, provider, lens, chapter, structureTier: tier, createdAt: Date.now(), ...stampVersion('studyGuide') };
-      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [idx]: dive } });
+      const body = capTierMarkers(reply.trim(), tier || 'inferred', { reportedSource: `${selectedBook.fullTitle || selectedBook.title}, Ch. ${ch.n}` });
+      const dive = { body, provider, lens, chapter: ch.title, n: ch.n, structureTier: tier, createdAt: Date.now(), ...stampVersion('studyGuide') };
+      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [key]: dive } });
       // Mark dived in progress.
-      const nextProg = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [idx]: { ...(chapterProgress[bid]?.[idx] || {}), dived: true } } };
+      const cur = chapterState(chapterProgress[bid], ch, legacy) || {};
+      const nextProg = { ...chapterProgress, [bid]: { ...(chapterProgress[bid] || {}), [key]: { ...cur, dived: true } } };
       setChapterProgress(nextProg); writeThrough(CHAPTER_PROGRESS_KEY, nextProg);
       // Chapter-level graph signal: source = book, ref carries the chapter location
       // so Skills sees per-chapter progress, not one lump observation per book.
-      logConcept({ topic: `${selectedBook.title} — ${chapter}`, source: selectedBook.title, module: 'books', confidence: 5, refs: [selectedBook.title, `Ch. ${idx + 1}`] });
+      logConcept({ topic: `${selectedBook.title} — ${ch.title}`, source: selectedBook.title, module: 'books', confidence: 5, refs: [selectedBook.title, `Ch. ${ch.n}`] });
     } catch (e) {
-      const bid = selectedBook.id;
-      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [idx]: { body: `Couldn't generate this chapter dive. ${e?.message || 'Providers unavailable.'}`, error: true, createdAt: Date.now() } } });
+      await persistChapterDives({ ...chapterDives, [bid]: { ...(chapterDives[bid] || {}), [key]: { body: `Couldn't generate this chapter dive. ${e?.message || 'Providers unavailable.'}`, error: true, createdAt: Date.now() } } });
     }
     setChapterLoading(null);
   };
@@ -809,7 +839,10 @@ export default function BookClub() {
       // retrieved TOC. Excerpt/notes are injected as material but don't drive the
       // chapter-by-chapter structure.
       const userTocText = ug && ['toc', 'photo-ocr'].includes(ug.type) ? ug.text : '';
-      const tocChapters = parseTOC(userTocText || rtoc?.toc || '');
+      // Typed (Z-3 / L1): the guide walks CHAPTERS only, grouped by the source's
+      // own Part structure; front/back matter is context, never a chapter section.
+      const tocEntries = typeTOC(userTocText || rtoc?.toc || '');
+      const tocChapters = chaptersOnly(tocEntries).map((c) => c.title);
       const tocIsUser = !!userTocText;
       const userMaterial = ug && ['excerpt', 'notes'].includes(ug.type) ? ug.text : '';
       const grounding = {
@@ -823,6 +856,7 @@ export default function BookClub() {
         source: selectedBook.source || '',
         // User-supplied + retrieved source material.
         tocChapters,
+        tocEntries,
         tocIsUser,
         tocSourceLabel: tocIsUser ? 'your copy' : (rtoc?.sourceLabel || ''),
         userMaterial,
@@ -1099,9 +1133,9 @@ export default function BookClub() {
 
                     {book.note && <div className="bc-book-note">{book.note.slice(0, 60)}{book.note.length > 60 ? '…' : ''}</div>}
                     {(() => {
-                      const chs = chaptersOf(book).chapters;
+                      const { chapters: chs, legacy } = chaptersOf(book);
                       if (!chs.length) return null;
-                      const dived = Object.values(chapterDives[book.id] || {}).filter((d) => d && !d.error).length;
+                      const dived = chs.filter((c) => { const d = chapterState(chapterDives[book.id], c, legacy); return d && !d.error; }).length;
                       return (
                         <div className="bc-book-chs">
                           <Icon name="ClipboardList" size={12} aria-hidden="true" /> {dived}/{chs.length} chapters dived
@@ -1312,13 +1346,14 @@ export default function BookClub() {
                 {/* Table of Contents — first-class: verification the reader can see
                     (the real chapter list, tiered by source) + chapter navigation. */}
                 {(() => {
-                  const { chapters, tier } = chaptersOf(selectedBook);
+                  const { entries, chapters, tier, legacy } = chaptersOf(selectedBook);
                   if (!chapters.length) return null;
                   const bid = selectedBook.id;
-                  const dives = chapterDives[bid] || {};
-                  const prog = chapterProgress[bid] || {};
-                  const divedCount = chapters.filter((_, i) => dives[i] && !dives[i].error).length;
-                  const readCount = chapters.filter((_, i) => prog[i]?.read).length;
+                  const diveOf = (ch) => chapterState(chapterDives[bid], ch, legacy);
+                  const progOf = (ch) => chapterState(chapterProgress[bid], ch, legacy);
+                  // Progress counts CHAPTERS only — "4 of 19", never "4 of 26".
+                  const divedCount = chapters.filter((ch) => { const d = diveOf(ch); return d && !d.error; }).length;
+                  const readCount = chapters.filter((ch) => progOf(ch)?.read).length;
                   const srcLabel = tier === 'verified' ? 'your copy' : (selectedBook.retrievedTOC?.sourceLabel || 'retrieved');
                   return (
                     <div className="bc-toc" data-tier={tier === 'verified' ? 'verified' : 'reported'}>
@@ -1327,32 +1362,43 @@ export default function BookClub() {
                           <Icon name="ClipboardList" size={16} className="bc-toc-icon" aria-hidden="true" />
                           <span className="bc-toc-title">Table of Contents</span>
                           <span className="bc-chip-tier" data-tone={tier === 'verified' ? 'verified' : 'reported'}>structure {tier} · {srcLabel}</span>
-                          <span className="bc-toc-count">{divedCount}/{chapters.length} dived · {readCount} read</span>
+                          <span className="bc-toc-count">{divedCount}/{chapters.length} chapters dived · {readCount} read</span>
                         </span>
                         <Icon name={tocOpen ? 'ChevronUp' : 'ChevronDown'} size={16} className="bc-toc-chev" aria-hidden="true" />
                       </button>
                       {tocOpen && (
                         <div className="bc-toc-list">
-                          {chapters.map((ch, i) => {
-                            const dive = dives[i];
-                            const read = !!prog[i]?.read;
-                            const isOpen = openChapter === i;
-                            const cLoading = chapterLoading === i;
+                          {entries.map((e, ei) => {
+                            // A Part is a group heading; front/back matter is listed for
+                            // completeness but is not a chapter — no dive, no progress.
+                            if (e.type === 'part') return (
+                              <div key={`p${ei}`} className="bc-toc-part" role="heading" aria-level={4}>
+                                <span className="bc-toc-part-label">{e.label}</span> {e.title}
+                              </div>
+                            );
+                            if (e.type !== 'chapter') return (
+                              <div key={`m${ei}`} className="bc-toc-matter" data-type={e.type}>{e.title}</div>
+                            );
+                            const key = chapterKey(e.title);
+                            const dive = diveOf(e);
+                            const read = !!progOf(e)?.read;
+                            const isOpen = openChapter === key;
+                            const cLoading = chapterLoading === key;
                             return (
-                              <div key={i} className="bc-ch">
+                              <div key={key} className="bc-ch" data-in-part={e.part != null || undefined}>
                                 <div className="bc-ch-row">
-                                  <button type="button" onClick={() => toggleChapterRead(i)} title={read ? 'Read' : 'Mark read'}
-                                    aria-label={read ? `Chapter ${i + 1} read` : `Mark chapter ${i + 1} read`} aria-pressed={read}
+                                  <button type="button" onClick={() => toggleChapterRead(e)} title={read ? 'Read' : 'Mark read'}
+                                    aria-label={read ? `Chapter ${e.n} read` : `Mark chapter ${e.n} read`} aria-pressed={read}
                                     className="bc-ch-check tap">
                                     {read && <Icon name="Check" size={13} aria-hidden="true" />}
                                   </button>
-                                  <button type="button" onClick={() => { const next = isOpen ? null : i; setOpenChapter(next); if (next != null && !dive && !cLoading) generateChapterDive(i); }}
+                                  <button type="button" onClick={() => { const next = isOpen ? null : key; setOpenChapter(next); if (next != null && !dive && !cLoading) generateChapterDive(e); }}
                                     className="bc-ch-open tap" aria-expanded={isOpen}>
-                                    <span className="bc-ch-n">{i + 1}.</span>
-                                    <span className="bc-ch-name" data-dived={(dive && !dive.error) || undefined}>{ch}</span>
+                                    <span className="bc-ch-n">{e.n}.</span>
+                                    <span className="bc-ch-name" data-dived={(dive && !dive.error) || undefined}>{e.title}</span>
                                     {dive && !dive.error && <Icon name="BookOpen" size={13} className="bc-ch-dived" aria-hidden="true" />}
                                   </button>
-                                  <button type="button" onClick={() => { setOpenChapter(i); generateChapterDive(i); }} disabled={cLoading}
+                                  <button type="button" onClick={() => { setOpenChapter(key); generateChapterDive(e); }} disabled={cLoading}
                                     className="bc-btn bc-ch-dive tap">
                                     {cLoading ? '…' : dive && !dive.error ? 'Redive' : 'Dive'}
                                   </button>
@@ -1360,13 +1406,13 @@ export default function BookClub() {
                                 {isOpen && (
                                   <div data-status={cLoading ? 'loading' : dive?.error ? 'error' : dive ? 'ready' : 'empty'} className="bc-ch-body">
                                     {cLoading ? <SectionSkeleton rows={4} label="chapter dive" /> : dive?.error ? (
-                                      <SectionError label="this chapter dive" onRetry={() => generateChapterDive(i)} detail={dive.body} />
+                                      <SectionError label="this chapter dive" onRetry={() => generateChapterDive(e)} detail={dive.body} />
                                     ) : dive ? (
                                       <div>
                                         {dive.provider && <div className="bc-ch-provider"><ProviderTag provider={dive.provider} /></div>}
                                         <MD text={dive.body} color="var(--accent-text)" />
                                         {!dive.error && isStale(dive, 'studyGuide') && (
-                                          <button type="button" onClick={() => generateChapterDive(i)} className="bc-btn bc-ch-regen tap" data-accent>
+                                          <button type="button" onClick={() => generateChapterDive(e)} className="bc-btn bc-ch-regen tap" data-accent>
                                             Regenerate (prompt updated)
                                           </button>
                                         )}
