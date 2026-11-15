@@ -112,32 +112,59 @@ async function libraryOfCongress(title: string, author: string, attempts: any[])
 
 // ── Library catalogs: MARC 505 from OPAC staff views ─────────────────────────
 // Discovery: a web search for the record's own furniture ("Staff View" only
-// appears on catalog record pages) surfaces VuFind / Aspen /Record/<id> URLs.
-// Each record is scraped at /Record/<id>/Details (VuFind's MARC staff view) and
-// the 505 row parsed. A record must BE this book: its 245 title must START with
-// the requested title (a "Summary of …" record does not) and the author's
-// surname must appear in it. Tier: reported (a catalog record, not primary text).
+// appears on catalog record pages) surfaces /Record/<id> URLs on two OPAC families:
+//   • VuFind  — MARC staff view at /Record/<id>/Details (scraped → markdown table)
+//   • Aspen Discovery — staff view loads by AJAX; the MARC is JSON at
+//     /Record/<id>/AJAX?method=getStaffView (fetched DIRECTLY — no scrape credit)
+// Both are normalised to one shape: [{ tag, subs: [{ code, value }] }].
+// A search hit is only scraped if its own result TITLE carries the book's title —
+// a "similar items" page for another book that merely mentions it is skipped
+// before it can spend a slot (Z-3 / L2: Chip War's first run burned 3 of 4 slots
+// on Steve Jobs in exile, a Malayalam text, and Microcosm).
+// A record must BE this book: its 245 must START with the title (a "Summary of …"
+// record does not) and the author's surname must appear. Every matching record is
+// SCORED (tocTypes.score505) and the cleanest kept. Tier: reported.
 const RECORD_RE = /^(https?:\/\/[^/]+)\/Record\/([^/?#]+)/i;
 const norm = (s: string) => clean(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
-export function marcRows(md: string, tag: string): string[] {
-  return String(md || '').split('\n').filter((l) => new RegExp(`^\\|\\s*${tag}\\s*\\|`).test(l));
+type Marc = { tag: string; subs: { code: string; value: string }[] }[];
+const decode = (s: string) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
+// VuFind staff view, as Firecrawl markdown: "| 505 | 0 |  | **\|a** … <br> **\|t** … |"
+export function marcFromMarkdown(md: string): Marc {
+  const out: Marc = [];
+  for (const line of String(md || '').split('\n')) {
+    const m = /^\|\s*(\d{3})\s*\|/.exec(line);
+    if (!m) continue;
+    const re = /\*\*\\?\|([a-z0-9])\*\*/g; const hits: { code: string; at: number; end: number }[] = [];
+    let h: RegExpExecArray | null;
+    while ((h = re.exec(line))) hits.push({ code: h[1], at: h.index, end: h.index + h[0].length });
+    out.push({ tag: m[1], subs: hits.map((x, i) => ({ code: x.code, value: line.slice(x.end, i + 1 < hits.length ? hits[i + 1].at : line.length)
+      .replace(/<br\s*\/?>/gi, ' ').replace(/\s*\|\s*$/, '').replace(/\\/g, '').trim() })) });
+  }
+  return out;
 }
-export function subfields(row: string): { code: string; value: string }[] {
-  const re = /\*\*\\?\|([a-z0-9])\*\*/g; const hits: { code: string; at: number; end: number }[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(row))) hits.push({ code: m[1], at: m.index, end: m.index + m[0].length });
-  return hits.map((h, i) => ({ code: h.code, value: row.slice(h.end, i + 1 < hits.length ? hits[i + 1].at : row.length)
-    .replace(/<br\s*\/?>/gi, ' ').replace(/\s*\|\s*$/, '').replace(/\\/g, '').trim() }));
+// Aspen staff view HTML: "<th>505</th><th>0</th><th> </th><td><strong>|a</strong> …</td>"
+export function marcFromAspenHtml(html: string): Marc {
+  const out: Marc = [];
+  for (const row of String(html || '').split(/<\/tr>/i)) {
+    const m = /(?:^|>)\s*(\d{3})\s*<\/th>/i.exec(row);
+    if (!m) continue;
+    const td = /<td[^>]*>([\s\S]*?)(?:<\/td>|$)/i.exec(row)?.[1] || '';
+    const parts = td.split(/<strong>\s*\|([a-z0-9])\s*<\/strong>/i);
+    const subs: { code: string; value: string }[] = [];
+    for (let i = 1; i + 1 < parts.length; i += 2) subs.push({ code: parts[i].toLowerCase(), value: decode(parts[i + 1].replace(/<[^>]+>/g, '')).trim() });
+    out.push({ tag: m[1], subs });
+  }
+  return out;
 }
-// → { raw, entries }. `raw` is the 505 exactly as catalogued (|a, or the |t titles
-// joined with " -- " for an enhanced 505) — never modified. `entries` is the typed
-// VIEW over it (src/lib/tocTypes.js): front / part / chapter / back.
-export function parse505(md: string): { raw: string; entries: any[] } {
-  const rows = marcRows(md, '505');
-  if (!rows.length) return { raw: '', entries: [] };
-  const subs = rows.flatMap(subfields);
-  // Enhanced 505: |g carries a label ("Part I.", "Chapter 3.") for the |t that
-  // follows — keep it with its title, in the catalogue's own order and words.
+const fieldSubs = (m: Marc, tag: string) => m.filter((f) => f.tag === tag).flatMap((f) => f.subs);
+// → { raw, entries }. `raw` is the 505 exactly as catalogued (|a, or the |g+|t
+// items of an enhanced 505 joined with " -- ") — never modified. `entries` is the
+// typed VIEW over it (src/lib/tocTypes.js): front / part / chapter / back.
+export function parse505(m: Marc): { raw: string; entries: any[] } {
+  const subs = fieldSubs(m, '505');
+  if (!subs.length) return { raw: '', entries: [] };
+  // Enhanced 505: |g carries a label ("Part I.") for the |t that follows — keep
+  // it with its title, in the catalogue's own order and words.
   const items: string[] = []; let g = '';
   for (const x of subs) {
     if (x.code === 'g') g = x.value.replace(/\s*--\s*$/, '').trim();
@@ -146,12 +173,12 @@ export function parse505(md: string): { raw: string; entries: any[] } {
   const raw = items.length ? items.join(' -- ') : subs.filter((x) => x.code === 'a').map((x) => x.value).join(' -- ');
   return { raw, entries: type505(raw) };
 }
-export function recordMatches(md: string, title: string, author: string): boolean {
-  const t245 = norm(subfields(marcRows(md, '245')[0] || '').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' '));
+export function recordMatches(m: Marc, title: string, author: string): boolean {
+  const t245 = norm(fieldSubs(m, '245').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' '));
   if (!t245 || !t245.startsWith(norm(title))) return false;
   const surname = norm(author).split(' ').filter(Boolean).pop();
   if (!surname) return true;
-  return norm([...marcRows(md, '100'), ...marcRows(md, '245'), ...marcRows(md, '700')].join(' ')).includes(surname);
+  return norm(['100', '245', '700'].flatMap((t) => fieldSubs(m, t)).map((x) => x.value).join(' ')).includes(surname);
 }
 async function libraryCatalogs(title: string, author: string, attempts: any[]) {
   const SRC = 'Library catalogs (MARC 505)';
@@ -161,32 +188,51 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
     method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, ms);
   try {
     const queries = [`"${title}" ${author} "Staff View"`, `"${title}" ${author} "Table of Contents" library catalog`];
-    const found = await Promise.allSettled(queries.map((q) => fc('search', { query: q, limit: 8 }, 20000)));
-    const records = new Map<string, string>();
+    const found = await Promise.allSettled(queries.map((q) => fc('search', { query: q, limit: 10 }, 20000)));
+    const records = new Map<string, { base: string; aspen: boolean }>(); let offTitle = 0;
+    const want = norm(title);
     for (const f of found) if (f.status === 'fulfilled') for (const x of (f.value.data?.web || f.value.data || [])) {
       const mm = RECORD_RE.exec(String(x?.url || ''));
       if (!mm || RETAIL.test(new URL(mm[1]).hostname)) continue;
-      const id = `${mm[1]}/Record/${mm[2]}`;
-      if (!records.has(id)) records.set(id, `${id}/Details`);
+      // The hit's own title must carry the book's title ("Holdings: Steve Jobs in
+      // exile" is a different record that merely lists this book as similar).
+      if (!norm(String(x?.title || '')).includes(want)) { offTitle++; continue; }
+      const base = `${mm[1]}/Record/${mm[2]}`;
+      if (!records.has(base)) records.set(base, { base, aspen: /aspen discovery/i.test(String(x?.description || '')) });
     }
-    const urls = [...records.values()].slice(0, 6);   // L2: score more candidates; cleanest wins
-    if (!urls.length) { attempts.push({ source: SRC, detail: 'no catalog records found by search', results: 0 }); return null; }
-    const scraped = await Promise.allSettled(urls.map((url) => fc('scrape', { url, formats: ['markdown'], onlyMainContent: true }, 30000).then((r) => ({ url, md: String(r.data?.markdown || '') }))));
+    const recs = [...records.values()].slice(0, 6);   // L2: score up to 6 candidates; cleanest wins
+    if (!recs.length) { attempts.push({ source: SRC, detail: `no catalog records for this title found by search${offTitle ? ` (${offTitle} other-book page(s) skipped)` : ''}`, results: 0 }); return null; }
+    // Aspen: the JSON staff view, direct (free). VuFind: the /Details staff view via
+    // Firecrawl. A VuFind-looking page with no MARC table is retried as Aspen.
+    const aspenView = async (base: string): Promise<Marc> => {
+      const r = await fetch(`${base}/AJAX?method=getStaffView`, { signal: AbortSignal.timeout(15000), headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error(`${new URL(base).host} ${r.status}`);
+      return marcFromAspenHtml(String((await r.json())?.staffView || ''));
+    };
+    const fetchMarc = async ({ base, aspen }: { base: string; aspen: boolean }): Promise<{ base: string; marc: Marc; via: string }> => {
+      if (aspen) { try { return { base, marc: await aspenView(base), via: 'aspen' }; } catch { /* fall through to VuFind */ } }
+      const sc = await fc('scrape', { url: `${base}/Details`, formats: ['markdown'], onlyMainContent: true }, 30000);
+      const marc = marcFromMarkdown(String(sc.data?.markdown || ''));
+      if (marc.some((f) => f.tag === '245')) return { base, marc, via: 'vufind' };
+      return { base, marc: await aspenView(base), via: 'aspen' };
+    };
+    const got = await Promise.allSettled(recs.map(fetchMarc));
     let best: any = null; const seen: string[] = []; const candidates: any[] = [];
-    for (const r of scraped) {
-      if (r.status !== 'fulfilled') { seen.push('scrape failed'); continue; }
-      const { url, md } = r.value; const host = new URL(url).hostname;
-      if (!marcRows(md, '505').length) { seen.push(`${host}: no 505`); continue; }
-      if (!recordMatches(md, title, author)) { seen.push(`${host}: 245/100 is a different book`); continue; }
-      const { raw, entries } = parse505(md);
+    got.forEach((r, i) => {
+      const host = new URL(recs[i].base).hostname;
+      if (r.status !== 'fulfilled') { seen.push(`${host}: unreadable (${String((r.reason as Error)?.message || r.reason).slice(0, 60)})`); return; }
+      const { base, marc, via } = r.value;
+      if (!marc.some((f) => f.tag === '505')) { seen.push(`${host}: no 505`); return; }
+      if (!recordMatches(marc, title, author)) { seen.push(`${host}: 245/100 is a different book`); return; }
+      const { raw, entries } = parse505(marc);
       const sc = score505(raw); const b = breakdown(entries);
-      seen.push(`${host}: score ${sc.score} (${sc.reasons.join(', ')})`);
-      candidates.push({ host, url, score: sc.score, reasons: sc.reasons, breakdown: b });
+      seen.push(`${host} (${via}): score ${sc.score} — ${sc.reasons.join(', ')}`);
+      candidates.push({ host, url: base, via, score: sc.score, reasons: sc.reasons, breakdown: b });
       // L2: SCORE the candidates and keep the cleanest, not the first that passes.
       if (b.chapter >= MIN && (!best || sc.score > best.score || (sc.score === best.score && b.chapter > best.breakdown.chapter)))
-        best = { toc: toLines(entries), entries, breakdown: b, score: sc.score, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url };
-    }
-    attempts.push({ source: SRC, detail: `${urls.length} record(s): ${seen.join('; ')}`, results: best ? 1 : 0, candidates });
+        best = { toc: toLines(entries), entries, breakdown: b, score: sc.score, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url: base };
+    });
+    attempts.push({ source: SRC, detail: `${recs.length} record(s)${offTitle ? ` (+${offTitle} other-book page(s) skipped)` : ''}: ${seen.join('; ')}`, results: best ? 1 : 0, candidates });
     return best;
   } catch (e) { attempts.push({ source: SRC, detail: 'search', error: String((e as Error).message || e) }); return null; }
 }
@@ -284,7 +330,7 @@ Deno.serve(async (req: Request) => {
   // key was unset must not shadow a real lookup once CB adds it. Hits are kept
   // forever; misses expire after MISS_TTL_MS so a newly-catalogued book resolves.
   const fc = Deno.env.get('FIRECRAWL_API_KEY') ? 'fc1' : 'fc0';
-  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v3`;   // v3 = typed entries + scored records (v2 = catalog pass)
+  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v4`;   // v4 = typed + scored + Aspen (v3 typed, v2 catalog pass)
   const store = kv();
   if (!body.refresh) {
     try {
