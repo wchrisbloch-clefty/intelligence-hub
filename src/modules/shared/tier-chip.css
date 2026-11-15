@@ -1,0 +1,6 @@
+/* TierChip (tc-). Source-trust marker: text + 1px border, never filled. */
+.tc { display: inline-flex; align-items: center; gap: 3px; font-size: var(--tc-size, 9px); font-weight: 800; letter-spacing: 1px;
+  text-transform: uppercase; color: var(--tier-inferred); border: 1px solid currentColor; background: transparent;
+  border-radius: 5px; padding: 1px 6px; white-space: nowrap; line-height: 1.4; }
+.tc[data-tier="verified"] { color: var(--tier-verified); }
+.tc[data-tier="reported"] { color: var(--tier-reported); }

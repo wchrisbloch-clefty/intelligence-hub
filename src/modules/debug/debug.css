@@ -1,0 +1,14 @@
+/* ?debug=1 overlay. Tokens only. Uses the one permitted overlay shadow. */
+.dbg-overlay { position: fixed; left: 8px; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 99999;
+  background: var(--surface); color: var(--text); border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg); border-radius: var(--radius); padding: 8px 10px;
+  font-size: 11px; line-height: 1.45; min-width: 200px; max-width: min(320px, calc(100vw - 16px)); }
+@media (min-width: 721px) { .dbg-overlay { bottom: 8px; } }
+.dbg-row { display: flex; justify-content: space-between; gap: 12px; }
+.dbg-row span { color: var(--text-subtle); }
+.dbg-row strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dbg-net { margin-top: 4px; color: var(--text-muted); max-height: 70px; overflow: hidden; word-break: break-all; }
+.dbg-toggle { background: none; border: 0; color: var(--text-subtle); font: inherit; font-weight: 700; cursor: pointer; padding: 0 0 4px; }
+.dbg-copy { margin-top: 6px; width: 100%; min-height: 44px; cursor: pointer; font: inherit; font-weight: 700;
+  background: var(--accent); color: var(--accent-foreground); border: 0; border-radius: var(--radius-sm); }
+.dbg-offscreen { position: fixed; opacity: 0; left: -9999px; }

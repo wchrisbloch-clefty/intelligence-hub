@@ -1,38 +1,38 @@
-import { T, withAlpha } from '../theme';
 import { useState } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import MD from './shared/MD.jsx';
 import { Card, Label, Badge, Btn, ThinkingDots } from './shared/Common.jsx';
 import Icon from './shared/Icon.jsx';
+import './growth-tools.css';
 
 const GOALS = [
-  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: T.accent, icon: 'DollarSign', horizon: '3-5 years' },
-  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: T.accent, icon: 'Zap', horizon: 'Ongoing' },
-  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: T.accent, icon: 'BarChart3', horizon: '5 years' },
-  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: T.accent, icon: 'BookMarked', horizon: '2025' },
+  { id: 'passive', label: '$10K+/mo Passive Income', target: 10000, current: 0, unit: '/mo', color: 'var(--accent-text)', icon: 'DollarSign', horizon: '3-5 years' },
+  { id: 'health', label: 'Longevity Protocol Active', target: 5, current: 3, unit: ' / 5 pillars', color: 'var(--accent-text)', icon: 'Zap', horizon: 'Ongoing' },
+  { id: 'business', label: 'Scalable Business Revenue', target: 50000, current: 0, unit: '/mo', color: 'var(--accent-text)', icon: 'BarChart3', horizon: '5 years' },
+  { id: 'learning', label: 'Learning Hours This Year', target: 200, current: 15, unit: 'h', color: 'var(--accent-text)', icon: 'BookMarked', horizon: '2025' },
 ];
 
 const SKILLS = [
-  { name: 'Business Development', level: 9, growth: '+0', color: T.accent },
-  { name: 'Real Estate Investing', level: 6, growth: '+2', color: T.accent },
-  { name: 'Negotiation', level: 8, growth: '+1', color: T.accent },
-  { name: 'Capital Allocation', level: 5, growth: '+1', color: T.accent },
-  { name: 'Stoic Leadership', level: 8, growth: '0', color: T.accent },
-  { name: 'Systems Thinking', level: 7, growth: '+1', color: T.accent },
-  { name: 'Health/Longevity', level: 7, growth: '+2', color: T.accent },
-  { name: 'AI/Technology', level: 4, growth: '+2', color: T.accent },
+  { name: 'Business Development', level: 9, growth: '+0', color: 'var(--accent-text)' },
+  { name: 'Real Estate Investing', level: 6, growth: '+2', color: 'var(--accent-text)' },
+  { name: 'Negotiation', level: 8, growth: '+1', color: 'var(--accent-text)' },
+  { name: 'Capital Allocation', level: 5, growth: '+1', color: 'var(--accent-text)' },
+  { name: 'Stoic Leadership', level: 8, growth: '0', color: 'var(--accent-text)' },
+  { name: 'Systems Thinking', level: 7, growth: '+1', color: 'var(--accent-text)' },
+  { name: 'Health/Longevity', level: 7, growth: '+2', color: 'var(--accent-text)' },
+  { name: 'AI/Technology', level: 4, growth: '+2', color: 'var(--accent-text)' },
 ];
 
 const CERTS = [
-  { name: 'Real Estate License', status: 'exploring', color: T.accent },
-  { name: 'CFA Level 1', status: 'exploring', color: T.accent },
-  { name: 'Options Trading (CBOE)', status: 'exploring', color: T.accent },
+  { name: 'Real Estate License', status: 'exploring', color: 'var(--accent-text)' },
+  { name: 'CFA Level 1', status: 'exploring', color: 'var(--accent-text)' },
+  { name: 'Options Trading (CBOE)', status: 'exploring', color: 'var(--accent-text)' },
 ];
 
 export default function GrowthTools() {
-  const { graph, projects, isMobile, isPhone, isTablet, setChatPrefill, setChatOpen } = useApp();
+  const { graph, projects, setChatPrefill, setChatOpen } = useApp();
   const [synthesis, setSynthesis] = useState('');
   const [synthLoading, setSynthLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('goals');
@@ -51,7 +51,7 @@ export default function GrowthTools() {
     if (goalAI[goal.id]) return;
     setGoalAILoading(goal.id);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's goal: ${goal.label}. Current: ${goal.current}${goal.unit} of ${goal.target}${goal.unit} (${Math.min(100, Math.round((goal.current / goal.target) * 100))}%). Horizon: ${goal.horizon}.\n\nGive CB: (1) the single biggest lever to accelerate progress toward this goal, (2) one common mistake to avoid, (3) a specific 30-day sprint target. Be decisive and CB-specific.` }], maxTokens: 500 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB's goal: ${goal.label}. Current: ${goal.current}${goal.unit} of ${goal.target}${goal.unit} (${Math.min(100, Math.round((goal.current / goal.target) * 100))}%). Horizon: ${goal.horizon}.\n\nGive CB: (1) the single biggest lever to accelerate progress toward this goal, (2) one common mistake to avoid, (3) a specific 30-day sprint target. Be decisive and CB-specific.` }], maxTokens: 500 });
       setGoalAI(p => ({ ...p, [goal.id]: r }));
     } catch { setGoalAI(p => ({ ...p, [goal.id]: 'Network error — try again.' })); }
     setGoalAILoading(null);
@@ -63,7 +63,7 @@ export default function GrowthTools() {
     if (skillAI[skill.name]) return;
     setSkillAILoading(skill.name);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB's skill: ${skill.name} — self-assessed ${skill.level}/10, growth trend ${skill.growth}.\n\nGive CB: (1) what getting from ${skill.level} to ${Math.min(10, skill.level + 2)} looks like in practice, (2) the highest-leverage resource or method to level up this skill, (3) how this skill connects to CB's BD/investing/Houston goals. Be specific.` }], maxTokens: 450 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB's skill: ${skill.name} — self-assessed ${skill.level}/10, growth trend ${skill.growth}.\n\nGive CB: (1) what getting from ${skill.level} to ${Math.min(10, skill.level + 2)} looks like in practice, (2) the highest-leverage resource or method to level up this skill, (3) how this skill connects to CB's BD/investing/Houston goals. Be specific.` }], maxTokens: 450 });
       setSkillAI(p => ({ ...p, [skill.name]: r }));
     } catch { setSkillAI(p => ({ ...p, [skill.name]: 'Network error — try again.' })); }
     setSkillAILoading(null);
@@ -73,7 +73,7 @@ export default function GrowthTools() {
     if (certAI[cert.name]) { setCertAI(p => ({ ...p, [cert.name]: '' })); return; }
     setCertAILoading(cert.name);
     try {
-      const r = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: `CB is exploring the ${cert.name} certification (status: ${cert.status}). Give CB: (1) honest ROI assessment — is this worth the time and money for a BD professional/investor in Houston? (2) time commitment and difficulty, (3) decisive recommendation: pursue, deprioritize, or find a better alternative.` }], maxTokens: 450 });
+      const r = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: `CB is exploring the ${cert.name} certification (status: ${cert.status}). Give CB: (1) honest ROI assessment — is this worth the time and money for a BD professional/investor in Houston? (2) time commitment and difficulty, (3) decisive recommendation: pursue, deprioritize, or find a better alternative.` }], maxTokens: 450 });
       setCertAI(p => ({ ...p, [cert.name]: r }));
     } catch { setCertAI(p => ({ ...p, [cert.name]: 'Network error — try again.' })); }
     setCertAILoading(null);
@@ -90,7 +90,7 @@ export default function GrowthTools() {
       const topicList = topics.slice(-5).map(t => `${t.title} (confidence ${t.confidence}/10)`).join(', ');
       const projList = projects.filter(p => p.status === 'active').map(p => p.title).join(', ');
       const prompt = `CB's Growth Synthesis Request:\n\nRecent learning: ${topicList}\nActive projects: ${projList}\nLearning streak: ${streak} days\nTotal learning: ${Math.round(totalMin / 60)}h\n\nGenerate a decisive growth synthesis: (1) What is compounding right now in CB's favor? (2) What's the biggest gap between where he is and where he wants to be? (3) The single highest-leverage action for the next 90 days — be specific, be decisive. Format in CB style: big picture first, decisive action last.`;
-      const reply = await callClaude({ system: CB_LEARNING_SPINE, messages: [{ role: 'user', content: prompt }], maxTokens: 800 });
+      const reply = await callClaude({ system: SYSTEM_LEARNING, messages: [{ role: 'user', content: prompt }], maxTokens: 800 });
       setSynthesis(reply);
     } catch {
       setSynthesis('Network error. Try again.');
@@ -106,68 +106,66 @@ export default function GrowthTools() {
   ];
 
   return (
-    <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Growth & Synthesis</div>
-        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Compounding Dashboard</div>
-        <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>Goals · Skills · Synthesis · Certifications</div>
+    <div className="gt">
+      <div className="gt-head">
+        <div className="gt-eyebrow">Growth & Synthesis</div>
+        <div className="gt-title">Compounding Dashboard</div>
+        <div className="gt-sub">Goals · Skills · Synthesis · Certifications</div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 10, marginBottom: 28 }}>
+      <div className="gt-stats">
         {[
-          { label: 'Avg Confidence', value: avgConf + '/10', color: T.accent, icon: 'Target' },
-          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: T.accent, icon: 'Check' },
-          { label: 'Streak', value: streak + 'd', color: T.accent, icon: 'Flame' },
-          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: T.accent, icon: 'Clock' },
+          { label: 'Avg Confidence', value: avgConf + '/10', color: 'var(--accent-text)', icon: 'Target' },
+          { label: 'Topics Mastered', value: topics.filter(t => t.confidence >= 7).length, color: 'var(--accent-text)', icon: 'Check' },
+          { label: 'Streak', value: streak + 'd', color: 'var(--accent-text)', icon: 'Flame' },
+          { label: 'Hours Invested', value: Math.round(totalMin / 60) + 'h', color: 'var(--accent-text)', icon: 'Clock' },
         ].map(s => (
           <Card key={s.label} color={s.color} style={{ padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ marginBottom: 6 }}><Icon name={s.icon} size="header" style={{ color: 'var(--text-tertiary)' }} /></div>
-            <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: s.color, fontFamily: "'Newsreader', serif" }}>{s.value}</div>
-            <div style={{ fontSize: isMobile ? 'var(--fs-sm)' : 'var(--fs-sm)', color: 'var(--subtle)', marginTop: 4, letterSpacing: 0.5 }}>{s.label}</div>
+            <div className="gt-stat-ico"><Icon name={s.icon} size="header" /></div>
+            <div className="gt-stat-val">{s.value}</div>
+            <div className="gt-stat-label">{s.label}</div>
           </Card>
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 0 }}>
+      <div className="gt-tabs" role="tablist" aria-label="Growth sections">
         {tabs.map(t => (
-          <div key={t.id} onClick={() => setActiveTab(t.id)}
-            style={{ padding: '8px 16px', fontSize: 'var(--fs-base)', fontWeight: activeTab === t.id ? 700 : 500, color: activeTab === t.id ? T.accent : 'var(--subtle)', cursor: 'pointer', borderBottom: activeTab === t.id ? '2px solid #D9A441' : '2px solid transparent', marginBottom: -1 }}>
+          <button type="button" key={t.id} role="tab" className="gt-tab tap" aria-selected={activeTab === t.id} onClick={() => setActiveTab(t.id)}>
             {t.label}
-          </div>
+          </button>
         ))}
       </div>
 
       {activeTab === 'goals' && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
+        <div className="gt-goals">
           {GOALS.map(g => {
             const pct = Math.min(100, Math.round((g.current / g.target) * 100));
             const isExpanded = expandedGoal === g.id;
             return (
-              <Card key={g.id} color={g.color} style={{ padding: '18px', cursor: 'pointer', transition: 'border-color 0.15s' }} onClick={() => getGoalAI(g)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                  <Icon name={g.icon} size={24} style={{ color: 'var(--text-tertiary)' }} />
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', letterSpacing: 1 }}>{g.horizon}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: isExpanded ? g.color : 'var(--dim)', transition: 'transform 0.2s', display: 'inline-block', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▼</div>
+              <Card key={g.id} color={g.color} style={{ padding: 0 }}>
+                <button type="button" className="gt-goal" aria-expanded={isExpanded} onClick={() => getGoalAI(g)}>
+                  <div className="gt-goal-top">
+                    <Icon name={g.icon} size={24} className="gt-ico" />
+                    <div className="gt-goal-meta">
+                      <div className="gt-horizon">{g.horizon}</div>
+                      <Icon name="ChevronDown" size={14} className="gt-chev" data-open={isExpanded ? '' : undefined} />
+                    </div>
                   </div>
-                </div>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{g.label}</div>
-                <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 14 }}>{g.current}{g.unit} / {g.target}{g.unit}</div>
-                <div style={{ background: 'var(--border)', borderRadius: 4, height: 6, marginBottom: 8 }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${g.color}, ${g.color}80)`, borderRadius: 4, transition: 'width 0.5s' }} />
-                </div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: g.color, marginBottom: isExpanded ? 12 : 0 }}>{pct}% to goal · tap for AI insights</div>
+                  <div className="gt-goal-label">{g.label}</div>
+                  <div className="gt-goal-nums">{g.current}{g.unit} / {g.target}{g.unit}</div>
+                  <div className="gt-bar"><span style={{ '--pct': `${pct}%` }} /></div>
+                  <div className="gt-goal-pct">{pct}% to goal · tap for AI insights</div>
+                </button>
                 {isExpanded && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${g.color}20` }} onClick={e => e.stopPropagation()}>
+                  <div className="gt-goal-panel">
                     {goalAILoading === g.id
                       ? <ThinkingDots color={g.color} />
                       : goalAI[g.id]
                         ? <MD text={goalAI[g.id]} color={g.color} />
                         : null}
-                    <div onClick={() => { setChatPrefill(`Help me make progress on my goal: ${g.label}. I'm at ${g.current}${g.unit} out of ${g.target}${g.unit}.`); setChatOpen(true); }}
-                      style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: `${g.color}10`, border: `1px solid ${g.color}30`, borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 600, color: g.color, cursor: 'pointer' }}>
-                      💬 Ask CB AI about this goal
-                    </div>
+                    <button type="button" className="gt-ask tap" onClick={() => { setChatPrefill(`Help me make progress on my goal: ${g.label}. I'm at ${g.current}${g.unit} out of ${g.target}${g.unit}.`); setChatOpen(true); }}>
+                      <Icon name="MessageSquare" size={14} /> Ask CB AI about this goal
+                    </button>
                   </div>
                 )}
               </Card>
@@ -179,25 +177,24 @@ export default function GrowthTools() {
       {activeTab === 'skills' && (
         <div>
           <Label>Skill Radar — Self Assessment · tap any skill for AI coaching</Label>
-          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr' : '1fr 1fr', gap: 10, marginBottom: 16 }}>
+          <div className="gt-skills">
             {SKILLS.map(s => {
               const isExp = expandedSkill === s.name;
               return (
-                <div key={s.name} onClick={() => getSkillAI(s)}
-                  style={{ padding: '12px 16px', background: 'var(--surface)', border: `1px solid ${isExp ? s.color + '60' : s.color + '20'}`, borderRadius: 10, cursor: 'pointer', transition: 'border-color 0.15s' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)' }}>{s.name}</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: s.growth.startsWith('+') ? T.accent : 'var(--subtle)' }}>{s.growth}</div>
-                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: s.color }}>{s.level}/10</div>
-                      <div style={{ fontSize: 'var(--fs-sm)', color: isExp ? s.color : 'var(--dim)', transform: isExp ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s', display: 'inline-block' }}>▼</div>
+                <div key={s.name} className="gt-skill" data-open={isExp ? '' : undefined}>
+                  <button type="button" className="gt-skill-btn" aria-expanded={isExp} onClick={() => getSkillAI(s)}>
+                    <div className="gt-skill-top">
+                      <div className="gt-skill-name">{s.name}</div>
+                      <div className="gt-skill-meta">
+                        <div className="gt-skill-growth" data-up={s.growth.startsWith('+') ? '' : undefined}>{s.growth}</div>
+                        <div className="gt-skill-level">{s.level}/10</div>
+                        <Icon name="ChevronDown" size={14} className="gt-chev" data-open={isExp ? '' : undefined} />
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ background: 'var(--border)', borderRadius: 2, height: 3, marginBottom: isExp ? 12 : 0 }}>
-                    <div style={{ width: `${s.level * 10}%`, height: '100%', background: s.color, borderRadius: 2 }} />
-                  </div>
+                    <div className="gt-bar gt-bar-thin"><span style={{ '--pct': `${s.level * 10}%` }} /></div>
+                  </button>
                   {isExp && (
-                    <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${s.color}20` }} onClick={e => e.stopPropagation()}>
+                    <div className="gt-skill-panel">
                       {skillAILoading === s.name
                         ? <ThinkingDots color={s.color} />
                         : skillAI[s.name]
@@ -209,58 +206,58 @@ export default function GrowthTools() {
               );
             })}
           </div>
-          <div style={{ marginTop: 16, padding: '12px 16px', background: withAlpha(T.accent, 3), border: '1px solid #D9A44120', borderRadius: 10 }}>
-            <div style={{ fontSize: 'var(--fs-sm)', color: T.accent, marginBottom: 4 }}>🎯 Top leverage skill to develop next</div>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>AI/Technology (currently 4/10) — highest asymmetric upside given your BD + real estate focus. A BD professional fluent in AI tools is a rare, compounding edge.</div>
+          <div className="gt-callout">
+            <div className="gt-callout-kick"><Icon name="Target" size={14} /> Top leverage skill to develop next</div>
+            <div className="gt-callout-body">AI/Technology (currently 4/10) — highest asymmetric upside given your BD + real estate focus. A BD professional fluent in AI tools is a rare, compounding edge.</div>
           </div>
         </div>
       )}
 
       {activeTab === 'synthesis' && (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div>
+          <div className="gt-synth-head">
+            <div className="gt-synth-id">
               <Label>Growth Synthesis</Label>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginTop: -6 }}>AI-generated · Based on your learning history, projects, and goals</div>
+              <div className="gt-synth-sub">AI-generated · Based on your learning history, projects, and goals</div>
             </div>
-            <div onClick={generateSynthesis} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-              {synthLoading ? '...' : '⚡ Generate'}
-            </div>
+            <button type="button" className="btn btn-primary gt-gen tap" aria-busy={synthLoading} onClick={generateSynthesis}>
+              {synthLoading ? '...' : <><Icon name="Zap" size={14} /> Generate</>}
+            </button>
           </div>
           {synthLoading && (
-            <Card color={T.accent} style={{ padding: '20px' }}>
-              <div style={{ fontSize: 10, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Analyzing your growth trajectory...</div>
-              <ThinkingDots color={T.accent} />
+            <Card color="var(--accent-text)" style={{ padding: '20px' }}>
+              <div className="gt-kick">Analyzing your growth trajectory...</div>
+              <ThinkingDots color="var(--accent-text)" />
             </Card>
           )}
           {synthesis && !synthLoading && (
-            <Card color={T.accent} style={{ padding: '20px' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 14 }}>Growth Synthesis · CB Intelligence</div>
-              <MD text={synthesis} color={T.accent} />
+            <Card color="var(--accent-text)" style={{ padding: '20px' }}>
+              <div className="gt-kick gt-kick-sm">Growth Synthesis · CB Intelligence</div>
+              <MD text={synthesis} color="var(--accent-text)" />
             </Card>
           )}
           {!synthesis && !synthLoading && (
-            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-              <div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>⚡</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>Get your Growth Synthesis</div>
-              <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20, maxWidth: 360, margin: '0 auto 20px' }}>AI analysis of what's compounding in your favor, your biggest gap, and the highest-leverage action for the next 90 days.</div>
-              <div onClick={generateSynthesis} style={{ display: 'inline-block', padding: '11px 22px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Generate Synthesis →</div>
+            <div className="gt-empty">
+              <div className="gt-empty-ico"><Icon name="Zap" size={40} strokeWidth={1.5} /></div>
+              <div className="gt-empty-title">Get your Growth Synthesis</div>
+              <div className="gt-empty-body">AI analysis of what's compounding in your favor, your biggest gap, and the highest-leverage action for the next 90 days.</div>
+              <button type="button" className="btn btn-primary gt-gen-lg tap" onClick={generateSynthesis}>Generate Synthesis →</button>
             </div>
           )}
           {topics.length > 0 && (
-            <div style={{ marginTop: 24 }}>
+            <div className="gt-xref">
               <Label>Knowledge Cross-References</Label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="gt-xref-list">
                 {topics.filter(t => t.confidence >= 7).slice(0, 5).map(t => (
-                  <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>✓ {t.title}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: T.accent }}>Strong ({t.confidence}/10)</div>
+                  <div key={t.title} className="gt-xref-row">
+                    <div className="gt-xref-title"><Icon name="Check" size={14} /> {t.title}</div>
+                    <div className="gt-xref-val">Strong ({t.confidence}/10)</div>
                   </div>
                 ))}
                 {topics.filter(t => t.confidence < 5).slice(0, 3).map(t => (
-                  <div key={t.title} style={{ padding: '10px 14px', background: 'var(--surface)', border: '1px solid #C4553D20', borderRadius: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-c)' }}>⚠ {t.title}</div>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: T.accent }}>Needs work ({t.confidence}/10)</div>
+                  <div key={t.title} className="gt-xref-row" data-weak="">
+                    <div className="gt-xref-title"><Icon name="AlertTriangle" size={14} /> {t.title}</div>
+                    <div className="gt-xref-val">Needs work ({t.confidence}/10)</div>
                   </div>
                 ))}
               </div>
@@ -273,13 +270,13 @@ export default function GrowthTools() {
         <div>
           <Label>Certifications & Credentials</Label>
           {CERTS.map(c => (
-            <div key={c.name} style={{ padding: '14px 16px', background: 'var(--surface)', border: `1px solid ${c.color}20`, borderRadius: 10, marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
+            <div key={c.name} className="gt-cert">
+              <div className="gt-cert-name">{c.name}</div>
               <Badge color={c.color}>{c.status}</Badge>
             </div>
           ))}
-          <div style={{ marginTop: 20, padding: '14px 16px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 10, cursor: 'pointer', textAlign: 'center', minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>+ Add certification or credential</div>
+          <div className="gt-cert-add">
+            <div>+ Add certification or credential</div>
           </div>
         </div>
       )}

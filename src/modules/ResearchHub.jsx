@@ -1,4 +1,5 @@
-import { T, withAlpha } from '../theme';
+import './research-hub.css';
+import { T } from '../theme';
 import { useState, useRef, useEffect } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, saveResearch, uid, timeAgo } from '../utils.js';
@@ -7,21 +8,24 @@ import { readLocal, writeThrough, hydrate } from '../lib/storage.js';
 import { getFeed, relTime } from '../lib/adapters.js';
 import { matchItems } from '../lib/topics.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
+import { SYSTEM_BASE } from '../constants.js';
 
 const BOARD_KEY = 'aether_board';
 const RESEARCH_SEEN_KEY = 'aether_research_seen_v1'; // { [threadId]: lastVisitedAt } — "new since last visit" watermark
 import MD from './shared/MD.jsx';
-import { Btn, Input, Label, Card, Badge, ThinkingDots, Modal } from './shared/Common.jsx';
+import { Label, Card, Badge, Modal } from './shared/Common.jsx';
+import PageWithRail from './shared/PageWithRail.jsx';
+import ProvenancePanel from './shared/ProvenancePanel.jsx';
 import AskChip from './shared/AskChip.jsx';
 import FollowButton from './shared/FollowButton.jsx';
 import Icon from './shared/Icon.jsx';
 
 const BOARD_COLS = [
-  { id: 'collecting',   label: 'Collecting',   icon: '📥', color: T.accent },
-  { id: 'analyzing',    label: 'Analyzing',    icon: '🔍', color: T.accent },
-  { id: 'synthesizing', label: 'Synthesizing', icon: '⚗️', color: T.accent },
-  { id: 'insights',     label: 'Insights',     icon: '💡', color: T.accent },
+  { id: 'collecting',   label: 'Collecting',   icon: 'Inbox' },
+  { id: 'analyzing',    label: 'Analyzing',    icon: 'Search' },
+  { id: 'synthesizing', label: 'Synthesizing', icon: 'Layers' },
+  { id: 'insights',     label: 'Insights',     icon: 'Zap' },
 ];
 
 function loadBoard()   { return readLocal(BOARD_KEY, []); }
@@ -33,6 +37,9 @@ function ResearchBoard() {
   const [draft, setDraft]         = useState('');
   const [synthesis, setSynthesis] = useState('');
   const [synLoading, setSynLoading] = useState(false);
+  // Failure as STATE, not content (used to be written into `synthesis`).
+  const [synErr, setSynErr] = useState('');
+  const [cardErr, setCardErr] = useState({}); // id -> error message
   const [analyzingId, setAnalyzingId] = useState(null);
   const [cardAnalysis, setCardAnalysis] = useState({}); // id -> analysis text
 
@@ -54,18 +61,19 @@ function ResearchBoard() {
     if (analyzingId === card.id) return;
     setAnalyzingId(card.id);
     setCardAnalysis(prev => ({ ...prev, [card.id]: '' }));
+    setCardErr(prev => { const n = { ...prev }; delete n[card.id]; return n; });
     try {
       const prompt = card.type === 'url'
         ? `Analyze this source/URL for CB's research: ${card.content}\n\nWhat is this about? Key signal, relevance, and what CB should take from it.`
         : `Analyze this research note for CB: "${card.content}"\n\nWhat's the signal here? Key insight, what's true/false, and what CB should do with this.`;
       const reply = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.\n\n' + TIER_INSTRUCTION,
+        system: SYSTEM_BASE + '\n\nMODE: RESEARCH CARD ANALYSIS — Be concise, sharp, and decisive. Truth Score + Decisive Bet.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: prompt }],
         maxTokens: 700,
       });
       setCardAnalysis(prev => ({ ...prev, [card.id]: reply }));
-    } catch {
-      setCardAnalysis(prev => ({ ...prev, [card.id]: 'Analysis failed — try again.' }));
+    } catch (e) {
+      setCardErr(prev => ({ ...prev, [card.id]: e?.message || 'Analysis failed.' }));
     }
     setAnalyzingId(null);
   };
@@ -83,6 +91,7 @@ function ResearchBoard() {
     if (cards.length === 0) return;
     setSynLoading(true);
     setSynthesis('');
+    setSynErr('');
     const grouped = BOARD_COLS.map(col => {
       const colCards = cards.filter(c => c.column === col.id);
       if (!colCards.length) return '';
@@ -90,71 +99,84 @@ function ResearchBoard() {
     }).filter(Boolean).join('\n\n');
     try {
       const r = await callClaude({
-        system: CB_IDENTITY + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.\n\n' + TIER_INSTRUCTION,
+        system: SYSTEM_BASE + '\n\nMODE: RESEARCH BOARD SYNTHESIS — Synthesize all research cards into a coherent intelligence brief. End with Truth Score, key insight, and decisive bet for CB.\n\n' + TIER_INSTRUCTION,
         messages: [{ role: 'user', content: `Synthesize my research board into a comprehensive intelligence brief:\n\n${grouped}` }],
         maxTokens: 1000,
       });
       setSynthesis(r);
-    } catch { setSynthesis('Synthesis failed — try again.'); }
+    } catch (e) { setSynErr(e?.message || 'The AI providers were unavailable.'); }
     setSynLoading(false);
   };
 
+  // Explicit status for the board synthesis. 'empty' has no placeholder — the
+  // "AI Synthesize All" button above is the CTA that produces it.
+  const synStatus = synLoading ? 'loading' : synErr ? 'error' : synthesis ? 'ready' : 'empty';
+
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div className="rh-board-head">
         <div>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{cards.length} research cards</div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Collect signals → analyze → synthesize → extract insights</div>
+          <div className="rh-board-count">{cards.length} research cards</div>
+          <div className="rh-board-sub">Collect signals → analyze → synthesize → extract insights</div>
         </div>
         {cards.length > 0 && (
-          <div onClick={synthesizeAll} style={{ padding: '7px 16px', background: T.accent, borderRadius: 9, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', flexShrink: 0 }}>
-            {synLoading ? '⟳ Synthesizing…' : '✦ AI Synthesize All'}
-          </div>
+          <button type="button" className="btn btn-primary tap rh-synth-btn" onClick={synthesizeAll} aria-busy={synLoading || undefined}>
+            <Icon name={synLoading ? 'RefreshCw' : 'Sparkles'} size={14} /> {synLoading ? 'Synthesizing…' : 'AI Synthesize All'}
+          </button>
         )}
       </div>
 
+      <div data-status={synStatus}>
+      {synStatus === 'loading' && <div className="rh-gap"><SectionSkeleton rows={5} lead label="board synthesis" /></div>}
+      {synStatus === 'error' && <div className="rh-gap"><SectionError label="the board synthesis" onRetry={synthesizeAll} detail={synErr} /></div>}
       {synthesis && (
-        <div style={{ background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 12, padding: '16px 18px', marginBottom: 20 }}>
-          <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Board Synthesis</div>
-          <MD text={synthesis} color={T.accent} />
-          <div onClick={() => setSynthesis('')} style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>Clear</div>
+        <div className="rh-synth">
+          <div className="rh-kicker">Board Synthesis</div>
+          <MD text={synthesis} color="var(--accent-text)" />
+          <button type="button" className="rh-link tap" onClick={() => setSynthesis('')}>Clear</button>
         </div>
       )}
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, overflowX: 'auto' }}>
+      <div className="rh-board">
         {BOARD_COLS.map((col, colIdx) => {
           const colCards = cards.filter(c => c.column === col.id);
           return (
-            <div key={col.id} style={{ background: 'var(--surface)', border: `1px solid ${col.color}25`, borderRadius: 12, padding: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingBottom: 8, borderBottom: `1px solid ${col.color}25` }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: col.color }}>{col.icon} {col.label}</div>
-                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{colCards.length}</span>
+            <div key={col.id} className="rh-col">
+              <div className="rh-col-head">
+                <div className="rh-col-title"><Icon name={col.icon} size={16} aria-hidden="true" /> {col.label}</div>
+                <span className="rh-col-count">{colCards.length}</span>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 10, minHeight: 60 }}>
+              <div className="rh-col-cards">
                 {colCards.map(card => (
-                  <div key={card.id} style={{ background: 'var(--bg)', border: `1px solid ${col.color}20`, borderRadius: 8, padding: '9px 10px' }}>
-                    <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-b)', lineHeight: 1.45, marginBottom: 6, wordBreak: 'break-word' }}>
+                  <div key={card.id} className="rh-bcard">
+                    <div className="rh-bcard-text">
                       {card.type === 'url'
-                        ? <span onClick={() => window.open(card.content, '_blank')} style={{ color: 'var(--accent,#D9A441)', cursor: 'pointer', textDecoration: 'underline' }}>{card.content.slice(0, 50)}…</span>
+                        ? <a className="rh-bcard-url tap" href={card.content} target="_blank" rel="noopener noreferrer">{card.content.slice(0, 50)}…</a>
                         : card.content.slice(0, 120) + (card.content.length > 120 ? '…' : '')
                       }
                     </div>
                     {cardAnalysis[card.id] && (
-                      <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', lineHeight: 1.5, marginBottom: 6, padding: '6px 8px', background: `${col.color}10`, borderRadius: 6, borderLeft: `2px solid ${col.color}` }}>
-                        <MD text={cardAnalysis[card.id]} color={col.color} />
+                      <div className="rh-bcard-ai">
+                        <MD text={cardAnalysis[card.id]} color="var(--accent-text)" />
                       </div>
                     )}
                     {analyzingId === card.id && (
-                      <div style={{ fontSize: 'var(--fs-sm)', color: col.color, marginBottom: 6 }}>
-                        <ThinkingDots color={col.color} />
+                      <div data-status="loading" className="rh-mb6">
+                        <SectionSkeleton rows={2} label="card analysis" />
                       </div>
                     )}
-                    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                      {colIdx > 0 && <span onClick={() => moveCard(card.id, -1)} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '1px 5px' }}>←</span>}
-                      {colIdx < BOARD_COLS.length - 1 && <span onClick={() => moveCard(card.id, 1)} style={{ fontSize: 'var(--fs-base)', color: col.color, cursor: 'pointer', padding: '1px 5px' }}>→</span>}
-                      <span onClick={() => analyzeCard(card)} style={{ fontSize: 'var(--fs-sm)', color: col.color, cursor: 'pointer', padding: '1px 6px', border: `1px solid ${col.color}40`, borderRadius: 4, marginLeft: 2 }}>✦ AI</span>
-                      <span onClick={() => removeCard(card.id)} style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', marginLeft: 'auto', padding: '1px 4px' }}>✕</span>
+                    {analyzingId !== card.id && cardErr[card.id] && (
+                      <div data-status="error" className="rh-mb6">
+                        <SectionError label="the analysis" onRetry={() => analyzeCard(card)} detail={cardErr[card.id]} />
+                      </div>
+                    )}
+                    <div className="rh-bcard-tools">
+                      {colIdx > 0 && <button type="button" className="rh-move tap" data-dir="prev" onClick={() => moveCard(card.id, -1)} aria-label={`Move to ${BOARD_COLS[colIdx - 1].label}`}>←</button>}
+                      {colIdx < BOARD_COLS.length - 1 && <button type="button" className="rh-move tap" data-dir="next" onClick={() => moveCard(card.id, 1)} aria-label={`Move to ${BOARD_COLS[colIdx + 1].label}`}>→</button>}
+                      <button type="button" className="rh-ai tap" onClick={() => analyzeCard(card)}><Icon name="Sparkles" size={12} /> AI</button>
+                      <button type="button" className="rh-x tap" onClick={() => removeCard(card.id)} aria-label="Remove card"><Icon name="X" size={14} /></button>
                     </div>
                   </div>
                 ))}
@@ -162,21 +184,19 @@ function ResearchBoard() {
 
               {adding === col.id ? (
                 <div>
-                  <textarea value={draft} onChange={e => setDraft(e.target.value)}
+                  <textarea className="rh-draft" value={draft} onChange={e => setDraft(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addCard(col.id); } }}
-                    placeholder="Text or URL… (Enter to save)"
-                    rows={2}
-                    style={{ width: '100%', background: 'var(--bg)', border: `1px solid ${col.color}40`, borderRadius: 7, padding: '7px 10px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', lineHeight: 1.5, boxSizing: 'border-box', marginBottom: 6 }} />
-                  <div style={{ display: 'flex', gap: 5 }}>
-                    <div onClick={() => addCard(col.id)} style={{ flex: 1, padding: '5px', textAlign: 'center', background: col.color, borderRadius: 6, fontSize: 'var(--fs-sm)', fontWeight: 700, color: '#000', cursor: 'pointer' }}>Add</div>
-                    <div onClick={() => { setAdding(null); setDraft(''); }} style={{ padding: '5px 8px', border: '1px solid var(--border)', borderRadius: 6, fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer' }}>✕</div>
+                    placeholder="Text or URL… (Enter to save)" aria-label={`New ${col.label} card`}
+                    rows={2} />
+                  <div className="rh-draft-actions">
+                    <button type="button" className="btn btn-primary tap rh-draft-add" onClick={() => addCard(col.id)}>Add</button>
+                    <button type="button" className="btn tap" onClick={() => { setAdding(null); setDraft(''); }} aria-label="Cancel"><Icon name="X" size={14} /></button>
                   </div>
                 </div>
               ) : (
-                <div onClick={() => { setAdding(col.id); setDraft(''); }}
-                  style={{ padding: '6px', border: `1px dashed ${col.color}40`, borderRadius: 7, textAlign: 'center', fontSize: 'var(--fs-sm)', color: 'var(--dim)', cursor: 'pointer', transition: 'all 0.12s' }}>
+                <button type="button" className="rh-add tap" onClick={() => { setAdding(col.id); setDraft(''); }}>
                   + Add
-                </div>
+                </button>
               )}
             </div>
           );
@@ -198,18 +218,18 @@ const SEARCH_SUGGESTIONS = [
 ];
 
 const SOURCE_LIBRARY = [
-  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker', color: T.accent },
-  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker', color: T.accent },
-  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker', color: T.accent },
-  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author', color: T.accent },
-  { name: 'Warren Buffett', domain: 'Investing', type: 'Author', color: T.accent },
-  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author', color: T.accent },
-  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter', color: T.accent },
-  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter', color: T.accent },
+  { name: 'Peter Attia', domain: 'Longevity/Medicine', type: 'Thinker' },
+  { name: 'Andrew Huberman', domain: 'Neuroscience/Performance', type: 'Thinker' },
+  { name: 'Naval Ravikant', domain: 'Wealth/Philosophy', type: 'Thinker' },
+  { name: 'Chris Miller', domain: 'Geopolitics/Tech', type: 'Author' },
+  { name: 'Warren Buffett', domain: 'Investing', type: 'Author' },
+  { name: 'Jocko Willink', domain: 'Leadership', type: 'Author' },
+  { name: 'The Hustle', domain: 'Business News', type: 'Newsletter' },
+  { name: 'Axios', domain: 'News/Policy', type: 'Newsletter' },
 ];
 
 export default function ResearchHub() {
-  const { graph, research, setResearch, isMobile, captureRoute, clearCapture, applyRoute } = useApp();
+  const { research, setResearch, captureRoute, clearCapture, applyRoute } = useApp();
   const [activeThread, setActiveThread] = useState(null);
   const [searchInput, setSearchInput] = useState('');
   const [messages, setMessages] = useState([]);
@@ -227,13 +247,16 @@ export default function ResearchHub() {
   // and the open thread; "new since last visit" uses a per-thread watermark.
   const [feedItems, setFeedItems] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [feedErr, setFeedErr] = useState(''); // was a swallowed catch {}
+  const [threadErr, setThreadErr] = useState('');
+  const lastSendRef = useRef(null); // { threadId, newMsgs } for Retry
   const [seen, setSeen] = useState(() => readLocal(RESEARCH_SEEN_KEY, {}));
   const [threadSeenAt, setThreadSeenAt] = useState(0); // the seen watermark captured when the open thread was entered
   const itemTime = (it) => it.at || Date.parse(it.publishedAt || '') || 0;
 
   const loadLiveFeed = async () => {
-    setFeedLoading(true);
-    try { const f = await getFeed({ limit: 40 }); setFeedItems(Array.isArray(f) ? f : []); } catch {}
+    setFeedLoading(true); setFeedErr('');
+    try { const f = await getFeed({ limit: 40 }); setFeedItems(Array.isArray(f) ? f : []); } catch (e) { setFeedErr(e?.message || 'The live feed could not be fetched.'); }
     setFeedLoading(false);
   };
   useEffect(() => { loadLiveFeed(); }, []);
@@ -269,11 +292,19 @@ export default function ResearchHub() {
     const newMsgs = [...prevMessages, userMsg];
     setMessages(newMsgs);
     setSearchInput('');
+    await replyThread(threadId, threads, newMsgs);
+  };
+
+  // The reply half of sendMessage, split out so Retry re-runs ONLY the failed
+  // reply against the same history (the question is already in the thread).
+  const replyThread = async (threadId, threads, newMsgs) => {
+    lastSendRef.current = { threadId, newMsgs };
     setLoading(true);
     setStream('');
+    setThreadErr('');
     try {
       const system = {
-        cached: CB_IDENTITY,
+        cached: SYSTEM_BASE,
         dynamic: "\n\nMODE: TRUTH & RESEARCH HUB\nYour job: cut through narrative, surface signal, flag bias, give CB the contrarian insight most people miss. Prioritize analytical depth and objectivity over forced connections. End every response with: (1) Truth Score (1-10, how confident you are in this), (2) Bias Flags (sources or narratives to be skeptical of), (3) Decisive Bet (what CB should do with this information). Be rigorous.",
       };
       const reply = await callClaude({ system, messages: newMsgs.map(m => ({ role: m.role, content: m.content })), searchEnabled, onToken: (t) => setStream(s => s + t) });
@@ -284,13 +315,20 @@ export default function ResearchHub() {
       setResearch(updatedThreads);
       await saveResearch(updatedThreads);
     } catch (e) {
-      setMessages(prev => [...prev, { role: 'assistant', content: e?.authExpired ? 'Auth expired — re-enter your code to continue.' : 'AI request failed — retry.' }]);
+      setThreadErr(e?.authExpired ? 'Auth expired — re-enter your code to continue.' : (e?.message || 'AI request failed.'));
     }
     setStream('');
     setLoading(false);
   };
 
+  const retryThread = () => {
+    const f = lastSendRef.current;
+    if (!f || loading) return;
+    replyThread(f.threadId, research, f.newMsgs);
+  };
+
   const openThread = (thread) => {
+    setThreadErr('');
     setActiveThread(thread.id);
     setMessages(thread.messages || []);
     // Capture the prior watermark for the "new since last visit" divider, then
@@ -316,103 +354,114 @@ export default function ResearchHub() {
     if (activeThread === id) { setActiveThread(null); setMessages([]); }
   };
 
+  const sourceLibrary = (
+    <div className="rh-lib">
+      <Label color="var(--accent-text)">Source Library</Label>
+      {SOURCE_LIBRARY.map(s => (
+        <button type="button" key={s.name} className="rh-src tap"
+          onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}>
+          <div className="rh-src-top">
+            <div className="rh-src-name">{s.name}</div>
+            <div className="rh-src-tools">
+              <Badge color="var(--accent-text)">{s.type}</Badge>
+              <span className="rh-src-arrow" aria-hidden="true">→</span>
+            </div>
+          </div>
+          <div className="rh-src-domain">{s.domain} · click to research</div>
+        </button>
+      ))}
+    </div>
+  );
+
   if (!activeThread) return (
-    <div style={{ padding: isMobile ? '16px 16px 60px' : '24px 28px 60px', maxWidth: 900, margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28 }}>
+    <div className="rh">
+      <div className="rh-head">
         <div>
-          <div style={{ fontSize: 9, letterSpacing: 4, color: T.accent, textTransform: 'uppercase', marginBottom: 6 }}>Truth & Research Hub</div>
-          <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", marginBottom: 4 }}>Deep Intelligence Search</div>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)' }}>CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
+          <div className="rh-eyebrow">Truth & Research Hub</div>
+          <div className="rh-title">Deep Intelligence Search</div>
+          <div className="rh-sub">CB-style. Every response: Truth Score · Bias Flags · Decisive Bet.</div>
         </div>
-        <div onClick={() => setShowNewThread(true)} style={{ padding: '8px 16px', background: 'linear-gradient(135deg, #D9A441, #D9A441)', borderRadius: 10, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#000', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ New Thread</div>
+        <button type="button" className="btn btn-primary tap rh-new" onClick={() => setShowNewThread(true)}>+ New Thread</button>
       </div>
 
       {/* View switcher: Threads | Board */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 20 }}>
-        {[{ id: false, label: '💬 Threads' }, { id: true, label: '🗂 Research Board' }].map(v => (
-          <div key={String(v.id)} onClick={() => setBoardView(v.id)}
-            style={{ padding: '7px 16px', fontSize: 'var(--fs-base)', fontWeight: 700, borderRadius: 10, cursor: 'pointer', border: `1px solid ${boardView === v.id ? T.accent : 'var(--border)'}`, background: boardView === v.id ? withAlpha(T.accent, 8) : 'var(--surface)', color: boardView === v.id ? T.accent : 'var(--muted)', transition: 'all 0.12s' }}>
-            {v.label}
-          </div>
+      <div className="rh-views">
+        {[{ id: false, label: 'Threads', icon: 'MessageSquare' }, { id: true, label: 'Research Board', icon: 'ClipboardList' }].map(v => (
+          <button type="button" key={String(v.id)} className="rh-view tap" aria-pressed={boardView === v.id} onClick={() => setBoardView(v.id)}>
+            <Icon name={v.icon} size={15} aria-hidden="true" /> {v.label}
+          </button>
         ))}
       </div>
 
       {boardView && <ResearchBoard />}
 
-      {!boardView && <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--surface)', border: '1px solid #D9A44130', borderRadius: 14, padding: '14px 18px', marginBottom: 12 }}>
-          <span style={{ fontSize: 'var(--fs-lg)', color: T.accent }}>🔭</span>
-          <input value={newQuery} onChange={e => setNewQuery(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
-            placeholder="Research a topic, question, or opportunity..."
-            style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: 'var(--fs-lg)', color: 'var(--text-b)', fontFamily: 'inherit' }} />
-          <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer', whiteSpace: 'nowrap' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
-          {newQuery.trim() && <div onClick={() => startThread(newQuery)} style={{ padding: '7px 14px', background: T.accent, borderRadius: 8, fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer', whiteSpace: 'nowrap' }}>Research →</div>}
-        </div>
-        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {SEARCH_SUGGESTIONS.map(s => (
-            <div key={s} onClick={() => startThread(s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--subtle)', borderRadius: 20, cursor: 'pointer' }}>{s}</div>
-          ))}
-        </div>
-      </div>}
+      {/* J2: the Source Library + tier legend are the 340px rail (≥1101); below
+          the threads on iPad and phone. */}
+      {!boardView && (
+        <PageWithRail label="Source library and provenance" rail={(
+          <>
+            {sourceLibrary}
+            <ProvenancePanel />
+          </>
+        )}>
+          <div className="rh-search-wrap">
+            <div className="rh-search">
+              <span className="rh-search-icon" aria-hidden="true"><Icon name="Compass" size={20} /></span>
+              <input className="rh-query" value={newQuery} onChange={e => setNewQuery(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && newQuery.trim() && startThread(newQuery)}
+                aria-label="Research topic"
+                placeholder="Research a topic, question, or opportunity..." />
+              <button type="button" className="rh-web tap" aria-pressed={searchEnabled} onClick={() => setSearchEnabled(s => !s)}>
+                <Icon name="Globe" size={13} aria-hidden="true" /> Web {searchEnabled ? 'ON' : 'OFF'}
+              </button>
+              {newQuery.trim() && <button type="button" className="btn btn-primary tap rh-go" onClick={() => startThread(newQuery)}>Research →</button>}
+            </div>
+            <div className="rh-suggest">
+              {SEARCH_SUGGESTIONS.map(s => (
+                <button type="button" key={s} className="chip tap" onClick={() => startThread(s)}>{s}</button>
+              ))}
+            </div>
+          </div>
 
-      {!boardView && <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 280px', gap: 24 }}>
-        <div>
-          <Label color={T.accent}>Research Threads</Label>
-          {research.length === 0 && <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', padding: '24px 0' }}>No research threads yet. Start one above.</div>}
+          <Label color="var(--accent-text)">Research Threads</Label>
+          {research.length === 0 && <div className="rh-empty">No research threads yet. Start one above.</div>}
           {research.map(t => {
             const newCount = matchItems(feedItems, t.title, t.tags).filter((it) => itemTime(it) > (seen[t.id] || 0)).length;
             return (
-            <Card key={t.id} color={T.accent} onClick={() => openThread(t)} style={{ marginBottom: 10, cursor: 'pointer', padding: '14px 16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', marginBottom: 4, lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <div key={t.id} className="rh-thread">
+            <Card color="var(--accent-text)" onClick={() => openThread(t)}>
+              <div className="rh-thread-top">
+                <div className="rh-thread-main">
+                  <div className="rh-thread-title">
                     <span>{t.title}</span>
-                    {newCount > 0 && <span title={`${newCount} new signal${newCount === 1 ? '' : 's'} since last visit`} style={{ flexShrink: 0, fontSize: 9, fontWeight: 800, color: 'var(--on-accent)', background: 'var(--accent)', borderRadius: 20, padding: '1px 7px' }}>{newCount} new</span>}
+                    {newCount > 0 && <span className="rh-new-count" title={`${newCount} new signal${newCount === 1 ? '' : 's'} since last visit`}>{newCount} new</span>}
                   </div>
-                  <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
+                  <div className="rh-meta">{timeAgo(t.createdAt)} · {(t.messages || []).filter(m => m.role === 'assistant').length} responses</div>
                 </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginLeft: 10 }}>
+                <div className="rh-thread-tools">
                   <AskChip type="research" object={t} />
                   <Badge color={t.status === 'active' ? T.accent : 'var(--subtle)'}>{t.status}</Badge>
-                  <div onClick={e => { e.stopPropagation(); deleteThread(t.id); }} style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', cursor: 'pointer', padding: '2px 4px' }}>✕</div>
+                  <button type="button" className="rh-x tap" onClick={e => { e.stopPropagation(); deleteThread(t.id); }} aria-label={`Delete thread ${t.title}`}><Icon name="X" size={15} /></button>
                 </div>
               </div>
               {t.tags?.length > 0 && (
-                <div style={{ display: 'flex', gap: 5 }}>
-                  {t.tags.map(tag => <span key={tag} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', background: 'var(--bg)', padding: '2px 6px', borderRadius: 3 }}>{tag}</span>)}
+                <div className="rh-tags">
+                  {t.tags.map(tag => <span key={tag} className="rh-tag">{tag}</span>)}
                 </div>
               )}
             </Card>
+            </div>
             );
           })}
-        </div>
-
-        <div>
-          <Label color={T.accent}>Source Library</Label>
-          {SOURCE_LIBRARY.map(s => (
-            <div key={s.name}
-              onClick={() => startThread(`What are the key ideas, frameworks, and actionable insights from ${s.name} (${s.domain})? What should CB know about their work?`)}
-              style={{ padding: '10px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, marginBottom: 7, cursor: 'pointer' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: s.color }}>{s.name}</div>
-                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                  <Badge color={s.color}>{s.type}</Badge>
-                  <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>→</span>
-                </div>
-              </div>
-              <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 4 }}>{s.domain} · click to research</div>
-            </div>
-          ))}
-        </div>
-      </div>}
+        </PageWithRail>
+      )}
 
       {showNewThread && (
         <Modal title="New Research Thread" accent={T.accent} onClose={() => setShowNewThread(false)}>
           <Textarea value={newQuery} onChange={setNewQuery} placeholder="What do you want to research? Be specific — the more context, the better the response." rows={4} />
-          <div style={{ display: 'flex', gap: 8 }}>
-            <div onClick={() => setShowNewThread(false)} style={{ flex: 1, padding: '11px', border: '1px solid var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer' }}>Cancel</div>
-            <div onClick={() => newQuery.trim() && startThread(newQuery)} style={{ flex: 2, padding: '11px', background: T.accent, borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', fontWeight: 700, color: '#fff', cursor: 'pointer' }}>Research →</div>
+          <div className="rh-modal-actions">
+            <button type="button" className="btn tap rh-modal-cancel" onClick={() => setShowNewThread(false)}>Cancel</button>
+            <button type="button" className="btn btn-primary tap rh-modal-go" onClick={() => newQuery.trim() && startThread(newQuery)}>Research →</button>
           </div>
         </Modal>
       )}
@@ -420,91 +469,106 @@ export default function ResearchHub() {
   );
 
   const thread = research.find(t => t.id === activeThread);
+  // Explicit status of the thread's generated analysis (the primary artifact).
+  const threadStatus = loading ? 'loading' : threadErr ? 'error' : messages.some(m => m.role === 'assistant') ? 'ready' : 'empty';
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="rh-thread-view">
+      <div className="rh-tv-head">
+        <div className="rh-tv-bar">
           <div>
-            <div onClick={() => setActiveThread(null)} style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', marginBottom: 4 }}>← Research Hub</div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', maxWidth: 500 }}>{thread?.title}</div>
+            <button type="button" className="rh-back tap" onClick={() => setActiveThread(null)}>← Research Hub</button>
+            <div className="rh-tv-title">{thread?.title}</div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="rh-tv-tools">
             {thread && <FollowButton name={thread.title} source="research" />}
-            <div onClick={() => setSearchEnabled(s => !s)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 9px', border: `1px solid ${searchEnabled ? T.accent : 'var(--border)'}`, borderRadius: 8, color: searchEnabled ? T.accent : 'var(--dim)', cursor: 'pointer' }}>🔍 Web {searchEnabled ? 'ON' : 'OFF'}</div>
+            <button type="button" className="rh-web tap" aria-pressed={searchEnabled} onClick={() => setSearchEnabled(s => !s)}>
+              <Icon name="Globe" size={13} aria-hidden="true" /> Web {searchEnabled ? 'ON' : 'OFF'}
+            </button>
           </div>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 160px' }}>
+      <div data-status={threadStatus} className="rh-tv-body">
         {/* Live signals — feed items matching this thread's topic, pulled in
             automatically, marked new since last visit, source + tier shown. */}
         {thread && (() => {
           const matched = matchItems(feedItems, thread.title, thread.tags);
-          if (!matched.length && !feedLoading) return null;
+          // Empty (no matching items) stays hidden — no placeholder noise on a thread.
+          if (!matched.length && !feedLoading && !feedErr) return null;
+          const feedStatus = feedLoading ? 'loading' : feedErr ? 'error' : 'ready';
           const fresh = matched.filter((it) => itemTime(it) > threadSeenAt);
           const older = matched.filter((it) => itemTime(it) <= threadSeenAt);
           const Row = ({ it }) => (
-            <div style={{ padding: '10px 12px', border: '1px solid var(--rule)', borderRadius: 8, marginBottom: 8, background: 'var(--surface)' }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)', marginBottom: 4 }}>{it.title}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
-                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{it.source}{it.relTime ? ` · ${it.relTime}` : ''}</span>
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--text-tertiary)', border: '1px solid var(--rule)', borderRadius: 4, padding: '1px 6px' }}>{it.tier}</span>
+            <div className="rh-row">
+              <div className="rh-row-title">{it.title}</div>
+              <div className="rh-row-meta">
+                <span className="rh-row-src">{it.source}{it.relTime ? ` · ${it.relTime}` : ''}</span>
+                <span className="rh-row-tier">{it.tier}</span>
               </div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <div className="rh-row-acts">
                 <AskChip type="feed" object={it} />
-                <button onClick={() => diveLiveItem(it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Microscope" size={13} /> Dive</button>
-                <button onClick={() => keepLiveItem(thread, it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="Bookmark" size={13} /> Keep</button>
-                {it.url && it.url !== '#' && <a href={it.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 'var(--fs-sm)', color: T.accent, fontWeight: 700, alignSelf: 'center' }}>Open ↗</a>}
+                <button type="button" className="rh-act tap" onClick={() => diveLiveItem(it)}><Icon name="Microscope" size={13} /> Dive</button>
+                <button type="button" className="rh-act tap" onClick={() => keepLiveItem(thread, it)}><Icon name="Bookmark" size={13} /> Keep</button>
+                {it.url && it.url !== '#' && <a className="rh-open tap" href={it.url} target="_blank" rel="noopener noreferrer">Open ↗</a>}
               </div>
             </div>
           );
           return (
-            <div style={{ maxWidth: 760, margin: '0 auto 18px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)' }}><Icon name="Radio" size={13} /> Live signals on this thread</span>
-                <button onClick={loadLiveFeed} disabled={feedLoading} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text-secondary)', background: 'none', border: '1px solid var(--rule)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontFamily: 'inherit' }}><Icon name="RefreshCw" size={12} /> {feedLoading ? '…' : 'Refresh'}</button>
+            <div data-status={feedStatus} className="rh-col760">
+              <div className="rh-live-head">
+                <span className="rh-live-eyebrow"><Icon name="Radio" size={13} /> Live signals on this thread</span>
+                <button type="button" className="rh-act tap" onClick={loadLiveFeed} disabled={feedLoading}><Icon name="RefreshCw" size={12} /> {feedLoading ? '…' : 'Refresh'}</button>
               </div>
-              {fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, margin: '2px 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>New since last visit<span style={{ flex: 1, height: 1, background: withAlpha(T.accent, 30) }} /></div>}
+              {feedLoading && !matched.length && <SectionSkeleton rows={2} label="live signals" />}
+              {feedStatus === 'error' && <SectionError label="live signals" onRetry={loadLiveFeed} detail={feedErr} />}
+              {fresh.length > 0 && <div className="rh-fresh">New since last visit</div>}
               {fresh.map((it) => <Row key={it.id} it={it} />)}
-              {older.length > 0 && fresh.length > 0 && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', margin: '4px 0 8px' }}>Earlier</div>}
+              {older.length > 0 && fresh.length > 0 && <div className="rh-earlier">Earlier</div>}
               {older.map((it) => <Row key={it.id} it={it} />)}
             </div>
           );
         })()}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: 18, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
+          <div key={i} className="rh-msg rh-col760" data-role={msg.role === 'user' ? 'user' : 'assistant'}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '16px 16px 4px 16px', padding: '11px 15px', maxWidth: '80%', fontSize: 'var(--fs-base)', lineHeight: 1.7, color: 'var(--u-bubble-text)' }}>{msg.content}</div>
+              <div className="rh-bubble-user">{msg.content}</div>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 10 }}>Research · Truth-First Analysis</div>
-                <MD text={msg.content} color={T.accent} />
+              <div className="rh-bubble-ai">
+                <div className="rh-kicker">Research · Truth-First Analysis</div>
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
         ))}
-        {loading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 18px' }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', maxWidth: '92%', width: stream ? '100%' : 'auto' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Researching...</div>
-              {stream
-                ? <MD text={stream + '▍'} color={T.accent} />
-                : <ThinkingDots color={T.accent} />}
+        {loading && stream && (
+          <div className="rh-msg rh-col760">
+            <div className="rh-bubble-ai" data-stream="">
+              <div className="rh-kicker">Researching...</div>
+              <MD text={stream + '▍'} color="var(--accent-text)" />
             </div>
+          </div>
+        )}
+        {/* Skeleton only until the first streamed token arrives. */}
+        {loading && !stream && (
+          <div className="rh-col760">
+            <SectionSkeleton rows={messages.some(m => m.role === 'assistant') ? 3 : 6} lead label="research analysis" />
+          </div>
+        )}
+        {threadStatus === 'error' && (
+          <div className="rh-col760">
+            <SectionError label="this research reply" onRetry={retryThread} detail={threadErr} />
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ position: 'sticky', bottom: 0, background: 'var(--bg)', borderTop: '1px solid var(--bord2)', padding: '10px 16px 16px' }}>
-        <div style={{ display: 'flex', gap: 8, maxWidth: 760, margin: '0 auto', alignItems: 'flex-end' }}>
-          <textarea value={searchInput} onChange={e => setSearchInput(e.target.value)}
+      <div className="rh-compose">
+        <div className="rh-compose-row">
+          <textarea className="rh-compose-input" value={searchInput} onChange={e => setSearchInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(activeThread, research, searchInput, messages); } }}
-            rows={1} placeholder="Follow-up question, contrarian challenge, or deeper dive..."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
-          <button onClick={() => sendMessage(activeThread, research, searchInput, messages)} disabled={!searchInput.trim() || loading}
-            style={{ padding: '10px 16px', background: searchInput.trim() ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 10, color: searchInput.trim() ? '#fff' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer', flexShrink: 0 }}>→</button>
+            rows={1} aria-label="Follow-up question" placeholder="Follow-up question, contrarian challenge, or deeper dive..." />
+          <button type="button" className="btn btn-primary tap rh-send" aria-label="Send" onClick={() => sendMessage(activeThread, research, searchInput, messages)} disabled={!searchInput.trim() || loading}>→</button>
         </div>
       </div>
     </div>
@@ -513,7 +577,6 @@ export default function ResearchHub() {
 
 function Textarea({ value, onChange, placeholder, rows = 3 }) {
   return (
-    <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-      style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 14 }} />
+    <textarea className="rh-textarea" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows} aria-label="Research question" />
   );
 }

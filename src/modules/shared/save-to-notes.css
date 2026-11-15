@@ -1,0 +1,8 @@
+/* SaveToNotes (stn-). Saved = accent border + accent text, never a tinted fill. */
+.stn { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.stn:hover { background: var(--surface-muted); }
+.stn[data-state="saved"] { border-color: var(--accent); color: var(--accent-text); }
+.stn[data-state="error"] { color: var(--negative); }

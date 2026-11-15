@@ -1,0 +1,7 @@
+/* ProvenancePanel (pv-). Tokens only. */
+.pv { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; }
+.pv-eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; color: var(--text-subtle); margin-bottom: var(--s3); }
+.pv-list { list-style: none; display: flex; flex-direction: column; gap: var(--s3); }
+.pv-row { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.pv-desc { font-size: var(--fs-sm); color: var(--text-muted); line-height: var(--lh-ui); }
+.pv-foot { margin-top: var(--s3); font-size: var(--fs-xs); color: var(--text-subtle); }

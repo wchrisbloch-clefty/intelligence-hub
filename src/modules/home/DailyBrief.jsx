@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { callClaude } from '../../utils.js';
-import { CB_IDENTITY } from '../../constants.js';
+import { SYSTEM_BASE } from '../../constants.js';
 import MD from '../shared/MD.jsx';
 import Icon from '../shared/Icon.jsx';
-import { ThinkingDots } from '../shared/Common.jsx';
+import { SectionSkeleton, SectionError } from '../shared/SectionState.jsx';
 
 // Daily Intelligence Brief — one AI-generated card, cached per day. Chrome is
 // quiet (header in --text-tertiary, hairline rule); the only accent is Refresh,
@@ -44,39 +44,36 @@ Give CB 4 tight, decisive bullets. Format exactly:
 CB's context: projects: ${projList} · recent learning: ${topicList} · streak: ${graph?.streak || 0} days · Houston, TX. BD professional.
 
 Be blunt. No hedging. One decisive line per bullet.`;
-      const reply = await callClaude({ system: CB_IDENTITY, messages: [{ role: 'user', content: prompt }], maxTokens: 500 });
+      const reply = await callClaude({ system: SYSTEM_BASE, messages: [{ role: 'user', content: prompt }], maxTokens: 500 });
       setBrief(reply); setDone(true);
       if (cacheKey) localStorage.setItem(cacheKey, reply);
     } catch { setError(true); }
     setLoading(false);
   };
 
+  // Before the first generate kicks in (600ms debounce) the brief is still on its
+  // way — show the skeleton from first paint so the card never jumps.
+  const status = error ? 'error' : brief ? 'ready' : 'loading';
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--rule)', borderRadius: 14, overflow: 'hidden' }}>
-      <div style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--rule)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Icon name="Zap" size="header" style={{ color: 'var(--text-tertiary)' }} />
+    <div className="hm-brief" data-status={status}>
+      <div className="hm-brief-head">
+        <div className="hm-brief-id">
+          <Icon name="Zap" size="header" />
           <div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Daily Intelligence Brief</div>
-            <div style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 2, fontWeight: 700 }}>CB-Style · Auto-Generated</div>
+            <div className="hm-brief-title">Daily Intelligence Brief</div>
+            <div className="hm-brief-kick">CB-Style · Auto-Generated</div>
           </div>
         </div>
         {done && (
-          <button onClick={() => { setBrief(''); setDone(false); generate(null); }}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-sm)', padding: '5px 11px', border: '1px solid var(--rule)', borderRadius: 8, color: 'var(--accent)', cursor: 'pointer', background: 'transparent', fontFamily: 'inherit', fontWeight: 600 }}>
+          <button type="button" className="btn tap" onClick={() => { setBrief(''); setDone(false); generate(null); }}>
             <Icon name="RefreshCw" size={14} /> Refresh
           </button>
         )}
       </div>
-      <div style={{ padding: '16px 20px 18px' }}>
-        {loading && !brief && <div><div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', marginBottom: 12 }}>Generating intelligence brief…</div><ThinkingDots /></div>}
-        {error && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>Brief unavailable — check connection.</div>
-            <button onClick={() => generate(null)} style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', background: 'transparent', border: '1px solid var(--rule)', borderRadius: 8, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'inherit' }}>Retry</button>
-          </div>
-        )}
-        {brief && <MD text={brief} color="var(--accent)" />}
+      <div className="hm-brief-body">
+        {status === 'loading' && <SectionSkeleton rows={3} label="daily brief" />}
+        {status === 'error' && <SectionError label="today’s brief" onRetry={() => generate(null)} />}
+        {brief && <MD text={brief} color="var(--accent-text)" />}
       </div>
     </div>
   );

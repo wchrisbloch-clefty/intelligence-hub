@@ -7,6 +7,7 @@
 import { useState } from 'react';
 import MD from './MD.jsx';
 import Icon from './Icon.jsx';
+import './artifact-sections.css';
 
 const slug = (s) => String(s).toLowerCase().replace(/\[[^\]]*\]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
 const cleanTitle = (s) => String(s).replace(/\[[^\]]*\]/g, '').replace(/[*_`#]/g, '').trim();
@@ -31,15 +32,16 @@ export default function ArtifactSections({ text, color, isMobile = false, isDesk
   const [collapsed, setCollapsed] = useState({});
   if (secs.length < 2) return <MD text={text} color={color} />;
 
+  // Section-title colour from the caller; the accent as text reads as --accent-text.
+  const titleVars = color ? { '--c': color === 'var(--accent)' ? 'var(--accent-text)' : color } : undefined;
   const jump = (id) => { try { document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch {} };
 
   // Right-rail outline (desktop + iPad).
   const rail = (
-    <nav style={{ position: 'sticky', top: 12, flexShrink: 0, width: 190, alignSelf: 'flex-start', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
-      <div style={{ fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', fontWeight: 700, marginBottom: 8 }}>On this page</div>
+    <nav className="as-rail" aria-label="On this page">
+      <div className="as-rail-kicker">On this page</div>
       {secs.map((s) => (
-        <button key={s.id} onClick={() => jump(s.id)}
-          style={{ display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none', borderLeft: '2px solid var(--rule)', padding: '5px 10px', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'inherit', lineHeight: 'var(--lh-tight)' }}>
+        <button type="button" key={s.id} className="as-rail-link tap" onClick={() => jump(s.id)}>
           {s.title}
         </button>
       ))}
@@ -48,10 +50,9 @@ export default function ArtifactSections({ text, color, isMobile = false, isDesk
 
   // Sticky jump chips (mobile).
   const jumpBar = (
-    <div style={{ position: 'sticky', top: 0, zIndex: 5, display: 'flex', gap: 6, overflowX: 'auto', padding: '8px 0', marginBottom: 8, background: 'var(--surface)', borderBottom: '1px solid var(--rule)', WebkitOverflowScrolling: 'touch' }}>
+    <div className="as-jump" data-scroll-x="">
       {secs.map((s) => (
-        <button key={s.id} onClick={() => jump(s.id)}
-          style={{ flexShrink: 0, padding: '5px 11px', borderRadius: 16, border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
+        <button type="button" key={s.id} className="as-chip" onClick={() => jump(s.id)}>
           {s.title}
         </button>
       ))}
@@ -59,18 +60,18 @@ export default function ArtifactSections({ text, color, isMobile = false, isDesk
   );
 
   const body = (
-    <div style={{ minWidth: 0, flex: 1 }}>
+    <div className="as-body">
       {pre.trim() && <MD text={pre} color={color} />}
       {secs.map((s) => {
         const isCol = isMobile && collapsed[s.id];
         return (
-          <section key={s.id} id={s.id} style={{ scrollMarginTop: isMobile ? 60 : 12 }}>
+          <section key={s.id} id={s.id} className="as-sec" data-mobile={isMobile ? '' : undefined}>
             {isMobile ? (
               <>
-                <button onClick={() => setCollapsed((c) => ({ ...c, [s.id]: !c[s.id] }))}
-                  style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: 'none', border: 'none', borderTop: '1px solid var(--rule)', padding: '12px 0 6px', cursor: 'pointer', fontFamily: 'inherit', textAlign: 'left' }}>
-                  <span style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color }}>{s.title}</span>
-                  <Icon name={isCol ? 'ChevronDown' : 'ChevronUp'} size={16} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+                <button type="button" className="as-toggle" aria-expanded={!isCol} onClick={() => setCollapsed((c) => ({ ...c, [s.id]: !c[s.id] }))}
+                  style={titleVars}>
+                  <span className="as-toggle-title">{s.title}</span>
+                  <Icon name={isCol ? 'ChevronDown' : 'ChevronUp'} size={16} className="as-toggle-icon" />
                 </button>
                 {!isCol && <MD text={s.body.replace(/^##\s+.+$/m, '').trim()} color={color} />}
               </>
@@ -85,7 +86,7 @@ export default function ArtifactSections({ text, color, isMobile = false, isDesk
 
   if (!isMobile) {
     // desktop + iPad: content + sticky outline rail
-    return <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>{body}{rail}</div>;
+    return <div className="as-split">{body}{rail}</div>;
   }
   return <div>{jumpBar}{body}</div>;
 }

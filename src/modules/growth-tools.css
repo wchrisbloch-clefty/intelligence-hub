@@ -1,0 +1,111 @@
+/* Growth & Synthesis mode (gt-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default, capability added at 721 (iPad) and 1101 (desktop).
+ * The legacy gold underline / gradient buttons are gone: the active tab is an accent
+ * underline + --accent-text; primary actions are the shared .btn-primary fill. */
+
+/* ── Page frame ───────────────────────────────────────────────────────── */
+.gt { max-width: 900px; margin: 0 auto; padding: 16px var(--gutter) 60px; min-width: 0; }
+.gt-head { margin-bottom: 28px; }
+.gt-eyebrow { font-size: 9px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 6px; }
+.gt-title { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 800; color: var(--text); margin-bottom: 4px; }
+.gt-sub { font-size: var(--fs-base); color: var(--text-subtle); }
+@media (min-width: 721px) {
+  .gt { padding: 24px 28px 60px; }
+}
+
+/* ── Stat tiles ───────────────────────────────────────────────────────── */
+.gt-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 28px; }
+@media (min-width: 1101px) { .gt-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.gt-stat-ico { margin-bottom: 6px; color: var(--text-subtle); text-align: center; }
+.gt-stat-val { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 800; color: var(--accent-text); }
+.gt-stat-label { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 4px; letter-spacing: 0.5px; }
+
+/* ── Tabs ─────────────────────────────────────────────────────────────── */
+.gt-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); min-width: 0; }
+.gt-tab { padding: 8px 16px; margin-bottom: -1px; background: none; border: 0; border-bottom: 2px solid transparent;
+  font: inherit; font-size: var(--fs-base); font-weight: 500; color: var(--text-subtle); cursor: pointer;
+  transition: color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.gt-tab:hover { color: var(--text); }
+.gt-tab[aria-selected="true"] { font-weight: 700; color: var(--accent-text); border-bottom-color: var(--accent); }
+
+/* ── Shared bits ──────────────────────────────────────────────────────── */
+.gt-ico { color: var(--text-subtle); }
+.gt-chev { color: var(--text-subtle); transition: transform 0.2s ease; }
+.gt-chev[data-open] { color: var(--accent-text); transform: rotate(180deg); }
+.gt-bar { height: 6px; background: var(--border); border-radius: 4px; overflow: hidden; }
+.gt-bar > span { display: block; height: 100%; width: var(--pct); background: var(--accent); border-radius: 4px; transition: width 0.5s ease; }
+.gt-bar-thin { height: 3px; border-radius: 2px; }
+.gt-bar-thin > span { border-radius: 2px; }
+
+/* ── Goals ────────────────────────────────────────────────────────────── */
+.gt-goals { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+@media (min-width: 721px) { .gt-goals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gt-goal { display: block; width: 100%; padding: 18px; background: none; border: 0; border-radius: var(--radius-lg);
+  text-align: left; font: inherit; color: inherit; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.gt-goal:hover { background: var(--surface-muted); }
+.gt-goal-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+.gt-goal-meta { display: flex; gap: 8px; align-items: center; }
+.gt-horizon { font-size: var(--fs-sm); color: var(--text-subtle); letter-spacing: 1px; }
+.gt-goal-label { font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.gt-goal-nums { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 14px; }
+.gt-goal .gt-bar { margin-bottom: 8px; }
+.gt-goal-pct { font-size: var(--fs-sm); color: var(--accent-text); }
+.gt-goal-panel { margin: 0 18px 18px; padding-top: 12px; border-top: 1px solid var(--border); }
+.gt-ask { margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; background: transparent;
+  border: 1px solid var(--border); border-radius: 7px; font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  color: var(--accent-text); cursor: pointer; transition: background-color var(--dur-color) ease; }
+.gt-ask:hover { background: var(--surface-muted); }
+
+/* ── Skills ───────────────────────────────────────────────────────────── */
+.gt-skills { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 16px; }
+@media (min-width: 721px) { .gt-skills { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gt-skill { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; min-width: 0;
+  transition: border-color var(--dur-color) ease; }
+.gt-skill[data-open] { border-color: var(--accent); }
+.gt-skill-btn { display: block; width: 100%; padding: 12px 16px; background: none; border: 0; border-radius: 10px;
+  text-align: left; font: inherit; color: inherit; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.gt-skill-btn:hover { background: var(--surface-muted); }
+.gt-skill-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 8px; }
+.gt-skill-name { font-size: var(--fs-base); font-weight: 600; color: var(--text); min-width: 0; }
+.gt-skill-meta { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.gt-skill-growth { font-size: var(--fs-sm); color: var(--text-subtle); }
+.gt-skill-growth[data-up] { color: var(--accent-text); }
+.gt-skill-level { font-size: var(--fs-base); font-weight: 700; color: var(--accent-text); }
+.gt-skill-panel { margin: 0 16px 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+.gt-callout { margin-top: 16px; padding: 12px 16px; background: var(--surface-muted); border: 1px solid var(--border); border-radius: 10px; }
+.gt-callout-kick { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); color: var(--accent-text); margin-bottom: 4px; }
+.gt-callout-body { font-size: var(--fs-base); color: var(--text-muted); }
+
+/* ── Synthesis ────────────────────────────────────────────────────────── */
+.gt-synth-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 16px; }
+.gt-synth-id { min-width: 0; }
+.gt-synth-sub { font-size: var(--fs-base); color: var(--text-subtle); margin-top: -6px; }
+.btn.gt-gen { padding: 8px 16px; border-radius: 10px; font-size: var(--fs-base); white-space: nowrap; flex-shrink: 0; }
+.btn.gt-gen-lg { padding: 11px 22px; border-radius: 10px; font-size: var(--fs-base); }
+.gt-kick { font-size: 10px; color: var(--accent-text); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.gt-kick-sm { font-size: 8px; letter-spacing: 3px; margin-bottom: 14px; }
+.gt-empty { text-align: center; padding: 60px 20px; }
+.gt-empty-ico { margin-bottom: 12px; color: var(--text-subtle); display: flex; justify-content: center; }
+.gt-empty-title { font-size: var(--fs-base); color: var(--text); margin-bottom: 6px; }
+.gt-empty-body { font-size: var(--fs-base); color: var(--text-subtle); max-width: 360px; margin: 0 auto 20px; }
+.gt-xref { margin-top: 24px; }
+.gt-xref-list { display: flex; flex-direction: column; gap: 8px; }
+.gt-xref-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+.gt-xref-row[data-weak] { border-color: color-mix(in srgb, var(--negative) 25%, var(--border)); }
+.gt-xref-title { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-base); color: var(--text-muted); min-width: 0; }
+.gt-xref-val { font-size: var(--fs-sm); color: var(--accent-text); flex-shrink: 0; }
+
+/* ── Certs ────────────────────────────────────────────────────────────── */
+.gt-cert { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; margin-bottom: 10px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; }
+.gt-cert-name { font-size: var(--fs-base); font-weight: 600; color: var(--text); min-width: 0; }
+.gt-cert-add { margin-top: 20px; padding: 14px 16px; min-height: 44px; display: flex; align-items: center; justify-content: center;
+  text-align: center; background: var(--surface); border: 1px dashed var(--border); border-radius: 10px;
+  font-size: var(--fs-base); color: var(--text-subtle); }
+
+/* Hover fill is --surface-muted: --text-subtle fails 4.5:1 on it, so subtle text
+   inside a hovered control steps up to --text-muted. */
+.gt-goal:hover .gt-horizon, .gt-goal:hover .gt-goal-nums,
+.gt-skill-btn:hover .gt-skill-growth:not([data-up]) { color: var(--text-muted); }

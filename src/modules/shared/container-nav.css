@@ -1,0 +1,45 @@
+/* Container nav (cn-). Tokens only. Active = 2px accent bar + --accent-text. */
+.cn-side { width: 210px; flex-shrink: 0; height: 100%; overflow-y: auto; background: var(--surface);
+  border-right: 1px solid var(--border); padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+@media (min-width: 1101px) { .cn-side { width: var(--sidebar-width); } }
+.cn-side-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px;
+  border: 0; border-left: 2px solid transparent; border-radius: var(--radius); background: transparent; color: var(--text-muted);
+  font: inherit; text-align: left; cursor: pointer; transition: background-color var(--dur-color) ease, color var(--dur-color) ease; }
+.cn-side-item:hover { background: var(--surface-muted); color: var(--text); }
+.cn-side-item[aria-current="page"] { background: var(--surface-muted); color: var(--accent-text); border-left-color: var(--accent); }
+.cn-side-text { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.cn-side-label { font-size: var(--fs-sm); font-weight: 600; letter-spacing: 0.1px; }
+.cn-side-item[aria-current="page"] .cn-side-label { font-weight: 700; }
+.cn-side-verb { font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); }
+.cn-side-item[aria-current="page"] .cn-side-verb { color: var(--accent-text); }
+
+.cn-chips-bar { position: sticky; top: 0; z-index: 20; background: var(--background); border-bottom: 1px solid var(--border); padding: 8px 12px; }
+@media (min-width: 721px) { .cn-chips-bar { padding: 10px 20px; } }
+.cn-chips { display: flex; gap: var(--s2); overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.cn-chips::-webkit-scrollbar { display: none; }
+/* The row scrolls, which clips any ::after hit area — so the chip itself is the
+   44px target on touch, 36px on a fine pointer. */
+.cn-chip { display: flex; align-items: center; gap: 6px; flex-shrink: 0; min-height: 44px; padding: 7px 13px;
+  border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+  font: inherit; font-size: var(--fs-sm); font-weight: 500; white-space: nowrap; cursor: pointer;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+@media (pointer: fine) { .cn-chip { min-height: 36px; } }
+.cn-chip:hover { background: var(--surface-muted); color: var(--text); }
+.cn-chip[aria-selected="true"] { border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+
+.cn-bottom { flex-shrink: 0; display: flex; background: var(--surface); border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom); z-index: 30; }
+.cn-slot { flex: 1; min-width: 0; min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  border: 0; background: transparent; color: var(--text-muted); font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cn-slot[aria-current="page"] { color: var(--accent-text); }
+.cn-slot-label { font-size: 10px; font-weight: 500; letter-spacing: 0.2px; }
+.cn-slot[aria-current="page"] .cn-slot-label { font-weight: 700; }
+
+.cn-more { display: flex; flex-direction: column; gap: 18px; padding-bottom: var(--s2); }
+.cn-more-head { display: flex; align-items: center; gap: var(--s2); margin-bottom: 10px; color: var(--text-muted); }
+.cn-more-label { font-size: var(--fs-base); font-weight: 700; color: var(--text); }
+.cn-more-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+.cn-more-item { display: flex; align-items: center; gap: 9px; min-height: 44px; padding: 11px 12px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: left; cursor: pointer; min-width: 0; }
+.cn-more-item[aria-current="page"] { border-color: var(--accent); color: var(--accent-text); }
+.cn-more-name { font-size: var(--fs-sm); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

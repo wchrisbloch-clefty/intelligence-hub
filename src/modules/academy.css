@@ -1,0 +1,15 @@
+/* Academy shell (ac-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 default, iPad/desktop gutter from 721. */
+.ac-head { max-width: 1000px; margin: 0 auto; padding: 20px var(--gutter) 0; min-width: 0; }
+.ac-eyebrow { font-size: 9px; letter-spacing: 3px; color: var(--accent-text); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.ac-title { font-size: var(--fs-2xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; }
+.ac-modes { display: flex; gap: var(--s2); margin: 16px 0 4px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; }
+.ac-mode { display: flex; align-items: center; gap: 6px; min-height: 36px; padding: 7px 14px; border-radius: var(--radius);
+  border: 1px solid var(--border); background: transparent; color: var(--text-muted); font: inherit; font-size: var(--fs-base);
+  font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.ac-mode:hover { background: var(--surface-muted); }
+.ac-mode[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); font-weight: 700; }
+.ac-desc { font-size: var(--fs-base); color: var(--text-subtle); margin-top: 10px; }
+.ac-body { margin-top: var(--s2); }
+@media (min-width: 721px) { .ac-head { padding-left: 28px; padding-right: 28px; } }

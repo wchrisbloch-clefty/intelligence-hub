@@ -1,0 +1,155 @@
+/* PodcastHub (pod-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default (show pills + one column); the shows rail
+ * appears at 721 (220px) and widens at 1101 (268px). Legacy gold wash/border →
+ * --surface-muted / --border-strong; selected = accent border + --accent-text. */
+
+.pod { max-width: 1100px; margin: 0 auto; padding: 16px 16px 80px; min-width: 0; }
+@media (min-width: 721px) { .pod { padding: 24px 28px 60px; } }
+
+/* ── Header (was a gold→rust gradient with white text; flat surface now) ── */
+.pod-head { display: flex; align-items: center; gap: 14px; margin-bottom: 20px; padding: 16px 20px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); min-width: 0; }
+.pod-head-glyph { font-size: 28px; flex-shrink: 0; }
+.pod-head-main { flex: 1; min-width: 0; }
+.pod-head-eyebrow { font-size: 8px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 4px; }
+.pod-head-title { font-size: var(--fs-lg); font-weight: 800; color: var(--text); line-height: 1.2; }
+.pod-head-sub { font-size: var(--fs-sm); color: var(--text-muted); margin-top: 2px; }
+.pod-head-loading { display: flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: var(--fs-sm); color: var(--text-muted); }
+.pod-head-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-text); animation: pulse 1.2s infinite ease-in-out; }
+
+/* ── Paste & Analyze ──────────────────────────────────────────────────── */
+.pod-paste { margin-bottom: 20px; }
+.pod-paste-toggle { display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 11px 16px; font: inherit; color: inherit;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.pod-paste-toggle:hover { background: var(--surface-muted); }
+.pod-paste-toggle[aria-expanded="true"] { border-color: var(--border-strong); border-radius: 10px 10px 0 0; }
+.pod-paste-glyph { flex-shrink: 0; color: var(--text-muted); display: inline-flex; }
+.pod-paste-main { flex: 1; min-width: 0; }
+.pod-paste-title { display: block; font-size: var(--fs-base); font-weight: 700; color: var(--text); }
+.pod-paste-sub { display: block; font-size: var(--fs-sm); color: var(--text-subtle); }
+.pod-paste-chev { flex-shrink: 0; display: inline-flex; color: var(--text-subtle); transition: transform 0.2s; }
+.pod-paste-toggle[aria-expanded="true"] .pod-paste-chev { transform: rotate(180deg); }
+.pod-paste-body { background: var(--surface); border: 1px solid var(--border-strong); border-top: none; border-radius: 0 0 10px 10px; padding: 16px; min-width: 0; }
+.pod-field { display: block; width: 100%; min-height: 44px; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 9px 14px; color: var(--text); font: inherit; font-size: var(--fs-base); outline: none; margin-bottom: 10px; min-width: 0; }
+.pod-field::placeholder { color: var(--text-subtle); }
+.pod-field:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+textarea.pod-field { padding: 10px 14px; resize: vertical; line-height: 1.65; margin-bottom: 12px; }
+.pod-or { font-size: var(--fs-sm); color: var(--text-subtle); text-align: center; margin-bottom: 10px; }
+.pod-paste-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.pod-clear { margin-left: auto; }
+
+/* ── Toggle buttons (AI modes, read-aloud) ────────────────────────────── */
+.pod-tog { display: inline-flex; align-items: center; gap: 4px; padding: 5px 12px; font: inherit; font-size: var(--fs-sm); font-weight: 600;
+  border: 1px solid var(--border); border-radius: 6px; background: transparent; color: var(--text-subtle); cursor: pointer;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.pod-tog:hover:not([disabled]) { background: var(--surface-muted); }
+.pod-tog[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
+.pod-tog[disabled] { cursor: not-allowed; }
+.pod-tog[data-size="lg"] { padding: 6px 13px; font-size: var(--fs-base); border-radius: 7px; }
+.pod-tog[data-size="xs"] { padding: 4px 10px; }
+.pod-tog[data-size="clear"] { padding: 6px 10px; border-radius: 7px; }
+.pod-listen { padding: 5px 12px; min-height: 0; font-size: var(--fs-sm); font-weight: 600; border-radius: 6px; }
+
+.pod-tog:focus-visible, .pod-paste-toggle:focus-visible, .pod-show:focus-visible, .pod-pill:focus-visible,
+.pod-vault:focus-visible, .pod-ep-title:focus-visible, .pod-trend:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ── AI output box ────────────────────────────────────────────────────── */
+.pod-out { background: var(--surface); border: 1px solid var(--border-strong); border-radius: var(--radius); padding: 12px 14px; min-width: 0; }
+.pod-paste-body .pod-out { margin-top: 14px; }
+.pod-out-kicker { font-size: 8px; letter-spacing: 3px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 8px; }
+.pod-vault { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 12px; font: inherit; font-size: var(--fs-sm); font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border-strong); border-radius: 7px; color: var(--accent-text); cursor: pointer; }
+.pod-vault:hover { background: var(--surface-muted); }
+.pod-vaulted { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: var(--fs-sm); color: var(--accent-text); }
+
+/* ── Layout: pills (phone) / rail (≥721) ──────────────────────────────── */
+.pod-pills { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; margin-bottom: 16px; }
+.pod-pill { flex-shrink: 0; padding: 6px 12px; font: inherit; font-size: var(--fs-sm); font-weight: 600; border-radius: 20px; white-space: nowrap; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-subtle);
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.pod-pill[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
+@media (pointer: coarse) { .pod-pill { min-height: 44px; } }
+.pod-side { display: none; }
+@media (min-width: 721px) {
+  .pod-pills { display: none; }
+  .pod-layout { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 28px; }
+  .pod-side { display: block; position: sticky; top: 0; align-self: start; max-height: calc(100vh - 120px); overflow-y: auto; scrollbar-width: thin; min-width: 0; }
+}
+@media (min-width: 1101px) { .pod-layout { grid-template-columns: minmax(0, 1fr) 268px; } }
+.pod-main { min-width: 0; }
+
+/* ── Shows rail ───────────────────────────────────────────────────────── */
+.pod-eyebrow { display: flex; align-items: center; gap: 6px; font-size: 9px; font-weight: 700; color: var(--text-subtle); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.pod-trending { margin-top: 20px; }
+.pod-show { display: flex; align-items: center; gap: 8px; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; font: inherit; color: inherit;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.pod-show:hover { background: var(--surface-muted); }
+.pod-show[aria-pressed="true"] { border-color: var(--accent); }
+@media (pointer: coarse) { .pod-show { min-height: 44px; } }
+.pod-show-glyph { font-size: var(--fs-lg); flex-shrink: 0; }
+.pod-show-main { flex: 1; min-width: 0; }
+.pod-show-name, .pod-show-sub { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pod-show-name { font-size: var(--fs-base); font-weight: 700; color: var(--text); }
+.pod-show[aria-pressed="true"] .pod-show-name { color: var(--accent-text); }
+.pod-show-sub { font-size: var(--fs-sm); color: var(--text-subtle); }
+.pod-show-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent-text); flex-shrink: 0; }
+.pod-trend { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--border); color: inherit; text-decoration: none; }
+.pod-trend[href]:hover .pod-trend-title { text-decoration: underline; }
+.pod-trend-n { font-family: var(--font-display); font-size: var(--fs-base); font-weight: 800; color: var(--border); min-width: 16px; flex-shrink: 0; }
+.pod-trend-main { flex: 1; min-width: 0; }
+.pod-trend-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); line-height: 1.3; overflow: hidden; text-overflow: ellipsis;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.pod-trend-sub { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 2px; }
+
+/* ── Episodes ─────────────────────────────────────────────────────────── */
+.pod-empty { text-align: center; padding: 60px 20px; }
+.pod-empty-loading { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 16px; }
+.pod-empty-glyph { font-size: var(--fs-3xl); margin-bottom: 12px; }
+.pod-empty-what { font-size: var(--fs-base); color: var(--text); margin-bottom: 6px; }
+.pod-empty-how { font-size: var(--fs-base); color: var(--text-subtle); }
+.pod-eps { display: flex; flex-direction: column; gap: 10px; }
+
+.pod-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; min-width: 0;
+  transition: border-color var(--dur-color) ease; }
+.pod-card[data-open] { border-color: var(--border-strong); }
+.pod-card-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+.pod-card-n { font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 800; color: var(--border); min-width: 28px; line-height: 1; flex-shrink: 0; }
+.pod-card-main { flex: 1; min-width: 0; }
+.pod-card-show { font-size: var(--fs-sm); font-weight: 700; color: var(--accent-text); margin-bottom: 3px; letter-spacing: 0.3px; }
+.pod-ep-title { display: block; font-size: var(--fs-base); font-weight: 700; color: var(--text); line-height: 1.35; margin-bottom: 5px; text-decoration: none;
+  transition: color var(--dur-color) ease; overflow-wrap: anywhere; }
+a.pod-ep-title:hover { color: var(--accent-text); }
+.pod-card-meta { display: flex; gap: 10px; flex-wrap: wrap; }
+.pod-card-meta span { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); color: var(--text-subtle); }
+.pod-card-desc { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.55; margin-top: 7px; overflow: hidden;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.pod-panel { border-top: 1px solid var(--border-strong); padding-top: 12px; margin-top: 2px; margin-bottom: 10px; }
+.pod-panel-tabs { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.pod-panel-ground { margin-bottom: 12px; }
+.pod-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 2px; }
+.pod-card[data-open] .pod-actions { margin-top: 0; }
+
+/* Read-aloud wave */
+.pod-wave { display: flex; gap: 2px; align-items: flex-end; height: 10px; }
+.pod-wave span { width: 2px; background: var(--accent-text); border-radius: 1px; animation: pod-bar0 0.8s ease-in-out infinite; }
+.pod-wave span:nth-child(1) { height: 6px;  animation-name: pod-bar0; animation-delay: 0s; }
+.pod-wave span:nth-child(2) { height: 10px; animation-name: pod-bar1; animation-delay: 0.12s; }
+.pod-wave span:nth-child(3) { height: 8px;  animation-name: pod-bar2; animation-delay: 0.24s; }
+.pod-wave span:nth-child(4) { height: 12px; animation-name: pod-bar0; animation-delay: 0.36s; }
+.pod-wave span:nth-child(5) { height: 7px;  animation-name: pod-bar1; animation-delay: 0.48s; }
+@keyframes pod-bar0 { 0%,100% { height: 4px; }  50% { height: 12px; } }
+@keyframes pod-bar1 { 0%,100% { height: 8px; }  50% { height: 4px; } }
+@keyframes pod-bar2 { 0%,100% { height: 12px; } 50% { height: 6px; } }
+
+/* Hide the off-layout surface's controls themselves too (not just their
+   container), so nothing focusable or measurable sits at 0×0. */
+@media (max-width: 720px) { .pod-side .pod-show, .pod-side .pod-trend { display: none; } }
+@media (min-width: 721px) { .pod-pills .pod-pill { display: none; } }
+
+/* --text-subtle drops under 4.5:1 on the --surface-muted hover fill. */
+.pod-paste-toggle:hover .pod-paste-sub, .pod-paste-toggle:hover .pod-paste-chev, .pod-show:hover .pod-show-sub,
+.pod-tog:hover:not([disabled]):not([aria-pressed="true"]) { color: var(--text-muted); }

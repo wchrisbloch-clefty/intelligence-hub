@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useApp } from '../../App.jsx';
 import { readLocal, writeThrough, hydrate } from '../../lib/storage.js';
 import { callClaude } from '../../utils.js';
-import { CB_IDENTITY } from '../../constants.js';
+import { SYSTEM_BASE } from '../../constants.js';
 import { stampVersion, isStale, versionLabel } from '../../lib/promptVersion.js';
 import {
   DOMAINS_KEY, SIGNALS_KEY, FEEDBACK_KEY, loadDomains, activeDomains,
@@ -11,7 +11,7 @@ import {
 } from '../../lib/signals.js';
 import { TOPICS_KEY, loadTopics, unfollowTopic, isStaleTopic, daysSince } from '../../lib/topics.js';
 import Icon from '../shared/Icon.jsx';
-import { ThinkingDots } from '../shared/Common.jsx';
+import { SectionSkeleton } from '../shared/SectionState.jsx';
 import SignalCard from './SignalCard.jsx';
 
 // Blue Ocean signals — personal, generated from the user's own context (graph,
@@ -19,7 +19,7 @@ import SignalCard from './SignalCard.jsx';
 // like a weekly briefing, not a slot machine. Every signal states why it surfaced,
 // is typed, tiered, actionable, and carries a pursue / not-now / not-relevant loop.
 export default function OpportunityCards() {
-  const { isDesktop, setChatPrefill, setChatOpen, applyRoute, setActiveModule } = useApp();
+  const { setChatPrefill, setChatOpen, applyRoute, setActiveModule } = useApp();
   const [cache, setCache] = useState(() => readLocal(SIGNALS_KEY, null));
   const [domains, setDomains] = useState(() => loadDomains());
   const [feedback, setFeedback] = useState(() => readLocal(FEEDBACK_KEY, {}));
@@ -67,7 +67,7 @@ export default function OpportunityCards() {
     setLoading(true); setErr('');
     try {
       const raw = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: buildSignalPrompt(ctx.text, domains) }],
         // Market/current-condition claims need live grounding; TIER_INSTRUCTION
         // (in the prompt) then tiers each by what came back.
@@ -103,20 +103,20 @@ export default function OpportunityCards() {
   const signals = cache?.signals || [];
   const stale = cache && isStale(cache, 'signals');
 
+  const status = loading && !signals.length ? 'loading' : err && !signals.length ? 'error' : signals.length ? 'ready' : 'empty';
+
   // ── Header: title + generate/refresh + customize ────────────────────────────
   const header = (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 'var(--s3)', flexWrap: 'wrap' }}>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
+    <div className="op-head">
+      <span className="op-version">
         {cache ? <>{versionLabel(cache)}{stale ? ' · prompt updated' : ''}</> : 'Not generated yet'}
       </span>
-      <span style={{ display: 'inline-flex', gap: 8 }}>
-        <button onClick={() => setShowDomains((s) => !s)}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
+      <span className="op-actions">
+        <button type="button" className="btn tap" aria-pressed={showDomains} onClick={() => setShowDomains((s) => !s)}>
           <Icon name="Settings2" size={14} /> Domains
         </button>
-        <button onClick={generate} disabled={loading}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 13px', borderRadius: 8, border: 'none', background: loading ? 'var(--surf2)' : 'var(--accent)', color: loading ? 'var(--dim)' : 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: loading ? 'default' : 'pointer', fontFamily: 'inherit', minHeight: 34 }}>
-          {loading ? <><ThinkingDots color="var(--accent)" /> Scanning…</> : <><Icon name="RefreshCw" size={14} /> {signals.length ? 'Refresh' : 'Generate'} signals</>}
+        <button type="button" className="btn btn-primary tap" onClick={generate} disabled={loading} aria-busy={loading ? 'true' : undefined}>
+          {loading ? 'Scanning…' : <><Icon name="RefreshCw" size={14} /> {signals.length ? 'Refresh' : 'Generate'} signals</>}
         </button>
       </span>
     </div>
@@ -124,51 +124,48 @@ export default function OpportunityCards() {
 
   // ── Domain manager ──────────────────────────────────────────────────────────
   const domainPanel = showDomains && (
-    <div style={{ marginBottom: 'var(--s3)', padding: 'var(--s4)', border: '1px solid var(--rule)', borderRadius: 12, background: 'var(--surface)' }}>
-      <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 10 }}>Your domains — weight, thesis, archive</div>
+    <div className="op-domains">
+      <div className="hm-eyebrow op-dom-eyebrow">Your domains — weight, thesis, archive</div>
       {activeDomains(domains).map((d) => (
-        <div key={d.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '8px 0', borderTop: '1px solid var(--rule)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <input value={d.title} onChange={(e) => persistDomains(domainRename(domains, d.id, e.target.value))}
-              style={{ flex: 1, minWidth: 120, background: 'var(--bg)', border: '1px solid var(--rule)', borderRadius: 7, padding: '5px 9px', color: 'var(--text)', fontSize: 'var(--fs-sm)', fontWeight: 700, fontFamily: 'inherit', outline: 'none' }} />
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+        <div key={d.id} className="op-dom">
+          <div className="op-dom-row">
+            <input className="op-input op-input-title" aria-label="Domain name" value={d.title}
+              onChange={(e) => persistDomains(domainRename(domains, d.id, e.target.value))} />
+            <span className="op-weights" role="group" aria-label={`Weight for ${d.title}`}>
               {[1, 2, 3, 4, 5].map((w) => (
-                <button key={w} onClick={() => persistDomains(domainSetWeight(domains, d.id, w))} title={`Weight ${w}`}
-                  style={{ width: 20, height: 20, borderRadius: 5, border: `1px solid ${w <= d.weight ? 'var(--accent)' : 'var(--rule)'}`, background: w <= d.weight ? 'var(--accent)' : 'transparent', cursor: 'pointer', padding: 0 }} />
+                <button type="button" key={w} className="op-weight tap" data-on={w <= d.weight ? '1' : '0'}
+                  onClick={() => persistDomains(domainSetWeight(domains, d.id, w))} title={`Weight ${w}`} aria-label={`Weight ${w}`} />
               ))}
             </span>
-            <button onClick={() => persistDomains(domainArchive(domains, d.id, true))} title="Archive"
-              style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>Archive</button>
+            <button type="button" className="hm-link op-quiet tap" onClick={() => persistDomains(domainArchive(domains, d.id, true))}>Archive</button>
           </div>
-          <input value={d.thesis} placeholder="Optional: where you think this is going (your thesis)…"
-            onChange={(e) => persistDomains(domainSetThesis(domains, d.id, e.target.value))}
-            style={{ width: '100%', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--rule)', borderRadius: 7, padding: '5px 9px', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontFamily: 'inherit', outline: 'none' }} />
+          <input className="op-input" aria-label={`Thesis for ${d.title}`} value={d.thesis}
+            placeholder="Optional: where you think this is going (your thesis)…"
+            onChange={(e) => persistDomains(domainSetThesis(domains, d.id, e.target.value))} />
         </div>
       ))}
-      <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-        <input value={newDomain} onChange={(e) => setNewDomain(e.target.value)}
+      <div className="op-add">
+        <input className="op-input" aria-label="Add a domain" value={newDomain} onChange={(e) => setNewDomain(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && newDomain.trim()) { persistDomains(domainAdd(domains, newDomain)); setNewDomain(''); } }}
-          placeholder="Add a domain…"
-          style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--rule)', borderRadius: 7, padding: '6px 10px', color: 'var(--text)', fontSize: 'var(--fs-sm)', fontFamily: 'inherit', outline: 'none' }} />
-        <button onClick={() => { if (newDomain.trim()) { persistDomains(domainAdd(domains, newDomain)); setNewDomain(''); } }}
-          style={{ padding: '6px 12px', borderRadius: 7, border: '1px solid var(--rule)', background: 'transparent', color: 'var(--accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
+          placeholder="Add a domain…" />
+        <button type="button" className="btn tap" onClick={() => { if (newDomain.trim()) { persistDomains(domainAdd(domains, newDomain)); setNewDomain(''); } }}>Add</button>
       </div>
 
       {/* Followed topics — narrower current interests, followed from anywhere.
           Surface last-activity and prompt on stale ones; a stale list is worse
           than none. */}
       {topics.length > 0 && (
-        <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--rule)' }}>
-          <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--text-tertiary)', marginBottom: 8 }}>Followed topics</div>
+        <div className="op-topics">
+          <div className="hm-eyebrow op-dom-eyebrow">Followed topics</div>
           {topics.map((t) => {
             const stale = isStaleTopic(t);
             return (
-              <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 100 }}>{t.name}</span>
-                <span style={{ fontSize: 'var(--fs-sm)', color: stale ? 'var(--caution)' : 'var(--text-tertiary)' }}>
+              <div key={t.id} className="op-topic">
+                <span className="op-topic-name">{t.name}</span>
+                <span className="op-topic-age" data-stale={stale ? '1' : '0'}>
                   {stale ? `no activity in ${daysSince(t.lastActivity || t.followedAt)}d — still following?` : `active ${daysSince(t.lastActivity || t.followedAt)}d ago`}
                 </span>
-                <button onClick={() => unfollow(t.name)} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>Unfollow</button>
+                <button type="button" className="hm-link op-quiet tap" onClick={() => unfollow(t.name)}>Unfollow</button>
               </div>
             );
           })}
@@ -178,16 +175,16 @@ export default function OpportunityCards() {
   );
 
   return (
-    <div>
+    <div data-status={status}>
       {header}
       {domainPanel}
-      {err && <div style={{ marginBottom: 'var(--s3)', padding: '10px 14px', background: 'var(--surface)', border: '1px solid var(--negative)', borderRadius: 10, color: 'var(--negative)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>⚠ {err}</div>}
+      {err && <div className="hm-err" role="alert">{err}</div>}
 
       {/* Honest empty / thin-graph state — never fabricate personalization. */}
-      {!signals.length && !loading && (
-        <div style={{ padding: 'var(--s5)', border: '1px dashed var(--rule)', borderRadius: 12, background: 'var(--surface)', textAlign: 'center' }}>
-          <Icon name="Waves" size={24} style={{ color: 'var(--text-tertiary)' }} />
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text-secondary)', marginTop: 8, lineHeight: 'var(--lh-read)' }}>
+      {status === 'empty' && (
+        <div className="op-empty">
+          <Icon name="Waves" size={24} />
+          <div className="op-empty-text">
             {ctx.thin
               ? <>Signals get sharper as the graph fills — <b>{ctx.conceptCount} concept{ctx.conceptCount === 1 ? '' : 's'} tracked so far</b>. Generate now for a first pass, or keep learning and the signals grow more personal.</>
               : <>Generate your Blue Ocean signals from what you’ve actually been tracking across {ctx.conceptCount} concepts, your skills, projects, and domains.</>}
@@ -195,10 +192,10 @@ export default function OpportunityCards() {
         </div>
       )}
 
-      {loading && !signals.length && <div style={{ padding: 'var(--s5)', textAlign: 'center' }}><ThinkingDots color="var(--accent)" /></div>}
+      {status === 'loading' && <SectionSkeleton rows={4} label="signals" />}
 
       {signals.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: isDesktop ? '1fr 1fr' : '1fr', gap: 'var(--s3)' }}>
+        <div className="op-grid">
           {signals.map((s) => (
             <SignalCard key={s.id} signal={s} verdict={feedback[s.title]} onAct={act} onAsk={ask} onVerdict={setVerdict} />
           ))}

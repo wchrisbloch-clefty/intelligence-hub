@@ -1,0 +1,109 @@
+/* Skills mode (sk-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default, capability added at 721 (iPad).
+ * A card's level colour arrives as --lvl (a token from lib/skills.js levelFor);
+ * the sparkline strokes in currentColor so it follows the same token. */
+
+/* ── Page frame ───────────────────────────────────────────────────────── */
+.sk { max-width: 1100px; margin: 0 auto; padding: 20px var(--gutter) 80px; min-width: 0; }
+.sk-eyebrow { font-size: 9px; letter-spacing: 3px; color: var(--text-subtle); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.sk-title { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 800; color: var(--text); letter-spacing: -0.5px; line-height: var(--lh-tight); }
+.sk-lede { font-size: var(--fs-base); color: var(--text-muted); margin-top: 6px; }
+.sk-err { margin-top: 14px; padding: 10px 14px; border: 1px solid var(--border); border-left: 2px solid var(--negative);
+  border-radius: var(--radius); color: var(--negative); font-size: var(--fs-sm); font-weight: 600; }
+@media (min-width: 721px) {
+  .sk { padding-left: 28px; padding-right: 28px; }
+  .sk-title { font-size: var(--fs-3xl); }
+}
+
+/* ── Summary + add row ────────────────────────────────────────────────── */
+.sk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: 18px 0; }
+.sk-stat { font-size: var(--fs-sm); font-weight: 700; color: var(--text); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px; }
+.sk-stat[data-kind="rising"] { color: var(--positive); }
+.sk-stat[data-kind="due"] { color: var(--accent-text); }
+.sk-stat[data-kind="decaying"] { color: var(--caution); }
+.chip.sk-toggle { min-height: 0; padding: 5px 12px; }
+.sk-add { display: flex; gap: 6px; flex: 1 1 100%; min-width: 0; }
+.sk-add-input { flex: 1; min-width: 140px; min-height: 40px; background: var(--background); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 8px 12px; color: var(--text); font: inherit; font-size: var(--fs-sm); outline: none;
+  transition: border-color var(--dur-color) ease; }
+.sk-add-input::placeholder { color: var(--text-subtle); }
+.sk-add-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.btn.sk-add-btn { min-height: 40px; padding: 8px 14px; gap: 5px; }
+@media (min-width: 721px) {
+  .sk-add { flex: none; margin-left: auto; }
+}
+/* Touch: the field and its button are the hit targets — give them the full 44px. */
+@media (pointer: coarse) {
+  .sk-add-input, .btn.sk-add-btn { min-height: 44px; }
+}
+
+/* ── Grid + empty ─────────────────────────────────────────────────────── */
+.sk-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s3); }
+@media (min-width: 721px) { .sk-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sk-empty { text-align: center; padding: 56px 20px; background: var(--surface); border: 1px dashed var(--border); border-radius: 14px; }
+.sk-empty-title { font-size: var(--fs-base); color: var(--text); margin-bottom: 6px; font-weight: 700; }
+.sk-empty-body { font-size: var(--fs-base); color: var(--text-subtle); line-height: var(--lh-read); }
+
+/* ── Skill card ───────────────────────────────────────────────────────── */
+.sk-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: var(--s5); min-width: 0; }
+.sk-card[data-decaying] { border-color: color-mix(in srgb, var(--caution) 40%, transparent); }
+.sk-card[data-archived] { opacity: 0.6; }
+.sk-card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.sk-card-id { flex: 1; min-width: 0; }
+.sk-name { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; color: var(--text); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.sk-name-input { width: 100%; background: var(--background); border: 1px solid var(--accent); border-radius: var(--radius);
+  padding: 5px 9px; color: var(--text); font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; outline: none; }
+.sk-name-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.sk-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 5px; }
+.sk-level { font-size: var(--fs-sm); font-weight: 700; color: var(--lvl, var(--text-subtle)); }
+.sk-conf { font-size: var(--fs-sm); color: var(--text-subtle); }
+.sk-trend { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); font-weight: 700; color: var(--text-subtle); }
+.sk-trend[data-trend="up"] { color: var(--positive); }
+.sk-trend[data-trend="down"] { color: var(--negative); }
+.sk-archived-tag { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); }
+.sk-spark-wrap { flex-shrink: 0; }
+.sk-spark { display: block; color: var(--lvl, var(--text-subtle)); }
+.sk-spark-empty { height: 24px; }
+
+/* Status pills — coloured text + a hairline in the same hue. Never a filled background. */
+.sk-flags { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 10px; }
+.sk-flag { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-sm); font-weight: 700; color: var(--accent-text);
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent); border-radius: 20px; padding: 3px 10px; }
+.sk-flag[data-kind="decay"] { color: var(--caution); }
+
+/* What moved it */
+.sk-moved { display: flex; align-items: center; gap: 6px; width: 100%; text-align: left; background: none; border: 0; padding: 0;
+  cursor: pointer; font: inherit; margin-bottom: 10px; color: var(--text-subtle); }
+.sk-moved-text { font-size: var(--fs-sm); color: var(--text-muted); min-width: 0; }
+.sk-moved-text b { color: var(--text); }
+.sk-moved:hover .sk-moved-text { text-decoration: underline; }
+.sk-drill { margin-bottom: 12px; }
+
+/* Module links */
+.sk-mods { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.sk-mod { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border);
+  background: var(--background); color: var(--text-muted); font: inherit; font-size: var(--fs-sm); font-weight: 600; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.sk-mod:hover { background: var(--surface-muted); }
+
+/* Editor */
+.sk-editor { margin-bottom: 12px; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--background); }
+.sk-editor-eyebrow { font-size: 9px; font-weight: 800; color: var(--text-subtle); letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 8px; }
+.sk-editor-empty { font-size: var(--fs-sm); color: var(--text-subtle); }
+.sk-concepts { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip.sk-concept { min-height: 0; padding: 4px 10px; font-weight: 500; white-space: normal; }
+.chip.sk-concept[aria-pressed="true"] { font-weight: 700; }
+.sk-editor-actions { display: flex; gap: 8px; margin-top: 12px; }
+.sk-act { display: inline-flex; align-items: center; gap: 5px; font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--text-muted);
+  background: transparent; border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 11px; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.sk-act:hover { background: var(--surface-muted); }
+.sk-act[aria-pressed="true"] { color: var(--accent-text); }
+.sk-act-sm { padding: 4px 10px; font-weight: 400; }
+.sk-del { margin-left: auto; font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--negative); background: transparent; border: 0; cursor: pointer; }
+.sk-del:hover { text-decoration: underline; }
+
+/* Footer */
+.sk-foot { display: flex; align-items: center; gap: 8px; }
+.sk-obs { font-size: var(--fs-sm); color: var(--text-subtle); margin-left: auto; }

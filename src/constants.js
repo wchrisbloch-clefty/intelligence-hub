@@ -1,59 +1,30 @@
 import { T } from './theme';
-// Thin identity — used in Research Hub and truth-first contexts.
-// No teaching style, no forced connections — lets the analysis breathe.
-export const CB_IDENTITY = `You are CB's Intelligence System — research analyst, truth-seeker, and knowledge hub.
+// ─── PROMPT STACK (Batch Z / Order D) ─────────────────────────────────────
+// The old CB_IDENTITY fused HOW the reader thinks (always right) with WHAT the
+// reader works on ("BD professional", "$10K+/mo passive income", "W2 protection
+// → passive income → business building") — right maybe one time in five. Because
+// it was one string, the goals rode along on every generation and a book about
+// excellence got a dividend example. Split into layers; the text lives in
+// prompts/*.md (compiled by scripts/gen-prompts.mjs at build time):
+//   Layer 1  LENS              — voice and shape. No job, city, age, money, goals.
+//   Layer 2  SUBJECT_FIDELITY  — explain the material in its own domain.
+//   Layer 3  DOMAIN_PACKS      — the reader's goals as DATA, retrieved + gated
+//                                (src/lib/domainPacks.js, shipped DISABLED).
+import { LENS, SUBJECT_FIDELITY, READER_LIBRARY } from '../prompts/prompts.generated.js';
+export { LENS, SUBJECT_FIDELITY };
 
-WHO CB IS:
-Mid-to-late 30s, Houston TX. BD professional. Family-first, long-game operator. Stoic philosophy, systems thinker. Always hunting tipping points, compounding effects, Blue Ocean opportunities.
+// Every generating surface's system prompt. Layers 1 + 2, nothing about goals.
+export const SYSTEM_BASE = `You are an intelligence system: research analyst, truth-seeker, and teacher.
 
-CB'S GOALS:
-- Financial: $10K+/mo passive income (dividends, real estate, business revenue)
-- Health: performance + longevity (Attia, Huberman frameworks)
-- Building: scalable, sellable, modular businesses
-- Priority: W2 protection → passive income → business building
+${LENS}
 
-DECISIVENESS RULE: Every output ends with a clear recommendation, action, or bet. No vagueness.`;
+${SUBJECT_FIDELITY}`;
 
-// Full learning spine — used in Learn, Chat, and Growth modules.
-// Adds teaching style, mental model library, and cross-reference rules.
-export const CB_LEARNING_SPINE = CB_IDENTITY + `
+// Learn / chat / growth surfaces: + the reader's bookshelf as an optional
+// reference (cite only when the material genuinely invites it — never forced).
+export const SYSTEM_LEARNING = `${SYSTEM_BASE}
 
-HOW CB LEARNS:
-- Big picture FIRST — thesis then details. Never build to the point.
-- Lead with: #1 insight → supporting evidence → so-what implication
-- Sports analogies first, everyday life second. Simple and sticky.
-- Blunt on hard truths — no cushioning
-- Systems thinker — tipping points, compounding, inflection moments
-- Blue Ocean default — uncontested space over competing harder
-- Stoic: adversity is data, not crisis
-
-CB'S MENTAL MODEL LIBRARY (connect automatically):
-Extreme Ownership (Willink) — radical accountability
-Chip War (Miller) — semiconductor geopolitics, chokepoints
-The New Map (Yergin) — energy geopolitics
-Winning (Welch) — candor, differentiation, people-first
-Never Split the Difference (Voss) — tactical empathy, negotiation
-The Tipping Point (Gladwell) — contagion, connectors
-Greenlights (McConaughey) — memoir, resilience
-Fortitude (Crenshaw) — mental toughness
-Coffee Bean (Gordon) — mindset, environment vs. response
-Essays of Warren Buffett — compounding, moats, long-term value
-7 Habits (Covey) — character ethics, interdependence
-Tools of Titans (Ferriss) — systems of high performers
-Transfluence (Rakowich) — Humility, Honesty, Heart
-Influence (Cialdini) — persuasion, reciprocity, social proof
-The Snowball Effect — compounding, patience
-Power of Positive Leadership (Gordon) — energy, vision, culture
-A Life Well Played (Palmer) — integrity, legacy
-Laws of Human Nature (Greene) — human behavior, motivations
-Man's Search for Meaning (Frankl) — purpose, suffering, resilience
-Thinking Fast and Slow (Kahneman) — System 1/2, cognitive bias
-
-MASTER EXPERT RULE: For every topic, book, document, or video — become world-class in all surrounding subject matter automatically. Go deep without being asked.
-CROSS-REFERENCE RULE: Always connect to CB's mental model library. Make connections explicit.`;
-
-// Alias for any references not yet migrated
-export const CB_SPINE = CB_LEARNING_SPINE;
+${READER_LIBRARY}`;
 
 export const KNOWN_BOOKS = [
   { title: "Extreme Ownership", author: "Jocko Willink", type: "leadership", color: T.textSecondary },

@@ -1,15 +1,18 @@
-import { T } from '../theme';
 import { useState, useEffect, useRef } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, buildCreationPrompt, CREATION_KINDS } from '../utils.js';
-import { CB_LEARNING_SPINE } from '../constants.js';
+import { SYSTEM_LEARNING } from '../constants.js';
 import { loadIndex as loadDives, loadDive } from '../lib/deepdives.js';
 import { loadIndex as loadLadders, loadLadder } from '../lib/ladders.js';
 import { loadSession } from '../lib/sessions.js';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import { SectionEmpty } from './shared/SectionState.jsx';
+import Icon from './shared/Icon.jsx';
+import './creation-studio.css';
 
-const ACCENT = T.accent;
+// CREATION_KINDS carries emoji glyphs (utils.js); the UI renders lucide icons by name.
+const KIND_ICON = { doc: 'FileText', deck: 'Presentation', guide: 'BookOpen' };
 
 // Serialize a saved object into source text for the generator.
 function serializeSource(src) {
@@ -36,7 +39,7 @@ function serializeSource(src) {
 }
 
 export default function CreationStudio() {
-  const { isMobile, studioSource, setStudioSource } = useApp();
+  const { studioSource, setStudioSource } = useApp();
   const [source, setSource] = useState(studioSource || null); // { kind, id, title, module? }
   const [kind, setKind]     = useState('doc');
   const [result, setResult] = useState('');
@@ -44,7 +47,6 @@ export default function CreationStudio() {
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const bottomRef = useRef(null);
-  const pad = isMobile ? '14px' : '24px';
 
   const dives   = loadDives();
   const ladders = loadLadders();
@@ -60,7 +62,7 @@ export default function CreationStudio() {
     setLoading(true); setStream(''); setResult('');
     try {
       const text = await callClaude({
-        system: CB_LEARNING_SPINE,
+        system: SYSTEM_LEARNING,
         messages: [{ role: 'user', content: buildCreationPrompt(kind, s.title, s.text) }],
         maxTokens: 3000,
         onToken: (t) => setStream(s2 => s2 + t),
@@ -84,63 +86,62 @@ export default function CreationStudio() {
   const SourceRow = ({ item, kind: k }) => {
     const sel = source?.kind === k && source?.id === item.id;
     return (
-      <div onClick={() => { setSource({ kind: k, id: item.id, title: item.topic }); setResult(''); }}
-        style={{ padding: '10px 12px', marginBottom: 6, borderRadius: 9, cursor: 'pointer', border: `1px solid ${sel ? ACCENT : 'var(--border)'}`, background: sel ? 'var(--accent-glow)' : 'var(--surface)' }}>
-        <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: sel ? ACCENT : 'var(--text-b)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.topic}</div>
-        <div style={{ fontSize: 9, color: 'var(--dim)', marginTop: 2, textTransform: 'uppercase', letterSpacing: 1 }}>{k === 'deepdive' ? 'Deep Dive' : 'Ladder'}</div>
-      </div>
+      <button type="button" className="cs-src tap" aria-pressed={sel}
+        onClick={() => { setSource({ kind: k, id: item.id, title: item.topic }); setResult(''); }}>
+        <span className="cs-src-title">{item.topic}</span>
+        <span className="cs-src-kind">{k === 'deepdive' ? 'Deep Dive' : 'Ladder'}</span>
+      </button>
     );
   };
 
   return (
-    <div style={{ maxWidth: 780, margin: '0 auto', padding: `20px ${pad} 60px` }}>
-      <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 6 }}>Turn knowledge into deliverables</div>
-      <div style={{ fontSize: isMobile ? 'var(--fs-xl)' : 'var(--fs-2xl)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", letterSpacing: -0.5, marginBottom: 4 }}>Creation Studio</div>
-      <div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>Generate a document, slide outline, or study guide from any saved Deep Dive or ladder.</div>
+    <div className="cs">
+      <div className="cs-eyebrow">Turn knowledge into deliverables</div>
+      <div className="cs-title">Creation Studio</div>
+      <div className="cs-lede">Generate a document, slide outline, or study guide from any saved Deep Dive or ladder.</div>
 
       {/* Source */}
-      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>1 · Pick a source</div>
+      <div className="cs-step">1 · Pick a source</div>
       {dives.length === 0 && ladders.length === 0 ? (
-        <div style={{ padding: '18px', border: '1px dashed var(--border)', borderRadius: 10, textAlign: 'center', fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 20 }}>
-          No Deep Dives or ladders yet. Build one, then come back to turn it into a deliverable.
+        <div className="cs-block">
+          <SectionEmpty what="No Deep Dives or ladders yet"
+            how="Build one, then come back to turn it into a deliverable." />
         </div>
       ) : (
-        <div style={{ marginBottom: 20 }}>
+        <div className="cs-block">
           {dives.map(d => <SourceRow key={d.id} item={d} kind="deepdive" />)}
           {ladders.map(l => <SourceRow key={l.id} item={l} kind="ladder" />)}
         </div>
       )}
 
       {/* Kind */}
-      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>2 · Choose a format</div>
-      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 10, marginBottom: 20 }}>
+      <div className="cs-step">2 · Choose a format</div>
+      <div className="cs-kinds">
         {CREATION_KINDS.map(k => (
-          <div key={k.id} onClick={() => setKind(k.id)}
-            style={{ padding: '14px', borderRadius: 10, cursor: 'pointer', border: `1px solid ${kind === k.id ? ACCENT : 'var(--border)'}`, background: kind === k.id ? 'var(--accent-glow)' : 'var(--surface)' }}>
-            <div style={{ fontSize: 'var(--fs-xl)', marginBottom: 6 }}>{k.icon}</div>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: kind === k.id ? ACCENT : 'var(--text)', marginBottom: 2 }}>{k.label}</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{k.desc}</div>
-          </div>
+          <button type="button" key={k.id} className="cs-kind tap" aria-pressed={kind === k.id} onClick={() => setKind(k.id)}>
+            <span className="cs-kind-ico"><Icon name={KIND_ICON[k.id] || 'FileText'} size={24} strokeWidth={1.6} /></span>
+            <span className="cs-kind-label">{k.label}</span>
+            <span className="cs-kind-desc">{k.desc}</span>
+          </button>
         ))}
       </div>
 
-      <button onClick={generate} disabled={!source || loading}
-        style={{ width: '100%', padding: '13px', background: source && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: source && !loading ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: source && !loading ? 'pointer' : 'not-allowed', fontFamily: 'inherit', marginBottom: 20 }}>
+      <button type="button" className="btn btn-primary cs-go tap" onClick={generate} disabled={!source || loading} aria-busy={loading || undefined}>
         {loading ? 'Generating…' : source ? `Generate ${CREATION_KINDS.find(k => k.id === kind)?.label} →` : 'Pick a source first'}
       </button>
 
       {(loading || result) && (
-        <div ref={bottomRef} style={{ background: 'var(--surface)', border: `1px solid ${ACCENT}`, borderRadius: 12, padding: '18px 20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <div style={{ fontSize: 9, letterSpacing: 2, color: ACCENT, textTransform: 'uppercase' }}>{CREATION_KINDS.find(k => k.id === kind)?.label} · {source?.title}</div>
+        <div ref={bottomRef} className="cs-result">
+          <div className="cs-result-head">
+            <div className="cs-result-label">{CREATION_KINDS.find(k => k.id === kind)?.label} · {source?.title}</div>
             {result && !loading && (
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div onClick={copy} style={{ fontSize: 'var(--fs-sm)', color: 'var(--subtle)', cursor: 'pointer', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px' }}>{copied ? '✓ Copied' : 'Copy'}</div>
-                <div onClick={download} style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT}`, borderRadius: 6, padding: '3px 9px', fontWeight: 700 }}>↓ .md</div>
+              <div className="cs-result-tools">
+                <button type="button" className="cs-mini tap" onClick={copy}>{copied ? '✓ Copied' : 'Copy'}</button>
+                <button type="button" className="cs-mini tap" data-tone="accent" onClick={download}>↓ .md</button>
               </div>
             )}
           </div>
-          {loading && !stream ? <ThinkingDots color={ACCENT} /> : <MD text={(loading ? stream + '▍' : result)} color={ACCENT} />}
+          {loading && !stream ? <ThinkingDots color="var(--accent-text)" /> : <MD text={(loading ? stream + '▍' : result)} color="var(--accent-text)" />}
         </div>
       )}
     </div>

@@ -1,0 +1,8 @@
+/* PageWithRail (pwr-). Tokens only. */
+.pwr { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--module-gap); }
+.pwr-main, .pwr-rail { min-width: 0; }
+.pwr-rail { display: flex; flex-direction: column; gap: var(--s5); }
+@media (min-width: 1101px) {
+  .pwr { grid-template-columns: minmax(0, 1fr) var(--rail-width); align-items: start; }
+  .pwr-rail { position: sticky; top: var(--s5); }
+}

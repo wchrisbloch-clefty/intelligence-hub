@@ -1,0 +1,21 @@
+/* Connected Knowledge (ck-). Tokens only. */
+.ck { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; min-width: 0; }
+.ck[data-compact="1"] { padding: 14px 16px; }
+.ck-eyebrow { font-size: 9px; font-weight: 800; letter-spacing: 2.5px; text-transform: uppercase; color: var(--text-subtle); margin-bottom: 12px; }
+.ck-empty { font-size: var(--fs-base); color: var(--text-muted); line-height: var(--lh-read); }
+.ck-pin-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.ck-pin-title { font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 800; color: var(--text); line-height: var(--lh-tight); }
+.ck-meta { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 3px; }
+.ck-label { font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-subtle); margin-bottom: var(--s2); }
+.ck-chips { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: var(--s4); }
+.ck-count { color: var(--text-subtle); }
+.ck-ask { width: 100%; }
+.ck-summary { font-size: var(--fs-base); color: var(--text-muted); margin-bottom: 14px; }
+.ck-summary b { color: var(--text); }
+.ck-list { display: flex; flex-direction: column; gap: 6px; }
+.ck-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 44px; padding: 9px 12px; min-width: 0;
+  border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); cursor: pointer; font: inherit; text-align: left;
+  transition: background-color var(--dur-color) ease; }
+.ck-row:hover { background: var(--surface-muted); }
+.ck-row-name { font-size: var(--fs-sm); font-weight: 600; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ck-row-meta { font-size: var(--fs-sm); color: var(--text-subtle); flex-shrink: 0; }
