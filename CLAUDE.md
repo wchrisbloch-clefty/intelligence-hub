@@ -98,6 +98,29 @@ deployed on Vercel. Single user (CB).
   validation, every result cached in kv (misses 7 days, keyed on Firecrawl
   availability), and a fail-closed 40/day cap via `ground_book_consume()`.
 
+## Batch Z-3 — typed TOC + scored catalog records
+
+- **A TOC is not a chapter list.** `src/lib/tocTypes.js` types every entry
+  `front` / `part` / `chapter` / `back` (apparatus — Notes, Index,
+  Acknowledgments — is dropped from the view). ONLY `chapter` entries get a dive
+  or count toward progress (Excellence: "of 19", not "of 26"); parts render as
+  group headings; the study guide walks chapters grouped by Part
+  (`PROMPT_VERSION.studyGuide` 9). Classification runs on RAW lines — `parseTOC`
+  strips the "Chapter 4:" / "Part I:" prefixes that ARE the type evidence.
+- **Dives/progress are keyed by `chapterKey(title)`**, not flat index (a Part or
+  Appendix leaving the list shifted every index). `chapterState()` reads legacy
+  numeric keys by mapping them through the old flat list.
+- **The module is shared with the Edge Function**: `scripts/sync-edge-shared.mjs`
+  copies it to `supabase/functions/_shared/toc-types.js` (build fails on drift).
+- **ground-book catalog pass** reads MARC 505 from VuFind (`/Record/<id>/Details`,
+  scraped) and **Aspen Discovery** (`/Record/<id>/AJAX?method=getStaffView` — JSON,
+  fetched directly, no scrape credit). A search hit is scraped only if its RESULT
+  TITLE carries the book's title (other books' "similar items" pages were eating
+  the slots). Every matching record is SCORED (`score505`) and the cleanest kept.
+- **Repair OUR split, never the source:** run-together `Part I: X. Y` → part +
+  chapter; a ` -- ` inside a quoted span re-joins. Source typos and the source's
+  own numbering slips pass through; `raw505` is always verbatim.
+
 ## Home feed rebuild + What's Happening + Notes (later phase)
 
 - **Home is a renderer over a section registry** (`src/modules/home/sections.js`
