@@ -10,6 +10,7 @@ import { loadIndex as loadDiveIndex } from '../lib/deepdives.js';
 import { toVerifiedRecord, isPostCutoff, searchBooks, mainTitle, verifyBookCached, hydrateVerifyCache } from '../lib/bookVerify.js';
 import { retrieveTOC, parseTOC, groundingTier, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import { typeTOC, chaptersOnly, chapterKey, breakdown } from '../lib/tocTypes.js';
+import { groundBook } from '../lib/groundBook.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import BookSuggest from './shared/BookSuggest.jsx';
 import { stampVersion, isStale, versionLabel, PROMPT_VERSION } from '../lib/promptVersion.js';
@@ -385,6 +386,7 @@ export default function BookClub() {
   // Stored library is the single source of truth (built-ins + custom). KNOWN_BOOKS
   // is only a seed.
   const [books,     setBooks]     = useState(() => readLocal(BOOKCLUB_KEY, []).map(withId));
+  const booksRef = useRef(books); booksRef.current = books;   // latest library for async patches
   const [saveError, setSaveError] = useState('');
   const [saving,    setSaving]    = useState(false);
 
@@ -531,9 +533,21 @@ export default function BookClub() {
   useEffect(() => {
     // A new book resets the grounding gate.
     setNeedsGrounding(false); setProceedUngrounded(false);
-    if (!selectedBook || !selectedBook.postCutoff) return;
+    if (!selectedBook) return;
     if (selectedBook.userGrounding || selectedBook.retrievedTOC || selectedBook.retrievalState || retrieving) return;
-    runRetrievalChain(false);
+    if (selectedBook.postCutoff) { runRetrievalChain(false); return; }
+    // Z-3 / L3: a book the model already knows still deserves its REAL structure
+    // (typed chapters, chapter dives, honest "of N" progress). Ask the ground-book
+    // server only — cache-first, so a pre-warmed book is free and instant — and
+    // never the paid web pass. A miss records nothing (the server caches misses
+    // for 7 days, so re-opening costs nothing either).
+    (async () => {
+      const bid = selectedBook.id;
+      const r = await groundBook({ title: selectedBook.fullTitle || selectedBook.title, author: (selectedBook.authors || []).join(', ') || selectedBook.author, publisher: selectedBook.publisher || '', catalogVerified: !!selectedBook.verified });
+      if (r && !r.unreachable && Array.isArray(r.toc) && r.toc.length >= 3) {
+        await patchBookById(bid, { retrievedTOC: { toc: r.toc.join('\n'), source: r.source || 'catalog', sourceLabel: r.sourceLabel || 'Library catalog' }, retrievalState: 'found' });
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedBook?.id]);
 
@@ -563,6 +577,12 @@ export default function BookClub() {
     if (!selectedBook) return;
     const next = books.map((b) => (b.id === selectedBook.id ? { ...b, ...patch } : b));
     if (await persist(next)) setSelectedBook({ ...selectedBook, ...patch });
+  };
+  // Patch a book by id against the LATEST library — for async results that may land
+  // after the user has opened a different book (patchBook closes over selectedBook).
+  const patchBookById = async (bid, patch) => {
+    const next = booksRef.current.map((b) => (b.id === bid ? { ...b, ...patch } : b));
+    if (await persist(next)) setSelectedBook((sb) => (sb && sb.id === bid ? { ...sb, ...patch } : sb));
   };
   const saveUserGrounding = (ug) => patchBook({ userGrounding: ug });
   const clearUserGrounding = () => patchBook({ userGrounding: null });

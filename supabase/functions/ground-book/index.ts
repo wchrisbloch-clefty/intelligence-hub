@@ -126,6 +126,14 @@ async function libraryOfCongress(title: string, author: string, attempts: any[])
 // SCORED (tocTypes.score505) and the cleanest kept. Tier: reported.
 const RECORD_RE = /^(https?:\/\/[^/]+)\/Record\/([^/?#]+)/i;
 const norm = (s: string) => clean(s).toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// Book identity (Z-3 / L3): the app sends the SHORT title until the catalog
+// backfill fills in fullTitle, then sends "The Coffee Bean: A Simple Lesson…".
+// Both must hit ONE cache entry and match the same records, so identity is the
+// MAIN title (before any ":" subtitle) with a leading article dropped — catalogs
+// file "The 7 habits…" where the shelf says "7 Habits…" — plus the author's surname.
+const searchTitle = (t: string) => clean(t).split(/\s*:\s+/)[0];
+export const matchTitle = (t: string) => norm(searchTitle(t)).replace(/^(the|a|an) /, '');
+const surnameOf = (a: string) => norm(String(a || '').split(',')[0]).split(' ').filter(Boolean).pop() || '';
 type Marc = { tag: string; subs: { code: string; value: string }[] }[];
 const decode = (s: string) => s.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#0?39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
 // VuFind staff view, as Firecrawl markdown: "| 505 | 0 |  | **\|a** … <br> **\|t** … |"
@@ -174,9 +182,9 @@ export function parse505(m: Marc): { raw: string; entries: any[] } {
   return { raw, entries: type505(raw) };
 }
 export function recordMatches(m: Marc, title: string, author: string): boolean {
-  const t245 = norm(fieldSubs(m, '245').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' '));
-  if (!t245 || !t245.startsWith(norm(title))) return false;
-  const surname = norm(author).split(' ').filter(Boolean).pop();
+  const t245 = norm(fieldSubs(m, '245').filter((x) => x.code === 'a' || x.code === 'b').map((x) => x.value).join(' ')).replace(/^(the|a|an) /, '');
+  if (!t245 || !t245.startsWith(matchTitle(title))) return false;
+  const surname = surnameOf(author);
   if (!surname) return true;
   return norm(['100', '245', '700'].flatMap((t) => fieldSubs(m, t)).map((x) => x.value).join(' ')).includes(surname);
 }
@@ -187,10 +195,11 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
   const fc = (path: string, body: unknown, ms: number) => getJson(`https://api.firecrawl.dev/v2/${path}`, {
     method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }, ms);
   try {
-    const queries = [`"${title}" ${author} "Staff View"`, `"${title}" ${author} "Table of Contents" library catalog`];
+    const st = searchTitle(title); const sur = surnameOf(author);
+    const queries = [`"${st}" ${sur} "Staff View"`, `"${st}" ${sur} "Table of Contents" library catalog`];
     const found = await Promise.allSettled(queries.map((q) => fc('search', { query: q, limit: 10 }, 20000)));
     const records = new Map<string, { base: string; aspen: boolean }>(); let offTitle = 0;
-    const want = norm(title);
+    const want = matchTitle(title);
     for (const f of found) if (f.status === 'fulfilled') for (const x of (f.value.data?.web || f.value.data || [])) {
       const mm = RECORD_RE.exec(String(x?.url || ''));
       if (!mm || RETAIL.test(new URL(mm[1]).hostname)) continue;
@@ -330,7 +339,9 @@ Deno.serve(async (req: Request) => {
   // key was unset must not shadow a real lookup once CB adds it. Hits are kept
   // forever; misses expire after MISS_TTL_MS so a newly-catalogued book resolves.
   const fc = Deno.env.get('FIRECRAWL_API_KEY') ? 'fc1' : 'fc0';
-  const cacheKey = `aether_ground_${(title + '|' + author).toLowerCase().replace(/[^a-z0-9|]+/g, '_').slice(0, 170)}|${fc}|v4`;   // v4 = typed + scored + Aspen (v3 typed, v2 catalog pass)
+  // v5 = keyed on BOOK IDENTITY (main title sans article + author surname), so the
+  // short shelf title and the backfilled full title share one entry (Z-3 / L3).
+  const cacheKey = `aether_ground_${matchTitle(title).replace(/ /g, '_').slice(0, 150)}|${surnameOf(author).replace(/ /g, '_') || 'anon'}|${fc}|v5`;
   const store = kv();
   if (!body.refresh) {
     try {
@@ -348,7 +359,7 @@ Deno.serve(async (req: Request) => {
   const attempts: any[] = [];
   // Structured sources first, in parallel: Open Library, LoC 505, OPAC 505.
   const a1: any[] = [], a2: any[] = [], a3: any[] = [];
-  const [ol, loc, cat] = await Promise.all([openLibrary(title, author, a1), libraryOfCongress(title, author, a2), libraryCatalogs(title, author, a3)]);
+  const [ol, loc, cat] = await Promise.all([openLibrary(searchTitle(title), author, a1), libraryOfCongress(searchTitle(title), author, a2), libraryCatalogs(title, author, a3)]);
   attempts.push(...a1, ...a2, ...a3);
   const publishers = [rawPublisher, ...(ol.publishers || [])].filter(Boolean);
   const typed = (c: any) => { if (!c || c.entries) return c; const entries = typeTOC(c.toc); return { ...c, entries, breakdown: breakdown(entries), toc: toLines(entries) }; };
