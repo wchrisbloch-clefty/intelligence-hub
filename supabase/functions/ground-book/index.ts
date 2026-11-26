@@ -386,7 +386,9 @@ Deno.serve(async (req: Request) => {
   // never spends twice. A miss where any source failed transiently (rate limit,
   // timeout, network) is NOT cached — it's reported `retryable` instead, so a
   // throttled run can't pin "no contents" on a findable book for a week.
-  const transient = attempts.some((a) => a.transient || (a.error && /429|timed out|timeout|sending request|network/i.test(String(a.error))));
+  // (LoC alone timing out is routine and is NOT treated as transient — otherwise
+  // almost every miss would be uncacheable and each re-open would spend the cap.)
+  const transient = attempts.some((a) => a.transient || (a.error && /\b429\b/.test(String(a.error))));
   if (!best && transient) return withCors(json(200, { ...out, retryable: true }));
   try { await store.set(cacheKey, JSON.stringify(out)); } catch { /* best-effort */ }
   return withCors(json(200, out));
