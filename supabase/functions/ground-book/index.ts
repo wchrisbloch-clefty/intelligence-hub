@@ -198,6 +198,9 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
     const st = searchTitle(title); const sur = surnameOf(author);
     const queries = [`"${st}" ${sur} "Staff View"`, `"${st}" ${sur} "Table of Contents" library catalog`];
     const found = await Promise.allSettled(queries.map((q) => fc('search', { query: q, limit: 10 }, 20000)));
+    // Z-3 / L3: a rate-limited or timed-out step makes a miss UNTRUSTWORTHY — the
+    // caller must not cache it (the pre-warm cached 429-driven misses for 7 days).
+    let transient = found.some((f) => f.status === 'rejected');
     const records = new Map<string, { base: string; aspen: boolean }>(); let offTitle = 0;
     const want = matchTitle(title);
     for (const f of found) if (f.status === 'fulfilled') for (const x of (f.value.data?.web || f.value.data || [])) {
@@ -210,7 +213,7 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
       if (!records.has(base)) records.set(base, { base, aspen: /aspen discovery/i.test(String(x?.description || '')) });
     }
     const recs = [...records.values()].slice(0, 6);   // L2: score up to 6 candidates; cleanest wins
-    if (!recs.length) { attempts.push({ source: SRC, detail: `no catalog records for this title found by search${offTitle ? ` (${offTitle} other-book page(s) skipped)` : ''}`, results: 0 }); return null; }
+    if (!recs.length) { attempts.push({ source: SRC, detail: `no catalog records for this title found by search${offTitle ? ` (${offTitle} other-book page(s) skipped)` : ''}`, results: 0, transient }); return null; }
     // Aspen: the JSON staff view, direct (free). VuFind: the /Details staff view via
     // Firecrawl. A VuFind-looking page with no MARC table is retried as Aspen.
     const aspenView = async (base: string): Promise<Marc> => {
@@ -225,11 +228,18 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
       if (marc.some((f) => f.tag === '245')) return { base, marc, via: 'vufind' };
       return { base, marc: await aspenView(base), via: 'aspen' };
     };
-    const got = await Promise.allSettled(recs.map(fetchMarc));
+    // At most 2 record fetches in flight: 6 parallel lookups × 6 scrapes tripped
+    // Firecrawl's rate limit (429) across most of the L3 pre-warm.
+    const got: PromiseSettledResult<{ base: string; marc: Marc; via: string }>[] = [];
+    for (let i = 0; i < recs.length; i += 2) got.push(...await Promise.allSettled(recs.slice(i, i + 2).map(fetchMarc)));
     let best: any = null; const seen: string[] = []; const candidates: any[] = [];
     got.forEach((r, i) => {
       const host = new URL(recs[i].base).hostname;
-      if (r.status !== 'fulfilled') { seen.push(`${host}: unreadable (${String((r.reason as Error)?.message || r.reason).slice(0, 60)})`); return; }
+      if (r.status !== 'fulfilled') {
+        const msg = String((r.reason as Error)?.message || r.reason);
+        if (/429|timed out|timeout|sending request|network|5\d\d/i.test(msg)) transient = true;
+        seen.push(`${host}: unreadable (${msg.slice(0, 60)})`); return;
+      }
       const { base, marc, via } = r.value;
       if (!marc.some((f) => f.tag === '505')) { seen.push(`${host}: no 505`); return; }
       if (!recordMatches(marc, title, author)) { seen.push(`${host}: 245/100 is a different book`); return; }
@@ -241,9 +251,9 @@ async function libraryCatalogs(title: string, author: string, attempts: any[]) {
       if (b.chapter >= MIN && (!best || sc.score > best.score || (sc.score === best.score && b.chapter > best.breakdown.chapter)))
         best = { toc: toLines(entries), entries, breakdown: b, score: sc.score, raw505: raw, source: 'catalog', sourceLabel: `Library catalog (${host}, MARC 505)`, url: base };
     });
-    attempts.push({ source: SRC, detail: `${recs.length} record(s)${offTitle ? ` (+${offTitle} other-book page(s) skipped)` : ''}: ${seen.join('; ')}`, results: best ? 1 : 0, candidates });
+    attempts.push({ source: SRC, detail: `${recs.length} record(s)${offTitle ? ` (+${offTitle} other-book page(s) skipped)` : ''}: ${seen.join('; ')}`, results: best ? 1 : 0, candidates, transient });
     return best;
-  } catch (e) { attempts.push({ source: SRC, detail: 'search', error: String((e as Error).message || e) }); return null; }
+  } catch (e) { attempts.push({ source: SRC, detail: 'search', error: String((e as Error).message || e), transient: true }); return null; }
 }
 
 // Every edition's publisher, not just Open Library's first one — K2 live run
@@ -372,8 +382,12 @@ Deno.serve(async (req: Request) => {
   const state = exists ? (best ? 'verified+contents' : 'verified-exists-only') : 'unverified';
   const out = { state, toc: best?.toc || null, entries: best?.entries || null, breakdown: best?.breakdown || null, source: best?.source || null, sourceLabel: best?.sourceLabel || null, url: best?.url || null, raw505: best?.raw505 || null,
     tier: best ? 'reported' : 'inferred', record: ol.record, attempts, at: new Date().toISOString() };
-  // Cache EVERY result, hit or miss — the same book never spends twice (a miss for
-  // 7 days). { refresh: true } re-tries deliberately and still counts against the cap.
+  // Cache every HIT forever and every TRUSTWORTHY miss for 7 days, so the same book
+  // never spends twice. A miss where any source failed transiently (rate limit,
+  // timeout, network) is NOT cached — it's reported `retryable` instead, so a
+  // throttled run can't pin "no contents" on a findable book for a week.
+  const transient = attempts.some((a) => a.transient || (a.error && /429|timed out|timeout|sending request|network/i.test(String(a.error))));
+  if (!best && transient) return withCors(json(200, { ...out, retryable: true }));
   try { await store.set(cacheKey, JSON.stringify(out)); } catch { /* best-effort */ }
   return withCors(json(200, out));
 });
