@@ -1,3 +1,4 @@
+import { readLocal, writeThrough, hydrate } from './storage.js';
 // src/lib/bookVerify.js — verify a book against a real catalog BEFORE generating
 // a study guide, so the model can't confidently invent a thesis for a title it
 // doesn't actually know (which is what happened with *The Way of Excellence* —
@@ -28,11 +29,48 @@ export function isPostCutoff(publishedDate, cutoff = MODEL_KNOWLEDGE_CUTOFF) {
   return norm(p) > norm(cutoff);
 }
 
+// ── Catalog request discipline (Batch Z-2 / J1) ──────────────────────────────
+// A fresh device (or the first load after the Supabase cutover, before the copy
+// script runs) used to fire ~20–36 catalog requests in a burst — the backfill's
+// query cascades — and Google Books answered 429. Three guards:
+//   1. a shared queue: at most CATALOG_CONCURRENCY requests in flight, spaced by
+//      CATALOG_GAP_MS, for EVERY caller (backfill, verify, suggestions)
+//   2. a circuit breaker: the first 429 opens it for RATE_LIMIT_COOLDOWN_MS and
+//      every queued/new request fails fast with RateLimitedError — no hammering
+//   3. a kv-backed cache of verify results (verifyBookCached) so a device — and
+//      every other device, via kv — pays for a given title once.
+export const CATALOG_CONCURRENCY = 2;
+export const CATALOG_GAP_MS = 350;
+export const RATE_LIMIT_COOLDOWN_MS = 60_000;
+
+export class RateLimitedError extends Error {
+  constructor(host) { super(`429 rate-limited by ${host}`); this.name = 'RateLimitedError'; this.status = 429; this.rateLimited = true; }
+}
+let inFlight = 0; let lastStart = 0; let openUntil = 0;
+const waiters = [];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+export const catalogCircuitOpen = () => Date.now() < openUntil;
+async function acquire() {
+  while (inFlight >= CATALOG_CONCURRENCY) await new Promise((r) => waiters.push(r));
+  inFlight++;
+  const wait = lastStart + CATALOG_GAP_MS - Date.now();
+  if (wait > 0) await sleep(wait);
+  lastStart = Date.now();
+}
+function release() { inFlight--; const w = waiters.shift(); if (w) w(); }
+
 async function fetchJson(url, timeoutMs = 9000) {
-  const ctrl = AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
-  const r = await fetch(url, { signal: ctrl });
-  if (!r.ok) throw new Error(`${r.status}`);
-  return r.json();
+  let host = 'catalog'; try { host = new URL(url).host; } catch { /* keep default */ }
+  if (catalogCircuitOpen()) throw new RateLimitedError(host);
+  await acquire();
+  try {
+    if (catalogCircuitOpen()) throw new RateLimitedError(host);
+    const ctrl = AbortSignal.timeout ? AbortSignal.timeout(timeoutMs) : undefined;
+    const r = await fetch(url, { signal: ctrl });
+    if (r.status === 429) { openUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS; throw new RateLimitedError(host); }
+    if (!r.ok) throw new Error(`${r.status}`);
+    return r.json();
+  } finally { release(); }
 }
 
 // ── Match scoring ─────────────────────────────────────────────────────────────
@@ -115,7 +153,7 @@ async function runGoogle(title, author, attempts) {
       const rows = (Array.isArray(d?.items) ? d.items : []).map(mapGoogle).filter((b) => b.title);
       attempts.push({ source: 'Google Books', query: q, results: rows.length });
       if (rows.length) return rows;
-    } catch (e) { attempts.push({ source: 'Google Books', query: q, error: String(e?.message || e) }); }
+    } catch (e) { attempts.push({ source: 'Google Books', query: q, error: String(e?.message || e), ...(e?.rateLimited ? { rateLimited: true } : {}) }); if (e?.rateLimited) return []; }
   }
   return [];
 }
@@ -126,7 +164,7 @@ async function runOpenLibrary(title, author, attempts) {
       const rows = (Array.isArray(d?.docs) ? d.docs : []).map(mapOpenLibrary).filter((b) => b.title);
       attempts.push({ source: 'Open Library', query: qs.replace(/&/g, ' '), results: rows.length });
       if (rows.length) return rows;
-    } catch (e) { attempts.push({ source: 'Open Library', query: qs.replace(/&/g, ' '), error: String(e?.message || e) }); }
+    } catch (e) { attempts.push({ source: 'Open Library', query: qs.replace(/&/g, ' '), error: String(e?.message || e), ...(e?.rateLimited ? { rateLimited: true } : {}) }); if (e?.rateLimited) return []; }
   }
   return [];
 }
@@ -145,7 +183,39 @@ export async function verifyBook({ title, author }) {
     .map((m) => ({ ...m, score: scoreMatch(m, { title: t, author: a }) }))
     .sort((x, y) => y.score - x.score)
     .slice(0, 5);
-  return { matches, attempts, confident: !!matches.length && matches[0].score >= CONFIDENCE_THRESHOLD };
+  // rateLimited: a 429 cut the lookup short. That is UNVERIFIED (couldn't check),
+  // never "does not exist" — callers must not record it as a resolved miss.
+  const rateLimited = !matches.length && attempts.some((x) => x.rateLimited);
+  return { matches, attempts, confident: !!matches.length && matches[0].score >= CONFIDENCE_THRESHOLD, rateLimited };
+}
+
+// verifyBook with a kv-backed cache (aether_bookverify_v1: { "<title|author>": result }).
+// A definitive result (matches found, or a genuine zero-result answer) is cached;
+// a rate-limited or network-failed lookup is NOT, so it retries later.
+export const VERIFY_CACHE_KEY = 'aether_bookverify_v1';
+const vKey = (t, a) => `${clean(t).toLowerCase()}|${clean(a).toLowerCase()}`;
+export async function verifyBookCached({ title, author }) {
+  const k = vKey(title, author);
+  const cache = readLocal(VERIFY_CACHE_KEY, {}) || {};
+  if (cache[k]) return { ...cache[k], cached: true };
+  const res = await verifyBook({ title, author });
+  const networkOnly = !res.matches.length && res.attempts.length && res.attempts.every((x) => x.error);
+  if (!res.rateLimited && !networkOnly) {
+    const next = { ...(readLocal(VERIFY_CACHE_KEY, {}) || {}), [k]: { matches: res.matches, confident: res.confident, at: Date.now() } };
+    writeThrough(VERIFY_CACHE_KEY, next);
+  }
+  return res;
+}
+// Pull the shared cache from kv once, so a new device starts with every title
+// another device already paid for.
+export async function hydrateVerifyCache() {
+  try {
+    const remote = await hydrate(VERIFY_CACHE_KEY);
+    if (remote && typeof remote === 'object') {
+      const merged = { ...remote, ...(readLocal(VERIFY_CACHE_KEY, {}) || {}) };
+      try { localStorage.setItem(VERIFY_CACHE_KEY, JSON.stringify(merged)); } catch { /* quota */ }
+    }
+  } catch { /* offline — local cache still works */ }
 }
 
 // Live search for the Add-Book suggestion dropdown: fast (Google Books first,

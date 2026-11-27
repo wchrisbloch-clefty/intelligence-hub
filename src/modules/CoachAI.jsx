@@ -1,16 +1,16 @@
-import { T } from '../theme';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import useChatThread from '../hooks/useChatThread.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import MD from './shared/MD.jsx';
 import Icon from './shared/Icon.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import './coach-ai.css';
 
-const ACCENT        = T.accent;
-const ACCENT_BG     = 'rgba(217,164,65,0.08)';
-const ACCENT_BORDER = 'rgba(217,164,65,0.2)';
+// Z-3 / L4: every colour lives in coach-ai.css on system tokens. The old gold
+// tints (rgba(217,164,65,…)) predated the token system and were the last
+// literal colours in the repo; they are now color-mix() over --accent.
 
 const TONES = [
   { id: 'coach',     icon: 'Trophy', label: 'Coach',          desc: 'High-energy, goal-focused, celebrates wins, drives action' },
@@ -52,11 +52,11 @@ function buildSystem(toneId, topicId) {
   const topicLine = topicId !== 'all'
     ? `\n\nFOCUS: Anchor conversations to CB's ${topicId} goals and challenges unless CB redirects.`
     : '';
-  return `${CB_IDENTITY}\n\nROLE: ${tone}${topicLine}\n\nIMPORTANT: Hold CB accountable to what he says. Push for specifics when answers are vague. Never let him off the hook with empty answers.`;
+  return `${SYSTEM_BASE}\n\nROLE: ${tone}${topicLine}\n\nIMPORTANT: Hold CB accountable to what he says. Push for specifics when answers are vague. Never let him off the hook with empty answers.`;
 }
 
 export default function CoachAI() {
-  const { isMobile, isPhone, isTablet, setPendingArtifact, newChatNonce } = useApp();
+  const { setPendingArtifact, newChatNonce } = useApp();   // layout is CSS media queries, not JS
   const [tone,         setTone]         = useState('coach');
   const [topic,        setTopic]        = useState('all');
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -80,14 +80,14 @@ export default function CoachAI() {
   const currentTopic = TOPICS.find(t => t.id === topic) || TOPICS[0];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', position: 'relative' }}>
+    <div className="ca-root">
 
       {sessionsOpen && (
         <SessionDrawer
           module="coach"
           activeId={sessionId}
           version={drawerVersion}
-          color={ACCENT}
+          color="var(--accent-text)"
           onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); }}
           onNew={startNewSession}
           onClose={() => setSessionsOpen(false)}
@@ -95,108 +95,93 @@ export default function CoachAI() {
       )}
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--bord2)', padding: '14px 20px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
+      <div className="ca-header">
+        <div className="ca-header-row">
           <div>
-            <div style={{ fontSize: 9, letterSpacing: 4, color: ACCENT, textTransform: 'uppercase', marginBottom: 4 }}>Accountability Coach</div>
-            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif", lineHeight: 1.1 }}>
+            <div className="ca-eyebrow">Accountability Coach</div>
+            <div className="ca-title">
               <Icon name={currentTone.icon} size={14} /> {currentTone.label} Mode
             </div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 3 }}>{currentTone.desc}</div>
+            <div className="ca-sub">{currentTone.desc}</div>
           </div>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div onClick={() => setSessionsOpen(true)} title="Saved sessions"
-              style={{ fontSize: 'var(--fs-sm)', padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--subtle)', cursor: 'pointer' }}>
-              🗂 Sessions
-            </div>
-            <div onClick={startNewSession}
-              style={{ fontSize: 'var(--fs-sm)', padding: '5px 10px', border: '1px solid var(--border)', borderRadius: 7, color: 'var(--dim)', cursor: 'pointer' }}>
-              ✎ New
-            </div>
-            <div onClick={() => setSettingsOpen(o => !o)}
-              style={{ fontSize: 'var(--fs-sm)', padding: '5px 12px', border: `1px solid ${settingsOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 7, color: settingsOpen ? ACCENT : 'var(--subtle)', cursor: 'pointer', background: settingsOpen ? ACCENT_BG : 'transparent', fontWeight: 600, transition: 'all 0.12s' }}>
-              ⚙ Coach Type
-            </div>
+          <div className="ca-actions">
+            <button type="button" onClick={() => setSessionsOpen(true)} title="Saved sessions" className="ca-btn">🗂 Sessions</button>
+            <button type="button" onClick={startNewSession} className="ca-btn" data-quiet>✎ New</button>
+            <button type="button" onClick={() => setSettingsOpen(o => !o)} className="ca-btn" data-on={settingsOpen || undefined} aria-pressed={settingsOpen}>⚙ Coach Type</button>
           </div>
         </div>
 
         {/* Topic focus pills */}
-        <div style={{ display: 'flex', gap: 5, overflowX: 'auto', scrollbarWidth: 'none' }}>
+        <div className="ca-pills">
           {TOPICS.map(t => (
-            <div key={t.id} onClick={() => setTopic(t.id)}
-              style={{ flexShrink: 0, padding: '4px 11px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 14, border: `1px solid ${topic === t.id ? ACCENT : 'var(--border)'}`, background: topic === t.id ? ACCENT_BG : 'transparent', color: topic === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+            <button type="button" key={t.id} onClick={() => setTopic(t.id)} className="ca-pill" data-on={topic === t.id || undefined} aria-pressed={topic === t.id}>
               <Icon name={t.icon} size={14} /> {t.label}
-            </div>
+            </button>
           ))}
         </div>
       </div>
 
       {/* ── Settings Panel ─────────────────────────────────────────────────── */}
       {settingsOpen && (
-        <div style={{ background: 'var(--surf2)', borderBottom: '1px solid var(--bord2)', padding: '14px 20px', flexShrink: 0 }}>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>Choose Your Coach Type</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isPhone ? '1fr 1fr' : isTablet ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: 8 }}>
+        <div className="ca-settings">
+          <div className="ca-settings-title">Choose Your Coach Type</div>
+          <div className="ca-tones">
             {TONES.map(t => (
-              <div key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); startNewSession(); }}
-                style={{ padding: '12px', background: tone === t.id ? ACCENT_BG : 'var(--surface)', border: `1px solid ${tone === t.id ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.12s', textAlign: 'center' }}>
+              <button type="button" key={t.id} onClick={() => { setTone(t.id); setSettingsOpen(false); startNewSession(); }}
+                className="ca-tone" data-on={tone === t.id || undefined} aria-pressed={tone === t.id}>
                 <Icon name={t.icon} size={24} />
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: tone === t.id ? ACCENT : 'var(--text)', marginBottom: 3 }}>{t.label}</div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.4 }}>{t.desc}</div>
-              </div>
+                <div className="ca-tone-label">{t.label}</div>
+                <div className="ca-tone-desc">{t.desc}</div>
+              </button>
             ))}
           </div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 10, textAlign: 'center' }}>Switching coach type starts a new session.</div>
+          <div className="ca-settings-note">Switching coach type starts a new session.</div>
         </div>
       )}
 
       {/* ── Messages ───────────────────────────────────────────────────────── */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px 0' }}>
+      <div className="ca-thread">
 
         {messages.length === 0 && (
-          <div style={{ maxWidth: 500, margin: '0 auto', padding: '24px 0 0', textAlign: 'center' }}>
-            <div style={{ marginBottom: 12 }}><Icon name={currentTone.icon} size={28} /></div>
-            <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{currentTone.label} Mode · {currentTopic.label}</div>
-            <div style={{ fontSize: 11, color: 'var(--dim)', lineHeight: 1.75, marginBottom: 28 }}>{currentTone.desc}</div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>Start with a check-in</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left' }}>
+          <div className="ca-empty">
+            <div className="ca-empty-icon"><Icon name={currentTone.icon} size={28} /></div>
+            <div className="ca-empty-title">{currentTone.label} Mode · {currentTopic.label}</div>
+            <div className="ca-empty-desc">{currentTone.desc}</div>
+            <div className="ca-empty-eyebrow">Start with a check-in</div>
+            <div className="ca-prompts">
               {CHECKIN_PROMPTS.slice(0, 5).map(p => (
-                <div key={p} onClick={() => send(p)}
-                  style={{ fontSize: 'var(--fs-base)', padding: '10px 14px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 10, color: 'var(--muted)', cursor: 'pointer', lineHeight: 1.5, transition: 'background 0.1s', minHeight: 44, display: 'flex', alignItems: 'center' }}>
-                  {p}
-                </div>
+                <button type="button" key={p} onClick={() => send(p)} className="ca-prompt">{p}</button>
               ))}
             </div>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: 16, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', maxWidth: 760, margin: '0 auto 16px', animation: 'fadeUp 0.15s ease' }}>
+          <div key={i} className="ca-msg" data-role={msg.role}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '10px 14px', maxWidth: '85%', fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>
-                {msg.content}
-              </div>
+              <div className="ca-bubble-user">{msg.content}</div>
             ) : (
-              <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '13px 16px', maxWidth: '94%', width: '100%' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                  <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase' }}>
+              <div className="ca-bubble-ai">
+                <div className="ca-bubble-head">
+                  <div className="ca-bubble-tag">
                     <Icon name={currentTone.icon} size={14} /> {currentTone.label} · {currentTopic.label}
                   </div>
-                  <div onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}
-                    style={{ fontSize: 'var(--fs-sm)', color: ACCENT, cursor: 'pointer', border: `1px solid ${ACCENT_BORDER}`, borderRadius: 5, padding: '2px 7px', whiteSpace: 'nowrap' }}>
+                  <button type="button" className="ca-save"
+                    onClick={() => setPendingArtifact({ type: 'aiOutput', title: `Coach (${currentTone.label}): ${messages[i - 1]?.content?.slice(0, 40) || 'Session note'}...`, content: msg.content, source: 'coach' })}>
                     + Save to Project
-                  </div>
+                  </button>
                 </div>
-                <MD text={msg.content} color={ACCENT} />
+                <MD text={msg.content} color="var(--accent-text)" />
               </div>
             )}
           </div>
         ))}
 
         {loading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', maxWidth: 760, margin: '0 auto 16px' }}>
-            <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderRadius: '3px 14px 14px 14px', padding: '12px 16px' }}>
-              <div style={{ fontSize: 9, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>Thinking…</div>
-              <ThinkingDots color={ACCENT} />
+          <div className="ca-msg" data-role="assistant">
+            <div className="ca-bubble-ai" data-thinking>
+              <div className="ca-bubble-tag ca-thinking-tag">Thinking…</div>
+              <ThinkingDots color="var(--accent-text)" />
             </div>
           </div>
         )}
@@ -204,24 +189,21 @@ export default function CoachAI() {
       </div>
 
       {/* ── Input ──────────────────────────────────────────────────────────── */}
-      <div style={{ padding: '10px 16px 16px', borderTop: '1px solid var(--bord2)', flexShrink: 0 }}>
+      <div className="ca-composer">
         {messages.length > 0 && (
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', marginBottom: 8, paddingBottom: 2, scrollbarWidth: 'none' }}>
+          <div className="ca-quick">
             {CHECKIN_PROMPTS.slice(5).map(p => (
-              <div key={p} onClick={() => send(p)}
-                style={{ fontSize: 'var(--fs-sm)', padding: '3px 10px', background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, color: ACCENT, borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button type="button" key={p} onClick={() => send(p)} className="ca-quick-chip">
                 {p.length > 42 ? p.slice(0, 42) + '…' : p}
-              </div>
+              </button>
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', maxWidth: 760, margin: '0 auto' }}>
+        <div className="ca-input-row">
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
-            rows={1} placeholder="Be honest. The AI can handle it."
-            style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: isMobile ? '12px 14px' : '10px 12px', color: 'var(--text-b)', fontSize: isMobile ? 'var(--fs-lg)' : 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 100 }} />
-          <button onClick={() => send(input)} disabled={!input.trim() || loading}
-            style={{ padding: '10px 16px', background: input.trim() && !loading ? ACCENT : 'var(--bord2)', border: 'none', borderRadius: 10, color: input.trim() && !loading ? T.canvas : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: input.trim() && !loading ? 'pointer' : 'not-allowed', flexShrink: 0, minHeight: 42 }}>→</button>
+            rows={1} placeholder="Be honest. The AI can handle it." className="ca-input" aria-label="Message your coach" />
+          <button type="button" onClick={() => send(input)} disabled={!input.trim() || loading} className="ca-send" aria-label="Send">→</button>
         </div>
       </div>
     </div>

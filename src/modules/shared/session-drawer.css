@@ -1,0 +1,26 @@
+/* SessionDrawer (sd-). Tokens only. Caller colour arrives as --c (stroke) / --ct (text). */
+.sd { position: absolute; inset: 0; background: var(--surface); z-index: 60; display: flex; flex-direction: column; animation: fadeUp 0.15s ease; min-width: 0; }
+.sd-head { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: var(--s2); flex-shrink: 0; }
+.sd-title { font-size: var(--fs-base); font-weight: 800; color: var(--text); font-family: var(--font-display); }
+.sd-icon-btn { background: none; border: none; font: inherit; font-size: var(--fs-base); line-height: 1; color: var(--text-subtle); cursor: pointer; padding: 2px 6px; border-radius: var(--radius-sm); flex-shrink: 0; }
+.sd-icon-btn:hover { color: var(--text); background: var(--surface-muted); }
+.sd-icon-btn[data-danger] { color: var(--negative); padding: 2px 4px; }
+.sd-new-wrap { padding: 10px 12px; flex-shrink: 0; }
+.sd-new { display: block; width: 100%; min-height: 44px; padding: 10px 12px; border-radius: 9px; border: 1px solid var(--c, var(--accent)); color: var(--ct, var(--accent-text));
+  background: transparent; cursor: pointer; font: inherit; font-size: var(--fs-base); font-weight: 700; text-align: center; transition: background-color var(--dur-color) ease; }
+.sd-new:hover { background: var(--surface-muted); }
+.sd-list { flex: 1; overflow-y: auto; padding: 0 12px 14px; }
+.sd-empty { text-align: center; padding: 30px 12px; color: var(--text-subtle); font-size: var(--fs-base); line-height: 1.7; }
+.sd-item { display: flex; align-items: center; gap: var(--s2); min-height: 44px; padding: 10px 12px; margin-bottom: 6px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.sd-item:hover { background: var(--surface-muted); }
+.sd-item[aria-current="true"] { border-color: var(--c, var(--accent)); }
+.sd-item-main { flex: 1; min-width: 0; }
+.sd-item-title { font-size: var(--fs-base); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sd-item[aria-current="true"] .sd-item-title { color: var(--ct, var(--accent-text)); }
+.sd-item-meta { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 2px; }
+.sd-item-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.sd-rename { width: 100%; min-width: 0; background: var(--background); border: 1px solid var(--c, var(--accent)); border-radius: 6px; padding: 4px 7px;
+  font: inherit; font-size: var(--fs-base); color: var(--text); outline: none; }
+.sd-rename:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.sd-item-actions .sd-icon-btn { min-width: 36px; min-height: 36px; } /* inside a scroller: a real box, not ::after */

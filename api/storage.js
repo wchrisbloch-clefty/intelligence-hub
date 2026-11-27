@@ -1,15 +1,15 @@
-// api/storage.js — persistence backed by Upstash Redis.
+// api/storage.js — persistence backed by Supabase `kv` (PostgREST, see api/_lib.js).
 // Mirrors the client storage API exactly:
 //   GET    /api/storage?key=K            → { value }        (get)
 //   GET    /api/storage?prefix=P&list=1  → { keys: [...] }  (list)
 //   POST   /api/storage  { key, value }  → { ok:true }      (set)
 //   DELETE /api/storage?key=K            → { ok:true }      (delete)
-import { readBody, requireAuth, store, storageConfigured } from './_lib.js';
+import { readBody, requireAuth, store, storageCredentialsPresent } from './_lib.js';
 
 export default async function handler(req, res) {
   if (!requireAuth(req, res)) return;
 
-  if (!storageConfigured()) {
+  if (!storageCredentialsPresent()) {
     return res.status(503).json({ error: 'Storage not configured', code: 'no_storage' });
   }
 

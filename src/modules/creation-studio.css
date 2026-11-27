@@ -1,0 +1,51 @@
+/* Creation Studio (cs-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 is the default; desktop geometry from 721.
+ * Selected source / format = accent border + --accent-text on the surface (no
+ * tinted fill — --text-subtle on the old surface-muted fill read 4.47:1). */
+
+.cs { max-width: 780px; margin: 0 auto; padding: 20px 14px 60px; min-width: 0; }
+@media (min-width: 721px) { .cs { padding: 20px 24px 60px; } }
+
+.cs-eyebrow { font-size: 9px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 6px; }
+.cs-title { font-size: var(--fs-xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; margin-bottom: 4px; }
+@media (min-width: 721px) { .cs-title { font-size: var(--fs-2xl); } }
+.cs-lede { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 20px; }
+.cs-step { font-size: 9px; font-weight: 700; color: var(--text-subtle); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.cs-block { margin-bottom: 20px; }
+
+/* Source rows */
+.cs-src { display: block; width: 100%; min-width: 0; text-align: left; padding: 10px 12px; margin-bottom: 6px; border-radius: 9px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); font: inherit; color: inherit;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.cs-src:hover { background: var(--surface-muted); }
+.cs-src[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.cs-src-title { display: block; font-size: var(--fs-base); font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-src[aria-pressed="true"] .cs-src-title { color: var(--accent-text); }
+.cs-src-kind { display: block; font-size: 9px; color: var(--text-subtle); margin-top: 2px; text-transform: uppercase; letter-spacing: 1px; }
+.cs-src:hover .cs-src-kind { color: var(--text-muted); }
+
+/* Format cards */
+.cs-kinds { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-bottom: 20px; }
+@media (min-width: 721px) { .cs-kinds { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.cs-kind { display: block; width: 100%; min-width: 0; text-align: left; padding: 14px; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface); font: inherit; color: inherit;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.cs-kind:hover { background: var(--surface-muted); }
+.cs-kind[aria-pressed="true"] { border-color: var(--accent); background: var(--surface); }
+.cs-kind-ico { display: flex; margin-bottom: 6px; color: var(--text-muted); }
+.cs-kind[aria-pressed="true"] .cs-kind-ico { color: var(--accent-text); }
+.cs-kind-label { display: block; font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.cs-kind[aria-pressed="true"] .cs-kind-label { color: var(--accent-text); }
+.cs-kind-desc { display: block; font-size: var(--fs-sm); color: var(--text-muted); line-height: 1.4; }
+
+.cs-go { width: 100%; padding: 13px; font-size: var(--fs-base); font-weight: 800; border-radius: 10px; margin-bottom: 20px; }
+
+/* Result */
+.cs-result { background: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius-lg); padding: 18px 20px; min-width: 0; }
+.cs-result-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); flex-wrap: wrap; margin-bottom: 12px; }
+.cs-result-label { font-size: 9px; letter-spacing: 2px; color: var(--accent-text); text-transform: uppercase; min-width: 0; overflow-wrap: anywhere; }
+.cs-result-tools { display: flex; gap: 8px; }
+.cs-mini { padding: 3px 9px; border-radius: 6px; border: 1px solid var(--border); background: transparent; font: inherit; font-size: var(--fs-sm);
+  color: var(--text-subtle); cursor: pointer; transition: background-color var(--dur-color) ease; }
+.cs-mini:hover { background: var(--surface-muted); color: var(--text); }
+.cs-mini[data-tone="accent"] { border-color: var(--accent); color: var(--accent-text); font-weight: 700; }

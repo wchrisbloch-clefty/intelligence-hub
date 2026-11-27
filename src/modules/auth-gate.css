@@ -1,0 +1,21 @@
+/* AuthGate (ag-). Tokens only. Boot + lock screens. */
+.ag-screen { height: 100vh; width: 100vw; background: var(--background); display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 16px; padding: 24px; }
+.ag-dots { display: flex; gap: 5px; }
+.ag-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-text); animation: pulse 1.2s infinite ease-in-out; }
+.ag-dot:nth-child(2) { animation-delay: 0.2s; }
+.ag-dot:nth-child(3) { animation-delay: 0.4s; }
+.ag-form { width: 100%; max-width: 340px; text-align: center; }
+.ag-title { font-family: var(--font-display); font-size: var(--fs-2xl); font-weight: 600; color: var(--text); letter-spacing: -0.5px; margin-bottom: 6px; }
+.ag-sub { font-size: var(--fs-base); color: var(--text-muted); margin-bottom: 28px; }
+.ag-input { display: block; width: 100%; min-height: 44px; text-align: center; letter-spacing: 3px; background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 13px 16px; color: var(--text); font: inherit; font-size: var(--fs-lg); outline: none; margin-bottom: 14px;
+  transition: border-color var(--dur-color) ease; }
+.ag-input::placeholder { color: var(--text-subtle); }
+.ag-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.ag-input[aria-invalid="true"] { border-color: var(--negative); }
+.ag-error { font-size: var(--fs-base); color: var(--negative); margin-bottom: 14px; }
+.ag-submit { width: 100%; min-height: 44px; padding: 13px; border-radius: var(--radius); border: 1px solid var(--accent); background: var(--accent); color: var(--accent-foreground);
+  font: inherit; font-size: var(--fs-lg); font-weight: 700; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.ag-submit:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.ag-submit[disabled] { background: var(--surface-muted); border-color: var(--surface-muted); color: var(--text-muted); cursor: default; }

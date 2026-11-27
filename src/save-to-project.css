@@ -1,0 +1,30 @@
+/* SaveToProjectModal (stp-) — App.jsx's artifact → project picker. Tokens only.
+   Overlay: the one place --shadow-lg is allowed. Selected row = the project's
+   colour (or the accent) as a hairline, never a tinted fill. */
+.stp-overlay { position: fixed; inset: 0; background: var(--overlay); z-index: 400; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.stp { width: 100%; max-width: 420px; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-lg); }
+.stp-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+.stp-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); }
+.stp-close { background: none; border: none; font: inherit; font-size: var(--fs-lg); line-height: 1; color: var(--text-subtle); cursor: pointer; padding: 0 4px; }
+.stp-close:hover { color: var(--text); }
+.stp-body { padding: 18px; }
+.stp-saving { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 14px; overflow-wrap: anywhere; }
+.stp-saving b { color: var(--text); font-weight: 600; }
+.stp-list { max-height: 240px; overflow-y: auto; display: flex; flex-direction: column; gap: var(--s2); margin-bottom: 16px; }
+.stp-row { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 44px; padding: 10px 12px; background: var(--background); border: 1px solid var(--border);
+  border-radius: var(--radius); cursor: pointer; font: inherit; text-align: left; transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.stp-row:hover { background: var(--surface-muted); }
+.stp-row:focus-visible { outline-offset: -2px; }
+.stp-row[aria-pressed="true"] { border-color: var(--c, var(--accent)); }
+.stp-emoji { font-size: var(--fs-lg); flex-shrink: 0; }
+.stp-row-main { min-width: 0; }
+.stp-row-title { font-size: 11px; font-weight: 600; color: var(--text); }
+.stp-row-status { font-size: 9px; color: var(--text-subtle); text-transform: uppercase; letter-spacing: 1px; }
+.stp-actions { display: flex; gap: var(--s2); }
+.stp-cancel { flex: 1; padding: 10px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-subtle);
+  font: inherit; font-size: var(--fs-base); cursor: pointer; transition: background-color var(--dur-color) ease; }
+.stp-cancel:hover { background: var(--surface-muted); }
+.stp-save { flex: 2; padding: 10px; background: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius); color: var(--accent-foreground);
+  font: inherit; font-size: var(--fs-base); font-weight: 700; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.stp-save:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.stp-save[disabled] { background: var(--border); border-color: var(--border); color: var(--text-subtle); cursor: default; }

@@ -1,0 +1,91 @@
+/* Quiz Center (qc-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 default, capability added at 721 (iPad). Every control is a
+ * real <button> with .tap. The legacy gold wash/border (rgba 217,164,65) is gone:
+ * cards are hairline --border, hover is --surface-muted + an accent border. */
+
+.qc { max-width: 760px; margin: 0 auto; min-width: 0; --pad: 14px; }
+@media (min-width: 721px) { .qc { --pad: 24px; } }
+.qc[data-pad] { padding: 20px var(--pad) 60px; }
+.qc[data-w="quiz"] { max-width: 680px; }
+.qc[data-w="pick"] { padding-bottom: 60px; }
+
+.qc-head { padding: 20px var(--pad) 16px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; }
+.qc-head-main { min-width: 0; }
+.qc-eyebrow { font-size: 9px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; margin-bottom: 4px; }
+.qc-title { font-size: var(--fs-xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; }
+@media (min-width: 721px) { .qc-title { font-size: var(--fs-2xl); } }
+.qc-lede { font-size: var(--fs-base); color: var(--text-subtle); margin-top: 4px; }
+.qc-ghost { flex-shrink: 0; font: inherit; font-size: var(--fs-sm); padding: 5px 12px; border: 1px solid var(--border); border-radius: 7px;
+  background: transparent; color: var(--text-subtle); cursor: pointer; white-space: nowrap; transition: background-color var(--dur-color) ease; }
+.qc-ghost:hover { background: var(--surface-muted); color: var(--text); }
+
+.qc-body { padding: 16px var(--pad); }
+.qc-label { font-size: 9px; font-weight: 700; color: var(--text-subtle); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+.qc-section { margin-bottom: 20px; }
+.qc-chips { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.qc-chip { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  font: inherit; font-size: var(--fs-base); font-weight: 600; color: var(--accent-text); cursor: pointer; transition: background-color var(--dur-color) ease; }
+.qc-chip:hover { background: var(--surface-muted); }
+
+.qc-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-bottom: 20px; }
+@media (min-width: 721px) { .qc-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.qc-topic { display: block; min-width: 0; text-align: left; padding: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  font: inherit; color: inherit; cursor: pointer; transition: border-color var(--dur-color) ease, background-color var(--dur-color) ease; }
+.qc-topic:hover { border-color: var(--accent); background: var(--surface-muted); }
+.qc-topic-icon { display: inline-flex; color: var(--text-subtle); margin-bottom: var(--s2); }
+.qc-topic-label { font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.qc-topic-desc { font-size: var(--fs-sm); color: var(--text-subtle); line-height: 1.4; }
+
+.qc-card { padding: 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; min-width: 0; }
+.qc-card-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: var(--s2); }
+.qc-inline { display: flex; gap: var(--s2); }
+.qc-input { flex: 1; min-width: 0; min-height: 44px; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px 12px;
+  font: inherit; font-size: var(--fs-base); color: var(--text); outline: none; }
+.qc-input::placeholder { color: var(--text-subtle); }
+.qc-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (max-width: 720px) { .qc-input { font-size: var(--fs-lg); } }
+.qc-primary { flex-shrink: 0; padding: 8px 16px; background: var(--accent); border: 1px solid var(--accent); border-radius: var(--radius); color: var(--accent-foreground);
+  font: inherit; font-size: var(--fs-base); font-weight: 700; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.qc-primary:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.qc-primary[disabled] { background: var(--border); border-color: var(--border); color: var(--text-subtle); cursor: not-allowed; }
+
+/* Hover fill is --surface-muted; --text-subtle on it is 4.47:1 in light. */
+.qc-topic:hover .qc-topic-desc, .qc-topic:hover .qc-topic-icon, .qc-btn[data-block]:hover { color: var(--text-muted); }
+
+/* Quiz / waiting */
+.qc-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.qc-back { display: inline-flex; align-items: center; min-height: 24px; padding: 0; background: none; border: 0; font: inherit; font-size: var(--fs-base);
+  color: var(--text-subtle); cursor: pointer; }
+.qc-back:hover { color: var(--text); }
+.qc-back[data-accent] { color: var(--accent-text); font-weight: 700; }
+.qc-bar-topic { font-size: var(--fs-base); color: var(--accent-text); font-weight: 700; min-width: 0; text-align: right; }
+.qc-wait { text-align: center; padding: 60px 20px; }
+.qc-wait-text { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 16px; }
+
+/* Results */
+.qc-score { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px 24px 20px; margin-bottom: 16px; text-align: center; }
+.qc-score-pct { font-size: var(--fs-3xl); font-weight: 800; color: var(--accent-text); margin-bottom: 4px; }
+.qc-score-pct[data-low] { color: var(--negative); }
+.qc-score-line { font-size: var(--fs-lg); font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.qc-score-note { font-size: var(--fs-base); color: var(--text-subtle); }
+.qc-gap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; min-width: 0; }
+.qc-gap-label { font-size: 10px; font-weight: 700; color: var(--accent-text); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; }
+.qc-pending { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: var(--s2); }
+.qc-btns { display: flex; gap: 10px; }
+.qc-btn { flex: 1; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; font: inherit; font-size: var(--fs-base);
+  font-weight: 700; color: var(--text); text-align: center; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.qc-btn:hover { background: var(--surface-muted); }
+.qc-btn[data-accent] { border-color: var(--accent); color: var(--accent-text); }
+.qc-btn[data-block] { display: block; width: 100%; margin-top: 10px; font-weight: 600; color: var(--text-subtle); }
+
+/* History */
+.qc-hhead { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+.qc-htitle { font-size: var(--fs-lg); font-weight: 800; color: var(--text); font-family: var(--font-display); }
+.qc-empty { text-align: center; padding: 40px; color: var(--text-subtle); font-size: var(--fs-base); }
+.qc-hrow { padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.qc-hrow-main { min-width: 0; }
+.qc-hrow-topic { font-size: var(--fs-base); font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.qc-hrow-date { font-size: var(--fs-sm); color: var(--text-subtle); }
+.qc-hrow-score { flex-shrink: 0; font-size: var(--fs-xl); font-weight: 800; color: var(--accent-text); }
+.qc-hrow-score[data-low] { color: var(--negative); }

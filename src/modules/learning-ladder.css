@@ -1,0 +1,128 @@
+/* Learning Ladder (ll-). Tokens only — scripts/check-tokens.mjs enforces it.
+ * Mobile-first: 390 default, iPad/desktop gutter from 721. Every control is a
+ * real <button> with .tap (≥44px hit area, visual size unchanged).
+ * Selected = accent border + --accent-text; accent fills only for primary actions,
+ * completed rungs and progress bars. */
+
+.ll-page { max-width: 760px; margin: 0 auto; padding: 20px 14px 60px; min-width: 0; }
+.ll-page[data-w="quiz"] { max-width: 680px; padding-left: 24px; padding-right: 24px; }
+@media (min-width: 721px) { .ll-page { padding-left: 24px; padding-right: 24px; } }
+
+.ll-eyebrow { margin-bottom: 6px; font-size: 9px; letter-spacing: 4px; color: var(--accent-text); text-transform: uppercase; }
+.ll-title { font-size: var(--fs-xl); font-weight: 800; color: var(--text); font-family: var(--font-display); letter-spacing: -0.5px; margin-bottom: 4px; min-width: 0; overflow-wrap: anywhere; }
+.ll-title[data-flush] { margin-bottom: 0; }
+.ll-lede { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 20px; }
+.ll-label { font-size: 9px; font-weight: 700; color: var(--text-subtle); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
+
+.ll-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s4); margin-bottom: 24px; min-width: 0; }
+.ll-input { display: block; width: 100%; min-height: 44px; background: var(--background); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 12px; font: inherit; font-size: var(--fs-base); color: var(--text); outline: none; margin-bottom: 12px; }
+.ll-input::placeholder { color: var(--text-subtle); }
+.ll-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+@media (max-width: 720px) { .ll-input, .ll-composer-input { font-size: var(--fs-lg); } }
+
+.ll-goals { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.ll-goal { padding: 5px 12px; border-radius: 16px; font: inherit; font-size: var(--fs-base); font-weight: 600; cursor: pointer;
+  border: 1px solid var(--border); color: var(--text-muted); background: transparent;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease, color var(--dur-color) ease; }
+.ll-goal:hover { background: var(--surface-muted); }
+.ll-goal[aria-pressed="true"] { border-color: var(--accent); color: var(--accent-text); }
+
+.ll-primary { display: inline-flex; align-items: center; justify-content: center; padding: 12px; border-radius: 9px; border: 1px solid var(--accent);
+  background: var(--accent); color: var(--accent-foreground); font: inherit; font-size: var(--fs-base); font-weight: 800; cursor: pointer;
+  transition: background-color var(--dur-color) ease; }
+.ll-primary:hover:not([disabled]) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.ll-primary[disabled] { background: var(--border); border-color: var(--border); color: var(--text-subtle); cursor: not-allowed; }
+.ll-primary[data-block] { width: 100%; }
+.ll-primary[data-wide] { padding: 11px 24px; }
+.ll-center { margin-top: 12px; display: flex; justify-content: center; }
+.ll-err { margin-top: 10px; font-size: var(--fs-base); color: var(--negative); text-align: center; }
+
+/* Ladder list */
+.ll-item { position: relative; margin-bottom: 10px; }
+.ll-open { display: block; width: 100%; text-align: left; padding: 14px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  font: inherit; color: inherit; cursor: pointer; transition: background-color var(--dur-color) ease; }
+.ll-open:hover { background: var(--surface-muted); }
+.ll-item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; padding-right: 36px; }
+.ll-item-main { min-width: 0; }
+.ll-item-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ll-item-sub { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 2px; }
+.ll-open:hover .ll-item-sub { color: var(--text-muted); } /* subtle on surface-muted is 4.47:1 */
+.ll-item-pct { flex-shrink: 0; font-size: var(--fs-lg); font-weight: 800; color: var(--accent-text); }
+.ll-del { position: absolute; top: 14px; right: 12px; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px;
+  background: none; border: 0; border-radius: var(--radius); color: var(--negative); cursor: pointer; }
+.ll-del:hover { background: var(--surface-muted); }
+.ll-bar { height: 4px; border-radius: 2px; background: var(--border); overflow: hidden; }
+.ll-bar > span { display: block; height: 100%; width: var(--pct, 0%); background: var(--accent); transition: width 0.3s; }
+
+/* Yard-line progress motif */
+.ll-yard { display: flex; gap: 3px; margin-bottom: 22px; }
+.ll-yard > span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+.ll-yard > span[data-s="done"] { background: var(--accent); }
+.ll-yard > span[data-s="active"] { background: var(--surface-muted); }
+
+/* Ladder view */
+.ll-back { display: inline-flex; align-items: center; min-height: 24px; margin-bottom: 14px; padding: 0; background: none; border: 0;
+  font: inherit; font-size: var(--fs-base); font-weight: 700; color: var(--accent-text); cursor: pointer; }
+.ll-back:hover { text-decoration: underline; }
+.ll-back[data-quiet] { color: var(--text-subtle); font-weight: 400; margin-bottom: 0; }
+.ll-meta { font-size: var(--fs-base); color: var(--text-subtle); margin: 4px 0 14px; display: flex; gap: var(--s2); flex-wrap: wrap; align-items: center; }
+.ll-stale { font-size: 9px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; color: var(--tier-inferred); border: 1px solid var(--tier-inferred); border-radius: 5px; padding: 1px 6px; }
+
+.ll-rung { display: flex; gap: 12px; margin-bottom: 12px; }
+.ll-node { flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: var(--fs-base); font-weight: 800; border: 1.5px solid var(--accent); background: transparent; color: var(--accent-text); }
+.ll-node[data-s="done"] { background: var(--accent); color: var(--accent-foreground); }
+.ll-node[data-s="locked"] { border-color: var(--border); color: var(--text-subtle); }
+.ll-mod { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--accent); border-radius: 10px; padding: 12px 14px; }
+.ll-mod[data-s="done"] { border-color: var(--border); }
+.ll-mod[data-s="locked"] { border-color: var(--border); opacity: 0.6; }
+.ll-mod-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+.ll-mod-title { font-size: var(--fs-sm); font-weight: 700; color: var(--text); min-width: 0; }
+.ll-mod-status { flex-shrink: 0; font-size: 8px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--accent-text); font-weight: 700; }
+.ll-mod[data-s="locked"] .ll-mod-status { color: var(--text-subtle); }
+.ll-objs { margin: 8px 0 0; padding-left: 16px; }
+.ll-objs li { font-size: var(--fs-base); color: var(--text-muted); line-height: 1.6; }
+.ll-mod-actions { display: flex; gap: var(--s2); margin-top: 12px; flex-wrap: wrap; }
+.ll-btn { padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; color: var(--text);
+  font: inherit; font-size: var(--fs-base); font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-color) ease; }
+.ll-btn:hover { background: var(--surface-muted); }
+.ll-btn[data-accent] { border-color: var(--accent); color: var(--accent-text); }
+.ll-locked-note { font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 8px; }
+
+/* Scoped study session */
+.ll-session { display: flex; flex-direction: column; height: 100%; }
+.ll-shead { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px var(--gutter); flex-shrink: 0;
+  display: flex; justify-content: space-between; align-items: center; gap: var(--s2); }
+@media (min-width: 721px) { .ll-shead { padding-left: 20px; padding-right: 20px; } }
+.ll-shead-main { min-width: 0; }
+.ll-shead .ll-back { margin-bottom: 2px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block; text-align: left; }
+.ll-shead-title { font-size: var(--fs-base); font-weight: 700; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ll-thread { flex: 1; overflow-y: auto; padding: 16px var(--gutter) 0; }
+@media (min-width: 721px) { .ll-thread { padding-left: 20px; padding-right: 20px; } }
+.ll-msg { display: flex; justify-content: flex-start; max-width: 760px; margin: 0 auto 14px; min-width: 0; }
+.ll-msg[data-role="user"] { justify-content: flex-end; }
+.ll-ubub { background: var(--u-bubble); border: 1px solid var(--u-bubble-b); border-radius: 14px 14px 3px 14px; padding: 10px 14px; max-width: 85%;
+  min-width: 0; font-size: var(--fs-base); line-height: 1.65; color: var(--u-bubble-text); overflow-wrap: anywhere; }
+.ll-abub { background: var(--surface); border: 1px solid var(--border); border-radius: 3px 14px 14px 14px; padding: 13px 16px; max-width: 94%; width: 100%; min-width: 0; }
+.ll-abub[data-pending] { width: auto; padding: 12px 16px; }
+.ll-composer { padding: 10px 16px 16px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.ll-compose-row { display: flex; gap: var(--s2); align-items: flex-end; max-width: 760px; margin: 0 auto; }
+.ll-composer-input { flex: 1; min-width: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px;
+  color: var(--text); font: inherit; font-size: var(--fs-base); outline: none; resize: none; max-height: 100px; }
+.ll-composer-input::placeholder { color: var(--text-subtle); }
+.ll-composer-input:focus-visible { border-color: var(--ring); outline: 2px solid var(--ring); outline-offset: 2px; }
+.ll-send { flex-shrink: 0; min-height: 42px; padding: 10px 16px; border-radius: 10px; }
+
+/* Quiz */
+.ll-quiz-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); margin-bottom: 16px; }
+.ll-quiz-mod { font-size: var(--fs-base); color: var(--accent-text); font-weight: 700; min-width: 0; text-align: right; }
+.ll-wait { text-align: center; padding: 60px 20px; }
+.ll-wait-text { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 16px; }
+.ll-wait .cm-dots { justify-content: center; }
+.ll-outcome { max-width: 620px; margin: 0 auto; padding: 40px 24px; text-align: center; }
+.ll-outcome-pct { font-size: var(--fs-3xl); font-weight: 800; color: var(--accent-text); margin-bottom: 6px; }
+.ll-outcome-pct[data-fail] { color: var(--negative); }
+.ll-outcome-head { font-size: var(--fs-lg); font-weight: 700; color: var(--text); margin-bottom: 8px; }
+.ll-outcome-sub { font-size: var(--fs-base); color: var(--text-subtle); margin-bottom: 24px; }

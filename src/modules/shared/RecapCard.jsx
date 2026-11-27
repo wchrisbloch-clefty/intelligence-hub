@@ -1,16 +1,18 @@
-// src/modules/shared/RecapCard.jsx
+// src/modules/shared/RecapCard.jsx — the reader for the scheduled recaps.
 //
-// The recap functions write `weekly_recap_latest` and `monthly_review_latest`
-// and nothing reads them. This is the reader. Without it the agent runs every
-// Friday into a void.
+// The Supabase Edge Functions (supabase/functions/{weekly-recap,monthly-review},
+// pg_cron Fri 13:00 UTC / 1st 14:00 UTC) write `weekly_recap_latest` and
+// `monthly_review_latest` into the SAME kv table the app reads through
+// /api/storage. This mounts on Home (section 'recap') and in Skills → Recaps, so
+// the agent never runs into a void.
 //
-// Mount on Home:
-//   import RecapCard from './shared/RecapCard';
-//   <RecapCard />
-
-import { useState, useEffect } from 'react';
+// status: loading | error | empty | ready — rendered via the shared SectionState
+// contract. Retry re-fetches ONLY the recaps. Styles: recap-card.css (rc-).
+import { useState, useEffect, useCallback } from 'react';
 import { storage } from '../../lib/storage';
 import MD from './MD';
+import { SectionSkeleton, SectionError, SectionEmpty } from './SectionState.jsx';
+import './recap-card.css';
 
 const FEEDS = [
   { key: 'weekly_recap_latest',   label: 'Friday recap',   cadence: 'Weekly · Fridays' },
@@ -29,58 +31,44 @@ function relTime(ts) {
 
 export default function RecapCard() {
   const [recaps, setRecaps] = useState(null);
+  const [failed, setFailed] = useState(false);
   const [active, setActive] = useState(0);
   const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const out = await Promise.all(
-        FEEDS.map(async (f) => {
-          try {
-            const r = await storage.get(f.key);
-            if (!r?.value) return { ...f, data: null };
-            const parsed = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
-            return { ...f, data: parsed };
-          } catch {
-            return { ...f, data: null };
-          }
-        })
-      );
-      if (!cancelled) setRecaps(out);
-    })();
-    return () => { cancelled = true; };
+  const load = useCallback(async () => {
+    setRecaps(null); setFailed(false);
+    try {
+      const out = await Promise.all(FEEDS.map(async (f) => {
+        const r = await storage.get(f.key);
+        if (!r?.value) return { ...f, data: null };
+        return { ...f, data: typeof r.value === 'string' ? JSON.parse(r.value) : r.value };
+      }));
+      setRecaps(out);
+      // Open on whichever recap actually has content.
+      const firstWithBody = out.findIndex((x) => x.data?.content);
+      if (firstWithBody > 0) setActive(firstWithBody);
+    } catch {
+      setFailed(true);
+    }
   }, []);
+  useEffect(() => { load(); }, [load]);
 
-  if (!recaps) {
-    return (
-      <div style={S.card}>
-        <div style={S.eyebrow}>Recaps</div>
-        <div style={{ ...S.empty, color: 'var(--dim)' }}>Loading…</div>
-      </div>
-    );
-  }
+  if (failed) return <SectionError label="recaps" onRetry={load} />;
+  if (!recaps) return <div className="rc" data-status="loading"><SectionSkeleton rows={3} label="recaps" /></div>;
 
   const current = recaps[active];
   const body = current.data?.content || current.data?.text || current.data?.markdown || '';
   const generated = current.data?.generatedAt || current.data?.createdAt;
   const provider = current.data?.provider;
+  const status = body ? 'ready' : 'empty';
 
   return (
-    <div style={S.card}>
-      <div style={S.head}>
-        <div style={S.eyebrow}>Recaps</div>
-        <div style={S.tabs}>
+    <div className="rc" data-status={status}>
+      <div className="rc-head">
+        <div className="rc-tabs" role="tablist">
           {recaps.map((r, i) => (
-            <button
-              key={r.key}
-              onClick={() => { setActive(i); setExpanded(false); }}
-              style={{
-                ...S.tab,
-                color: i === active ? 'var(--accent)' : 'var(--dim)',
-                borderColor: i === active ? 'var(--accent)' : 'transparent',
-              }}
-            >
+            <button type="button" key={r.key} role="tab" aria-selected={i === active} className="rc-tab tap"
+              onClick={() => { setActive(i); setExpanded(false); }}>
               {r.label}
             </button>
           ))}
@@ -88,49 +76,21 @@ export default function RecapCard() {
       </div>
 
       {!body ? (
-        // An empty state is direction, not an apology. Say what's missing and
-        // what produces it.
-        <div style={S.empty}>
-          <div style={{ color: 'var(--text-b)', marginBottom: 6 }}>
-            No {current.label.toLowerCase()} yet.
-          </div>
-          <div style={{ color: 'var(--dim)', fontSize: 'var(--fs-base)', lineHeight: 1.6 }}>
-            {current.cadence}. The first one generates on the next scheduled run,
-            then lands here automatically.
-          </div>
-        </div>
+        <SectionEmpty what={`No ${current.label.toLowerCase()} yet`}
+          how={`${current.cadence}. The scheduled agent writes it, then it lands here automatically.`} />
       ) : (
         <>
-          <div style={S.meta}>
+          <div className="rc-meta">
             <span>{current.cadence}</span>
-            {generated && (
-              <>
-                <span style={{ color: 'var(--border)' }}>·</span>
-                <span>{relTime(generated)}</span>
-              </>
-            )}
-            {provider && (
-              <>
-                <span style={{ color: 'var(--border)' }}>·</span>
-                <span style={{ color: 'var(--text-tertiary)' }}>via {provider}</span>
-              </>
-            )}
+            {generated && <><span aria-hidden="true">·</span><span>{relTime(generated)}</span></>}
+            {provider && <><span aria-hidden="true">·</span><span>via {provider}</span></>}
           </div>
-
-          <div style={{ ...S.body, maxHeight: expanded ? 'none' : 220, overflow: 'hidden' }}>
-            <MD text={body} color="var(--accent)" />
+          <div className="rc-body" data-expanded={expanded ? '1' : '0'}>
+            <MD text={body} color="var(--accent-text)" />
           </div>
-
-          {!expanded && body.length > 400 && (
-            <div style={S.fade}>
-              <button onClick={() => setExpanded(true)} style={S.more}>
-                Read the full recap
-              </button>
-            </div>
-          )}
-          {expanded && (
-            <button onClick={() => setExpanded(false)} style={{ ...S.more, marginTop: 12 }}>
-              Collapse
+          {body.length > 400 && (
+            <button type="button" className="btn rc-more tap" onClick={() => setExpanded((e) => !e)}>
+              {expanded ? 'Collapse' : 'Read the full recap'}
             </button>
           )}
         </>
@@ -138,46 +98,3 @@ export default function RecapCard() {
     </div>
   );
 }
-
-const S = {
-  card: {
-    background: 'var(--surface)',
-    border: '1px solid var(--border)',
-    borderRadius: 'var(--radius-lg)',
-    padding: 20,
-    boxShadow: 'var(--shadow-sm)',
-    position: 'relative',
-  },
-  head: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    gap: 12, flexWrap: 'wrap', marginBottom: 12,
-  },
-  eyebrow: {
-    fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-    textTransform: 'uppercase', color: 'var(--dim)',
-  },
-  tabs: { display: 'flex', gap: 4 },
-  tab: {
-    background: 'transparent', border: 'none', borderBottom: '2px solid transparent',
-    padding: '4px 8px', fontSize: 'var(--fs-base)', fontWeight: 600, cursor: 'pointer',
-    fontFamily: 'inherit', transition: 'color 120ms ease',
-  },
-  meta: {
-    display: 'flex', gap: 6, alignItems: 'center',
-    fontSize: 'var(--fs-base)', color: 'var(--dim)', marginBottom: 12,
-  },
-  body: { position: 'relative', fontSize: 'var(--fs-lg)', lineHeight: 1.65 },
-  empty: { padding: '20px 0 4px', fontSize: 'var(--fs-base)'},
-  fade: {
-    position: 'absolute', left: 20, right: 20, bottom: 16,
-    paddingTop: 40,
-    background: 'linear-gradient(transparent, var(--surface) 55%)',
-    display: 'flex', justifyContent: 'center',
-  },
-  more: {
-    background: 'transparent', border: '1px solid var(--border)',
-    borderRadius: 'var(--radius)', padding: '6px 14px',
-    color: 'var(--accent)', fontSize: 'var(--fs-base)', fontWeight: 600,
-    cursor: 'pointer', fontFamily: 'inherit',
-  },
-};

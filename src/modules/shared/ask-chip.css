@@ -1,0 +1,7 @@
+/* AskChip (ak-). An action, so it reads in accent text on a hairline — no tinted fill. */
+.ak { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); background: transparent; color: var(--accent-text);
+  font: inherit; font-size: var(--fs-sm); font-weight: 700; cursor: pointer; white-space: nowrap;
+  transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.ak[data-size="md"] { padding: 7px 13px; }
+.ak:hover { background: var(--surface-muted); border-color: var(--accent); }

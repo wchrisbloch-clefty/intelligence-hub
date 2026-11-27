@@ -1,19 +1,17 @@
-import { T, withAlpha } from '../theme';
 import { useState, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { callClaude, fetchPodcastRSS, fmtDuration, fmtPodDate, saveNotes, uid } from '../utils.js';
-import { CB_IDENTITY } from '../constants.js';
+import { SYSTEM_BASE } from '../constants.js';
 import { TIER_INSTRUCTION } from '../lib/rigor.js';
 import { USER_GROUNDING_TYPES, groundingTypeMeta } from '../lib/sourceGrounding.js';
 import SourceGrounding from './shared/SourceGrounding.jsx';
 import MD from './shared/MD.jsx';
 import { ThinkingDots } from './shared/Common.jsx';
+import { SectionSkeleton, SectionError } from './shared/SectionState.jsx';
+import Icon from './shared/Icon.jsx';
+import './podcast-hub.css';
 
 const SRC_TYPES = USER_GROUNDING_TYPES.filter((t) => ['excerpt', 'notes'].includes(t.id));
-
-const ACCENT       = T.accent;
-const ACCENT_BG    = 'rgba(217,164,65,0.07)';
-const ACCENT_BORDER= 'rgba(217,164,65,0.18)';
 
 const PODCAST_FEEDS = [
   { name: 'Joe Rogan Experience', host: 'Joe Rogan',         url: 'https://feeds.megaphone.fm/GLT1412515089',   emoji: '🟢' },
@@ -35,6 +33,9 @@ function PodCard({ ep, idx, onSaveToVault }) {
   const [aiPanel, setAiPanel] = useState(''); // '' | 'summary' | 'takeaways' | 'transcript'
   const [aiLoading, setAiLoading] = useState(false);
   const [aiCache, setAiCache] = useState({});
+  // Failure as STATE, not content: 'Network error — try again.' used to be
+  // cached as the mode's result (and so could be saved to the Vault).
+  const [aiErr, setAiErr] = useState({}); // mode -> error message
   const [reading, setReading] = useState(false);
   const [vaulted, setVaulted] = useState(false);
   const [userSrc, setUserSrc] = useState(null); // real transcript / notes the user pasted
@@ -74,9 +75,10 @@ function PodCard({ ep, idx, onSaveToVault }) {
   };
   const genMode = async (mode) => {
     setAiLoading(true);
+    setAiErr(m => { const n = { ...m }; delete n[mode]; return n; });
     const prompts = {
       summary: `Summarize this podcast episode in 3-4 tight sentences for CB. Episode: "${ep.title}" from ${ep.show} (hosted by ${ep.host}). Description: ${ep.desc || 'Not available'}. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).`,
-      takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation with CB application\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
+      takeaways: `Extract 5 key takeaways from this podcast episode for CB. Format exactly as:\n1. **Point title** — one-sentence explanation with an example from the episode's own world\n2. **Point title** — one-sentence explanation with an example from the episode's own world\n(continue for all 5)\n\nEpisode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}`,
       transcript: `Based ONLY on the episode title and description, reconstruct what was LIKELY discussed. This is a reconstruction, not the transcript — say so, and tier the whole section [inferred]. Cover: main thesis, key arguments, notable frameworks, actionable insights for CB (BD professional, investor, Houston TX). Episode: "${ep.title}" from ${ep.show}. Description: ${ep.desc || 'Not available'}. 4-6 paragraphs; do not fabricate quotes.`,
     };
     try {
@@ -86,46 +88,45 @@ function PodCard({ ep, idx, onSaveToVault }) {
       const gm = userSrc?.text ? groundingTypeMeta(userSrc.type) : null;
       const userBlock = gm ? `\n\nACTUAL EPISODE MATERIAL THE USER SUPPLIED (${gm.label} — first-hand, tier ${gm.tier}; base your answer on THIS, not a reconstruction, and cite it):\n${userSrc.text}` : '';
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `${prompts[mode]}${userBlock}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'transcript' ? 1200 : 700,
       });
       setAiCache(c => ({ ...c, [mode]: result }));
-    } catch {
-      setAiCache(c => ({ ...c, [mode]: 'Network error — try again.' }));
+    } catch (e) {
+      setAiErr(m => ({ ...m, [mode]: e?.message || 'The AI providers were unavailable.' }));
     }
     setAiLoading(false);
   };
 
+  // Explicit status of the open AI panel's generated brief. 'empty' has no
+  // placeholder — opening a panel always starts its generation.
+  const aiStatus = aiLoading && !aiCache[aiPanel] ? 'loading' : aiErr[aiPanel] ? 'error' : aiCache[aiPanel] ? 'ready' : 'empty';
+
   const aiTabs = [
-    { id: 'summary',    label: '✦ Summary',    shortLabel: '✦' },
-    { id: 'takeaways',  label: '📋 Takeaways', shortLabel: '📋' },
-    { id: 'transcript', label: '📄 Deep Dive', shortLabel: '📄' },
+    { id: 'summary',    label: 'Summary',    icon: 'Sparkles' },
+    { id: 'takeaways',  label: 'Takeaways',  icon: 'ClipboardList' },
+    { id: 'transcript', label: 'Deep Dive',  icon: 'FileText' },
   ];
 
   return (
-    <div style={{ background: 'var(--surface)', border: `1px solid ${aiPanel ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 12, padding: '14px 16px', transition: 'border-color 0.15s' }}>
+    <div className="pod-card" data-open={aiPanel ? true : undefined}>
       {/* Header row */}
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 10 }}>
-        <div style={{ fontSize: 'var(--fs-xl)', fontWeight: 800, color: 'var(--border)', minWidth: 28, lineHeight: 1, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{idx + 1}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: ACCENT, marginBottom: 3, letterSpacing: 0.3 }}>
+      <div className="pod-card-head">
+        <div className="pod-card-n" aria-hidden="true">{idx + 1}</div>
+        <div className="pod-card-main">
+          <div className="pod-card-show">
             {ep.emoji} {ep.show}
           </div>
-          <div
-            onClick={() => ep.link && window.open(ep.link, '_blank')}
-            style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 1.35, marginBottom: 5, cursor: ep.link ? 'pointer' : 'default', transition: 'color 0.1s' }}
-            onMouseEnter={e => { if (ep.link) e.target.style.color = ACCENT; }}
-            onMouseLeave={e => e.target.style.color = 'var(--text)'}
-          >
-            {ep.title}
-          </div>
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            {ep.pubDate && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>{fmtPodDate(ep.pubDate)}</span>}
-            {ep.duration && <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>⏱ {fmtDuration(ep.duration)}</span>}
+          {ep.link
+            ? <a href={ep.link} target="_blank" rel="noopener noreferrer" className="pod-ep-title">{ep.title}</a>
+            : <div className="pod-ep-title">{ep.title}</div>}
+          <div className="pod-card-meta">
+            {ep.pubDate && <span>{fmtPodDate(ep.pubDate)}</span>}
+            {ep.duration && <span><Icon name="Clock" aria-hidden="true" /> {fmtDuration(ep.duration)}</span>}
           </div>
           {ep.desc && (
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--muted)', lineHeight: 1.55, marginTop: 7, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' }}>
+            <div className="pod-card-desc">
               {ep.desc}
             </div>
           )}
@@ -134,40 +135,40 @@ function PodCard({ ep, idx, onSaveToVault }) {
 
       {/* AI panel */}
       {aiPanel && (
-        <div style={{ borderTop: `1px solid ${ACCENT_BORDER}`, paddingTop: 12, marginTop: 2, marginBottom: 10 }}>
+        <div className="pod-panel">
           {/* AI tab selector */}
-          <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          <div className="pod-panel-tabs">
             {aiTabs.map(t => (
-              <div key={t.id} onClick={() => handleAI(t.id)}
-                style={{ padding: '4px 10px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 6, cursor: 'pointer', border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, color: aiPanel === t.id ? ACCENT : 'var(--subtle)', background: aiPanel === t.id ? ACCENT_BG : 'transparent', transition: 'all 0.12s' }}>
-                {t.label}
-              </div>
+              <button type="button" key={t.id} onClick={() => handleAI(t.id)} className="pod-tog tap" data-size="xs" aria-pressed={aiPanel === t.id}>
+                <Icon name={t.icon} aria-hidden="true" /> {t.label}
+              </button>
             ))}
           </div>
           {/* Real source material the model can't reach — makes the "Deep Dive"
               a grounded read instead of a reconstruction. */}
-          <div style={{ marginBottom: 12 }}>
+          <div className="pod-panel-ground">
             <SourceGrounding value={userSrc} types={SRC_TYPES} label="I have the transcript / notes — paste to ground this"
               onSave={(v) => { setUserSrc(v); setAiCache({}); if (aiPanel) genMode(aiPanel); }}
               onClear={() => { setUserSrc(null); setAiCache({}); if (aiPanel) genMode(aiPanel); }} />
           </div>
           {/* AI content */}
-          <div style={{ background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
-            <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
+          <div data-status={aiStatus} className="pod-out">
+            <div className="pod-out-kicker">
               {aiPanel === 'summary' ? 'AI Summary' : aiPanel === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
             </div>
-            {aiLoading && !aiCache[aiPanel]
-              ? <ThinkingDots color={ACCENT} />
+            {aiStatus === 'loading'
+              ? <SectionSkeleton rows={aiPanel === 'transcript' ? 6 : 3} label={aiPanel === 'summary' ? 'summary' : aiPanel === 'takeaways' ? 'takeaways' : 'deep dive'} />
+              : aiStatus === 'error'
+              ? <SectionError label={aiPanel === 'summary' ? 'the summary' : aiPanel === 'takeaways' ? 'the takeaways' : 'the deep dive'} onRetry={() => genMode(aiPanel)} detail={aiErr[aiPanel]} />
               : aiCache[aiPanel]
                 ? <>
-                    <MD text={aiCache[aiPanel]} color={ACCENT} />
+                    <MD text={aiCache[aiPanel]} color="var(--accent-text)" />
                     {!vaulted && (
-                      <div onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }}
-                        style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
-                        🏛 Save to Vault
-                      </div>
+                      <button type="button" onClick={() => { onSaveToVault(`[Podcast] ${ep.title}`, aiCache[aiPanel]); setVaulted(true); }} className="pod-vault tap">
+                        <Icon name="Landmark" aria-hidden="true" /> Save to Vault
+                      </button>
                     )}
-                    {vaulted && <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>}
+                    {vaulted && <div className="pod-vaulted"><Icon name="Check" aria-hidden="true" /> Saved to Vault</div>}
                   </>
                 : null
             }
@@ -176,27 +177,23 @@ function PodCard({ ep, idx, onSaveToVault }) {
       )}
 
       {/* Action row */}
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginTop: aiPanel ? 0 : 2 }}>
+      <div className="pod-actions">
         {ep.link && (
-          <button onClick={() => window.open(ep.link, '_blank')}
-            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${ACCENT}`, borderRadius: 6, background: ACCENT, color: '#fff', cursor: 'pointer', fontFamily: 'inherit', transition: 'opacity 0.1s' }}
-            onMouseEnter={e => e.target.style.opacity = '0.85'}
-            onMouseLeave={e => e.target.style.opacity = '1'}>
-            ▶ Listen
+          <button type="button" onClick={() => window.open(ep.link, '_blank')} className="btn btn-primary pod-listen tap">
+            <Icon name="Play" aria-hidden="true" /> Listen
           </button>
         )}
         {aiTabs.map(t => (
-          <button key={t.id} onClick={() => handleAI(t.id)} disabled={aiLoading && aiPanel === t.id && !aiCache[t.id]}
-            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${aiPanel === t.id ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: aiPanel === t.id ? ACCENT_BG : 'transparent', color: aiPanel === t.id ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
-            {t.shortLabel} {aiLoading && aiPanel === t.id && !aiCache[t.id] ? '…' : aiPanel === t.id ? 'Hide' : t.id === 'summary' ? 'Summary' : t.id === 'takeaways' ? 'Takeaways' : 'Deep Dive'}
+          <button type="button" key={t.id} onClick={() => handleAI(t.id)} disabled={aiLoading && aiPanel === t.id && !aiCache[t.id]}
+            className="pod-tog tap" aria-pressed={aiPanel === t.id}>
+            <Icon name={t.icon} aria-hidden="true" /> {aiLoading && aiPanel === t.id && !aiCache[t.id] ? '…' : aiPanel === t.id ? 'Hide' : t.id === 'summary' ? 'Summary' : t.id === 'takeaways' ? 'Takeaways' : 'Deep Dive'}
           </button>
         ))}
         {ttsSupported && (
-          <button onClick={handleReadAloud}
-            style={{ padding: '5px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, border: `1px solid ${reading ? ACCENT : 'var(--border)'}`, borderRadius: 6, background: reading ? ACCENT_BG : 'transparent', color: reading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.12s' }}>
+          <button type="button" onClick={handleReadAloud} className="pod-tog tap" aria-pressed={reading}>
             {reading
-              ? <><span style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 10 }}>
-                  {[0,1,2,3,4].map(i => <span key={i} style={{ width: 2, background: ACCENT, borderRadius: 1, animation: `bar${i % 3} 0.8s ${i * 0.12}s ease-in-out infinite`, height: [6,10,8,12,7][i] }} />)}
+              ? <><span className="pod-wave" aria-hidden="true">
+                  {[0,1,2,3,4].map(i => <span key={i} />)}
                 </span> Stop</>
               : '🔊 Read Aloud'}
           </button>
@@ -208,10 +205,10 @@ function PodCard({ ep, idx, onSaveToVault }) {
 
 // ─── MAIN MODULE ─────────────────────────────────────────────────────────────
 export default function PodcastHub() {
-  const { isMobile, isTablet, notes, setNotes } = useApp();
+  const { notes, setNotes } = useApp();
 
   const saveToVault = async (title, content) => {
-    const note = { id: uid(), title, content, tags: ['podcast'], connections: [], color: ACCENT, createdAt: Date.now() };
+    const note = { id: uid(), title, content, tags: ['podcast'], connections: [], color: 'var(--accent-text)', createdAt: Date.now() };
     const updated = [note, ...notes];
     setNotes(updated);
     await saveNotes(updated);
@@ -228,34 +225,45 @@ export default function PodcastHub() {
   const [pasteMode, setPasteMode]   = useState('');
   const [pasteResult, setPasteResult] = useState('');
   const [pasteLoading, setPasteLoading] = useState(false);
+  const [pasteErr, setPasteErr] = useState(''); // was written into pasteResult as content
   const [pasteReading, setPasteReading] = useState(false);
   const [pasteVaulted, setPasteVaulted] = useState(false);
   const [ttsGlobal] = useState(() => typeof window !== 'undefined' && 'speechSynthesis' in window);
 
   const pasteHasContent = pasteUrl.trim() || pasteText.trim();
+  // Explicit status of the paste-analysis artifact. 'empty' has no placeholder —
+  // the Summary / Takeaways / Deep Dive buttons are the CTA.
+  const pasteStatus = pasteLoading ? 'loading' : pasteErr ? 'error' : pasteResult ? 'ready' : 'empty';
 
   const handlePasteAI = async (mode) => {
     if (!pasteHasContent) return;
-    if (pasteMode === mode) { setPasteMode(''); return; }
+    if (pasteMode === mode) { setPasteMode(''); setPasteErr(''); return; }
+    await runPaste(mode);
+  };
+
+  // The generation half of handlePasteAI (no toggle), so Retry re-runs ONLY it.
+  const runPaste = async (mode) => {
+    if (!pasteHasContent) return;
     setPasteMode(mode);
     setPasteResult('');
+    setPasteErr('');
     setPasteLoading(true);
     const urlContext = pasteUrl.trim() ? `\nEpisode/Show URL: ${pasteUrl.trim()}` : '';
     const textContext = pasteText.trim() ? `\n\nContent:\n${pasteText.slice(0, 6000)}` : '';
     const prompts = {
       summary: `Summarize this podcast content in 3-4 tight, insight-packed sentences for CB. Give the core message, key argument, and why it matters to CB's world (BD, investing, health, leadership).${urlContext}${textContext}`,
-      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with CB application\n2. **Point title** — one-sentence explanation\n(continue for 5 total)${urlContext}${textContext}`,
-      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and CB-specific action items (BD professional, investor, Houston TX). Be specific, thorough, and decisive.${urlContext}${textContext}`,
+      takeaways: `Extract 5 key takeaways from this podcast content for CB. Format as:\n1. **Point title** — one-sentence explanation with an example from the episode's own world\n2. **Point title** — one-sentence explanation\n(continue for 5 total)${urlContext}${textContext}`,
+      deepdive: `Provide a comprehensive analysis of this podcast content for CB. Cover: main thesis, key arguments and evidence, frameworks mentioned, counterarguments, and concrete action items in the episode's own domain. Be specific, thorough, and decisive.${urlContext}${textContext}`,
     };
     try {
       const result = await callClaude({
-        system: CB_IDENTITY,
+        system: SYSTEM_BASE,
         messages: [{ role: 'user', content: `${prompts[mode]}\n\n${TIER_INSTRUCTION}` }],
         maxTokens: mode === 'deepdive' ? 1400 : 700,
       });
       setPasteResult(result);
-    } catch {
-      setPasteResult('Network error — try again.');
+    } catch (e) {
+      setPasteErr(e?.message || 'The AI providers were unavailable.');
     }
     setPasteLoading(false);
   };
@@ -309,32 +317,31 @@ export default function PodcastHub() {
     const latest = eps[0];
     const loading = pod ? podLoading[pod.name] : false;
     return (
-      <div onClick={() => setActivePod(isAll ? null : (isActive ? null : pod))}
-        style={{ padding: '10px 12px', background: isActive ? ACCENT_BG : 'var(--surface)', border: `1px solid ${isActive ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, transition: 'all 0.12s', marginBottom: 6 }}>
-        <span style={{ fontSize: 'var(--fs-lg)', flexShrink: 0 }}>{isAll ? '🎙️' : pod.emoji}</span>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: isActive ? ACCENT : 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <button type="button" onClick={() => setActivePod(isAll ? null : (isActive ? null : pod))} className="pod-show" aria-pressed={isActive}>
+        <span className="pod-show-glyph" aria-hidden="true">{isAll ? '🎙️' : pod.emoji}</span>
+        <span className="pod-show-main">
+          <span className="pod-show-name">
             {isAll ? 'All Shows' : pod.name}
-          </div>
-          <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          </span>
+          <span className="pod-show-sub">
             {isAll ? `${PODCAST_FEEDS.length} podcasts · latest first` : loading ? 'Loading…' : latest ? latest.title.slice(0, 38) + '…' : 'No episodes yet'}
-          </div>
-        </div>
-        {isActive && <div style={{ width: 5, height: 5, borderRadius: '50%', background: ACCENT, flexShrink: 0 }} />}
-      </div>
+          </span>
+        </span>
+        {isActive && <span className="pod-show-dot" />}
+      </button>
     );
   };
 
   // ─── Mobile show pills ──────────────────────────────────────────────────
   const mobilePills = (
-    <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none', marginBottom: 16 }}>
+    <div className="pod-pills" data-scroll-x>
       {[null, ...PODCAST_FEEDS].map((pod, i) => {
         const isActive = pod === null ? !activePod : activePod?.name === pod.name;
         return (
-          <div key={i} onClick={() => setActivePod(pod === null ? null : (isActive ? null : pod))}
-            style={{ flexShrink: 0, padding: '6px 12px', fontSize: 'var(--fs-sm)', fontWeight: 600, borderRadius: 20, border: `1px solid ${isActive ? ACCENT : 'var(--border)'}`, background: isActive ? ACCENT_BG : 'var(--surface)', color: isActive ? ACCENT : 'var(--subtle)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.12s' }}>
+          <button type="button" key={i} onClick={() => setActivePod(pod === null ? null : (isActive ? null : pod))}
+            className="pod-pill tap" aria-pressed={isActive}>
             {pod === null ? '🎙️ All' : `${pod.emoji} ${pod.name}`}
-          </div>
+          </button>
         );
       })}
     </div>
@@ -342,20 +349,20 @@ export default function PodcastHub() {
 
   // ─── Header ────────────────────────────────────────────────────────────
   const header = (
-    <div style={{ background: `linear-gradient(135deg, ${ACCENT}, #C4553D)`, borderRadius: 12, padding: '16px 20px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{ fontSize: 28, flexShrink: 0 }}>{activePod ? activePod.emoji : '🎙️'}</div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 8, letterSpacing: 4, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', marginBottom: 4 }}>Intelligence Hub · Podcast Feed</div>
-        <div style={{ fontSize: 'var(--fs-lg)', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>
+    <div className="pod-head">
+      <div className="pod-head-glyph" aria-hidden="true">{activePod ? activePod.emoji : '🎙️'}</div>
+      <div className="pod-head-main">
+        <div className="pod-head-eyebrow">Intelligence Hub · Podcast Feed</div>
+        <div className="pod-head-title">
           {activePod ? activePod.name : 'All Podcasts'}
         </div>
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>
+        <div className="pod-head-sub">
           {activePod ? `Hosted by ${activePod.host}` : `${PODCAST_FEEDS.length} shows · AI summaries · read-aloud`}
         </div>
       </div>
       {anyLoading && (
-        <div style={{ fontSize: 'var(--fs-sm)', color: 'rgba(255,255,255,0.7)', display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff', animation: 'pulse 1.2s infinite ease-in-out' }} />
+        <div className="pod-head-loading">
+          <div className="pod-head-dot" />
           Loading
         </div>
       )}
@@ -365,24 +372,28 @@ export default function PodcastHub() {
   // ─── Sidebar content ────────────────────────────────────────────────────
   const sidebar = (
     <div>
-      <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>Shows</div>
+      <div className="pod-eyebrow">Shows</div>
       <ShowItem isAll />
       {PODCAST_FEEDS.map((p, i) => <ShowItem key={i} pod={p} />)}
       {hasAny && (
-        <div style={{ marginTop: 20 }}>
-          <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--dim)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-            🔥 Trending Now
+        <div className="pod-trending">
+          <div className="pod-eyebrow">
+            <Icon name="Flame" aria-hidden="true" /> Trending Now
           </div>
-          {allEps.slice(0, 6).map((ep, i) => (
-            <div key={i} onClick={() => ep.link && window.open(ep.link, '_blank')}
-              style={{ display: 'flex', gap: 8, padding: '8px 0', borderBottom: '1px solid var(--bord2)', cursor: ep.link ? 'pointer' : 'default' }}>
-              <div style={{ fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--border)', minWidth: 16, flexShrink: 0, fontFamily: "'Newsreader', serif" }}>{i + 1}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 600, color: 'var(--text)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{ep.title}</div>
-                <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', marginTop: 2 }}>{ep.show} · {fmtPodDate(ep.pubDate)}</div>
-              </div>
-            </div>
-          ))}
+          {allEps.slice(0, 6).map((ep, i) => {
+            const body = (
+              <>
+                <div className="pod-trend-n" aria-hidden="true">{i + 1}</div>
+                <div className="pod-trend-main">
+                  <div className="pod-trend-title">{ep.title}</div>
+                  <div className="pod-trend-sub">{ep.show} · {fmtPodDate(ep.pubDate)}</div>
+                </div>
+              </>
+            );
+            return ep.link
+              ? <a key={i} href={ep.link} target="_blank" rel="noopener noreferrer" className="pod-trend">{body}</a>
+              : <div key={i} className="pod-trend">{body}</div>;
+          })}
         </div>
       )}
     </div>
@@ -392,14 +403,14 @@ export default function PodcastHub() {
   const episodesList = (
     <div>
       {displayEps.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <div className="pod-empty">
           {anyLoading
-            ? <><div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 16 }}>Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color={ACCENT} /></>
-            : <><div style={{ fontSize: 'var(--fs-3xl)', marginBottom: 12 }}>🎙️</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', marginBottom: 6 }}>No episodes loaded yet</div><div style={{ fontSize: 'var(--fs-base)', color: 'var(--dim)' }}>Episodes load in the background. Check back in a moment.</div></>
+            ? <><div className="pod-empty-loading">Loading episodes from {PODCAST_FEEDS.length} shows…</div><ThinkingDots color="var(--accent-text)" /></>
+            : <><div className="pod-empty-glyph" aria-hidden="true">🎙️</div><div className="pod-empty-what">No episodes loaded yet</div><div className="pod-empty-how">Episodes load in the background. Check back in a moment.</div></>
           }
         </div>
       )}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="pod-eps">
         {displayEps.slice(0, 25).map((ep, i) => (
           <PodCard key={`${ep.show}-${i}`} ep={ep} idx={i} onSaveToVault={saveToVault} />
         ))}
@@ -408,86 +419,75 @@ export default function PodcastHub() {
   );
 
   // ─── Layout ─────────────────────────────────────────────────────────────
-  const padX = isMobile ? '16px' : '28px';
-
   return (
-    <div style={{ padding: isMobile ? `16px 16px 80px` : `24px ${padX} 60px`, maxWidth: 1100, margin: '0 auto' }}>
-      {/* TTS wave animation styles */}
-      <style>{`
-        @keyframes bar0{0%,100%{height:4px}50%{height:12px}}
-        @keyframes bar1{0%,100%{height:8px}50%{height:4px}}
-        @keyframes bar2{0%,100%{height:12px}50%{height:6px}}
-      `}</style>
-
+    <div className="pod">
       {header}
 
       {/* ─── Paste & Analyze ──────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 20 }}>
-        <div
-          onClick={() => setPasteOpen(o => !o)}
-          style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 16px', background: 'var(--surface)', border: `1px solid ${pasteOpen ? ACCENT_BORDER : 'var(--border)'}`, borderRadius: pasteOpen ? '10px 10px 0 0' : 10, cursor: 'pointer', transition: 'all 0.15s' }}>
-          <span style={{ fontSize: 'var(--fs-lg)'}}>📋</span>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Paste & Analyze</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)' }}>Enter a podcast URL or paste transcript/show notes — get instant AI analysis</div>
-          </div>
-          <span style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', transition: 'transform 0.2s', transform: pasteOpen ? 'rotate(180deg)' : 'none' }}>▼</span>
-        </div>
+      <div className="pod-paste">
+        <button type="button" onClick={() => setPasteOpen(o => !o)} className="pod-paste-toggle" aria-expanded={pasteOpen}>
+          <span className="pod-paste-glyph"><Icon name="ClipboardList" size="header" aria-hidden="true" /></span>
+          <span className="pod-paste-main">
+            <span className="pod-paste-title">Paste & Analyze</span>
+            <span className="pod-paste-sub">Enter a podcast URL or paste transcript/show notes — get instant AI analysis</span>
+          </span>
+          <span className="pod-paste-chev"><Icon name="ChevronDown" aria-hidden="true" /></span>
+        </button>
 
         {pasteOpen && (
-          <div style={{ background: 'var(--surface)', border: `1px solid ${ACCENT_BORDER}`, borderTop: 'none', borderRadius: '0 0 10px 10px', padding: '16px' }}>
+          <div className="pod-paste-body">
             <input
               value={pasteUrl}
-              onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); }}
+              onChange={e => { setPasteUrl(e.target.value); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
               placeholder="Podcast episode URL (optional) — e.g. https://podcasts.apple.com/… or Spotify link"
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 10 }}
+              aria-label="Podcast episode URL" className="pod-field"
             />
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', textAlign: 'center', marginBottom: 10 }}>— or paste content directly —</div>
+            <div className="pod-or">— or paste content directly —</div>
             <textarea
               value={pasteText}
-              onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); }}
+              onChange={e => { setPasteText(e.target.value); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
               placeholder="Paste podcast transcript, episode description, show notes, or any text here..."
               rows={5}
-              style={{ width: '100%', background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', marginBottom: 12 }}
+              aria-label="Podcast transcript or notes" className="pod-field"
             />
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div className="pod-paste-actions">
               {[
-                { id: 'summary',   label: '✦ Summary',    short: '✦' },
-                { id: 'takeaways', label: '📋 Takeaways', short: '📋' },
-                { id: 'deepdive',  label: '📄 Deep Dive', short: '📄' },
+                { id: 'summary',   label: 'Summary',   icon: 'Sparkles' },
+                { id: 'takeaways', label: 'Takeaways', icon: 'ClipboardList' },
+                { id: 'deepdive',  label: 'Deep Dive', icon: 'FileText' },
               ].map(btn => (
-                <button key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteHasContent || (pasteLoading && pasteMode !== btn.id)}
-                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteMode === btn.id ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteMode === btn.id ? ACCENT_BG : 'transparent', color: !pasteHasContent ? 'var(--dim)' : pasteMode === btn.id ? ACCENT : 'var(--subtle)', cursor: !pasteHasContent ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
-                  {pasteLoading && pasteMode === btn.id ? `${btn.short} Analyzing…` : btn.label}
+                <button type="button" key={btn.id} onClick={() => handlePasteAI(btn.id)} disabled={!pasteHasContent || (pasteLoading && pasteMode !== btn.id)}
+                  className="pod-tog tap" data-size="lg" aria-pressed={pasteMode === btn.id}>
+                  <Icon name={btn.icon} aria-hidden="true" /> {pasteLoading && pasteMode === btn.id ? 'Analyzing…' : btn.label}
                 </button>
               ))}
               {ttsGlobal && (
-                <button onClick={handlePasteReadAloud} disabled={!pasteHasContent && !pasteResult}
-                  style={{ padding: '6px 13px', fontSize: 'var(--fs-base)', fontWeight: 600, border: `1px solid ${pasteReading ? ACCENT : 'var(--border)'}`, borderRadius: 7, background: pasteReading ? ACCENT_BG : 'transparent', color: (!pasteHasContent && !pasteResult) ? 'var(--dim)' : pasteReading ? ACCENT : 'var(--subtle)', cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.12s' }}>
+                <button type="button" onClick={handlePasteReadAloud} disabled={!pasteHasContent && !pasteResult}
+                  className="pod-tog tap" data-size="lg" aria-pressed={pasteReading}>
                   {pasteReading ? '⏹ Stop' : '🔊 Read Aloud'}
                 </button>
               )}
               {pasteHasContent && (
-                <button onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); }}
-                  style={{ padding: '6px 10px', fontSize: 'var(--fs-sm)', border: '1px solid var(--border)', borderRadius: 7, background: 'transparent', color: 'var(--dim)', cursor: 'pointer', fontFamily: 'inherit', marginLeft: 'auto' }}>
+                <button type="button" onClick={() => { setPasteUrl(''); setPasteText(''); setPasteResult(''); setPasteMode(''); setPasteErr(''); }}
+                  className="pod-tog pod-clear tap" data-size="clear">
                   Clear
                 </button>
               )}
             </div>
-            {(pasteLoading || pasteResult) && (
-              <div style={{ marginTop: 14, background: ACCENT_BG, border: `1px solid ${ACCENT_BORDER}`, borderRadius: 8, padding: '12px 14px' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: ACCENT, textTransform: 'uppercase', marginBottom: 8 }}>
+            {(pasteLoading || pasteResult || pasteErr) && (
+              <div data-status={pasteStatus} className="pod-out">
+                <div className="pod-out-kicker">
                   {pasteMode === 'summary' ? 'AI Summary' : pasteMode === 'takeaways' ? 'Key Takeaways' : 'Deep Dive Analysis'}
                 </div>
-                {pasteLoading ? <ThinkingDots color={ACCENT} /> : (
+                {pasteStatus === 'loading' ? <SectionSkeleton rows={pasteMode === 'deepdive' ? 6 : 3} label="podcast analysis" />
+                  : pasteStatus === 'error' ? <SectionError label="this analysis" onRetry={() => runPaste(pasteMode)} detail={pasteErr} /> : (
                   <>
-                    <MD text={pasteResult} color={ACCENT} />
+                    <MD text={pasteResult} color="var(--accent-text)" />
                     {!pasteVaulted
-                      ? <div onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }}
-                          style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 12px', background: withAlpha(T.accent, 6), border: '1px solid #D9A44140', borderRadius: 7, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, cursor: 'pointer' }}>
-                          🏛 Save to Vault
-                        </div>
-                      : <div style={{ marginTop: 10, fontSize: 'var(--fs-sm)', color: T.accent }}>✓ Saved to Vault</div>
+                      ? <button type="button" onClick={() => { saveToVault(pasteUrl.trim() ? `[Podcast] ${pasteUrl.trim().slice(0, 60)}` : '[Podcast Notes] Paste Analysis', pasteResult); setPasteVaulted(true); }} className="pod-vault tap">
+                          <Icon name="Landmark" aria-hidden="true" /> Save to Vault
+                        </button>
+                      : <div className="pod-vaulted"><Icon name="Check" aria-hidden="true" /> Saved to Vault</div>
                     }
                   </>
                 )}
@@ -497,20 +497,16 @@ export default function PodcastHub() {
         )}
       </div>
 
-      {/* Mobile: show pills */}
-      {isMobile && mobilePills}
+      {/* Phone: show pills (hidden ≥721 in CSS) */}
+      {mobilePills}
 
-      {/* Desktop/Tablet: 2-col grid */}
-      {!isMobile ? (
-        <div style={{ display: 'grid', gridTemplateColumns: isTablet ? '1fr 220px' : '1fr 268px', gap: 28 }}>
-          <div>{episodesList}</div>
-          <div style={{ position: 'sticky', top: 0, alignSelf: 'start', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto', scrollbarWidth: 'thin' }}>
-            {sidebar}
-          </div>
+      {/* iPad/desktop: episodes + shows rail (rail hidden <721 in CSS) */}
+      <div className="pod-layout">
+        <div className="pod-main">{episodesList}</div>
+        <div className="pod-side">
+          {sidebar}
         </div>
-      ) : (
-        episodesList
-      )}
+      </div>
     </div>
   );
 }

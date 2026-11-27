@@ -7,6 +7,9 @@ import { getFeed, relTime } from '../lib/adapters.js';
 import Icon from './shared/Icon.jsx';
 import SaveToNotes from './shared/SaveToNotes.jsx';
 import FollowButton from './shared/FollowButton.jsx';
+import PageWithRail from './shared/PageWithRail.jsx';
+import { SectionEmpty } from './shared/SectionState.jsx';
+import './whats-happening.css';
 
 // "What's Happening" — the 7th container. One surface for what changed: a
 // discovery panel (stories your sources missed), a tiered feed, trending, and
@@ -48,7 +51,7 @@ const TIER_LABEL = { verified: 'verified', reported: 'reported', inferred: 'infe
 const monogram = (name) => (name || '?').trim().charAt(0).toUpperCase();
 
 export default function WhatsHappening() {
-  const { isMobile, isPhone, isDesktop, setChatPrefill, setChatOpen, applyRoute } = useApp();
+  const { setChatPrefill, setChatOpen, applyRoute } = useApp();
   const [lens, setLens] = useState('both');
   const [filter, setFilter] = useState('All');
   const [density, setDensity] = useState(() => readLocal(DENSITY_KEY, 'comfortable'));
@@ -60,8 +63,6 @@ export default function WhatsHappening() {
   const [newSource, setNewSource] = useState('');
   const [seenAt] = useState(() => readLocal(SEEN_KEY, 0));
   const [err, setErr] = useState('');
-
-  const pad = isPhone ? '14px' : isMobile ? '16px' : '28px';
 
   useEffect(() => { hydrate(SOURCES_KEY).then((r) => Array.isArray(r) && setSources(r)); }, []);
   useEffect(() => {
@@ -105,13 +106,20 @@ export default function WhatsHappening() {
     else setErr('');
   };
 
-  const allItems = useMemo(() => [...live, ...CURATED], [live]);
+  // Curated items render on first paint and stay put; live items APPEND when the
+  // fetch resolves. Prepending them (and a "Loading feed…" row above the list)
+  // shoved every visible card down on arrival — CLS 0.09–0.12 at iPad, caught by
+  // the responsive gate (Batch Z-2).
+  const allItems = useMemo(() => [...CURATED, ...live], [live]);
   const categories = useMemo(() => ['All', ...Array.from(new Set(sources.map((s) => s.category)))], [sources]);
 
+  // Newest-first WITHIN each group; the live group follows the curated group so a
+  // late-arriving fetch never reorders what's already on screen.
+  const liveIds = useMemo(() => new Set(live.map((x) => x.id)), [live]);
   const visibleItems = allItems
     .filter((it) => !dismissed.includes(it.id))
     .filter((it) => filter === 'All' || it.category === filter)
-    .sort((a, b) => b.at - a.at);
+    .sort((a, b) => (liveIds.has(a.id) - liveIds.has(b.id)) || (b.at - a.at));
 
   const freshCount = visibleItems.filter((it) => it.at > seenAt).length;
 
@@ -150,173 +158,158 @@ export default function WhatsHappening() {
   const compact = density === 'compact';
 
   const rail = (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-      <div>
-        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Trending Now</div>
-        <ol style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+    <>
+      <section className="wh-rail-sec">
+        <h2 className="wh-eyebrow">Trending Now</h2>
+        <ol className="wh-trend">
           {trending.map(([src, n], i) => (
-            <li key={src} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 'var(--fs-sm)', fontWeight: 800, color: 'var(--text-tertiary)', width: 16 }}>{i + 1}</span>
-              <span style={{ flex: 1, fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{src}</span>
-              <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{n}</span>
+            <li key={src}>
+              <span className="wh-trend-rank">{i + 1}</span>
+              <span className="wh-trend-src">{src}</span>
+              <span className="wh-trend-n">{n}</span>
             </li>
           ))}
         </ol>
-      </div>
-      <div>
-        <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Today's Topics</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+      </section>
+      <section className="wh-rail-sec">
+        <h2 className="wh-eyebrow">Today's Topics</h2>
+        <div className="wh-topics">
           {topics.map(([cat, n]) => (
-            <button key={cat} onClick={() => setFilter(cat)} style={{ fontSize: 'var(--fs-sm)', padding: '4px 10px', borderRadius: 20, border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'inherit' }}>{cat} <span style={{ color: 'var(--text-tertiary)' }}>{n}</span></button>
+            <button key={cat} type="button" className="chip wh-topic tap" aria-pressed={filter === cat} onClick={() => setFilter(cat)}>
+              {cat} <span className="wh-topic-n">{n}</span>
+            </button>
           ))}
         </div>
-      </div>
-    </div>
+      </section>
+    </>
   );
 
   return (
-    <div style={{ maxWidth: 1180, margin: '0 auto', padding: `20px ${pad} 80px` }}>
+    <div className="wh">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
-        <div>
-          <div style={{ fontSize: 9, letterSpacing: 3, color: 'var(--text-tertiary)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>What Changed</div>
-          <div style={{ fontSize: isMobile ? 'var(--fs-2xl)' : 'var(--fs-3xl)', fontWeight: 800, color: 'var(--text)', fontFamily: 'var(--font-display)', letterSpacing: -0.5, lineHeight: 'var(--lh-tight)' }}>What's Happening</div>
+      <header className="wh-head">
+        <div className="wh-head-text">
+          <div className="wh-kicker">What Changed</div>
+          <h1 className="wh-title">What's Happening</h1>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>
-            <span style={{ width: 7, height: 7, borderRadius: '50%', background: live.length ? 'var(--positive)' : 'var(--text-tertiary)' }} />
-            {visibleItems.length} items · {live.length ? 'live' : 'cached'}
-          </span>
-        </div>
-      </div>
+        <span className="wh-status">
+          <span className="wh-dot" data-live={live.length ? '1' : '0'} aria-hidden="true" />
+          {visibleItems.length} items · {live.length ? 'live' : 'cached'}
+        </span>
+      </header>
 
       {/* Lens */}
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 16 }}>
-        <span style={{ fontSize: 9, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase', fontWeight: 700 }}>Lens</span>
-        {[['work', 'Work'], ['personal', 'Personal'], ['both', 'Both']].map(([id, label]) => {
-          const on = lens === id;
-          return <button key={id} onClick={() => setLens(id)} style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', minHeight: 34 }}>{label}</button>;
-        })}
+      <div className="wh-lens" role="group" aria-label="Lens">
+        <span className="wh-eyebrow">Lens</span>
+        {[['work', 'Work'], ['personal', 'Personal'], ['both', 'Both']].map(([id, label]) => (
+          <button key={id} type="button" className="wh-seg tap" aria-pressed={lens === id} onClick={() => setLens(id)}>{label}</button>
+        ))}
       </div>
 
       {err && (
-        <div style={{ marginBottom: 16, padding: '10px 14px', borderRadius: 10, border: '1px solid color-mix(in srgb, var(--negative) 40%, transparent)', background: 'color-mix(in srgb, var(--negative) 10%, transparent)', color: 'var(--negative)', fontSize: 'var(--fs-sm)', fontWeight: 600 }}>⚠ {err}</div>
+        <div className="wh-err" role="alert"><Icon name="AlertTriangle" size={14} /> {err}</div>
       )}
 
       {/* Discovery panel */}
       {DISCOVERY.length > 0 && (
-        <div style={{ border: '1px solid var(--rule)', borderRadius: 12, padding: '14px 16px', marginBottom: 18, background: 'var(--surface)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <Icon name="Sparkles" size={16} style={{ color: 'var(--text-tertiary)' }} />
-            <span style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-tertiary)', letterSpacing: 2, textTransform: 'uppercase' }}>Discovery · You may be missing this</span>
+        <section className="wh-panel" aria-label="Discovery">
+          <div className="wh-panel-head">
+            <Icon name="Sparkles" size={16} />
+            <h2 className="wh-eyebrow">Discovery · You may be missing this</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 10 }}>
+          <div className="wh-disc-grid">
             {DISCOVERY.map((d) => (
-              <div key={d.id} style={{ padding: '12px 14px', border: '1px solid var(--rule)', borderRadius: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)' }}>{d.title}</div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-                  <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>{d.outlets} outlets covering · you follow {sources.filter((s) => s.category === d.category && s.enabled).length}</span>
-                  <button onClick={() => followDiscovery(d)} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', padding: 0 }}><Icon name="Plus" size={13} /> Add {d.suggest}</button>
+              <div key={d.id} className="wh-disc">
+                <div className="wh-disc-title">{d.title}</div>
+                <div className="wh-disc-foot">
+                  <span className="wh-disc-meta">{d.outlets} outlets covering · you follow {sources.filter((s) => s.category === d.category && s.enabled).length}</span>
+                  <button type="button" className="wh-link tap" onClick={() => followDiscovery(d)}><Icon name="Plus" size={13} /> Add {d.suggest}</button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* Filter chips + density + manage */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, overflowX: 'auto', scrollbarWidth: 'none' }}>
-        {categories.map((c) => {
-          const on = filter === c;
-          return <button key={c} onClick={() => setFilter(c)} style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 20, border: `1px solid ${on ? 'var(--accent)' : 'var(--rule)'}`, background: on ? 'color-mix(in srgb, var(--accent) 10%, transparent)' : 'transparent', color: on ? 'var(--accent)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: on ? 700 : 500, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', minHeight: 34 }}>{c}</button>;
-        })}
-        <div style={{ flex: 1 }} />
-        <button onClick={() => persistDensity(compact ? 'comfortable' : 'compact')} title="Density"
-          style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'inherit' }}>
+      <div className="wh-bar" data-scroll-x>
+        {categories.map((c) => (
+          <button key={c} type="button" className="chip wh-chip" aria-pressed={filter === c} onClick={() => setFilter(c)}>{c}</button>
+        ))}
+        <div className="wh-bar-spacer" />
+        <button type="button" className="wh-tool" onClick={() => persistDensity(compact ? 'comfortable' : 'compact')} title="Density">
           <Icon name={compact ? 'Rows3' : 'Rows2'} size={14} /> {compact ? 'Compact' : 'Comfortable'}
         </button>
-        <button onClick={() => setManageOpen((o) => !o)} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, padding: '6px 11px', borderRadius: 8, border: '1px solid var(--rule)', background: 'var(--bg)', color: 'var(--text-secondary)', fontSize: 'var(--fs-sm)', cursor: 'pointer', fontFamily: 'inherit' }}>
+        <button type="button" className="wh-tool" aria-expanded={manageOpen} onClick={() => setManageOpen((o) => !o)}>
           <Icon name="Settings2" size={14} /> Sources
         </button>
       </div>
 
       {/* Sources manager */}
       {manageOpen && (
-        <div style={{ border: '1px solid var(--rule)', borderRadius: 12, padding: '14px 16px', marginBottom: 18, background: 'var(--surface)' }}>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <input value={newSource} onChange={(e) => setNewSource(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSource()} placeholder="Add a source…"
-              style={{ flex: 1, background: 'var(--bg)', border: '1px solid var(--rule)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 'var(--fs-sm)', outline: 'none', fontFamily: 'inherit' }} />
-            <button onClick={addSource} style={{ padding: '8px 14px', borderRadius: 8, border: 'none', background: 'var(--accent)', color: 'var(--on-accent)', fontSize: 'var(--fs-sm)', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Add</button>
+        <section className="wh-panel" aria-label="Sources">
+          <div className="wh-add">
+            <input className="wh-input" value={newSource} onChange={(e) => setNewSource(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addSource()} placeholder="Add a source…" aria-label="Add a source" />
+            <button type="button" className="btn btn-primary" onClick={addSource}>Add</button>
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="wh-srcs">
             {sources.map((s) => (
-              <span key={s.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 10px', borderRadius: 20, border: '1px solid var(--rule)', background: s.enabled ? 'var(--bg)' : 'transparent', opacity: s.enabled ? 1 : 0.5 }}>
-                <button onClick={() => toggleSource(s.id)} title={s.enabled ? 'Disable' : 'Enable'} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: s.enabled ? 'var(--accent)' : 'var(--text-tertiary)' }}><Icon name={s.enabled ? 'Check' : 'Circle'} size={13} /></button>
-                <span style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-secondary)' }}>{s.name}</span>
-                <span style={{ fontSize: 9, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: 1 }}>{s.category}</span>
-                <button onClick={() => removeSource(s.id)} title="Remove" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-tertiary)' }}><Icon name="X" size={13} /></button>
+              <span key={s.id} className="wh-src" data-on={s.enabled ? '1' : '0'}>
+                <button type="button" className="wh-icon-btn tap" aria-pressed={s.enabled} onClick={() => toggleSource(s.id)} title={s.enabled ? 'Disable' : 'Enable'} aria-label={`${s.enabled ? 'Disable' : 'Enable'} ${s.name}`}><Icon name={s.enabled ? 'Check' : 'Circle'} size={13} /></button>
+                <span className="wh-src-name">{s.name}</span>
+                <span className="wh-src-cat">{s.category}</span>
+                <button type="button" className="wh-icon-btn tap" onClick={() => removeSource(s.id)} title="Remove" aria-label={`Remove ${s.name}`}><Icon name="X" size={13} /></button>
               </span>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Body: feed + rail */}
-      <div style={{ display: isDesktop ? 'grid' : 'block', gridTemplateColumns: isDesktop ? 'minmax(0,1fr) 280px' : undefined, gap: 28, alignItems: 'start' }}>
-        <div>
-          {freshCount > 0 && (
-            <div style={{ fontSize: 'var(--fs-sm)', fontWeight: 700, color: 'var(--accent)', marginBottom: 12 }}>{freshCount} new since your last visit</div>
-          )}
-          {loading && <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', padding: '12px 0' }}>Loading feed…</div>}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? 8 : 12 }}>
-            {visibleItems.map((it) => {
-              const fresh = it.at > seenAt;
-              return (
-                <article key={it.id} style={{ display: 'flex', gap: 12, padding: compact ? '10px 12px' : '14px 16px', border: '1px solid var(--rule)', borderLeft: fresh ? '2px solid var(--accent)' : '1px solid var(--rule)', borderRadius: 10, background: 'var(--surface)' }}>
-                  {!compact && (
-                    <div style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--rule)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--fs-base)', fontWeight: 800, color: 'var(--text-tertiary)', fontFamily: 'var(--font-display)' }}>{monogram(it.source)}</div>
-                  )}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 8, fontWeight: 800, letterSpacing: 1, textTransform: 'uppercase', color: `var(--tier-${it.tier})`, border: `1px solid color-mix(in srgb, var(--tier-${it.tier}) 40%, transparent)`, padding: '1px 6px', borderRadius: 3 }}>{TIER_LABEL[it.tier] || it.tier}</span>
-                    </div>
-                    <a href={it.url || undefined} target={it.url ? '_blank' : undefined} rel="noopener noreferrer" style={{ textDecoration: 'none' }}>
-                      <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)', lineHeight: 'var(--lh-tight)', marginBottom: 6 }}>{it.title}</div>
-                    </a>
-                    <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)', marginBottom: compact ? 0 : 10 }}>
-                      {it.source}{it.author ? ` · ${it.author}` : ''} · {relTime(it.at)}
-                    </div>
-                    {!compact && (
-                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                        <FeedAction icon="Microscope" label="Dive deeper" onClick={() => dive(it)} />
-                        <FeedAction icon="Share2" label="Explore" onClick={() => explore(it)} />
-                        <FeedAction icon="MessageSquare" label="Ask" onClick={() => ask(it)} />
-                        <FollowButton name={it.title} source="feed" style={{ padding: '5px 10px' }} />
-                        <SaveToNotes title={it.title} content={it.title} source={{ url: it.url, title: it.source, tier: it.tier }} label="Save" style={{ padding: '5px 10px' }} />
-                        <FeedAction icon="X" label="Dismiss" onClick={() => dismiss(it)} muted />
-                      </div>
-                    )}
+      {/* Body: feed + rail. PageWithRail: 340px sticky rail ≥1101, stacked below under it. */}
+      <PageWithRail rail={rail} label="Trending and topics">
+        {freshCount > 0 && (
+          <div className="wh-fresh">{freshCount} new since your last visit</div>
+        )}
+        <div className="wh-list" data-density={density}>
+          {visibleItems.map((it) => (
+            <article key={it.id} className="wh-item" data-fresh={it.at > seenAt ? '1' : '0'}>
+              {!compact && <div className="wh-mono" aria-hidden="true">{monogram(it.source)}</div>}
+              <div className="wh-body">
+                <div className="wh-tags">
+                  <span className="wh-tier" style={{ '--tier': `var(--tier-${it.tier})` }}>{TIER_LABEL[it.tier] || it.tier}</span>
+                </div>
+                <a className="wh-headline" href={it.url || undefined} target={it.url ? '_blank' : undefined} rel="noopener noreferrer">
+                  <div className="wh-headline-text">{it.title}</div>
+                </a>
+                <div className="wh-meta">
+                  {it.source}{it.author ? ` · ${it.author}` : ''} · {relTime(it.at)}
+                </div>
+                {!compact && (
+                  <div className="wh-actions">
+                    <FeedAction icon="Microscope" label="Dive deeper" onClick={() => dive(it)} />
+                    <FeedAction icon="Share2" label="Explore" onClick={() => explore(it)} />
+                    <FeedAction icon="MessageSquare" label="Ask" onClick={() => ask(it)} />
+                    <FollowButton name={it.title} source="feed" />
+                    <SaveToNotes title={it.title} content={it.title} source={{ url: it.url, title: it.source, tier: it.tier }} label="Save" />
+                    <FeedAction icon="X" label="Dismiss" onClick={() => dismiss(it)} muted />
                   </div>
-                </article>
-              );
-            })}
-            {visibleItems.length === 0 && !loading && (
-              <div style={{ padding: '24px', textAlign: 'center', border: '1px dashed var(--rule)', borderRadius: 12, fontSize: 'var(--fs-sm)', color: 'var(--text-tertiary)' }}>Nothing in this view. Try another filter or add sources.</div>
-            )}
-          </div>
+                )}
+              </div>
+            </article>
+          ))}
+          {loading && <div aria-live="polite" data-status="loading" className="wh-loading">Loading live signals…</div>}
+          {visibleItems.length === 0 && !loading && (
+            <SectionEmpty what="Nothing in this view." how="Try another filter or add sources." />
+          )}
         </div>
-
-        {/* Right rail (desktop) / below feed (mobile) */}
-        {isDesktop ? rail : <div style={{ marginTop: 28 }}>{rail}</div>}
-      </div>
+      </PageWithRail>
     </div>
   );
 }
 
 function FeedAction({ icon, label, onClick, muted }) {
   return (
-    <button onClick={onClick}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 10px', borderRadius: 8, border: '1px solid var(--rule)', background: 'transparent', color: muted ? 'var(--text-tertiary)' : 'var(--text-secondary)', fontSize: 'var(--fs-sm)', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', outline: 'none' }}>
+    <button type="button" className="wh-act tap" data-muted={muted ? '1' : undefined} onClick={onClick}>
       <Icon name={icon} size={14} /> {label}
     </button>
   );

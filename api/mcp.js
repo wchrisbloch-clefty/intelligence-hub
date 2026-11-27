@@ -7,7 +7,7 @@
 //   Token: the MCP_TOKEN you set in Vercel (Bearer auth)
 //
 // Token-gated and fails closed (see requireMcpToken). Never exposes secrets.
-import { readBody, storageConfigured } from './_lib.js';
+import { readBody, storageCredentialsPresent } from './_lib.js';
 import { requireMcpToken, TOOLS, callTool, exportState } from './_mcp.js';
 
 const PROTOCOL_VERSION = '2024-11-05';
@@ -25,7 +25,7 @@ export default async function handler(req, res) {
   if (isExport) {
     if (req.method !== 'GET') { res.setHeader('Allow', 'GET'); return res.status(405).json({ error: 'Method not allowed' }); }
     if (!requireMcpToken(req, res)) return;
-    if (!storageConfigured()) return res.status(503).json({ error: 'Storage is not configured.' });
+    if (!storageCredentialsPresent()) return res.status(503).json({ error: 'Storage is not configured.' });
     try {
       res.setHeader('Cache-Control', 'no-store');
       return res.status(200).json(await exportState());

@@ -1,14 +1,16 @@
-import { T, withAlpha } from './theme';
 import { createContext, useContext, useState, useEffect } from 'react';
 import { loadGraph, loadProjects, loadNotes, loadResearch, saveProjects, uid } from './utils.js';
 import { CONTAINERS, containerOfMode } from './constants.js';
 import { readLocal, writeThrough } from './lib/storage.js';
 import { getTheme, applyTheme } from './theme.js';
+import './save-to-project.css';
+import './loading-screen.css';
 import useViewport from './hooks/useViewport.js';
 import TopBar from './modules/TopBar.jsx';
 import ChatPanel from './modules/ChatPanel.jsx';
 import { SideNav, BottomNav, ModeChips } from './modules/shared/ContainerNav.jsx';
 import HomeDashboard from './modules/HomeDashboard.jsx';
+import MobileHome from './modules/home/MobileHome.jsx';
 import WhatsHappening from './modules/WhatsHappening.jsx';
 import Notes from './modules/Notes.jsx';
 import Recaps from './modules/Recaps.jsx';
@@ -29,12 +31,15 @@ import DecisionLog from './modules/DecisionLog.jsx';
 import CreationStudio from './modules/CreationStudio.jsx';
 import TEDHub from './modules/TEDHub.jsx';
 import QuizCenter from './modules/QuizCenter.jsx';
+import { DebugOverlay, dbgRender } from './modules/debug/index.jsx';
 
 const AppContext = createContext(null);
 export const useApp = () => useContext(AppContext);
 
 export default function App() {
-  const [activeModule,     setActiveModuleRaw]  = useState('home');
+  dbgRender('App');
+  // ?mode=<moduleId> deep link (used by scripts/audit-responsive.mjs to reach every container).
+  const [activeModule,     setActiveModuleRaw]  = useState(() => { try { return new URLSearchParams(location.search).get('mode') || 'home'; } catch { return 'home'; } });
   const [navModes,         setNavModes]         = useState(() => readLocal('aether_nav_v1', {}));
   const [chatOpen,         setChatOpen]         = useState(false);
   const [searchQuery,      setSearchQuery]      = useState('');
@@ -144,7 +149,7 @@ export default function App() {
   };
 
   const modules = {
-    home:      <HomeDashboard />,
+    home:      isMobile ? <MobileHome /> : <HomeDashboard />, // phone Home surface (Order C)
     feed:      <WhatsHappening />,
     notes:     <Notes />,
     recaps:    <Recaps />,
@@ -169,21 +174,15 @@ export default function App() {
 
   return (
     <AppContext.Provider value={ctx}>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--bg)', overflow: 'hidden' }}>
+      <div className="fr-shell" data-chat={chatOpen ? 'open' : 'closed'}>
         <TopBar />
 
-        {/* Body row: container rail (≥768) + scrolling content, capped at
-            1280 on desktop. Mobile drops the rail for the bottom bar. */}
-        <div style={{ flex: 1, display: 'flex', minHeight: 0, width: '100%', maxWidth: isDesktop ? 1280 : '100%', margin: '0 auto' }}>
-          {!isMobile && <SideNav />}
-          <main style={{
-            flex: 1,
-            minWidth: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            paddingRight: (!isMobile && chatOpen) ? 360 : 0,
-            transition: 'padding-right 0.22s ease',
-          }}>
+        {/* Layout is CSS-only (src/styles/tokens.css · docs/RESPONSIVE.md):
+            both nav surfaces always render and media queries pick one, so a
+            phone's first paint is never the desktop layout. */}
+        <div className="fr-body">
+          <div className="fr-sidebar"><SideNav /></div>
+          <main className="fr-main">
             {/* Container's modes, as a scrollable chip row under the header */}
             <ModeChips />
             {/* Orchestrated entrance: each view rises 8px + fades on mount */}
@@ -193,8 +192,9 @@ export default function App() {
           </main>
         </div>
 
-        {isMobile && <BottomNav />}
+        <div className="fr-tabbar"><BottomNav /></div>
         <ChatPanel />
+        <DebugOverlay />
         {pendingArtifact && (
           <SaveToProjectModal
             artifact={pendingArtifact}
@@ -213,33 +213,31 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
     projects.find(p => p.status === 'active')?.id || projects[0]?.id || null
   );
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 400, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-      onClick={e => e.target === e.currentTarget && onClose()}>
-      <div style={{ width: '100%', maxWidth: 420, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>Save to Project</div>
-          <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+    <div className="stp-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="stp" role="dialog" aria-modal="true" aria-label="Save to Project">
+        <div className="stp-head">
+          <div className="stp-title">Save to Project</div>
+          <button type="button" className="stp-close tap" onClick={onClose} aria-label="Close">✕</button>
         </div>
-        <div style={{ padding: 18 }}>
-          <div style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', marginBottom: 14 }}>
-            Saving: <span style={{ color: 'var(--text-b)', fontWeight: 600 }}>{artifact.title || 'AI Output'}</span>
+        <div className="stp-body">
+          <div className="stp-saving">
+            Saving: <b>{artifact.title || 'AI Output'}</b>
           </div>
-          <div style={{ maxHeight: 240, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          <div className="stp-list">
             {projects.map(p => (
-              <div key={p.id} onClick={() => setSelectedId(p.id)}
-                style={{ padding: '10px 12px', background: selectedId === p.id ? withAlpha(p.color || T.accent, 8) : 'var(--bg)', border: `1px solid ${selectedId === p.id ? withAlpha(p.color || T.accent, 31) : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'center' }}>
-                <div style={{ fontSize: 'var(--fs-lg)'}}>{p.emoji}</div>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-b)' }}>{p.title}</div>
-                  <div style={{ fontSize: 9, color: 'var(--dim)', textTransform: 'uppercase', letterSpacing: 1 }}>{p.status}</div>
+              <button type="button" key={p.id} className="stp-row" aria-pressed={selectedId === p.id}
+                onClick={() => setSelectedId(p.id)} style={p.color ? { '--c': p.color } : undefined}>
+                <div className="stp-emoji" aria-hidden="true">{p.emoji}</div>
+                <div className="stp-row-main">
+                  <div className="stp-row-title">{p.title}</div>
+                  <div className="stp-row-status">{p.status}</div>
                 </div>
-              </div>
+              </button>
             ))}
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={onClose} style={{ flex: 1, padding: '10px', background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--subtle)', fontSize: 'var(--fs-base)', cursor: 'pointer', fontFamily: 'inherit' }}>Cancel</button>
-            <button onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}
-              style={{ flex: 2, padding: '10px', background: selectedId ? T.accent : 'var(--bord2)', border: 'none', borderRadius: 8, color: selectedId ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 700, cursor: selectedId ? 'pointer' : 'default', fontFamily: 'inherit' }}>
+          <div className="stp-actions">
+            <button type="button" className="stp-cancel tap" onClick={onClose}>Cancel</button>
+            <button type="button" className="stp-save tap" onClick={() => selectedId && onSave(selectedId, artifact)} disabled={!selectedId}>
               Save to Project →
             </button>
           </div>
@@ -251,14 +249,12 @@ function SaveToProjectModal({ artifact, projects, onSave, onClose }) {
 
 function LoadingScreen() {
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 16 }}>
-      <div style={{ fontSize: 'var(--fs-2xl)', fontFamily: "'Newsreader', serif", fontWeight: 600, color: 'var(--chalk, var(--text))', letterSpacing: -0.5 }}>The Film Room</div>
-      <div style={{ display: 'flex', gap: 5 }}>
-        {[0, 1, 2].map(i => (
-          <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent, #D9A441)', animation: `pulse 1.2s ${i * 0.2}s infinite ease-in-out` }} />
-        ))}
+    <div className="ls" aria-busy="true" aria-label="Loading">
+      <div className="ls-title">The Film Room</div>
+      <div className="ls-dots" aria-hidden="true">
+        {[0, 1, 2].map(i => <span key={i} className="ls-dot" style={{ '--i': i }} />)}
       </div>
-      <div style={{ fontSize: 10, letterSpacing: 3, color: 'var(--dim)', textTransform: 'uppercase' }}>Studying the tape</div>
+      <div className="ls-kicker">Studying the tape</div>
     </div>
   );
 }

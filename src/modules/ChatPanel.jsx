@@ -1,4 +1,3 @@
-import { T, withAlpha } from '../theme';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useApp } from '../App.jsx';
 import { CHAT_MODES } from '../constants.js';
@@ -12,6 +11,7 @@ import DiagramBlock from './shared/DiagramBlock.jsx';
 import SessionDrawer from './shared/SessionDrawer.jsx';
 import ConnectedKnowledge from './shared/ConnectedKnowledge.jsx';
 import { ThinkingDots, Label } from './shared/Common.jsx';
+import './chat-panel.css';
 
 const QUICK_PROMPTS = {
   home:     ['What should I focus on today?', 'Connect my top 3 learnings', 'Where is the biggest Blue Ocean right now?', 'Give me a decisive action for this week'],
@@ -39,7 +39,15 @@ export default function ChatPanel() {
   const { messages, input, setInput, attachments, setAttachments, loading, streamText: stream, send, sessionId, resumeSession, startNewSession } =
     useChatThread({ buildRequest, persist: { module: 'chat', onSaved: () => setDrawerVersion(v => v + 1) } });
 
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading, stream]);
+  // Scroll ONLY the messages pane, and only while the panel is open. scrollIntoView
+  // scrolls every ancestor — including the overflow:hidden app shell — so on mount
+  // (panel closed, off-screen) it shifted the whole page ~22px (CLS 0.09–0.11 at
+  // iPad on What's Happening; caught by the responsive gate, Batch Z-2).
+  useEffect(() => {
+    if (!chatOpen) return;
+    const end = bottomRef.current; const pane = end?.parentElement;
+    if (pane) pane.scrollTo({ top: pane.scrollHeight, behavior: 'smooth' });
+  }, [messages, loading, stream, chatOpen]);
 
   // Global "New chat" from the top bar → start fresh here (and detach).
   useEffect(() => { if (newChatNonce) { startNewSession(); setSessionsOpen(false); setChatAttach?.(null); } }, [newChatNonce, startNewSession]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -65,96 +73,85 @@ export default function ChatPanel() {
   if (!chatOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed', top: 0, right: 0,
-      width: isMobile ? '100%' : 360,
-      height: isMobile ? 'calc(100vh - 60px)' : '100vh',
-      background: 'var(--bg-nav)',
-      borderLeft: isMobile ? 'none' : '1px solid var(--bord2)',
-      display: 'flex', flexDirection: 'column',
-      zIndex: isMobile ? 200 : 50,
-      animation: 'slideInRight 0.22s ease',
-    }}>
+    <div className="cp" data-mobile={isMobile ? '' : undefined} role="complementary" aria-label="Intelligence Chat">
       {sessionsOpen && (
         <SessionDrawer
           module="chat"
           activeId={sessionId}
           version={drawerVersion}
-          color={T.accent}
+          color="var(--accent-text)"
           onResume={(sess) => { resumeSession(sess); setSessionsOpen(false); setChatAttach?.(null); }}
           onNew={() => { startNewSession(); setChatAttach?.(null); }}
           onClose={() => setSessionsOpen(false)}
         />
       )}
       {/* Header */}
-      <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--bord2)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+      <div className="cp-head">
+        <div className="cp-head-row">
           <div>
-            <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', fontFamily: "'Newsreader', serif" }}>Intelligence Chat</div>
-            <div style={{ fontSize: 9, color: T.accent, letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
+            <div className="cp-title">Intelligence Chat</div>
+            <div className="cp-kicker"><Icon name={mode?.icon} size={13} /> {mode?.label}</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-            <div onClick={() => setSessionsOpen(true)} title="Saved sessions" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>🗂</div>
-            <div onClick={() => { startNewSession(); setSessionsOpen(false); setChatAttach?.(null); }} title="New session" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 6px' }}>✎</div>
-            <div onClick={() => setChatOpen(false)} title="Close" style={{ fontSize: 'var(--fs-base)', color: 'var(--subtle)', cursor: 'pointer', padding: '2px 5px' }}>✕</div>
+          <div className="cp-tools">
+            <button type="button" className="cp-icon-btn tap" onClick={() => setSessionsOpen(true)} title="Saved sessions" aria-label="Saved sessions">🗂</button>
+            <button type="button" className="cp-icon-btn tap" onClick={() => { startNewSession(); setSessionsOpen(false); setChatAttach?.(null); }} title="New session" aria-label="New session">✎</button>
+            <button type="button" className="cp-icon-btn tap" onClick={() => setChatOpen(false)} title="Close" aria-label="Close chat">✕</button>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 4, overflowX: 'auto' }}>
+        <div className="cp-modes" data-scroll-x="">
           {CHAT_MODES.map(m => (
-            <div key={m.id} onClick={() => setChatMode(m.id)} title={m.desc}
-              style={{ fontSize: 'var(--fs-sm)', padding: '4px 8px', borderRadius: 6, border: `1px solid ${chatMode === m.id ? T.accent : 'var(--border)'}`, color: chatMode === m.id ? T.accent : 'var(--subtle)', cursor: 'pointer', background: chatMode === m.id ? withAlpha(T.accent, 6) : 'transparent', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            <button type="button" key={m.id} className="cp-mode tap" aria-pressed={chatMode === m.id} onClick={() => setChatMode(m.id)} title={m.desc}>
               <Icon name={m.icon} size={13} /> {m.label}
-            </div>
+            </button>
           ))}
         </div>
         {/* Attachment — names the artifact this chat opened from, so the user can
             see the context is live. Detach returns to generic chat. */}
         {chatAttach?.label && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '5px 10px', background: withAlpha(T.accent, 8), border: `1px solid ${withAlpha(T.accent, 30)}`, borderRadius: 8 }}>
-            <Icon name="Paperclip" size={12} style={{ color: T.accent }} />
-            <span style={{ flex: 1, minWidth: 0, fontSize: 'var(--fs-sm)', fontWeight: 700, color: T.accent, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{chatAttach.label}</span>
-            <span onClick={() => setChatAttach?.(null)} title="Detach" style={{ color: 'var(--subtle)', cursor: 'pointer', fontSize: 'var(--fs-sm)', fontWeight: 700 }}>✕</span>
+          <div className="cp-attach">
+            <Icon name="Paperclip" size={12} />
+            <span className="cp-attach-label">{chatAttach.label}</span>
+            <button type="button" className="cp-detach tap" onClick={() => setChatAttach?.(null)} title="Detach" aria-label="Detach">✕</button>
           </div>
         )}
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '14px 14px 0' }}>
+      <div className="cp-msgs">
         {messages.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '24px 16px' }}>
-            <div style={{ fontSize: 'var(--fs-2xl)', marginBottom: 10 }}>⚡</div>
-            <div style={{ fontSize: 'var(--fs-base)', color: 'var(--text)', fontWeight: 700, marginBottom: 6 }}>{mode?.label} Mode</div>
-            <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--dim)', lineHeight: 1.7 }}>{mode?.desc}</div>
-            <div style={{ marginTop: 16 }}>
+          <div className="cp-empty">
+            <div className="cp-empty-glyph" aria-hidden="true">⚡</div>
+            <div className="cp-empty-title">{mode?.label} Mode</div>
+            <div className="cp-empty-desc">{mode?.desc}</div>
+            <div className="cp-prompts-wrap">
               <Label>Quick prompts</Label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              <div className="cp-prompts">
                 {prompts.map(p => (
-                  <div key={p} onClick={() => send(p)}
-                    style={{ fontSize: 'var(--fs-base)', padding: '8px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--muted)', cursor: 'pointer', textAlign: 'left', lineHeight: 1.5 }}>
+                  <button type="button" key={p} className="cp-prompt" onClick={() => send(p)}>
                     {p}
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
             {/* The Ask layer surfaces the knowledge graph — what you've studied,
                 connected, tap to ask about any of it. */}
-            <div style={{ marginTop: 18, textAlign: 'left' }}>
+            <div className="cp-ck">
               <ConnectedKnowledge compact />
             </div>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{ marginBottom: 14, display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', animation: 'fadeUp 0.15s ease' }}>
+          <div key={i} className="cp-msg" data-role={msg.role === 'user' ? 'user' : 'ai'}>
             {msg.role === 'user' ? (
-              <div style={{ background: 'var(--u-bubble)', border: '1px solid var(--u-bubble-b)', borderRadius: '14px 14px 3px 14px', padding: '9px 13px', maxWidth: '88%', fontSize: 'var(--fs-base)', lineHeight: 1.65, color: 'var(--u-bubble-text)' }}>
+              <div className="cp-bubble-user">
                 {msg.content}
               </div>
             ) : (
-              <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-                <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
-                <MD text={msg.content} color={T.accent} />
-                <div style={{ marginTop: 10 }}>
+              <div className="cp-bubble-ai">
+                <div className="cp-bubble-kicker">Film Room · {mode?.label}</div>
+                <MD text={msg.content} color="var(--accent-text)" />
+                <div className="cp-bubble-tools">
                   <SaveToNotes title={msg.content.split('\n')[0].replace(/[#*>_`-]/g, '').trim().slice(0, 70)} content={msg.content} source={{ title: `Intelligence Chat · ${mode?.label || ''}`.trim(), tier: 'reported' }} label="Save to Notes" />
                 </div>
                 {msg.content.length > 220 && (
@@ -166,12 +163,12 @@ export default function ChatPanel() {
         ))}
 
         {loading && (
-          <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: 14 }}>
-            <div style={{ background: 'var(--surface)', border: '1px solid #D9A44120', borderRadius: '3px 14px 14px 14px', padding: '12px 14px', maxWidth: '96%' }}>
-              <div style={{ fontSize: 8, letterSpacing: 3, color: T.accent, textTransform: 'uppercase', marginBottom: 8 }}>Film Room · {mode?.label}</div>
+          <div className="cp-msg" aria-live="polite">
+            <div className="cp-bubble-ai">
+              <div className="cp-bubble-kicker">Film Room · {mode?.label}</div>
               {stream
-                ? <MD text={stream + '▍'} color={T.accent} />
-                : <ThinkingDots color={T.accent} />}
+                ? <MD text={stream + '▍'} color="var(--accent-text)" />
+                : <ThinkingDots color="var(--accent-text)" />}
             </div>
           </div>
         )}
@@ -180,48 +177,44 @@ export default function ChatPanel() {
 
       {/* Attachments */}
       {attachments.length > 0 && (
-        <div style={{ padding: '6px 14px', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+        <div className="cp-files">
           {attachments.map((a, i) => (
-            <div key={i} style={{ fontSize: 'var(--fs-sm)', color: T.accent, background: withAlpha(T.accent, 7), border: '1px solid #D9A44125', borderRadius: 5, padding: '2px 8px', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div key={i} className="cp-file">
               <Icon name={a.icon} size={13} /> {a.name.slice(0, 14)}
-              <span onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} style={{ color: T.negative, cursor: 'pointer' }}>✕</span>
+              <button type="button" className="cp-file-x tap" onClick={() => setAttachments(p => p.filter((_, j) => j !== i))} aria-label={`Remove ${a.name}`}>✕</button>
             </div>
           ))}
         </div>
       )}
 
       {/* Input */}
-      <div style={{ padding: '10px 12px 14px', borderTop: '1px solid var(--bord2)', flexShrink: 0 }}>
+      <div className="cp-input">
         {messages.length > 0 && (
-          <div style={{ display: 'flex', gap: 5, overflowX: 'auto', marginBottom: 8, paddingBottom: 2 }}>
+          <div className="cp-chips" data-scroll-x="">
             {prompts.slice(0, 3).map(p => (
-              <div key={p} onClick={() => send(p)}
-                style={{ fontSize: 'var(--fs-sm)', padding: '3px 9px', background: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--subtle)', borderRadius: 14, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              <button type="button" key={p} className="cp-chip tap" onClick={() => send(p)}>
                 {p}
-              </div>
+              </button>
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+        <div className="cp-compose">
           {/* File upload */}
-          <div onClick={() => fileRef.current?.click()}
-            title="Attach files — docs, images, audio, video"
-            style={{ padding: '8px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, cursor: 'pointer', color: 'var(--subtle)', fontSize: 'var(--fs-base)', flexShrink: 0, minHeight: 36, display: 'flex', alignItems: 'center' }}>📎</div>
-          <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp3,.m4a,.wav,.mp4,.mov" style={{ display: 'none' }} onChange={e => handleFiles(e.target.files)} />
+          <button type="button" className="cp-tool tap" onClick={() => fileRef.current?.click()}
+            title="Attach files — docs, images, audio, video" aria-label="Attach files">📎</button>
+          <input ref={fileRef} type="file" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.csv,.jpg,.jpeg,.png,.gif,.webp,.mp3,.m4a,.wav,.mp4,.mov" hidden onChange={e => handleFiles(e.target.files)} />
           {/* Voice input */}
           {voiceOk && (
-            <div onClick={() => toggleVoice((t, final) => { setInput(t); })}
-              title={listening ? 'Stop recording' : 'Voice input'}
-              style={{ padding: '8px', background: listening ? withAlpha(T.negative, 7) : 'var(--surface)', border: `1px solid ${listening ? T.negative : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', color: listening ? T.negative : 'var(--subtle)', fontSize: 'var(--fs-base)', flexShrink: 0, minHeight: 36, display: 'flex', alignItems: 'center', transition: 'all 0.15s' }}>
+            <button type="button" className="cp-tool tap" aria-pressed={listening} onClick={() => toggleVoice((t, final) => { setInput(t); })}
+              title={listening ? 'Stop recording' : 'Voice input'} aria-label={listening ? 'Stop recording' : 'Voice input'}>
               🎙️
-            </div>
+            </button>
           )}
           <textarea value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
             rows={1} placeholder={listening ? 'Listening…' : 'Ask anything — paste docs, images, or use voice…'}
-            style={{ flex: 1, background: 'var(--surface)', border: `1px solid ${listening ? withAlpha(T.negative, 25) : 'var(--border)'}`, borderRadius: 10, padding: '8px 12px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'none', maxHeight: 80, transition: 'border-color 0.15s' }} />
-          <button onClick={() => send(input)} disabled={!input.trim() && attachments.length === 0}
-            style={{ padding: '8px 13px', background: input.trim() || attachments.length > 0 ? 'var(--accent,#D9A441)' : 'var(--bord2)', border: 'none', borderRadius: 9, color: input.trim() || attachments.length > 0 ? '#000' : 'var(--dim)', fontSize: 'var(--fs-base)', fontWeight: 800, cursor: 'pointer', flexShrink: 0, minHeight: 36 }}>→</button>
+            className="cp-text" data-listening={listening ? '' : undefined} aria-label="Message" />
+          <button type="button" className="cp-send tap" onClick={() => send(input)} disabled={!input.trim() && attachments.length === 0} aria-label="Send">→</button>
         </div>
       </div>
     </div>

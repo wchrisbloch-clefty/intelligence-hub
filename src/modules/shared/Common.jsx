@@ -1,56 +1,64 @@
 import { T } from '../../theme';
-// Shared primitive UI components — uses CSS variables for theming
+import './common.css';
+// Shared primitive UI components — tokens only (common.css, cm-). Callers still
+// pass `color` / `accent` props; they're routed through CSS custom properties
+// (--c for strokes/fills, --ct for the same colour used as text).
+
+const ACCENTS = new Set([T.accent, 'var(--accent)', 'var(--accent-text)', 'var(--gold)']);
+const isAccent = (c) => ACCENTS.has(c);
+// The accent as TEXT must be --accent-text (the fill navy fails contrast in dark).
+const asText = (c) => (isAccent(c) ? 'var(--accent-text)' : c);
+const asStroke = (c) => (isAccent(c) ? 'var(--accent)' : c);
+
+const onKeyActivate = (fn) => (e) => {
+  if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn?.(e); }
+};
 
 export function Btn({ children, onClick, color = T.accent, disabled, variant = 'fill', size = 'md', style: extraStyle = {} }) {
-  const pad = { sm: '7px 14px', md: '11px 18px', lg: '14px 22px' }[size];
-  const fs = { sm: 'var(--fs-sm)', md: 'var(--fs-base)', lg: 'var(--fs-base)' }[size];
-  const base = { padding: pad, borderRadius: 10, fontSize: fs, fontWeight: 700, cursor: disabled ? 'default' : 'pointer', transition: 'all 0.15s', fontFamily: 'inherit', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, ...extraStyle };
-
-  if (variant === 'fill') return (
-    <button onClick={!disabled ? onClick : undefined} style={{ ...base, background: disabled ? 'var(--bord2)' : color, border: `1px solid ${disabled ? 'var(--bord2)' : color}`, color: disabled ? 'var(--dim)' : '#000', width: '100%' }}>
+  if (!['fill', 'outline', 'ghost'].includes(variant)) return null;
+  const acc = isAccent(color);
+  const vars = variant === 'fill'
+    ? { '--c': asStroke(color), '--fg': acc ? 'var(--accent-foreground)' : 'var(--background)' }
+    : { '--c': asStroke(color), '--ct': asText(color) };
+  return (
+    <button type="button" className={`cm-btn cm-btn-${variant} cm-btn-${size} tap`} data-accent={acc ? '' : undefined}
+      disabled={disabled} onClick={!disabled ? onClick : undefined} style={{ ...vars, ...extraStyle }}>
       {children}
     </button>
   );
-  if (variant === 'outline') return (
-    <button onClick={!disabled ? onClick : undefined} style={{ ...base, background: disabled ? 'transparent' : `${color}12`, border: `1px solid ${disabled ? 'var(--bord2)' : color + '60'}`, color: disabled ? 'var(--dim)' : color }}>
-      {children}
-    </button>
-  );
-  if (variant === 'ghost') return (
-    <button onClick={!disabled ? onClick : undefined} style={{ ...base, background: 'transparent', border: 'none', color: disabled ? 'var(--dim)' : color }}>
-      {children}
-    </button>
-  );
-  return null;
 }
 
 export function Input({ label, value, onChange, placeholder, type = 'text', style: extraStyle = {} }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      {label && <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>}
-      <input
+    <label className="cm-field">
+      {label && <span className="cm-field-label">{label}</span>}
+      <input className="cm-input"
         type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box', ...extraStyle }}
+        style={extraStyle}
       />
-    </div>
+    </label>
   );
 }
 
 export function Textarea({ label, value, onChange, placeholder, rows = 3, style: extraStyle = {} }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      {label && <div style={{ fontSize: 9, letterSpacing: 2, color: 'var(--subtle)', textTransform: 'uppercase', marginBottom: 8 }}>{label}</div>}
-      <textarea
+    <label className="cm-field">
+      {label && <span className="cm-field-label">{label}</span>}
+      <textarea className="cm-input cm-textarea"
         value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
-        style={{ width: '100%', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', color: 'var(--text-b)', fontSize: 'var(--fs-base)', outline: 'none', fontFamily: 'inherit', resize: 'vertical', lineHeight: 1.65, boxSizing: 'border-box', ...extraStyle }}
+        style={extraStyle}
       />
-    </div>
+    </label>
   );
 }
 
 export function Card({ children, color, style: extraStyle = {}, onClick }) {
+  const clickable = !!onClick;
   return (
-    <div onClick={onClick} style={{ background: 'var(--surface)', border: `1px solid ${color ? color + '25' : 'var(--border)'}`, borderRadius: 12, padding: '16px', cursor: onClick ? 'pointer' : 'default', transition: 'all 0.18s', ...extraStyle }}>
+    <div className={`cm-card${clickable ? ' focus-ring' : ''}`} data-tint={color ? '' : undefined} data-click={clickable ? '' : undefined}
+      onClick={onClick} role={clickable ? 'button' : undefined} tabIndex={clickable ? 0 : undefined}
+      onKeyDown={clickable ? onKeyActivate(onClick) : undefined}
+      style={{ ...(color ? { '--c': asStroke(color) } : null), ...extraStyle }}>
       {children}
     </div>
   );
@@ -58,7 +66,7 @@ export function Card({ children, color, style: extraStyle = {}, onClick }) {
 
 export function Badge({ children, color = T.accent }) {
   return (
-    <span style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', color, background: `${color}18`, border: `1px solid ${color}30`, borderRadius: 4, padding: '3px 7px', fontWeight: 700 }}>
+    <span className="cm-badge" style={{ '--c': asStroke(color), '--ct': asText(color) }}>
       {children}
     </span>
   );
@@ -66,46 +74,40 @@ export function Badge({ children, color = T.accent }) {
 
 export function Label({ children, color = 'var(--subtle)' }) {
   return (
-    <div style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', color, marginBottom: 8, fontWeight: 600 }}>
+    <div className="cm-label" style={{ '--ct': asText(color) }}>
       {children}
     </div>
   );
 }
 
 export function Spinner({ color = T.accent, size = 18 }) {
-  return (
-    <div style={{ width: size, height: size, border: `2px solid ${color}20`, borderTop: `2px solid ${color}`, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-  );
+  return <div className="cm-spinner" style={{ '--c': color, '--size': `${size}px` }} />;
 }
 
 export function ThinkingDots({ color = T.accent }) {
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-      {[0, 1, 2].map(j => (
-        <div key={j} style={{ width: 5, height: 5, borderRadius: '50%', background: color, animation: `pulse 1.2s ${j * 0.2}s infinite ease-in-out` }} />
-      ))}
+    <div className="cm-dots" style={{ '--c': color }}>
+      <div className="cm-dot" /><div className="cm-dot" /><div className="cm-dot" />
     </div>
   );
 }
 
 export function Divider({ style: extraStyle = {} }) {
-  return <div style={{ borderTop: '1px solid var(--border-dim)', margin: '16px 0', ...extraStyle }} />;
+  return <div className="cm-divider" style={extraStyle} />;
 }
 
 export function Modal({ children, onClose, title, accent = T.accent, width = 520 }) {
   return (
-    <div
-      style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}
-      onClick={e => e.target === e.currentTarget && onClose()}
-    >
-      <div style={{ width: '100%', maxWidth: width, background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: 16, overflow: 'hidden', animation: 'fadeUp 0.2s ease' }}>
+    <div className="cm-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="cm-modal" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}
+        style={{ '--c': asStroke(accent), '--w': typeof width === 'number' ? `${width}px` : width }}>
         {title && (
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-            <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer', padding: '0 4px' }}>✕</div>
+          <div className="cm-modal-head">
+            <div className="cm-modal-title">{title}</div>
+            <button type="button" className="cm-close tap" onClick={onClose} aria-label="Close">✕</button>
           </div>
         )}
-        <div style={{ padding: 20 }}>{children}</div>
+        <div className="cm-modal-body">{children}</div>
       </div>
     </div>
   );
@@ -113,12 +115,13 @@ export function Modal({ children, onClose, title, accent = T.accent, width = 520
 
 export function BottomSheet({ children, onClose, title, accent = T.accent }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'var(--overlay)', zIndex: 300, display: 'flex', alignItems: 'flex-end' }}>
-      <div style={{ width: '100%', maxWidth: 680, margin: '0 auto', background: 'var(--surface)', border: `1px solid ${accent}25`, borderRadius: '16px 16px 0 0', padding: '20px 20px 40px', animation: 'fadeUp 0.2s ease' }}>
+    <div className="cm-overlay" data-sheet="">
+      <div className="cm-sheet" role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}
+        style={{ '--c': asStroke(accent) }}>
         {title && (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontSize: 'var(--fs-base)', fontWeight: 700, color: 'var(--text)' }}>{title}</div>
-            <div onClick={onClose} style={{ fontSize: 'var(--fs-lg)', color: 'var(--subtle)', cursor: 'pointer' }}>✕</div>
+          <div className="cm-sheet-head">
+            <div className="cm-modal-title">{title}</div>
+            <button type="button" className="cm-close tap" onClick={onClose} aria-label="Close">✕</button>
           </div>
         )}
         {children}
@@ -127,17 +130,16 @@ export function BottomSheet({ children, onClose, title, accent = T.accent }) {
   );
 }
 
-// Signature element — "yard lines". Progress reads as a field marker: a gold
-// fill advancing across hairline ticks set at every 10%. Used app-wide for the
+// Signature element — "yard lines". Progress reads as a field marker: a fill
+// advancing across hairline ticks set at every 10%. Used app-wide for the
 // confidence bar, quiz progress, and session cards so the motif stays consistent.
+const TICKS = [10, 20, 30, 40, 50, 60, 70, 80, 90];
 export function ProgressBar({ value, max = 10, color = 'var(--accent)', height = 6, ticks = true }) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <div style={{ position: 'relative', background: 'var(--line)', borderRadius: 2, height, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${pct}%`, background: color, borderRadius: 2, transition: 'width 0.6s cubic-bezier(0.2,0.8,0.2,1)' }} />
-      {ticks && [10,20,30,40,50,60,70,80,90].map(t => (
-        <div key={t} style={{ position: 'absolute', top: 0, bottom: 0, left: `${t}%`, width: 1, background: 'var(--ink)', opacity: 0.55 }} />
-      ))}
+    <div className="cm-progress" style={{ '--h': `${height}px`, '--pct': `${pct}%`, '--c': color }}>
+      <div className="cm-progress-fill" />
+      {ticks && TICKS.map(t => <div key={t} className="cm-progress-tick" style={{ left: `${t}%` }} />)}
     </div>
   );
 }
@@ -145,13 +147,9 @@ export function ProgressBar({ value, max = 10, color = 'var(--accent)', height =
 // Yard-line dots — the quiz/step progress form of the same motif.
 export function YardDots({ total, current = 0, color = 'var(--accent)' }) {
   return (
-    <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+    <div className="cm-yard" style={{ '--c': color }}>
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} style={{
-          height: 3, flex: 1, borderRadius: 2,
-          background: i < current ? color : 'var(--line)',
-          transition: 'background 0.3s ease',
-        }} />
+        <div key={i} className="cm-yard-dot" data-on={i < current ? '' : undefined} />
       ))}
     </div>
   );
@@ -159,15 +157,15 @@ export function YardDots({ total, current = 0, color = 'var(--accent)' }) {
 
 export function ChipRow({ chips, selected, onSelect, colorFn }) {
   return (
-    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+    <div className="cm-chiprow">
       {chips.map(c => {
         const active = selected === c.id;
         const color = colorFn ? colorFn(c) : T.accent;
         return (
-          <div key={c.id} onClick={() => onSelect(c.id)}
-            style={{ padding: '4px 12px', fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', border: `1px solid ${active ? color : 'var(--bord2)'}`, color: active ? color : 'var(--subtle)', borderRadius: 20, cursor: 'pointer', background: active ? `${color}15` : 'transparent' }}>
+          <button type="button" key={c.id} className="cm-chip tap" aria-pressed={active}
+            onClick={() => onSelect(c.id)} style={{ '--c': asStroke(color), '--ct': asText(color) }}>
             {c.label}
-          </div>
+          </button>
         );
       })}
     </div>

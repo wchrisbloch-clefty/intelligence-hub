@@ -1,0 +1,36 @@
+/* /design page. Tokens only. */
+.dz-page { height: 100dvh; overflow-y: auto; background: var(--background); color: var(--text);
+  padding: var(--gutter); }
+.dz-page > * { max-width: var(--container-page); margin-left: auto; margin-right: auto; }
+.dz-head { display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: space-between; align-items: flex-end;
+  padding-bottom: var(--s5); border-bottom: 1px solid var(--border); }
+.dz-eyebrow { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); }
+.dz-title { font-family: var(--font-display); font-size: var(--fs-2xl); line-height: var(--lh-tight); }
+.dz-sub { color: var(--text-muted); font-size: var(--fs-sm); max-width: 60ch; }
+.dz-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+.dz-sec { padding: var(--module-gap) 0 0; }
+.dz-h2 { font-size: var(--fs-lg); margin-bottom: var(--s4); }
+.dz-panels { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s4); }
+@media (min-width: 1101px) { .dz-panels { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.dz-panel { background: var(--background); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--s4); min-width: 0; }
+.dz-panel-head { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; color: var(--text-subtle); margin-bottom: var(--s3); }
+.dz-swatches { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+@media (min-width: 721px) { .dz-swatches { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dz-swatch { display: flex; gap: var(--s3); align-items: center; min-width: 0; padding: 6px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.dz-chip { width: 36px; height: 36px; flex-shrink: 0; border-radius: var(--radius-sm); background: var(--sw); border: 1px solid var(--border-strong); }
+.dz-swatch-meta { display: flex; flex-direction: column; min-width: 0; }
+.dz-tok { font-size: var(--fs-xs); font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.dz-val { font-size: 11px; color: var(--text-subtle); overflow-wrap: anywhere; }
+.dz-cr { font-size: 11px; font-weight: 700; }
+.dz-cr.ok { color: var(--tier-verified); } .dz-cr.mid { color: var(--tier-inferred); } .dz-cr.low { color: var(--negative); }
+.dz-type { display: flex; flex-direction: column; gap: 2px; padding: var(--s2) 0; border-bottom: 1px solid var(--border); min-width: 0; }
+.dz-type-sample { font-size: var(--fs); line-height: var(--lh-tight); overflow-wrap: anywhere; }
+.dz-space { display: flex; align-items: center; gap: var(--s3); padding: 4px 0; }
+.dz-space .dz-tok { width: 60px; }
+.dz-bar { height: 12px; width: var(--w); background: var(--accent); border-radius: 2px; }
+.dz-row { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; padding: var(--s2) 0; }
+.dz-controls { display: flex; flex-wrap: wrap; gap: var(--s4); padding: var(--s2) 0; border-bottom: 1px solid var(--border); }
+.dz-state { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.dz-cap { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-subtle); font-weight: 700; margin-bottom: 4px; }
+.dz-states { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
+@media (min-width: 1101px) { .dz-states { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

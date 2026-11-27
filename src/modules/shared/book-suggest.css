@@ -1,0 +1,15 @@
+/* BookSuggest (bks-). Floating catalog dropdown — a popover over the form, so it
+   takes the overlay shadow; rows are real ≥56px boxes (::after would clip in the scroller). */
+.bks { position: absolute; top: 100%; left: 0; right: 0; z-index: 20; margin-top: 4px; max-height: 320px; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow-lg); -webkit-overflow-scrolling: touch; }
+.bks-status { display: flex; align-items: center; gap: var(--s2); padding: 12px 14px; font-size: var(--fs-sm); color: var(--text-subtle); }
+.bks-row { display: flex; gap: 10px; width: 100%; min-height: 56px; text-align: left; padding: 10px 12px; background: transparent; border: none;
+  border-bottom: 1px solid var(--border); cursor: pointer; font: inherit; align-items: flex-start; transition: background-color var(--dur-color) ease; }
+.bks-row:hover { background: var(--surface-muted); }
+.bks-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.bks-cover { border-radius: var(--radius-sm); flex-shrink: 0; border: 1px solid var(--border); }
+.bks-cover-ph { width: 34px; height: 48px; border-radius: var(--radius-sm); flex-shrink: 0; background: var(--surface-muted); color: var(--text-subtle);
+  display: flex; align-items: center; justify-content: center; }
+.bks-text { flex: 1; min-width: 0; }
+.bks-title { display: block; font-size: var(--fs-sm); font-weight: 700; color: var(--text); line-height: var(--lh-tight); }
+.bks-meta { display: block; font-size: var(--fs-sm); color: var(--text-subtle); margin-top: 2px; overflow-wrap: anywhere; }

@@ -1,0 +1,270 @@
+/* src/styles/tokens.css — THE token contract. Imported once from src/main.jsx.
+ *
+ * This is the ONLY file in src/ allowed to contain literal colour values
+ * (scripts/check-tokens.mjs exempts it and nothing else). Everything else
+ * reads var(--token).
+ *
+ * Two layers:
+ *   1. Contract tokens — the honest names, one value per theme (Batch Z / A1).
+ *   2. Legacy aliases — every name the ~1,400 existing var() call sites use
+ *      (--ink, --chalk, --surface, --accent, --border, --text-b, --dim, …),
+ *      each pointing at a contract token. Do NOT rename call sites; add an
+ *      alias here instead.
+ *
+ * Rules this file enforces (MyNewsHub Editorial discipline):
+ *   - Hairlines, not shadows. 1px borders; --surface-muted is the only hover
+ *     fill. --shadow-sm/md resolve to `none`; --shadow-lg exists only for the
+ *     one overlay case (modals/sheets).
+ *   - One accent (navy). Filled only for: active nav, primary button, active
+ *     tab, focus ring. Everything else that used to "glow" reads surface-muted.
+ *   - Tier markers are text + 1px bars only, never a filled background.
+ *   - No gradients, no glass, no emoji.
+ *   - 150ms on colour/border, 200ms on fades; all motion off under
+ *     prefers-reduced-motion.
+ */
+
+/* ═══ LIGHT ═══════════════════════════════════════════════════════════════
+   [data-theme="light"] lets /design render a light panel inside a dark page. */
+:root, [data-theme="light"] {
+  color-scheme: light;
+
+  /* ── 1. Contract tokens ─────────────────────────────────────────────── */
+  --background:        #FFFFFF;
+  --surface:           #FFFFFF;
+  --surface-muted:     #F5F6F8;
+  --border:            #E3E5E8;
+  --border-strong:     #C9CDD3;
+  --text:              #0F1217;
+  --text-muted:        #4B5361;
+  --text-subtle:       #6B7280;
+  --accent:            #14284B;
+  --accent-hover:      #1D3866;
+  --accent-foreground: #FFFFFF;
+  --accent-text:       #14284B;
+  --ring:              #14284B;
+  --negative:          #C1121F;
+  --caution:           #9A6700;
+
+  /* Provenance tiers — trust, never engagement. --tier-reported follows the
+     accent text so there is never a second, competing blue. */
+  --tier-verified: #0F7B6C;
+  --tier-reported: var(--accent-text);
+  --tier-inferred: #9A6700;
+  --tier-uncited:  #8A94A6;
+
+  --overlay:   rgba(15,18,23,0.45);
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: 0 8px 28px rgba(15,18,23,0.12); /* overlays only */
+
+  /* ── Type ───────────────────────────────────────────────────────────── */
+  --font-display: 'Newsreader', Georgia, serif;
+  --font-sans:    'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:    ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --fs-xs:   clamp(0.75rem, 0.72rem + 0.15vw, 0.8125rem);
+  --fs-sm:   clamp(0.875rem, 0.85rem + 0.15vw, 0.9375rem);
+  --fs-base: clamp(1rem, 0.96rem + 0.2vw, 1.0625rem);
+  --fs-lg:   clamp(1.125rem, 1.06rem + 0.3vw, 1.25rem);
+  --fs-xl:   clamp(1.375rem, 1.25rem + 0.6vw, 1.75rem);
+  --fs-2xl:  clamp(1.75rem, 1.5rem + 1.2vw, 2.5rem);
+  --fs-3xl:  clamp(2.25rem, 1.8rem + 2vw, 3.25rem);
+
+  --lh-tight: 1.2;
+  --lh-ui:    1.5;
+  --lh-read:  1.65;
+  --read-max: 68ch;
+
+  /* ── Space (8px grid). --s* are the original names; --space-* the contract. */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s7: 32px; --s8: 48px;
+  --space-1: var(--s1); --space-2: var(--s2); --space-3: var(--s3); --space-4: var(--s4);
+  --space-5: var(--s5); --space-6: var(--s6); --space-7: var(--s7); --space-8: var(--s8);
+
+  /* ── Radius ─────────────────────────────────────────────────────────── */
+  --radius-sm: 4px; --radius: 8px; --radius-lg: 12px;
+  --radius-md: var(--radius);
+
+  /* ── Motion ─────────────────────────────────────────────────────────── */
+  --dur-color: 150ms;   /* colour + border */
+  --dur-fade:  200ms;   /* opacity fades */
+
+  /* ── Layout (docs/RESPONSIVE.md) ────────────────────────────────────── */
+  --container-page: 76rem;
+  --rail-width:     340px;
+  --sidebar-width:  240px;
+  --tap-min:        44px;
+  --gutter:         16px;   /* 24px ≥1101, set below */
+  --module-gap:     32px;   /* 40px ≥1101 */
+
+}
+
+/* ═══ DARK ════════════════════════════════════════════════════════════════ */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --background:        #0A0B0D;
+  --surface:           #111317;
+  --surface-muted:     #181B20;
+  --border:            #262A31;
+  --border-strong:     #3A3F48;
+  --text:              #ECEEF2;
+  --text-muted:        #A7ADB8;
+  --text-subtle:       #858C98;
+  --accent:            #2B4C85;
+  --accent-hover:      #34599A;
+  --accent-foreground: #FFFFFF;
+  --accent-text:       #9DB7E6;
+  --ring:              #9DB7E6;
+  --negative:          #FF5C5C;
+  --caution:           #E3B341;
+
+  --tier-verified: #3FD0B8;
+  --tier-reported: var(--accent-text);
+  --tier-inferred: #E3B341;
+  --tier-uncited:  #6B7686;
+
+  --overlay:   rgba(5,6,8,0.80);
+  --shadow-lg: 0 8px 28px rgba(0,0,0,0.5);
+}
+
+/* Aliases are their own rule on every themed element, so a var() chain re-resolves
+   wherever data-theme is set (incl. /design's nested light/dark panels). */
+:root, [data-theme] {
+  /* ── 2. Legacy aliases — keep every existing var() resolving ── */
+  --ink:            var(--background);
+  --canvas:         var(--background);
+  --bg:             var(--background);
+  --bg-alt:         var(--surface-muted);
+  --bg-nav:         var(--surface);
+  --surf2:          var(--surface-muted);
+  --surface-raised: var(--surface);
+  --surface-sunken: var(--surface-muted);
+  --line:           var(--border);
+  --rule:           var(--border);
+  --rule-strong:    var(--border-strong);
+  --bord2:          var(--border);
+  --border-dim:     var(--border);
+  --chalk:          var(--text);
+  --text-primary:   var(--text);
+  --text-b:         var(--text);
+  --text-c:         var(--text-muted);
+  --chalk-dim:      var(--text-muted);
+  --muted:          var(--text-muted);
+  --text-secondary: var(--text-muted);
+  --subtle:         var(--text-subtle);
+  --dim:            var(--text-subtle);
+  --text-tertiary:  var(--text-subtle);
+  --text-inverse:   var(--accent-foreground);
+  --accent2:        var(--accent-hover);
+  --gold:           var(--accent);          /* never reintroduce a gold */
+  --on-accent:      var(--accent-foreground);
+  --accent-glow:    var(--surface-muted);   /* the only non-accent fill */
+  --accent-wash:    var(--surface-muted);
+  --accent-border:  var(--border-strong);
+  --u-bubble:       var(--surface-muted);
+  --u-bubble-b:     var(--border-strong);
+  --u-bubble-text:  var(--text);
+  --scrollbar:      var(--border-strong);
+  --scrollbar-h:    var(--text-subtle);
+  --green:          var(--tier-verified);
+  --positive:       var(--tier-verified);
+  --red:            var(--negative);
+}
+
+@media (min-width: 1101px) {
+  :root { --gutter: 24px; --module-gap: 40px; }
+}
+
+/* ═══ BASE ════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fs-base);
+  line-height: var(--lh-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  transition: background-color var(--dur-color) ease, color var(--dur-color) ease;
+}
+
+::-webkit-scrollbar { width: 3px; height: 3px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-h); }
+
+:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 4px; }
+
+/* ── Utilities ─────────────────────────────────────────────────────────── */
+/* Shared focus ring — opt-in for elements that suppress the global one. */
+.focus-ring:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* tap — a 44px hit area that leaves the VISUAL size alone. The ::after
+   pseudo-element extends the target; the element itself is unchanged. */
+.tap { position: relative; }
+.tap::after {
+  content: ''; position: absolute; left: 50%; top: 50%;
+  width: max(100%, var(--tap-min)); height: max(100%, var(--tap-min));
+  transform: translate(-50%, -50%);
+}
+
+.hairline { border: 1px solid var(--border); }
+.hover-fill { transition: background-color var(--dur-color) ease, border-color var(--dur-color) ease; }
+.hover-fill:hover { background: var(--surface-muted); }
+
+/* Tier markers: text + a 1px bar. Never a filled background. */
+.tier-mark { background: transparent !important; border: 0; border-left: 1px solid currentColor; padding-left: 6px; }
+
+/* ── Motion ────────────────────────────────────────────────────────────── */
+/* Keyframe names are kept — modules reference them. `glow` no longer glows. */
+@keyframes pulse  { 0%,100%{opacity:.35;transform:scale(.85)} 50%{opacity:1;transform:scale(1.1)} }
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes riseIn { from{opacity:0;transform:translateY(8px)}  to{opacity:1;transform:translateY(0)} }
+@keyframes slideRight   { from{opacity:0;transform:translateX(-10px)} to{opacity:1;transform:translateX(0)} }
+@keyframes slideInRight { from{opacity:0;transform:translateX(100%)}  to{opacity:1;transform:translateX(0)} }
+@keyframes glow  { 0%,100%{opacity:1} 50%{opacity:1} }
+@keyframes spin  { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes shimmer { 0%,100%{opacity:1} 50%{opacity:.55} }
+/* Skeleton fill — flat (no gradient), a slow opacity breath. */
+.shimmer { background: var(--surface-muted); animation: shimmer 1.4s ease-in-out infinite; }
+.rise { opacity: 0; animation: riseIn var(--dur-fade) ease forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .rise { opacity: 1; }
+  .shimmer { animation: none; }
+}
+
+/* ═══ SHELL — three layouts (docs/RESPONSIVE.md) ══════════════════════════
+   mobile  ≤720 fine-tune / ≤1100 structure · iPad ≤1024 grid · desktop ≥1101
+   Sized in CSS only. Both nav surfaces always render; CSS decides which shows,
+   so a phone's first paint is never the desktop layout. */
+.fr-shell { display: flex; flex-direction: column; height: 100dvh; background: var(--background); overflow: hidden; }
+.fr-body  { flex: 1; display: flex; min-height: 0; width: 100%; margin: 0 auto; }
+.fr-sidebar { display: none; }
+.fr-main {
+  flex: 1; min-width: 0; overflow-y: auto; overflow-x: hidden;
+  /* Reserve the scrollbar's width up front: when content grows past the viewport
+     a scrollbar appears, the column narrows, text reflows and every card below
+     shifts (CLS 0.11 on What's Happening at iPad — Batch Z-2). */
+  scrollbar-gutter: stable;
+  transition: padding-right 0.22s ease;
+}
+.fr-tabbar { display: block; flex-shrink: 0; }
+
+@media (min-width: 721px) {           /* iPad and up — sidebar appears */
+  .fr-sidebar { display: flex; flex-shrink: 0; }
+  .fr-tabbar  { display: none; }
+  .fr-shell[data-chat="open"] .fr-main { padding-right: 360px; }
+}
+@media (min-width: 1101px) {          /* desktop — capped page */
+  .fr-body { max-width: var(--container-page); }
+}
