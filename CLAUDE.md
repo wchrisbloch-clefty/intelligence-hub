@@ -72,7 +72,7 @@ deployed on Vercel. Single user (CB).
 - **Every module is on co-located CSS** (`<module>.css`, module-prefixed classes).
   `scripts/check-tokens.mjs` (in `npm run build`) fails on any literal colour in CSS
   outside `src/styles/tokens.css` and any colour/background/border inline style in JSX.
-  Only `CoachAI.jsx` (unrouted) remains in `check-tokens.baseline.json`.
+  The baseline is `{}` — every module, `CoachAI.jsx` included (Z-3 / L4), reads zero.
 - **`--accent` is a FILL colour** (primary button, active nav/tab). Text that should read
   as accent is `--accent-text`; text ON an accent fill is `--accent-foreground`. Using
   `--accent` as text fails contrast in dark (2.19:1) — `scripts/codemod-accent-text.mjs`
@@ -117,6 +117,12 @@ deployed on Vercel. Single user (CB).
   fetched directly, no scrape credit). A search hit is scraped only if its RESULT
   TITLE carries the book's title (other books' "similar items" pages were eating
   the slots). Every matching record is SCORED (`score505`) and the cleanest kept.
+- **Cache identity + honesty (L3):** the ground-book cache key is the BOOK, not the
+  string — main title (before ":"), leading article dropped, + author surname — so
+  the short shelf title and the backfilled full title share one entry. A miss caused
+  by a transient failure (Firecrawl 429, a search timeout) is returned `retryable`
+  and never cached; record fetches run 2 at a time. BookClub asks the server for any
+  book without a TOC on open (cache-first); the paid web pass stays post-cutoff only.
 - **Repair OUR split, never the source:** run-together `Part I: X. Y` → part +
   chapter; a ` -- ` inside a quoted span re-joins. Source typos and the source's
   own numbering slips pass through; `raw505` is always verbatim.
